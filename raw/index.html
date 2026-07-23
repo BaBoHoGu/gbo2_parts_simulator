@@ -1,0 +1,80 @@
+<!-- public/index.html または root/index.html に置く -->
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      worker-src blob: 'self';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
+      font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net;
+      img-src 'self' data: blob: https:;
+      connect-src 'self';
+      frame-src 'none';
+      object-src 'none';
+      base-uri 'self';
+    " />
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="機動戦士ガンダム バトルオペレーション2のカスタムパーツシミュレーター。各MSごとに最適なビルド構成を作成・保存・共有できます。" />
+    <meta name="keywords" content="ガンダム,バトルオペレーション2,GBO2,カスタムパーツ,シミュレーター,MS,モビルスーツ,ビルド,機体性能" />
+    <meta name="author" content="GBO2-CSTM" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://gbo2.jp/" />
+    <meta property="og:title" content="GBO2 カスタムパーツ シミュレーター" />
+    <meta property="og:description" content="機動戦士ガンダム バトルオペレーション2のカスタムパーツシミュレーター。各MSごとに最適なビルド構成を作成・保存・共有できます。" />
+    <meta property="og:image" content="https://gbo2.jp/images/ms/default.webp" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="GBO2 カスタムパーツ シミュレーター" />
+    <meta name="twitter:description" content="機動戦士ガンダム バトルオペレーション2のカスタムパーツシミュレーター。各MSごとに最適なビルド構成を作成・保存・共有できます。" />
+    <meta name="twitter:image" content="https://gbo2.jp/images/ms/default.webp" />
+    
+    <!-- Lato + Noto Sans JP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/webp" sizes="32x32" href="/images/ms/default.webp" />
+    <link rel="icon" type="image/webp" sizes="192x192" href="/images/ms/default.webp" />
+    <link rel="shortcut icon" type="image/webp" href="/images/ms/default.webp" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/ms/default.webp" />
+    <meta name="msapplication-TileImage" content="/images/ms/default.webp" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>GBO2 カスタムパーツ シミュレーター | 機動戦士ガンダム バトルオペレーション2</title>
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "GBO2 カスタムパーツ シミュレーター",
+      "url": "https://gbo2.jp/",
+      "description": "機動戦士ガンダム バトルオペレーション2のカスタムパーツシミュレーター。各MSごとに最適なビルド構成を作成・保存・共有できます。",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "JPY"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "GBO2-CSTM"
+      }
+    }
+    </script>
+    <script type="module" crossorigin src="/assets/index-B-nb069C.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CpNPt1Zr.css">
+  </head>
+  <body style="background:#131417;">
+    <div id="root"></div>
+  </body>
+</html>
