@@ -503,78 +503,171 @@
       const d = lv ? w.levels[lv] : null;
       if (!d) continue;
 
-      const row = el('div', 'weapon');
-      row.append(el('span', 'w-sec' + (w.section === '主兵装' ? ' main' : ''),
-        w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
-      row.append(el('span', 'w-type ' + w.type, w.type === 'melee' ? '격투' : '사격'));
-
-      const nm = el('span', 'w-nm', T.weaponName(w.name));   // 원문은 툴팁으로
-      nm.title = w.name + (w.info && w.info['備考'] ? '\n\n' + w.info['備考'] : '');
-      row.append(nm);
-      row.append(el('span', 'w-lv', 'LV' + lv));
-
-      // 위력 — 기본값과 보정으로 늘어난 분을 함께 보여준다
-      const dmgCell = el('span', 'w-dmg');
-      const a = corr[w.type] || 0;
-      const put = (base, label) => {
-        if (base == null) return;
-        const total = w.type === 'melee' ? D.meleeDamage(base, a) : D.shootingDamage(base, a);
-        const gain = total - base;
-        const cell = el('span', 'w-val');
-        if (label) cell.append(el('span', 'w-tag', label));
-        cell.append(document.createTextNode(base.toLocaleString()));
-        if (gain > 0) cell.append(el('span', 'w-gain', ' (+' + gain.toLocaleString() + ')'));
-        dmgCell.append(cell);
-      };
       const info = w.info || {};
       const mods = w.mods || {};
       const note = info['備考'] || '';
-      const mustCharge = /集束必須/.test(note);       // 집속해야만 쏠 수 있는 무장
-      // 집속 링 등으로 줄어든 집속 시간을 반영한다
-      const chargeCut = mods.chargeTime ? (wm.chargeTime || 0) : 0;
-      const chargeSec = mods.chargeTime
-        ? D.shortenTime(mods.chargeTime, chargeCut) + '초' : '';
-      // 집속 표기에 시간을 함께 적어 얼마나 모아야 하는지 바로 보이게 한다
-      const fullTag = (mustCharge ? '집속 필수' : '풀차지')
-        + (chargeSec ? ' ' + chargeSec + (chargeCut ? ' (-' + chargeCut + '%)' : '') : '');
-
-      if (d.power != null && d.powerCharged != null) { put(d.power, '논차지'); put(d.powerCharged, fullTag); }
-      else if (d.powerCharged != null) put(d.powerCharged, fullTag);
-      else put(d.power, w.powerLabel && /x\d/.test(w.powerLabel) ? w.powerLabel.replace('威力', '') : '');
-      row.append(dmgCell);
-
-      // 오버히트(히트율·OH까지 발수·복귀 시간)와 집속 시간을 함께 알려 준다
       const f = (...names) => wField(d, info, ...names);
-      const pair = (label, v) => (v ? label + ' ' + v : '');
+      const a = corr[w.type] || 0;
+
+      // 집속 링은 「ビーム射撃兵装」만 줄여 준다 — 격투 무장의 집속은 절댓값이다
+      const chargeCut = mods.chargeTime && w.type === 'shooting' ? (wm.chargeTime || 0) : 0;
+      const chargeSec = mods.chargeTime ? D.shortenTime(mods.chargeTime, chargeCut) + '초' : '';
+      const mustCharge = /集束必須/.test(note);
+
+      const row = el('div', 'weapon');
+      row.dataset.name = w.name;
+
+      // ① 구분
+      row.append(el('span', 'w-sec' + (w.section === '主兵装' ? ' main' : ''),
+        w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
+
+      // ② 이름 (격투/사격 점으로 구분)
+      const nm = el('span', 'w-nm');
+      nm.append(el('i', 'w-dot ' + w.type));
+      nm.append(document.createTextNode(T.weaponName(w.name)));
+      nm.title = w.name;
+      row.append(nm);
+
+      /** 위력 한 칸 — 기본값과 보정 증가분 */
+      const dmgCell = (base) => {
+        const cell = el('span', 'w-dmg');
+        if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
+        const total = w.type === 'melee' ? D.meleeDamage(base, a) : D.shootingDamage(base, a);
+        const gain = total - base;
+        cell.append(document.createTextNode(base.toLocaleString()));
+        if (gain > 0) cell.append(el('span', 'w-gain', ' (+' + gain.toLocaleString() + ')'));
+        return cell;
+      };
+
+      // ③ 논차지 · ④ 풀차지 (집속이 없으면 논차지 칸만 채운다)
+      row.append(dmgCell(d.power));
+      const full = dmgCell(d.powerCharged);
+      if (d.powerCharged != null && chargeSec) {
+        full.append(el('span', 'w-sub', (mustCharge ? '필수 ' : '') + chargeSec
+          + (chargeCut ? ' (-' + chargeCut + '%)' : '')));
+      }
+      row.append(full);
+
+      // ⑤ 탄 / 히트율 — 실탄은 탄수, 열무기는 히트율
+      const ammo = f('弾数');
+      const heat = f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン');
+      const ohShots = f('OHまでの弾数');
+      const ammoCell = el('span', 'w-col');
+      if (ammo) ammoCell.append(document.createTextNode(jaUnits(ammo)));
+      else if (heat) {
+        ammoCell.append(document.createTextNode(heat));
+        if (ohShots) ammoCell.append(el('span', 'w-sub', jaUnits(ohShots)));
+      } else ammoCell.textContent = '—';
+      row.append(ammoCell);
+
+      // ⑥ 누적치 (よろけ値)
+      row.append(el('span', 'w-col', mods.stagger || '—'));
+
+      // ⑦ 사거리
+      row.append(el('span', 'w-col', f('射程') || '—'));
+
+      // ⑧ 리로드 / OH복귀 — 파츠로 줄어드는 만큼을 함께 보여 준다
       const reload = f('リロード時間');
-      const reloadCut = reload ? (wm.reloadTime || 0) : 0;
-
-      const meta = el('span', 'w-meta');
-      const parts = [
-        pair('탄', f('弾数')),
-        f('射程') || '',
-        pair('쿨', f('クールタイム')),
-        pair('히트율', f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン')),
-        pair('OH까지', f('OHまでの弾数')),
-        pair('OH복귀', f('OH復帰時間', 'OH復帰速度'))
-      ].filter(Boolean);
-      meta.append(document.createTextNode(jaUnits(parts.join(' · '))));
-
-      // 파츠로 줄어드는 항목은 감소분을 함께 보여 준다
+      const ohBack = f('OH復帰時間', 'OH復帰速度');
+      const cool = f('クールタイム');
+      const last = el('span', 'w-col');
       if (reload) {
-        if (parts.length) meta.append(document.createTextNode(' · '));
-        meta.append(document.createTextNode('리로드 '));
-        meta.append(cutSpan(jaUnits(reload), reloadCut));
-      }
-      if (chargeSec && !d.powerCharged) {
-        if (meta.childNodes.length) meta.append(document.createTextNode(' · '));
-        meta.append(document.createTextNode('집속 '));
-        meta.append(cutSpan(chargeSec, chargeCut));
-      }
-      row.append(meta);
+        const cut = wm.reloadTime || 0;
+        last.append(document.createTextNode(jaUnits(D.shortenTimeText(reload, cut))));
+        if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
+      } else if (ohBack) {
+        last.append(document.createTextNode(jaUnits(ohBack)));
+        last.append(el('span', 'w-sub', 'OH복귀'));
+      } else if (cool) {
+        last.append(document.createTextNode(jaUnits(cool)));
+        last.append(el('span', 'w-sub', '쿨타임'));
+      } else last.textContent = '—';
+      row.append(last);
 
+      // 누르면 위키 설명 전체를 펼친다
+      row.onclick = () => toggleWeaponDetail(row, w, d, lv);
       box.append(row);
     }
+  }
+
+  /** 무장 표의 열 이름을 한글로. 없는 이름은 원문을 그대로 쓴다. */
+  const WCOL_LABEL = {
+    '射程': '사거리', '弾数': '탄수', 'リロード時間': '리로드 시간', 'クールタイム': '쿨타임',
+    'ヒート率': '히트율', 'ヒート率/ノン': '히트율(논차지)', 'ヒート率/フル': '히트율(풀차지)',
+    'OHまでの弾数': 'OH까지 발수', 'OH復帰時間': 'OH 복귀 시간', 'OH復帰速度': 'OH 복귀 속도',
+    '発射間隔': '발사 간격', '発射速度': '발사 속도', '切替時間': '전환 시간', '武装切替': '무장 전환',
+    'DPS': 'DPS', 'HP': 'HP', 'サイズ': '크기'
+  };
+  const wcol = k => WCOL_LABEL[String(k).replace(/\s+/g, '')] || k;
+
+  /**
+   * 위키 설명문에 자주 나오는 표현을 한글로 바꾼다.
+   * 사전에 없는 표현은 원문 그대로 두어 정보가 사라지지 않게 한다.
+   */
+  const NOTE_TERM = [
+    ['移動射撃可', '이동사격 가능'], ['ブースト射撃可', '부스트 사격 가능'], ['射撃時静止', '사격 시 정지'],
+    ['集束時よろけ有', '집속 시 비틀 있음'], ['集束時ユニット貫通効果付与', '집속 시 유닛 관통 부여'],
+    ['集束必須', '집속 필수'], ['集束可', '집속 가능'], ['集束時間', '집속 시간'],
+    ['ユニット貫通効果有', '유닛 관통 있음'], ['爆風範囲有', '폭풍 범위 있음'], ['照射攻撃', '조사 공격'],
+    ['大よろけ有', '대비틀 있음'], ['よろけ有', '비틀 있음'], ['ひるみ有', '움찔 있음'],
+    ['非集束よろけ値', '비집속 누적치'], ['集束よろけ値', '집속 누적치'], ['よろけ値', '누적치'],
+    ['局部補正', '국부 보정'], ['シールド補正', '실드 보정'], ['頭部補正', '두부 보정'],
+    ['脚部・背部補正', '각부·배부 보정'], ['脚部補正', '각부 보정'], ['背部補正', '배부 보정'],
+    ['頭部・背部補正', '두부·배부 보정'],
+    ['ASL（自動照準補正）', 'ASL(자동조준보정)'], ['自動照準補正', '자동조준보정'],
+    ['二発同時発射', '2발 동시 발사'], ['最大', '최대'], ['倍率', '배율'],
+    ['連射', '연사'], ['貫通', '관통'], ['拡張', '확장'], ['短縮', '단축'], ['増加', '증가'],
+    ['耐ビーム補正', '내빔 보정'], ['耐実弾補正', '내실탄 보정'], ['耐格闘補正', '내격투 보정'],
+    ['ダメージ計算', '데미지 계산'], ['対象の', '대상의'], ['付与', '부여'], ['効果', '효과'],
+    ['倍', '배'], ['発', '발'], ['秒', '초'], ['有', '있음'], ['可', '가능']
+  ];
+  const noteText = s => NOTE_TERM.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s));
+
+  /** 무장 행 아래에 위키의 설명과 표 값을 그대로 펼친다. */
+  function toggleWeaponDetail(row, w, d, lv) {
+    const open = row.nextElementSibling && row.nextElementSibling.classList.contains('weapon-detail');
+    // 한 번에 하나만 열어 둔다
+    for (const e of [...row.parentNode.querySelectorAll('.weapon-detail')]) e.remove();
+    for (const e of [...row.parentNode.querySelectorAll('.weapon.open')]) e.classList.remove('open');
+    if (open) return;
+
+    row.classList.add('open');
+    const box = el('div', 'weapon-detail');
+
+    const head = el('div', 'wd-head');
+    head.append(el('b', '', T.weaponName(w.name)));
+    head.append(el('span', 'wd-ja', w.name));
+    head.append(el('span', 'wd-tag', 'LV' + lv + ' · ' + (w.section === '主兵装' ? '주무장' : '부무장')
+      + ' · ' + (w.type === 'melee' ? '격투' : '사격')));
+    box.append(head);
+
+    // 표에 있던 값을 모두 나열한다 (레벨별 값 + 무장 공통 값)
+    const grid = el('div', 'wd-grid');
+    const put = (k, v) => {
+      if (v == null || v === '' || v === '-') return;
+      grid.append(el('span', 'wd-k', wcol(k)));
+      grid.append(el('span', 'wd-v', jaUnits(String(v))));
+    };
+    put('논차지 위력', d.power != null ? d.power.toLocaleString() : null);
+    put('풀차지 위력', d.powerCharged != null ? d.powerCharged.toLocaleString() : null);
+    for (const [k, v] of Object.entries(d.raw || {})) put(k, v);
+    for (const [k, v] of Object.entries(w.info || {})) if (k !== '備考') put(k, v);
+    const m = w.mods || {};
+    put('집속 시간', m.chargeTime ? m.chargeTime + '초' : null);
+    put('집속 배율', m.chargeRatio ? m.chargeRatio + '배' : null);
+    put('누적치', m.stagger);
+    put('국부 보정', m.partMod ? m.partMod + '배' : null);
+    put('실드 보정', m.shieldMod ? m.shieldMod + '배' : null);
+    box.append(grid);
+
+    // 위키 설명 원문 (계산에 안 들어가는 부가 효과까지 전부)
+    if (w.info && w.info['備考']) {
+      const note = el('div', 'wd-note');
+      note.append(el('div', 'wd-note-lb', '위키 설명'));
+      note.append(el('div', 'wd-note-tx', noteText(w.info['備考'])));
+      box.append(note);
+    }
+    row.after(box);
   }
 
   /* ---------- 스탯 ---------- */

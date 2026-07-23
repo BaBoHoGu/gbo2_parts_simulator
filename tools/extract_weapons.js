@@ -65,14 +65,30 @@ const num = s => {
   return m ? Number(m[0]) : null;
 };
 
-/** 備考에서 계산에 쓰는 배율을 뽑아낸다. */
+/**
+ * 「よろけ値」(누적치) 표기를 뽑는다.
+ * 집속 무기는 非集束/集束 을 따로 적기도 하고, 한 값에 (17HIT) 처럼 덧붙기도 한다.
+ */
+function parseStagger(note) {
+  const non = /非集束よろけ値：(\S+)/.exec(note);
+  const chg = /(?:^|[^非])集束よろけ値：(\S+)/.exec(note);
+  if (non && chg) return non[1] + ' (' + chg[1] + ')';
+  if (non) return non[1];
+  if (chg) return chg[1];
+  // 非集束/集束 표기를 지운 뒤 남은 일반 표기를 본다
+  const plain = /よろけ値：(\S+(?:\s*[x×]\s*\d+)?)/.exec(note.replace(/(?:非)?集束よろけ値：\S+/g, ''));
+  return plain ? plain[1] : null;
+}
+
+/** 備考에서 계산·표시에 쓰는 값을 뽑아낸다. */
 function parseNote(note) {
   const pick = re => { const m = note.match(re); return m ? Number(m[1]) : null; };
   return {
     chargeRatio: pick(/倍率：([\d.]+)倍/),
     chargeTime: pick(/集束時間：([\d.]+)秒/),
     shieldMod: pick(/シールド補正：([\d.]+)倍/),
-    partMod: pick(/局部補正：([\d.]+)倍/)
+    partMod: pick(/局部補正：([\d.]+)倍/),
+    stagger: parseStagger(note)
   };
 }
 
