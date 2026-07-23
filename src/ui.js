@@ -85,6 +85,7 @@
     msLv: 'all',
     msRarity: 'all',
     msLimit: 80,
+    form: 'normal',        // 'normal' | 'transform' — 성능표를 어느 형태로 볼지
     detailPart: null,      // 상세 미리보기에 고정된 파츠
     partTab: C.CATEGORY_ALL,
     partQuery: '',
@@ -151,7 +152,7 @@
   /* ---------- 파생값 ---------- */
 
   const slots = () => C.calcSlots(state.ms, state.equipped, state.stage, fullst);
-  const stats = () => C.calcStats(state.ms, state.equipped, state.stage, state.expansion, partsByCat, fullst, state.expLevel);
+  const stats = () => C.calcStats(state.ms, state.equipped, state.stage, state.expansion, partsByCat, fullst, state.expLevel, state.form);
 
   /* ---------- 기체 목록 ---------- */
 
@@ -865,8 +866,32 @@
     }
   }
 
+  /** 변형 수치가 있는 기체에만 통상/변형 전환 버튼을 띄운다. */
+  function renderFormSeg() {
+    const seg = $('#formSeg');
+    seg.innerHTML = '';
+    if (!C.hasTransform(state.ms)) {
+      seg.hidden = true;
+      state.form = 'normal';        // 일반 기체로 옮겨가면 통상으로 되돌린다
+      return;
+    }
+    seg.hidden = false;
+    for (const [v, label] of [['normal', '통상'], ['transform', '변형']]) {
+      const b = el('button', 'seg-btn' + (state.form === v ? ' on' : ''), label);
+      b.onclick = () => {
+        state.form = v;
+        [...seg.children].forEach(c => c.classList.remove('on'));
+        b.classList.add('on');
+        renderStats();
+        renderWeapons();            // 사격·격투 보정이 바뀌면 무장 위력도 달라진다
+      };
+      seg.append(b);
+    }
+  }
+
   function renderAll() {
     renderHero();
+    renderFormSeg();
     renderLevelSwitch();
     // 기체 목록은 ① 선택 화면에서만 갱신 (파츠 장착 때마다 1,671기를 재정렬·재생성하지 않도록)
     if (state.view !== 'build') renderMsList();
