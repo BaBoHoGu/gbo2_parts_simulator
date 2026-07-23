@@ -65,7 +65,11 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       const flat = (v, re) => { const m = line.match(re); return m ? Number(m[1]) : 0; };
       const shoot = flat(0, /射撃補正\s*[＋+]\s*(\d+)(?!\s*%)/);
       const melee = flat(0, /格闘補正\s*[＋+]\s*(\d+)(?!\s*%)/);
-      const shootPct = flat(0, /射撃補正を?[^。]{0,12}[＋+]\s*(\d+)\s*%/);
+      // 「しゃがみ状態や静止時には射撃補正時に＋5%」= 고정밀 포격. 자세 조건이 붙은
+      // 사격 % 라 일반 사격보정 % (ZERO 시스템 등)와 나눠 crouchPct 로 담는다.
+      const crouch = line.match(/(?:しゃがみ|静止)[^。]{0,40}射撃補正[^。]{0,8}[＋+]\s*(\d+)\s*[%％]/);
+      const crouchPct = crouch ? Number(crouch[1]) : 0;
+      const shootPct = crouchPct ? 0 : flat(0, /射撃補正を?[^。]{0,12}[＋+]\s*(\d+)\s*%/);
       const meleePct = flat(0, /格闘補正を?[^。]{0,12}[＋+]\s*(\d+)\s*%/);
       // 보정이 아니라 피해량을 직접 올리는 스킬도 함께 잡는다.
       // 적용 대상은 수치 앞쪽 수식어로 갈린다 —
@@ -84,7 +88,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       const dmgPct = dmgAny || dmgShoot || dmgMelee;
       const powerPct = flat(0, /威力\s*[＋+]\s*(\d+)\s*[%％]/)
         || flat(0, /威力が\s*(\d+)\s*[%％]\s*(?:増加|上昇)/);
-      if (!shoot && !melee && !shootPct && !meleePct && !dmgPct && !powerPct) continue;
+      if (!shoot && !melee && !shootPct && !meleePct && !crouchPct && !dmgPct && !powerPct) continue;
 
       // 표는 [스킬명, 스킬LV, 필요 기체LV, 설명, 효과] 순이다.
       // 필요 기체LV 는 「LV1～」「Lv4～」「Lv1～3」 처럼 적혀 있다.
@@ -95,7 +99,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         msLvTo: need && need[2] ? Number(need[2]) : null,
         // 스킬명 = LV 표기가 아닌 첫 칸
         skill: row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)',
-        shoot, melee, shootPct, meleePct, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
+        shoot, melee, shootPct, meleePct, crouchPct, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
         forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
         secs: Number((line.match(/効果時間は?[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
         hp: Number((line.match(/機体HPが?\s*(\d+)\s*[%％]以下/) || [])[1]) || null,
@@ -138,7 +142,8 @@ function show(title, list) {
 if (process.argv.includes('--ui')) {
   // 시뮬레이터가 쓰는 형태 — 기체마다 고를 수 있는 버프 스킬 목록.
   // 태클·특정 무장의 위력만 올리는 스킬은 성능표·무장표에 얹을 자리가 없어 뺀다.
-  const usable = found.filter(r => r.shoot || r.melee || r.shootPct || r.meleePct || r.dmgPct);
+  const usable = found.filter(r =>
+    r.shoot || r.melee || r.shootPct || r.meleePct || r.crouchPct || r.dmgPct);
   const byMs = new Map();
   for (const r of usable) {
     if (!byMs.has(r.ms)) byMs.set(r.ms, []);
@@ -157,6 +162,7 @@ if (process.argv.includes('--ui')) {
           from: r.msLvFrom, to: r.msLvTo,
           shoot: r.shoot, melee: r.melee,
           shootPct: r.shootPct, meleePct: r.meleePct,
+          crouchPct: r.crouchPct,   // 고정밀 포격 — 앉기·정지에서만 사격 피해 +N%
           // 피해 % 는 걸리는 대상이 갈린다 — any 는 사격·격투 모두에 얹는다
           dmgAny: r.dmgAny, dmgShoot: r.dmgShoot, dmgMelee: r.dmgMelee
         }))
@@ -170,7 +176,7 @@ if (process.argv.includes('--ui')) {
       });
     }
     // 효과가 큰 것부터 — 드롭다운에서 위에 오게 한다
-    const lvWeight = l => l.shoot + l.melee + l.shootPct + l.meleePct
+    const lvWeight = l => l.shoot + l.melee + l.shootPct + l.meleePct + l.crouchPct
       + l.dmgAny + l.dmgShoot + l.dmgMelee;
     skills.sort((a, b) => Math.max(...b.levels.map(lvWeight)) - Math.max(...a.levels.map(lvWeight)));
     out[ms] = skills;
