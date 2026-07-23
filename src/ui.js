@@ -436,12 +436,21 @@
   function infoOf(info, ...names) {
     const flat = s => s.replace(/\s+/g, '');
     for (const n of names) {
-      const key = Object.keys(info).find(k => flat(k) === flat(n));
+      const key = Object.keys(info || {}).find(k => flat(k) === flat(n));
       const v = key && info[key];
       if (v && v !== '-') return v;
     }
     return null;
   }
+
+  /**
+   * 무장 항목 조회.
+   * 추출 단계에서 레벨마다 값이 같으면 info(무장 공통), 다르면 levels[N].raw 로 나뉜다.
+   * (예: 사거리가 레벨마다 늘어나는 무장은 raw 에 있다)
+   * 어느 쪽에 있는지는 무장마다 다르므로 레벨값을 먼저 보고 없으면 공통값을 본다.
+   */
+  const wField = (lvl, info, ...names) =>
+    infoOf(lvl && lvl.raw, ...names) || infoOf(info, ...names);
 
   /** 현재 기체의 무장 목록 (위키 페이지 ID 로 찾는다). */
   function msWeapons() {
@@ -521,17 +530,16 @@
       row.append(dmgCell);
 
       // 오버히트(히트율·OH까지 발수·복귀 시간)와 집속 시간을 함께 알려 준다
-      const heat = infoOf(info, 'ヒート率', 'ヒート率/フル', 'ヒート率/ノン');
-      const ohShots = infoOf(info, 'OHまでの弾数');
-      const ohBack = infoOf(info, 'OH復帰時間', 'OH復帰速度');
+      const f = (...names) => wField(d, info, ...names);
+      const pair = (label, v) => (v ? label + ' ' + v : '');
       const meta = [
-        d.raw && d.raw['弾数'] ? '탄 ' + d.raw['弾数'] : '',
-        infoOf(info, '射程') || '',
-        infoOf(info, 'リロード時間') ? '리로드 ' + infoOf(info, 'リロード時間') : '',
-        infoOf(info, 'クールタイム') ? '쿨 ' + infoOf(info, 'クールタイム') : '',
-        heat ? '히트율 ' + heat : '',
-        ohShots ? 'OH까지 ' + ohShots : '',
-        ohBack ? 'OH복귀 ' + ohBack : '',
+        pair('탄', f('弾数')),
+        f('射程') || '',
+        pair('리로드', f('リロード時間')),
+        pair('쿨', f('クールタイム')),
+        pair('히트율', f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン')),
+        pair('OH까지', f('OHまでの弾数')),
+        pair('OH복귀', f('OH復帰時間', 'OH復帰速度')),
         chargeSec && !d.powerCharged ? '집속 ' + chargeSec : ''
       ].filter(Boolean);
       row.append(el('span', 'w-meta', jaUnits(meta.join(' · '))));
