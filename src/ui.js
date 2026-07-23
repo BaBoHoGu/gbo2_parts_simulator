@@ -432,7 +432,8 @@
   ];
   // 전각 괄호·중점은 그대로 두면 표에서 일본어처럼 보여 반각으로 맞춘다.
   const jaUnits = s => JA_UNIT.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s))
-    .replace(/（/g, '(').replace(/）/g, ')').replace(/・/g, '·').replace(/：/g, ':');
+    .replace(/（/g, '(').replace(/）/g, ')').replace(/・/g, '·').replace(/：/g, ':')
+    .replace(/＋/g, '+').replace(/－/g, '-').replace(/％/g, '%').replace(/×/g, 'x');
 
   /** 표 열 이름에 공백 표기가 섞여 있어(OH復帰時間 / OH復帰 時間) 공백을 무시하고 찾는다. */
   function infoOf(info, ...names) {
@@ -521,7 +522,8 @@
 
       // ① 구분
       row.append(el('span', 'w-sec' + (w.section === '主兵装' ? ' main' : ''),
-        w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
+        w.type === 'shield' ? '실드'
+          : w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
 
       // ② 이름 (격투/사격 점으로 구분)
       const nm = el('span', 'w-nm');
@@ -561,7 +563,7 @@
       const ammo = f('弾数');
       const heat = f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン');
       const ohShots = f('OHまでの弾数');
-      const shieldHp = f('HP'), shieldSize = f('サイズ');
+      const shieldHp = f('シールドHP', 'HP'), shieldSize = f('サイズ');
       const ammoCell = el('span', 'w-col');
       if (shieldHp || shieldSize) {                       // 실드는 HP·크기가 핵심이다
         ammoCell.append(document.createTextNode(shieldHp ? 'HP ' + Number(shieldHp).toLocaleString() : '—'));
@@ -574,7 +576,7 @@
       row.append(ammoCell);
 
       // ⑥ 누적치 (よろけ値)
-      row.append(el('span', 'w-col', mods.stagger || '—'));
+      row.append(el('span', 'w-col', mods.stagger ? jaUnits(mods.stagger) : '—'));
 
       // ⑦ 사거리
       row.append(el('span', 'w-col', f('射程') || '—'));
@@ -608,7 +610,7 @@
     'ヒート率': '히트율', 'ヒート率/ノン': '히트율(논차지)', 'ヒート率/フル': '히트율(풀차지)',
     'OHまでの弾数': 'OH까지 발수', 'OH復帰時間': 'OH 복귀 시간', 'OH復帰速度': 'OH 복귀 속도',
     '発射間隔': '발사 간격', '発射速度': '발사 속도', '切替時間': '전환 시간', '武装切替': '무장 전환',
-    'DPS': 'DPS', 'HP': 'HP', 'サイズ': '크기'
+    'DPS': 'DPS', 'HP': 'HP', 'シールドHP': '실드 HP', 'サイズ': '크기'
   };
   const wcol = k => WCOL_LABEL[String(k).replace(/\s+/g, '')] || k;
 
@@ -731,6 +733,7 @@
     return T.weaponTerms(t)
       .replace(/・/g, '·').replace(/：/g, ': ').replace(/、/g, ', ')
       .replace(/（/g, ' (').replace(/）/g, ') ')
+      .replace(/＋/g, '+').replace(/－/g, '-').replace(/％/g, '%')
       .replace(/\s+/g, ' ')
       .replace(/\s+([),:;%·])/g, '$1')
       .replace(/\(\s+/g, '(')
@@ -753,7 +756,7 @@
     head.append(el('b', '', T.weaponName(w.name)));
     head.append(el('span', 'wd-ja', w.name));
     head.append(el('span', 'wd-tag', 'LV' + lv + ' · ' + (w.section === '主兵装' ? '주무장' : '부무장')
-      + ' · ' + (w.type === 'melee' ? '격투' : '사격')));
+      + ' · ' + (w.type === 'shield' ? '방어' : w.type === 'melee' ? '격투' : '사격')));
     box.append(head);
 
     // 성격별로 묶어 보여 준다 — 한 덩어리로 나열하면 읽기 어렵다
@@ -762,7 +765,7 @@
       ['운용', ['쿨타임', '무장 전환', '전환 시간', '발사 간격', '발사 속도', 'DPS']],
       ['탄약·열', ['탄수', '리로드 시간', '히트율', '히트율(논차지)', '히트율(풀차지)',
         'OH까지 발수', 'OH 복귀 시간', 'OH 복귀 속도']],
-      ['방어·보정', ['HP', '크기', '사거리', '국부 보정', '실드 보정']]
+      ['방어·보정', ['실드 HP', 'HP', '크기', '사거리', '국부 보정', '실드 보정']]
     ];
 
     // 표시할 값을 한곳에 모은 뒤 그룹으로 나눈다

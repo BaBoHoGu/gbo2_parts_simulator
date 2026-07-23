@@ -130,6 +130,8 @@ function translate(name) {
     .replace(/＆/g, '&')
     .replace(/\s+/g, ' ')
     .replace(/\s+([\])])/g, '$1').replace(/([[(])\s+/g, '$1')
+    // 「型」「式」은 앞말에 붙는 접미사다 — 따로 떼면 「육전 형 실드」처럼 어색해진다
+    .replace(/([가-힣]) (형|식)(?![가-힣])/g, '$1$2')
     .trim();
 }
 

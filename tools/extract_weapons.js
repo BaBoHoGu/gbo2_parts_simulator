@@ -82,6 +82,46 @@ function parseStagger(note) {
   return plain ? plain[1] : null;
 }
 
+/**
+ * 방어용 실드 표.
+ * 무장 표와 달리 행·열이 뒤집혀 있고 威力 열이 없어 일반 경로에서는 통째로 걸러졌다.
+ *   |        | LV1  | LV2  | LV3  |
+ *   | シールドHP | 3000 | 3300 | 3600 |
+ *   | サイズ   | L    |
+ * 레벨마다 값이 다른 행은 levels[N].raw 로, 한 칸뿐인 행은 info 로 담아
+ * 나머지 무장과 같은 모양으로 맞춘다.
+ */
+function parseShield(grid, section, heading) {
+  const hpRow = grid.findIndex(r => /^(シールド)?HP$|^耐久(値)?$/.test((r[0] || '').replace(/\s/g, '')));
+  if (hpRow < 0) return null;
+  // 첫 행이 LV 머리글이어야 실드 표다 (기체 스펙 표에도 シールドHP 가 섞여 있다)
+  const lvCols = [];
+  (grid[0] || []).forEach((c, i) => { const m = LV.exec((c || '').replace(/\s/g, '')); if (m) lvCols.push([i, m[1]]); });
+  if (!lvCols.length) return null;
+
+  const w = {
+    name: heading && /シールド|盾/.test(heading) ? heading : 'シールド',
+    section: section || 'シールド',
+    type: 'shield',
+    levels: {},
+    info: {}
+  };
+  for (const [, lv] of lvCols) w.levels[lv] = { power: null, raw: {} };
+
+  for (const row of grid.slice(1)) {
+    const label = (row[0] || '').trim();
+    if (!label) continue;
+    const vals = lvCols.map(([i]) => (row[i] || '').trim());
+    // 한 칸만 채워진 행(サイズ 등)은 레벨과 무관한 값이다
+    const filled = vals.filter(Boolean);
+    if (!filled.length) continue;
+    if (filled.every(v => v === filled[0])) w.info[label] = filled[0];
+    else lvCols.forEach(([, lv], k) => { if (vals[k]) w.levels[lv].raw[label] = vals[k]; });
+  }
+  for (const l of Object.values(w.levels)) if (!Object.keys(l.raw).length) delete l.raw;
+  return w;
+}
+
 /** 備考에서 계산·표시에 쓰는 값을 뽑아낸다. */
 function parseNote(note) {
   const pick = re => { const m = note.match(re); return m ? Number(m[1]) : null; };
@@ -110,7 +150,7 @@ for (const m of msData) {
 }
 
 const out = {};
-let tableCount = 0, weaponCount = 0, skipped = 0;
+let tableCount = 0, weaponCount = 0, skipped = 0, shieldCount = 0;
 
 for (const f of files) {
   const id = f.replace('.html', '');
@@ -134,6 +174,8 @@ for (const f of files) {
     }
     const grid = parseTable(mk.table);
     const flat = grid.flat().join(' ');
+    const shield = parseShield(grid, section, lastHeading);
+    if (shield) { weapons.push(shield); weaponCount++; shieldCount++; continue; }
     if (!/威力/.test(flat)) continue;
     if (/記号|意味/.test(grid[0].join(' '))) { skipped++; continue; }   // 범례 표
     const sp = splitHeader(grid);
@@ -213,5 +255,5 @@ for (const f of files) {
 
 const dest = path.join(ROOT, 'data', 'weapons.json');
 fs.writeFileSync(dest, JSON.stringify(out, null, 1));
-console.log(`페이지 ${Object.keys(out).length}/${files.length} · 무장 ${weaponCount}종 · 표 ${tableCount}개 (건너뜀 ${skipped})`);
+console.log(`페이지 ${Object.keys(out).length}/${files.length} · 무장 ${weaponCount}종(실드 ${shieldCount}) · 표 ${tableCount}개 (건너뜀 ${skipped})`);
 console.log('→', path.relative(process.cwd(), dest), (fs.statSync(dest).size / 1024).toFixed(0) + 'KB');
