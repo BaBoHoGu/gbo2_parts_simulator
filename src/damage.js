@@ -97,9 +97,46 @@ function meleeDamage(wp, correction, opt = {}) {
 /** 무장 표의 「배율」로 집속(풀차지) 위력을 구한다. 예: 900 × 4.223 → 3800 */
 const chargedPower = (wp, ratio) => Math.floor(Number(wp) * Number(ratio));
 
+/* ---------- 파츠가 무장에 거는 보정 ---------- */
+
+/**
+ * 파츠에는 이 효과의 수치 필드가 없고 설명문에만 적혀 있어 설명문에서 읽는다.
+ * (원본 시뮬레이터는 무장을 다루지 않아 대조할 기준이 없다)
+ *   집속 시간 단축 — 고정밀 집속 링 3·6·10% / 화기 관제 최적화 시스템 5%
+ *   리로드 단축   — 퀵 로더 3·6·10·15% / 커넥팅 시스템[지원Ⅱ형] 10%
+ * 같은 파츠의 다른 레벨을 함께 달면 합산한다.
+ */
+const WEAPON_MOD_RULES = [
+  { key: 'chargeTime', re: /集束時間を([\d.]+)%短縮/ },
+  { key: 'reloadTime', re: /リロード時間を([\d.]+)%短縮/ }
+];
+
+/** 장착 파츠에서 무장 보정(%)을 모은다. @returns {{chargeTime?:number, reloadTime?:number}} */
+function weaponModsOf(equipped) {
+  const out = {};
+  for (const p of equipped || []) {
+    for (const rule of WEAPON_MOD_RULES) {
+      const m = rule.re.exec(p.description || '');
+      if (m) out[rule.key] = (out[rule.key] || 0) + Number(m[1]);
+    }
+  }
+  return out;
+}
+
+/** 시간을 percent 만큼 단축한다. 소수 둘째 자리까지. */
+const shortenTime = (sec, pct) =>
+  Math.round(Number(sec) * (1 - Number(pct) / 100) * 100) / 100;
+
+/** 「5秒」「17.5秒」처럼 단위가 붙은 표기에 단축을 적용한다. 숫자가 없으면 그대로 둔다. */
+function shortenTimeText(text, pct) {
+  if (!pct || !text) return text;
+  return String(text).replace(/(\d+(?:\.\d+)?)/, n => String(shortenTime(n, pct)));
+}
+
 const GBO2Damage = {
   CAP_A, CAP_ATT, ATTR_BONUS, ETC_ATTACK,
-  floorTo, attackPower, shootingDamage, meleeDamage, chargedPower
+  floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
+  weaponModsOf, shortenTime, shortenTimeText
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Damage;

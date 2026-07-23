@@ -487,6 +487,16 @@
     const r = stats();
     // 사격 무기는 사격 보정, 격투 무기는 격투 보정을 쓴다.
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
+    // 집속 시간·리로드를 줄여 주는 파츠 (집속 링, 퀵 로더 등)
+    const wm = D.weaponModsOf(state.equipped);
+
+    /** 단축된 값을 보여 주고, 줄어든 만큼을 초록으로 덧붙인다. */
+    const cutSpan = (text, pct) => {
+      const span = el('span');
+      span.append(document.createTextNode(D.shortenTimeText(text, pct)));
+      if (pct) span.append(el('span', 'w-gain', ' (-' + pct + '%)'));
+      return span;
+    };
 
     for (const w of list) {
       const lv = weaponLevel(w);
@@ -520,9 +530,13 @@
       const mods = w.mods || {};
       const note = info['備考'] || '';
       const mustCharge = /集束必須/.test(note);       // 집속해야만 쏠 수 있는 무장
-      const chargeSec = mods.chargeTime ? mods.chargeTime + '초' : '';
+      // 집속 링 등으로 줄어든 집속 시간을 반영한다
+      const chargeCut = mods.chargeTime ? (wm.chargeTime || 0) : 0;
+      const chargeSec = mods.chargeTime
+        ? D.shortenTime(mods.chargeTime, chargeCut) + '초' : '';
       // 집속 표기에 시간을 함께 적어 얼마나 모아야 하는지 바로 보이게 한다
-      const fullTag = (mustCharge ? '집속 필수' : '풀차지') + (chargeSec ? ' ' + chargeSec : '');
+      const fullTag = (mustCharge ? '집속 필수' : '풀차지')
+        + (chargeSec ? ' ' + chargeSec + (chargeCut ? ' (-' + chargeCut + '%)' : '') : '');
 
       if (d.power != null && d.powerCharged != null) { put(d.power, '논차지'); put(d.powerCharged, fullTag); }
       else if (d.powerCharged != null) put(d.powerCharged, fullTag);
@@ -532,17 +546,32 @@
       // 오버히트(히트율·OH까지 발수·복귀 시간)와 집속 시간을 함께 알려 준다
       const f = (...names) => wField(d, info, ...names);
       const pair = (label, v) => (v ? label + ' ' + v : '');
-      const meta = [
+      const reload = f('リロード時間');
+      const reloadCut = reload ? (wm.reloadTime || 0) : 0;
+
+      const meta = el('span', 'w-meta');
+      const parts = [
         pair('탄', f('弾数')),
         f('射程') || '',
-        pair('리로드', f('リロード時間')),
         pair('쿨', f('クールタイム')),
         pair('히트율', f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン')),
         pair('OH까지', f('OHまでの弾数')),
-        pair('OH복귀', f('OH復帰時間', 'OH復帰速度')),
-        chargeSec && !d.powerCharged ? '집속 ' + chargeSec : ''
+        pair('OH복귀', f('OH復帰時間', 'OH復帰速度'))
       ].filter(Boolean);
-      row.append(el('span', 'w-meta', jaUnits(meta.join(' · '))));
+      meta.append(document.createTextNode(jaUnits(parts.join(' · '))));
+
+      // 파츠로 줄어드는 항목은 감소분을 함께 보여 준다
+      if (reload) {
+        if (parts.length) meta.append(document.createTextNode(' · '));
+        meta.append(document.createTextNode('리로드 '));
+        meta.append(cutSpan(jaUnits(reload), reloadCut));
+      }
+      if (chargeSec && !d.powerCharged) {
+        if (meta.childNodes.length) meta.append(document.createTextNode(' · '));
+        meta.append(document.createTextNode('집속 '));
+        meta.append(cutSpan(chargeSec, chargeCut));
+      }
+      row.append(meta);
 
       box.append(row);
     }
