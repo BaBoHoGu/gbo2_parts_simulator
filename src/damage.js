@@ -99,19 +99,88 @@ const chargedPower = (wp, ratio) => Math.floor(Number(wp) * Number(ratio));
 
 /* ---------- 파츠가 무장에 거는 보정 ---------- */
 
+/* ---------- 무장 분류 ---------- */
+
+/**
+ * 빔(에너지) 무장인가.
+ * 위키 표에 속성 열이 없어 두 신호를 조합한다.
+ *   ① 이름의 빔 계열 표기 — 「하이·메가·캐논[사격출력 리미터 해제]」처럼
+ *      접미사만 보면 오판하는 경우가 있어 이 판정을 가장 먼저 둔다
+ *   ② 열식(ヒート率·OH復帰) 이면 에너지 무장으로 본다
+ * 열식이지만 빔이 아닌 것은 센서·카메라 건·화염방사기뿐이라 예외로 뺀다.
+ */
+const BEAM_NAME = /ビーム|ビム|メガ粒子|メガ・粒子|メガ・?ランチャー|メガ・?キャノン|メガ・?カノン|レーザー|メーザー|荷電粒子|B・|B\./;
+const NON_BEAM_HEAT = /火炎放射|センサー|カメラ・?ガン|射撃出力リミッター解除/;
+
+const weaponColumns = w => [
+  ...Object.keys((w && w.info) || {}),
+  ...Object.values((w && w.levels) || {}).flatMap(l => Object.keys((l && l.raw) || {}))
+];
+
+/** 열식(오버히트로 관리되는) 무장인가. */
+const isHeatWeapon = w => weaponColumns(w).some(k => /OH復帰|ヒート率/.test(k));
+
+function isBeamWeapon(w) {
+  const name = (w && w.name) || '';
+  if (BEAM_NAME.test(name)) return true;
+  if (NON_BEAM_HEAT.test(name)) return false;
+  return isHeatWeapon(w);
+}
+
+/* ---------- 파츠가 무장에 거는 보정 ---------- */
+
 /**
  * 파츠에는 이 효과의 수치 필드가 없고 설명문에만 적혀 있어 설명문에서 읽는다.
  * (원본 시뮬레이터는 무장을 다루지 않아 대조할 기준이 없다)
- *   집속 시간 단축 — 고정밀 집속 링 3·6·10% / 화기 관제 최적화 시스템 5%
- *   리로드 단축   — 퀵 로더 3·6·10·15% / 커넥팅 시스템[지원Ⅱ형] 10%
+ *
+ * `scope` 는 효과가 걸리는 무장 범위다.
+ *   all  — 무장 종류를 가리지 않음
+ *   beam — 빔 무장만
  * 같은 파츠의 다른 레벨을 함께 달면 합산한다.
  */
 const WEAPON_MOD_RULES = [
-  { key: 'chargeTime', re: /集束時間を([\d.]+)%短縮/ },
-  { key: 'reloadTime', re: /リロード時間を([\d.]+)%短縮/ },
-  // 무장 오버히트 복귀 (보조 제네레이터·커넥팅[지원Ⅰ형]).
+  // 집속 시간 — 고정밀 집속 링 3·6·10% / 화기 관제 최적화 시스템 5% (모두 빔 사격 무장 한정)
+  { key: 'chargeTime', scope: 'beam', re: /集束時間を([\d.]+)%短縮/ },
+  // 리로드 — 퀵 로더 3·6·10·15% / 커넥팅[지원Ⅱ형] 10%.
+  // 설명문은 실탄·빔(잔탄식)으로 적혀 있으나 실제로는 잔탄식이면 종류를 가리지 않는다.
+  { key: 'reloadTime', scope: 'all', re: /リロード時間を([\d.]+)%短縮/ },
+  // 무장 오버히트 복귀 — 보조 제네레이터·커넥팅[지원Ⅰ형]. 둘 다 빔 무장 한정이다.
   // 스러스터 OH 는 「スラスターオーバーヒート時の回復時間」이라 표현이 달라 걸리지 않는다.
-  { key: 'weaponOH', re: /オーバーヒートからの復帰時間を([\d.]+)%短縮/ }
+  { key: 'weaponOH', scope: 'beam', re: /オーバーヒートからの復帰時間を([\d.]+)%短縮/ },
+  // 대용량 보급 팩 — 리로드와 OH 복귀를 무장 종류와 무관하게 15% 줄인다
+  { key: 'reloadTime', scope: 'all', re: /リロード時間、およびオーバーヒートからの回復速度が([\d.]+)%上昇/ },
+  { key: 'weaponOH', scope: 'all', re: /リロード時間、およびオーバーヒートからの回復速度が([\d.]+)%上昇/ }
+];
+
+/**
+ * 커넥팅[지원Ⅰ형]의 집속 단축은 「集束時間**が**10%短縮」이라 위 정규식에 걸리지 않고,
+ * 「支援カテゴリに装備させると」라는 조건도 붙어 있어 따로 처리한다.
+ */
+const CONNECT_SUPPORT1_CHARGE = {
+  re: /支援カテゴリに装備させると、ビーム射撃兵装の集束時間が([\d.]+)%短縮/,
+  attr: '支援'
+};
+
+/**
+ * 피해량 % 파츠.
+ * `kind` 는 사격/격투 중 어디에 걸리는지, `scope` 는 무장 종류다.
+ * 특수 연소제(소이 피해 25%)는 무장 표에 소이 여부가 없어 반영하지 않는다.
+ */
+const DAMAGE_PCT_RULES = [
+  // 사격/격투 특화 프로그램 — 한쪽을 올리고 반대쪽을 내린다
+  { kind: 'shoot', scope: 'all', sign: +1, re: /射撃攻撃による敵に与えるダメージが(\d+)%増加/ },
+  { kind: 'melee', scope: 'all', sign: +1, re: /格闘攻撃による敵に与えるダメージが(\d+)%増加/ },
+  { kind: 'shoot', scope: 'all', sign: -1, re: /射撃攻撃による敵に与えるダメージが(\d+)%減少/ },
+  { kind: 'melee', scope: 'all', sign: -1, re: /格闘攻撃による敵に与えるダメージが(\d+)%減少/ },
+  // 교육형 컴퓨터 — 작전 4분 경과 시 더 오르지만 기본값만 반영한다
+  { kind: 'any', scope: 'all', sign: +1, re: /敵に与えるダメージを(\d+)%増加/ },
+  { kind: 'shoot', scope: 'all', sign: +1, re: /敵に与える射撃ダメージを(\d+)%増加/ },
+  { kind: 'melee', scope: 'all', sign: +1, re: /敵に与える格闘ダメージを(\d+)%増加/ },
+  // 화기 관제 최적화 시스템
+  { kind: 'any', scope: 'all', sign: +1, re: /敵へ与えるダメージを(\d+)%増加/ },
+  // 커넥팅[지원Ⅰ/Ⅱ형] — 무장 종류가 한정된다
+  { kind: 'shoot', scope: 'beam', sign: +1, re: /ビーム射撃兵装で敵機に与えるダメージが(\d+)%増加/ },
+  { kind: 'shoot', scope: 'solid', sign: +1, re: /実弾射撃兵装で敵機に与えるダメージが(\d+)%増加/ }
 ];
 
 /**
@@ -123,34 +192,76 @@ const WEAPON_MOD_RULES = [
 const OVERTUNE_RE = /(射撃|格闘)攻撃で与えるダメージが(\d+)%増加。機体LVが1上昇するごとに(\d+)%増加。同一のパーツ効果による最大上昇値は(\d+)%/;
 const OVERTUNE_FIX = { 'オーバーチューン[射撃]_LV1': 3 };
 
+/** 실드 HP 를 올려 주는 파츠 (실드 보강재, 커넥팅[범용Ⅱ형]). */
+const SHIELD_HP_RE = /シールドHPが(\d+)増加/;
+
 /**
  * 장착 파츠에서 무장 보정을 모은다.
+ * 시간 단축·피해 % 는 무장 종류별로 값이 달라, 합계 대신 `scope` 별 버킷으로 담는다.
+ * 무장 하나에 적용할 값은 `modFor` 로 뽑아 쓴다.
+ *
  * @param {object[]} equipped 장착 파츠
  * @param {number} [msLv] 기체 레벨 (오버튠 계산에 쓴다)
- * @returns {{chargeTime?:number, reloadTime?:number, weaponOH?:number, shootPct?:number, meleePct?:number}}
+ * @param {string} [msAttr] 기체 속성 (커넥팅[지원Ⅰ형]의 조건부 효과에 쓴다)
  */
-function weaponModsOf(equipped, msLv) {
-  const out = {};
+function weaponModsOf(equipped, msLv, msAttr) {
+  const time = { chargeTime: {}, reloadTime: {}, weaponOH: {} };
+  const damage = [];
+  let shieldHp = 0;
   const lv = Number(msLv) || 1;
+
+  const addTime = (key, scope, v) => { time[key][scope] = (time[key][scope] || 0) + v; };
+
   for (const p of equipped || []) {
-    const desc = p.description || '';
+    const desc = (p.description || '').replace(/\\n/g, '');
+
     for (const rule of WEAPON_MOD_RULES) {
       const m = rule.re.exec(desc);
-      if (m) out[rule.key] = (out[rule.key] || 0) + Number(m[1]);
+      if (m) addTime(rule.key, rule.scope, Number(m[1]));
     }
-    const ot = OVERTUNE_RE.exec(desc.replace(/\\n/g, ''));
+    const cs = CONNECT_SUPPORT1_CHARGE.re.exec(desc);
+    if (cs && msAttr === CONNECT_SUPPORT1_CHARGE.attr) addTime('chargeTime', 'beam', Number(cs[1]));
+
+    for (const rule of DAMAGE_PCT_RULES) {
+      const m = rule.re.exec(desc);
+      if (m) damage.push({ kind: rule.kind, scope: rule.scope, pct: rule.sign * Number(m[1]) });
+    }
+    const ot = OVERTUNE_RE.exec(desc);
     if (ot) {
       const inc = OVERTUNE_FIX[p.name] ?? Number(ot[3]);
       const pct = Math.min(Number(ot[2]) + inc * (lv - 1), Number(ot[4]));
-      const key = ot[1] === '射撃' ? 'shootPct' : 'meleePct';
-      out[key] = (out[key] || 0) + pct;
+      damage.push({ kind: ot[1] === '射撃' ? 'shoot' : 'melee', scope: 'all', pct });
     }
+
+    const sh = SHIELD_HP_RE.exec(desc);
+    if (sh) shieldHp += Number(sh[1]);
   }
-  return out;
+  return { time, damage, shieldHp };
 }
 
-/** 최종 피해량에 곱하는 % 보정 (오버튠 등). */
-const applyDamagePct = (dmg, pct) => (pct ? Math.floor(dmg * (1 + pct / 100)) : dmg);
+/** 무장이 어느 `scope` 에 해당하는지. */
+const weaponScopes = w => ['all', isBeamWeapon(w) ? 'beam' : 'solid'];
+
+/** 이 무장에 실제로 걸리는 시간 단축 %. */
+function timeCutFor(mods, key, w) {
+  const bucket = (mods && mods.time && mods.time[key]) || {};
+  return weaponScopes(w).reduce((s, sc) => s + (bucket[sc] || 0), 0);
+}
+
+/**
+ * 이 무장에 실제로 걸리는 피해 % 합계.
+ * @param {'shoot'|'melee'} kind 무장의 공격 종류
+ */
+function damagePctFor(mods, w, kind) {
+  const scopes = weaponScopes(w);
+  return ((mods && mods.damage) || [])
+    .filter(d => (d.kind === 'any' || d.kind === kind) && scopes.includes(d.scope))
+    .reduce((s, d) => s + d.pct, 0);
+}
+
+/** 최종 피해량에 곱하는 % 보정 (오버튠·특화 프로그램 등). 감소도 받는다. */
+const applyDamagePct = (dmg, pct) =>
+  (pct ? Math.max(0, Math.floor(dmg * (1 + pct / 100))) : dmg);
 
 /** 시간을 percent 만큼 단축한다. 소수 둘째 자리까지. */
 const shortenTime = (sec, pct) =>
@@ -165,7 +276,8 @@ function shortenTimeText(text, pct) {
 const GBO2Damage = {
   CAP_A, CAP_ATT, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
-  weaponModsOf, shortenTime, shortenTimeText, applyDamagePct
+  weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon,
+  shortenTime, shortenTimeText, applyDamagePct
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Damage;

@@ -220,6 +220,7 @@ body.view-build  #screenSelect { display: none; }
 .w-dmg { font-weight: 700; }
 .w-none { color: var(--dim); font-weight: 400; }
 .w-gain { color: var(--ok); font-weight: 700; }   /* 파츠 표기와 같은 초록 */
+.w-loss { color: var(--bad); font-weight: 700; }  /* 특화 프로그램의 반대쪽 감소분 */
 .w-sub { display: block; font-size: 10.5px; color: var(--dim); font-weight: 400; }
 .w-col { color: var(--muted); }
 

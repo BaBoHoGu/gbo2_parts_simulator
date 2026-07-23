@@ -41,6 +41,21 @@ function parseTable(html) {
 }
 
 const LV = /^LV\s*(\d+)$/i;
+
+/**
+ * 위키에 LV1 을 그냥 「LV」로 적어 둔 표가 있다 (ディジェ（CA）의 격투 표, 전체에서 1건).
+ * 그대로 두면 그 행이 헤더로 빨려 들어가 위력·쿨타임이 통째로 사라지므로,
+ * 숫자를 함께 담고 있는 행에 한해 LV1 로 보정한다. (열 이름 행에는 숫자가 없다)
+ */
+function fixBareLevel(grid) {
+  for (const row of grid) {
+    if (!row.some(c => /^\d[\d,]*$/.test(c))) continue;
+    const i = row.findIndex(c => /^LV$/i.test(c));
+    if (i >= 0) row[i] = 'LV1';
+  }
+  return grid;
+}
+
 /** 첫 데이터 행(LV1 …) 위쪽은 전부 헤더로 본다. 집속 무기는 헤더가 2줄(威力/ノン·フル). */
 function splitHeader(grid) {
   const at = grid.findIndex(r => r.some(c => LV.test(c)));
@@ -172,7 +187,7 @@ for (const f of files) {
       else lastHeading = mk.heading;
       continue;
     }
-    const grid = parseTable(mk.table);
+    const grid = fixBareLevel(parseTable(mk.table));
     const flat = grid.flat().join(' ');
     const shield = parseShield(grid, section, lastHeading);
     if (shield) { weapons.push(shield); weaponCount++; shieldCount++; continue; }

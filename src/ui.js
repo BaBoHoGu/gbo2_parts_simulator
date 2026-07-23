@@ -87,6 +87,7 @@
     msLimit: 80,
     form: 'normal',        // 'normal' | 'transform' — 성능표를 어느 형태로 볼지
     detailPart: null,      // 상세 미리보기에 고정된 파츠
+    openWeapon: null,      // 펼쳐 둔 무장 이름 — 파츠를 갈아 끼워도 닫히지 않게 유지한다
     partTab: C.CATEGORY_ALL,
     partQuery: '',
     weights: { ...O.PRESETS['밸런스'] },
@@ -490,8 +491,10 @@
     const r = stats();
     // 사격 무기는 사격 보정, 격투 무기는 격투 보정을 쓴다.
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
-    // 집속 시간·리로드를 줄여 주는 파츠 (집속 링, 퀵 로더 등)
-    const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1);
+    // 무장에 붙는 파츠 보정 (집속·리로드·OH·피해 %·실드 HP).
+    // 효과마다 걸리는 무장 범위가 달라 무장별로 다시 뽑아 쓴다.
+    const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1,
+      state.ms && state.ms.属性);
 
     /** 단축된 값을 보여 주고, 줄어든 만큼을 초록으로 덧붙인다. */
     const cutSpan = (text, pct) => {
@@ -512,8 +515,8 @@
       const f = (...names) => wField(d, info, ...names);
       const a = corr[w.type] || 0;
 
-      // 집속 링은 「ビーム射撃兵装」만 줄여 준다 — 격투 무장의 집속은 절댓값이다
-      const chargeCut = mods.chargeTime && w.type === 'shooting' ? (wm.chargeTime || 0) : 0;
+      // 집속 링·화기 관제는 「ビーム射撃兵装」만 줄여 준다 — 격투 무장의 집속은 절댓값이다
+      const chargeCut = mods.chargeTime && w.type === 'shooting' ? D.timeCutFor(wm, 'chargeTime', w) : 0;
       const chargeSec = mods.chargeTime ? D.shortenTime(mods.chargeTime, chargeCut) + '초' : '';
       const mustCharge = /集束必須/.test(note);
 
@@ -536,12 +539,14 @@
       const dmgCell = (base) => {
         const cell = el('span', 'w-dmg');
         if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
-        const pct = w.type === 'melee' ? (wm.meleePct || 0) : (wm.shootPct || 0);
+        const pct = D.damagePctFor(wm, w, w.type === 'melee' ? 'melee' : 'shoot');
         const total = D.applyDamagePct(
           w.type === 'melee' ? D.meleeDamage(base, a) : D.shootingDamage(base, a), pct);
         const gain = total - base;
         cell.append(document.createTextNode(base.toLocaleString()));
-        if (gain > 0) cell.append(el('span', 'w-gain', ' (+' + gain.toLocaleString() + ')'));
+        // 특화 프로그램은 반대쪽 무장을 깎으므로 감소분도 보여 준다
+        if (gain) cell.append(el('span', gain > 0 ? 'w-gain' : 'w-loss',
+          ' (' + (gain > 0 ? '+' : '') + gain.toLocaleString() + ')'));
         return cell;
       };
 
@@ -556,8 +561,9 @@
 
       // ⑤ 쿨타임 — 격투는 クールタイム, 사격은 같은 자리에 발사 간격을 보여 준다
       //    (위키가 「発射 間隔」처럼 공백을 넣기도 해 표기 변형을 모두 받는다)
+      //    조사(照射) 무장은 두 항목이 다 없어 조사 시간으로 대신한다
       row.append(el('span', 'w-col',
-        jaUnits(f('クールタイム') || f('発射間隔', '発射速度', '発射間') || '—')));
+        jaUnits(f('クールタイム') || f('発射間隔', '発射速度', '発射間', '照射時間') || '—')));
 
       // ⑥ 탄 / 히트율 — 실탄은 탄수, 열무기는 히트율, 실드는 HP·크기
       const ammo = f('弾数');
@@ -566,7 +572,11 @@
       const shieldHp = f('シールドHP', 'HP'), shieldSize = f('サイズ');
       const ammoCell = el('span', 'w-col');
       if (shieldHp || shieldSize) {                       // 실드는 HP·크기가 핵심이다
-        ammoCell.append(document.createTextNode(shieldHp ? 'HP ' + Number(shieldHp).toLocaleString() : '—'));
+        // 실드 보강재·커넥팅[범용Ⅱ형]은 실드 HP 를 올려 준다
+        const base = Number(shieldHp) || 0;
+        const bonus = shieldHp ? (wm.shieldHp || 0) : 0;
+        ammoCell.append(document.createTextNode(shieldHp ? 'HP ' + (base + bonus).toLocaleString() : '—'));
+        if (bonus) ammoCell.append(el('span', 'w-gain', ' (+' + bonus.toLocaleString() + ')'));
         if (shieldSize) ammoCell.append(el('span', 'w-sub', '크기 ' + shieldSize));
       } else if (ammo) ammoCell.append(document.createTextNode(jaUnits(ammo)));
       else if (heat) {
@@ -586,12 +596,14 @@
       const ohBack = f('OH復帰時間', 'OH復帰速度');
       const last = el('span', 'w-col');
       if (reload) {
-        const cut = wm.reloadTime || 0;
+        // 퀵 로더·대용량 보급 팩은 무장 종류를 가리지 않는다
+        const cut = D.timeCutFor(wm, 'reloadTime', w);
         last.append(document.createTextNode(jaUnits(D.shortenTimeText(reload, cut))));
         if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
       } else if (ohBack) {
-        // 보조 제네레이터 등은 무장 오버히트 복귀를 줄여 준다 (스러스터 OH 와는 별개)
-        const cut = wm.weaponOH || 0;
+        // 보조 제네레이터는 빔 무장만, 대용량 보급 팩은 전 무장의 OH 복귀를 줄인다
+        // (스러스터 OH 와는 별개)
+        const cut = D.timeCutFor(wm, 'weaponOH', w);
         last.append(document.createTextNode(jaUnits(D.shortenTimeText(ohBack, cut))));
         if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
         last.append(el('span', 'w-sub', 'OH복귀'));
@@ -601,6 +613,8 @@
       // 누르면 위키 설명 전체를 펼친다
       row.onclick = () => toggleWeaponDetail(row, w, d, lv);
       box.append(row);
+      // 파츠를 갈아 끼우면 목록을 다시 그리므로, 펼쳐 둔 무장은 여기서 되살린다
+      if (state.openWeapon === w.name) openWeaponDetail(row, w, d, lv);
     }
   }
 
@@ -680,7 +694,7 @@
     ['低減', '저감'], ['出力', '출력'], ['能力', '능력'], ['段階', '단계'],
     ['下格', '하격'], ['横格', '횡격'], ['連続', '연속'], ['維持', '유지'],
     ['累計', '누계'], ['飛行', '비행'], ['味方', '아군'], ['展開', '전개'],
-    ['散弾', '산탄'], ['無視', '무시'], ['固定', '공통'], ['共通', '공통'],
+    ['散弾', '산탄'], ['無視', '무시'], ['固定', '고정'], ['共通', '공통'],
     ['時間', '시간'], ['上昇', '상승'], ['追加', '추가'], ['阻害', '저해'],
     ['障害', '장애'], ['押下', '누름'], ['最長', '최장'], ['約', '약'],
     ['直後', '직후'], ['命中', '명중'], ['対象', '대상'], ['計算', '계산'],
@@ -733,30 +747,38 @@
     return T.weaponTerms(t)
       .replace(/・/g, '·').replace(/：/g, ': ').replace(/、/g, ', ')
       .replace(/（/g, ' (').replace(/）/g, ') ')
+      .replace(/［/g, ' [').replace(/］/g, '] ')
+      .replace(/[「『]/g, ' “').replace(/[」』]/g, '” ')
       .replace(/＋/g, '+').replace(/－/g, '-').replace(/％/g, '%')
       .replace(/\s+/g, ' ')
-      .replace(/\s+([),:;%·])/g, '$1')
-      .replace(/\(\s+/g, '(')
+      .replace(/\s+([),\]:;%·”])/g, '$1')
+      .replace(/([(\[“])\s+/g, '$1')
       .replace(/\s*\/\s*/g, ' / ')
       .trim();
   };
 
-  /** 무장 행 아래에 위키의 설명과 표 값을 그대로 펼친다. */
+  /** 누를 때마다 펼치거나 접는다. 열어 둔 무장은 state 에 남겨 다시 그려도 유지한다. */
   function toggleWeaponDetail(row, w, d, lv) {
     const open = row.nextElementSibling && row.nextElementSibling.classList.contains('weapon-detail');
     // 한 번에 하나만 열어 둔다
     for (const e of [...row.parentNode.querySelectorAll('.weapon-detail')]) e.remove();
     for (const e of [...row.parentNode.querySelectorAll('.weapon.open')]) e.classList.remove('open');
+    state.openWeapon = open ? null : w.name;
     if (open) return;
+    openWeaponDetail(row, w, d, lv);
+  }
 
+  /** 무장 행 아래에 위키의 설명과 표 값을 그대로 펼친다. */
+  function openWeaponDetail(row, w, d, lv) {
     row.classList.add('open');
     const box = el('div', 'weapon-detail');
 
     const head = el('div', 'wd-head');
     head.append(el('b', '', T.weaponName(w.name)));
     head.append(el('span', 'wd-ja', w.name));
-    head.append(el('span', 'wd-tag', 'LV' + lv + ' · ' + (w.section === '主兵装' ? '주무장' : '부무장')
-      + ' · ' + (w.type === 'shield' ? '방어' : w.type === 'melee' ? '격투' : '사격')));
+    head.append(el('span', 'wd-tag', 'LV' + lv + ' · '
+      + (w.type === 'shield' ? '실드 · 방어'
+        : (w.section === '主兵装' ? '주무장' : '부무장') + ' · ' + (w.type === 'melee' ? '격투' : '사격'))));
     box.append(head);
 
     // 성격별로 묶어 보여 준다 — 한 덩어리로 나열하면 읽기 어렵다
@@ -1111,8 +1133,13 @@
     const ms = msData.find(m => m.MS名 === obj.ms);
     if (!ms) return { ok: false };
     state.ms = ms;
-    state.stage = obj.stage ?? 6;
-    state.expansion = obj.expansion || C.EXPANSION_NONE;
+    // 손상된 저장본이 들어와도 계산이 어긋나지 않게 아는 값만 받는다
+    state.stage = [0, 4, 6].includes(Number(obj.stage)) ? Number(obj.stage) : 6;
+    state.expansion = C.EXPANSION_SKILLS.includes(obj.expansion) ? obj.expansion : C.EXPANSION_NONE;
+    // 불러온 구성이 그대로 보이도록 제외·변형 표시는 초기 상태로 되돌린다
+    state.banned.clear();
+    state.form = 'normal';
+    state.openWeapon = null;
     // expLevel 이 없던 시절의 저장본은 앱 기본값(최대 레벨)으로 맞춘다
     state.expLevel = Number(obj.expLevel) || C.MAX_EXPANSION_LEVEL;
     const wanted = obj.parts || [];
@@ -1134,23 +1161,28 @@
     if (seg) [...seg.children].forEach(c => c.classList.toggle('on', Number(c.dataset.v) === state.stage));
   }
 
+  const STAGE_LABEL = { 0: '미강화', 4: '4단계', 6: '풀강' };
+
   /**
    * 강화 단계 변경.
-   * 미강화로 내리면 강화로 늘어난 슬롯이 사라져 기존 구성이 성립하지 않으므로,
-   * 확인을 받고 파츠를 초기화한다. (6↔4 는 슬롯이 줄지 않으므로 그대로 둔다)
+   * 단계를 내리면 강화로 늘어난 슬롯이 줄어 기존 구성이 성립하지 않을 수 있으므로,
+   * 확인을 받고 파츠를 초기화한다.
+   * 6→4 도 예외가 아니다 — 슬롯 증가가 강화리스트 5·6번째 항목에 들어간 기체
+   * (걈플란 TR-5 LV4, 바운드 독 LV2)는 6→4 에서도 슬롯이 줄어든다.
+   * 레벨 전환과 규칙을 맞추기 위해 내리는 경우는 항상 초기화한다.
    */
   function setStage(v) {
     if (v === state.stage) return;
-    const resets = v === 0 && state.stage !== 0 && state.equipped.length > 0;
+    const resets = v < state.stage && state.equipped.length > 0;
     if (resets && !confirm(
-      '미강화로 내리면 강화로 늘어난 슬롯이 사라져 지금 구성을 유지할 수 없습니다.\n\n'
+      `${STAGE_LABEL[v]}로 내리면 강화로 늘어난 슬롯이 줄어 지금 구성을 유지할 수 없습니다.\n\n`
       + `장착한 파츠 ${state.equipped.length}개를 모두 해제하고 진행할까요?`)) return;
 
     state.stage = v;
     if (resets) { state.equipped = []; state.locked.clear(); }
     syncStageSeg();
     renderAll();
-    if (resets) toast('미강화로 변경해 장착 파츠를 초기화했습니다');
+    if (resets) toast(`${STAGE_LABEL[v]}로 변경해 장착 파츠를 초기화했습니다`);
   }
 
   /* ---------- 렌더 ---------- */
