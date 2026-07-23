@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GBO2 커스텀 파츠 시뮬레이터 (오프라인)</title>
+<style>/*__CSS__*/</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <img id="brandImg" alt="">
+    <div>
+      <b>GBO2 커스텀 파츠</b>
+      <span>오프라인 시뮬레이터</span>
+    </div>
+  </div>
+
+  <!-- 진행 단계 -->
+  <ol class="stepper" id="stepper">
+    <li data-step="select"><i>1</i> 기체 선택</li>
+    <li class="arrow">›</li>
+    <li data-step="build"><i>2</i> 파츠 적용</li>
+  </ol>
+
+  <span class="spacer"></span>
+  <button id="openAuto" class="btn-primary step-only">⚡ 자동 구성</button>
+  <button id="save" class="btn-ghost step-only" title="이 브라우저에 저장">저장</button>
+  <button id="load" class="btn-ghost" title="저장한 구성 불러오기">불러오기</button>
+  <button id="share" class="btn-ghost step-only" title="구성 JSON을 클립보드로 복사">공유</button>
+  <button id="importBtn" class="btn-ghost" title="구성 JSON 붙여넣기">가져오기</button>
+</div>
+
+<!-- ============================================================
+     ① 기체 선택 화면
+     ============================================================ -->
+<section class="screen screen-select" id="screenSelect">
+  <div class="select-head">
+    <div class="select-title">
+      <h1>기체를 선택하세요</h1>
+      <span class="right" id="msCount"></span>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">속성</span><div class="chips" id="attrChips"></div></div>
+      <div class="filter-group"><span class="filter-lb">코스트</span><div class="chips" id="costChips"></div></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">레벨</span><div class="chips" id="levelChips"></div></div>
+      <div class="filter-group"><span class="filter-lb">등급</span><div class="chips" id="rarityChips"></div></div>
+    </div>
+    <input type="search" id="msQuery" placeholder="기체명 검색 (자쿠 / ザク / 건담…)">
+  </div>
+  <div class="ms-grid" id="msList"></div>
+</section>
+
+<!-- ============================================================
+     ② 파츠 적용 화면
+     ============================================================ -->
+<section class="screen screen-build" id="screenBuild">
+
+  <!-- 좌: 선택 기체 · 슬롯 · 장착 -->
+  <div class="build-col build-left">
+    <section class="panel">
+      <div class="hero">
+        <div class="hero-top">
+          <button id="backToSelect" class="back-btn" title="다른 기체 선택">‹ 기체 변경</button>
+          <div class="grow"></div>
+          <button id="clearParts" class="btn-ghost small">전체 해제</button>
+        </div>
+        <div class="hero-body">
+          <img id="heroImg" alt="">
+          <div class="h-main">
+            <div class="seg h-level-seg" id="levelSwitch" hidden></div>
+            <h3 id="heroName">기체를 선택하세요</h3>
+            <div class="h-sub" id="heroSub"></div>
+          </div>
+        </div>
+        <div class="h-controls">
+          <div class="h-stage">
+            <label>강화</label>
+            <div class="seg" id="stageSeg"></div>
+          </div>
+          <div class="h-exp grow">
+            <label for="expansion">확장 스킬</label>
+            <div class="exp-row">
+              <select id="expansion" class="grow"></select>
+              <select id="expLevel" title="확장 스킬 레벨"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slot-bars" id="slotBars"></div>
+      <div class="equip-grid" id="equipped"></div>
+    </section>
+  </div>
+
+  <!-- 중앙: 파츠 상세 미리보기 -->
+  <div class="build-col build-detail">
+    <section class="panel fill">
+      <h2>파츠 상세 <span class="right note" id="equipCount"></span></h2>
+      <div class="detail-body" id="detailBody">
+        <div class="detail-empty">파츠에 마우스를 올리거나 눌러<br>상세 정보를 확인하세요</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 우: 성능 -->
+  <div class="build-col build-stats">
+    <section class="panel fill">
+      <h2>성능 <span class="right note"><span style="color:var(--ok)">초록</span> = 강화·확장·파츠 증가분 · <span class="over-tag">OVER</span> = 상한 초과</span></h2>
+      <div class="stat-wrap">
+        <div class="stat-row head">
+          <span class="label">항목</span>
+          <span style="text-align:right">합계</span>
+          <span style="text-align:right">증가</span>
+          <span></span>
+          <span style="text-align:right">상한</span>
+        </div>
+        <div id="statBody"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 하단: 파츠 목록 (전체 폭) -->
+  <div class="build-parts">
+    <section class="panel fill">
+      <h2>커스텀 파츠 <span class="tabs" id="tabs"></span>
+        <span class="right">
+          <input type="search" id="partQuery" placeholder="파츠 검색 (이름 / 효과)">
+          <span class="note" id="bannedCount"></span>
+        </span>
+      </h2>
+      <div class="part-list" id="partList"></div>
+    </section>
+  </div>
+
+</section>
+
+<!-- ========== 자동 구성 드로어 ========== -->
+<div class="drawer-back" id="drawerBack"></div>
+<aside class="drawer" id="autoDrawer">
+  <h2>⚡ 자동 구성 <span class="right"><button id="closeAuto" class="btn-ghost">닫기</button></span></h2>
+  <div class="drawer-body">
+    <div class="row">
+      <select id="preset" class="grow"></select>
+      <select id="effort">
+        <option value="4">빠름</option>
+        <option value="10" selected>보통</option>
+        <option value="25">정밀</option>
+      </select>
+    </div>
+    <div class="note mt">
+      <b>가중치</b>는 상대적 중요도, <b>하한 목표</b>는 반드시 넘겨야 할 최소 수치입니다.
+      🔒 로 잠근 파츠는 항상 유지하고, 목록에서 우클릭한 파츠는 후보에서 제외합니다.
+    </div>
+    <div class="auto-grid mt" id="autoGrid"></div>
+  </div>
+  <div class="drawer-foot">
+    <button id="runAuto" class="btn-primary" style="width:100%">구성 찾기</button>
+    <div class="progress"><i id="progressBar"></i></div>
+    <div class="note mt" id="autoNote"></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>/*__DATA__*/</script>
+<script>/*__I18N_DATA__*/</script>
+<script>/*__CORE__*/</script>
+<script>/*__I18N__*/</script>
+<script>/*__OPT__*/</script>
+<script>/*__UI__*/</script>
+</body>
+</html>

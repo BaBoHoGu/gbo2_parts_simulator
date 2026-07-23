@@ -1,0 +1,14 @@
+# 의존성 — 검증 도구용으로만 --no-save 설치한다
+node_modules/
+package-lock.json
+
+# 빌드 산출물 — `node tools/build.js` 로 언제든 다시 만든다
+dist/
+
+# 검증 부산물
+shots/
+tools/_original_calc.js   # extract_original_calc.js 가 raw/app.js 에서 생성
+
+# 임시 파일
+_*.js
+*.log

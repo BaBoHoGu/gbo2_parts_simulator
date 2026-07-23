@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "WebFetch(domain:w.atwiki.jp)",
+      "Bash(curl -sL --max-time 25 -A \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0 Safari/537.36\" -H \"Accept-Language: ja,en\" \"https://w.atwiki.jp/battle-operation2/pages/6432.html\" -o /tmp/exp.html -w \"HTTP %{http_code} size=%{size_download}\\\\n\")"
+    ]
+  }
+}
