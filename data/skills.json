@@ -15,7 +15,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -34,7 +36,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -55,7 +59,9 @@
      "melee": 17,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -76,7 +82,9 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -97,7 +105,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -118,7 +128,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -139,7 +151,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -160,7 +174,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -181,7 +197,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -200,7 +218,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 4,
@@ -209,7 +229,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -230,7 +252,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -251,7 +275,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -260,7 +286,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -281,7 +309,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 50
+     "dmgAny": 50,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -290,7 +320,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 70
+     "dmgAny": 70,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 4,
@@ -299,7 +331,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 90
+     "dmgAny": 90,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -320,7 +354,9 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -341,7 +377,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -362,7 +400,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -383,7 +423,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -404,7 +446,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 4,
@@ -413,7 +457,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   },
@@ -432,7 +478,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 4,
@@ -441,7 +489,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -462,7 +512,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -483,7 +535,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 4,
@@ -492,7 +546,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -513,7 +569,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -534,7 +592,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 3,
@@ -543,7 +603,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -564,7 +626,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -585,7 +649,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -606,7 +672,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -627,7 +695,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -648,7 +718,9 @@
      "melee": 35,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -667,7 +739,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 4,
@@ -676,7 +750,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -697,7 +773,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -718,7 +796,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -739,7 +819,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 3,
@@ -748,7 +830,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -769,7 +853,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -790,7 +876,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 4,
@@ -799,7 +887,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -820,7 +910,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -841,7 +933,9 @@
      "melee": 35,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -850,7 +944,9 @@
      "melee": 50,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -871,7 +967,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -892,7 +990,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -913,7 +1013,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -932,7 +1034,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -941,7 +1045,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -962,7 +1068,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 2,
@@ -971,7 +1079,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -992,7 +1102,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1013,7 +1125,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   },
@@ -1032,7 +1146,9 @@
      "melee": 10,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -1041,7 +1157,9 @@
      "melee": 15,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1062,7 +1180,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 3,
@@ -1071,7 +1191,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -1092,7 +1214,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1113,7 +1237,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1134,7 +1260,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1155,7 +1283,9 @@
      "melee": 40,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1176,7 +1306,9 @@
      "melee": 15,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -1185,7 +1317,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -1204,7 +1338,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -1225,7 +1361,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1246,7 +1384,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 3,
@@ -1255,7 +1395,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -1276,7 +1418,9 @@
      "melee": 35,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -1295,7 +1439,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1316,7 +1462,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -1337,7 +1485,9 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1358,7 +1508,9 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1379,7 +1531,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -1400,7 +1554,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1421,7 +1577,9 @@
      "melee": 5,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -1430,7 +1588,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1451,7 +1611,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1472,7 +1634,9 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -1491,7 +1655,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -1512,7 +1678,9 @@
      "melee": 10,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -1521,7 +1689,9 @@
      "melee": 15,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1542,7 +1712,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -1561,7 +1733,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1582,7 +1756,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1603,7 +1779,9 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1624,7 +1802,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -1633,7 +1813,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1654,7 +1836,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1675,7 +1859,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -1684,7 +1870,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -1703,7 +1891,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1724,7 +1914,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -1745,7 +1937,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1766,7 +1960,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -1787,7 +1983,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -1796,7 +1994,9 @@
      "melee": 40,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -1815,7 +2015,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -1836,7 +2038,9 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -1845,7 +2049,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1866,7 +2072,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -1875,7 +2083,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -1894,7 +2104,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1915,7 +2127,9 @@
      "melee": 35,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1936,7 +2150,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -1957,7 +2173,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1978,7 +2196,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -1999,7 +2219,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 50
+     "dmgAny": 50,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2020,7 +2242,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 3,
@@ -2029,7 +2253,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -2050,7 +2276,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -2071,7 +2299,9 @@
      "melee": 50,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2092,7 +2322,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2113,7 +2345,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2134,7 +2368,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -2155,7 +2391,9 @@
      "melee": 40,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2176,7 +2414,9 @@
      "melee": 40,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2197,7 +2437,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2218,7 +2460,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2239,7 +2483,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -2260,7 +2506,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -2281,7 +2529,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -2290,7 +2540,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2311,7 +2563,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2332,7 +2586,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2353,7 +2609,9 @@
      "melee": 40,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -2372,7 +2630,9 @@
      "melee": 10,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2393,7 +2653,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -2402,7 +2664,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -2421,7 +2685,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -2442,7 +2708,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -2463,7 +2731,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -2482,7 +2752,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -2491,7 +2763,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2512,7 +2786,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -2531,7 +2807,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2552,7 +2830,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -2571,7 +2851,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2592,7 +2874,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -2613,7 +2897,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -2634,7 +2920,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2655,7 +2943,9 @@
      "melee": 75,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2676,7 +2966,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -2697,7 +2989,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -2716,7 +3010,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2737,7 +3033,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -2756,7 +3054,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -2775,7 +3075,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -2796,7 +3098,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2817,7 +3121,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -2826,7 +3132,9 @@
      "melee": 40,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -2835,7 +3143,9 @@
      "melee": 50,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2856,7 +3166,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2877,7 +3189,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -2896,7 +3210,9 @@
      "melee": 10,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -2905,7 +3221,9 @@
      "melee": 10,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2926,7 +3244,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 2,
@@ -2935,7 +3255,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -2956,7 +3278,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2977,7 +3301,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -2998,7 +3324,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3017,7 +3345,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 4,
@@ -3026,7 +3356,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   },
@@ -3045,7 +3377,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 4,
@@ -3054,7 +3388,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3075,7 +3411,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3094,31 +3432,14 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
  ],
  "パーフェクト・ガンダム【TB】": [
-  {
-   "name": "急速旋回",
-   "nameKo": "급속 선회",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "dmgPct": 30
-    }
-   ]
-  },
   {
    "name": "カウンターブースト",
    "nameKo": "카운터 부스트",
@@ -3134,7 +3455,30 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  },
+  {
+   "name": "急速旋回",
+   "nameKo": "급속 선회",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3155,7 +3499,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3174,7 +3520,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -3195,7 +3543,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 40
+     "dmgAny": 40,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3216,7 +3566,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3237,7 +3589,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 25
+     "dmgAny": 25,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -3246,7 +3600,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3267,7 +3623,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -3276,7 +3634,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 25
+     "dmgAny": 25,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3297,7 +3657,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3316,7 +3678,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -3335,7 +3699,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 2,
@@ -3344,7 +3710,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -3365,7 +3733,9 @@
      "melee": 50,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3386,7 +3756,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3407,7 +3779,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3426,7 +3800,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3447,7 +3823,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -3468,7 +3846,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3487,7 +3867,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3508,7 +3890,9 @@
      "melee": 5,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3527,7 +3911,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 10
+     "dmgAny": 10,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3548,7 +3934,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 25
+     "dmgAny": 25,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3569,7 +3957,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -3590,7 +3980,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3611,7 +4003,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -3630,7 +4024,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -3651,31 +4047,14 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
  ],
  "ペーネロペー": [
-  {
-   "name": "補助動力",
-   "nameKo": "보조 동력",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "dmgPct": 30
-    }
-   ]
-  },
   {
    "name": "レイズ・カウンター",
    "nameKo": "레이즈 카운터",
@@ -3691,7 +4070,30 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  },
+  {
+   "name": "補助動力",
+   "nameKo": "보조 동력",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3710,7 +4112,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3731,7 +4135,9 @@
      "melee": 50,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -3740,7 +4146,9 @@
      "melee": 60,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3759,7 +4167,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 3,
@@ -3768,7 +4178,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3789,7 +4201,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 50
+     "dmgAny": 50,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3810,7 +4224,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 10
+     "dmgAny": 10,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3831,7 +4247,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3852,7 +4270,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3873,7 +4293,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 40
+     "dmgAny": 40,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -3892,7 +4314,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3913,7 +4337,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -3922,7 +4348,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3943,7 +4371,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -3964,7 +4394,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -3985,7 +4417,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4006,7 +4440,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -4027,7 +4463,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4048,7 +4486,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -4069,7 +4509,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 4,
@@ -4078,7 +4520,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4099,7 +4543,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 10
+     "dmgAny": 0,
+     "dmgShoot": 10,
+     "dmgMelee": 0
     }
    ]
   },
@@ -4118,31 +4564,14 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
  ],
  "ユニコーンガンダム［覚醒］": [
-  {
-   "name": "能力UP「覚醒（B）」",
-   "nameKo": "능력UP「각성 (B)」",
-   "forever": false,
-   "secs": 60,
-   "hp": 50,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 15,
-     "melee": 15,
-     "shootPct": 0,
-     "meleePct": 0,
-     "dmgPct": 0
-    }
-   ]
-  },
   {
    "name": "レイズ・カウンター",
    "nameKo": "레이즈 카운터",
@@ -4158,7 +4587,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -4177,7 +4608,30 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  },
+  {
+   "name": "能力UP「覚醒（B）」",
+   "nameKo": "능력UP「각성 (B)」",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 15,
+     "melee": 15,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4198,7 +4652,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4219,7 +4675,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -4228,7 +4686,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4249,7 +4709,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -4270,7 +4732,9 @@
      "melee": 10,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4291,7 +4755,9 @@
      "melee": 35,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -4300,7 +4766,9 @@
      "melee": 40,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4321,7 +4789,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4342,7 +4812,9 @@
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4363,7 +4835,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -4382,7 +4856,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4403,7 +4879,9 @@
      "melee": 0,
      "shootPct": 15,
      "meleePct": 30,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4424,7 +4902,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4445,7 +4925,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -4464,7 +4946,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -4483,7 +4967,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -4504,7 +4990,9 @@
      "melee": 35,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4525,7 +5013,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -4546,7 +5036,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4567,7 +5059,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4588,7 +5082,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -4607,7 +5103,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -4628,31 +5126,14 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   }
  ],
  "クロスボーン・ガンダムX1改": [
-  {
-   "name": "最大出力（K）",
-   "nameKo": "최대 출력 (K)",
-   "forever": false,
-   "secs": 60,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 20,
-     "shootPct": 0,
-     "meleePct": 0,
-     "dmgPct": 15
-    }
-   ]
-  },
   {
    "name": "レイズ・カウンター",
    "nameKo": "레이즈 카운터",
@@ -4668,7 +5149,30 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  },
+  {
+   "name": "最大出力（K）",
+   "nameKo": "최대 출력 (K)",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgAny": 15,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4689,7 +5193,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -4708,31 +5214,14 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
  ],
  "クロスボーン・ガンダムX2改": [
-  {
-   "name": "最大出力（Z）",
-   "nameKo": "최대 출력 (Z)",
-   "forever": false,
-   "secs": 60,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 20,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "dmgPct": 15
-    }
-   ]
-  },
   {
    "name": "レイズ・カウンター",
    "nameKo": "레이즈 카운터",
@@ -4748,7 +5237,30 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  },
+  {
+   "name": "最大出力（Z）",
+   "nameKo": "최대 출력 (Z)",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 20,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgAny": 15,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4769,7 +5281,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4790,7 +5304,9 @@
      "melee": 0,
      "shootPct": 30,
      "meleePct": 30,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4811,7 +5327,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4832,7 +5350,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -4853,7 +5373,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -4872,7 +5394,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -4893,7 +5417,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0
     }
    ]
   },
@@ -4912,31 +5438,14 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
  ],
  "クラスターガンダム": [
-  {
-   "name": "補助動力",
-   "nameKo": "보조 동력",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "dmgPct": 30
-    }
-   ]
-  },
   {
    "name": "カウンターブースト",
    "nameKo": "카운터 부스트",
@@ -4952,7 +5461,30 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  },
+  {
+   "name": "補助動力",
+   "nameKo": "보조 동력",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4973,7 +5505,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 10
+     "dmgAny": 10,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -4994,7 +5528,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 10
+     "dmgAny": 0,
+     "dmgShoot": 10,
+     "dmgMelee": 20
     }
    ]
   }
@@ -5015,7 +5551,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -5034,7 +5572,9 @@
      "melee": 10,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5055,31 +5595,14 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
  ],
  "RFケンプファー": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 5,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "dmgPct": 20
-    }
-   ]
-  },
   {
    "name": "フルアタック",
    "nameKo": "풀 어택",
@@ -5095,7 +5618,30 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  },
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 5,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -5114,31 +5660,14 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
  ],
  "クロスボーン・ガンダムX1FC": [
-  {
-   "name": "最大出力（T）",
-   "nameKo": "최대 출력 (T)",
-   "forever": false,
-   "secs": 60,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 10,
-     "melee": 15,
-     "shootPct": 0,
-     "meleePct": 0,
-     "dmgPct": 10
-    }
-   ]
-  },
   {
    "name": "レイズ・カウンター",
    "nameKo": "레이즈 카운터",
@@ -5154,7 +5683,30 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  },
+  {
+   "name": "最大出力（T）",
+   "nameKo": "최대 출력 (T)",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 15,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 10
     }
    ]
   }
@@ -5175,7 +5727,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 10
+     "dmgAny": 0,
+     "dmgShoot": 10,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -5184,7 +5738,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 0
     }
    ]
   },
@@ -5203,7 +5759,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5224,7 +5782,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -5245,7 +5805,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     },
     {
      "from": 4,
@@ -5254,7 +5816,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -5275,7 +5839,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -5294,7 +5860,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -5315,7 +5883,9 @@
      "melee": 20,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5336,7 +5906,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -5355,7 +5927,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   },
@@ -5374,7 +5948,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 10
+     "dmgAny": 10,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5395,7 +5971,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 10
+     "dmgAny": 10,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5416,7 +5994,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   },
@@ -5435,7 +6015,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5456,7 +6038,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5477,7 +6061,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5498,7 +6084,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5519,7 +6107,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -5540,7 +6130,9 @@
      "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   },
@@ -5559,7 +6151,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 15
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -5580,7 +6174,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     },
     {
      "from": 2,
@@ -5589,7 +6185,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 25
+     "dmgAny": 25,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5610,7 +6208,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 20
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
     }
    ]
   }
@@ -5631,7 +6231,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5652,7 +6254,9 @@
      "melee": 0,
      "shootPct": 5,
      "meleePct": 0,
-     "dmgPct": 0
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }
@@ -5673,7 +6277,9 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "dmgPct": 30
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
     }
    ]
   }

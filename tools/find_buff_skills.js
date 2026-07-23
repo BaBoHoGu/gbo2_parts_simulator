@@ -67,9 +67,21 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       const melee = flat(0, /格闘補正\s*[＋+]\s*(\d+)(?!\s*%)/);
       const shootPct = flat(0, /射撃補正を?[^。]{0,12}[＋+]\s*(\d+)\s*%/);
       const meleePct = flat(0, /格闘補正を?[^。]{0,12}[＋+]\s*(\d+)\s*%/);
-      // 보정이 아니라 피해량·위력을 직접 올리는 스킬도 함께 잡는다
-      const dmgPct = flat(0, /(?:与ダメージ|与えるダメージ)\s*[＋+]\s*(\d+)\s*[%％]/)
-        || flat(0, /(?:与ダメージ|与えるダメージ)が\s*(\d+)\s*[%％]\s*(?:増加|上昇)/);
+      // 보정이 아니라 피해량을 직접 올리는 스킬도 함께 잡는다.
+      // 적용 대상은 수치 앞쪽 수식어로 갈린다 —
+      //   「射撃属性与ダメージ ＋20%」「格闘兵装で与えるダメージが 15% 上昇」
+      // 수식어가 없으면 사격·격투 모두에 걸리는 것으로 본다.
+      // 「与ダメージ15%分のHP回復」은 회복량이라 ＋ 나 増加/上昇 표기를 요구해 걸러 낸다.
+      let dmgShoot = 0, dmgMelee = 0, dmgAny = 0;
+      const DMG_RE = /([^。]{0,26})(?:与ダメージ|与えるダメージ)\s*(?:が\s*)?([＋+]?)\s*(\d+)\s*[%％]\s*(増加|上昇)?/g;
+      for (const m of line.matchAll(DMG_RE)) {
+        if (!m[2] && !m[4]) continue;                    // 피해 상승이 아닌 표현
+        const v = Number(m[3]);
+        if (/射撃(属性|兵装|攻撃)/.test(m[1])) dmgShoot = Math.max(dmgShoot, v);
+        else if (/格闘(属性|兵装|攻撃)/.test(m[1])) dmgMelee = Math.max(dmgMelee, v);
+        else dmgAny = Math.max(dmgAny, v);
+      }
+      const dmgPct = dmgAny || dmgShoot || dmgMelee;
       const powerPct = flat(0, /威力\s*[＋+]\s*(\d+)\s*[%％]/)
         || flat(0, /威力が\s*(\d+)\s*[%％]\s*(?:増加|上昇)/);
       if (!shoot && !melee && !shootPct && !meleePct && !dmgPct && !powerPct) continue;
@@ -83,7 +95,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         msLvTo: need && need[2] ? Number(need[2]) : null,
         // 스킬명 = LV 표기가 아닌 첫 칸
         skill: row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)',
-        shoot, melee, shootPct, meleePct, dmgPct, powerPct,
+        shoot, melee, shootPct, meleePct, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
         forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
         secs: Number((line.match(/効果時間は?[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
         hp: Number((line.match(/機体HPが?\s*(\d+)\s*[%％]以下/) || [])[1]) || null,
@@ -144,7 +156,9 @@ if (process.argv.includes('--ui')) {
         .map(r => ({
           from: r.msLvFrom, to: r.msLvTo,
           shoot: r.shoot, melee: r.melee,
-          shootPct: r.shootPct, meleePct: r.meleePct, dmgPct: r.dmgPct
+          shootPct: r.shootPct, meleePct: r.meleePct,
+          // 피해 % 는 걸리는 대상이 갈린다 — any 는 사격·격투 모두에 얹는다
+          dmgAny: r.dmgAny, dmgShoot: r.dmgShoot, dmgMelee: r.dmgMelee
         }))
         // 같은 구간·같은 수치가 표에 두 번 적힌 경우가 있어 하나만 남긴다
         .filter(l => { const k = JSON.stringify(l); if (seen.has(k)) return false; seen.add(k); return true; });
@@ -156,7 +170,9 @@ if (process.argv.includes('--ui')) {
       });
     }
     // 효과가 큰 것부터 — 드롭다운에서 위에 오게 한다
-    skills.sort((a, b) => Math.max(...b.levels.map(weight)) - Math.max(...a.levels.map(weight)));
+    const lvWeight = l => l.shoot + l.melee + l.shootPct + l.meleePct
+      + l.dmgAny + l.dmgShoot + l.dmgMelee;
+    skills.sort((a, b) => Math.max(...b.levels.map(lvWeight)) - Math.max(...a.levels.map(lvWeight)));
     out[ms] = skills;
   }
   const dest = path.join(ROOT, 'data', 'skills.json');

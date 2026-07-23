@@ -110,11 +110,13 @@
     <section class="panel fill">
       <h2>성능
         <span class="seg form-seg" id="formSeg" hidden></span>
-        <label class="skill-toggle" id="skillToggle" hidden>
-          <input type="checkbox" id="skillOn"><span>스킬</span>
-        </label>
-        <select id="skillPick" class="skill-pick" title="발동할 기체 스킬" hidden></select>
-        <span class="right note"><span style="color:var(--ok)">초록</span>=파츠 · <span style="color:var(--skill)">보라</span>=스킬 · <span class="over-tag">OVER</span>=상한 초과</span>
+        <span class="skill-box" id="skillBox" hidden>
+          <button type="button" class="skill-btn" id="skillBtn" title="발동할 기체 스킬 고르기">
+            <span id="skillBtnText">스킬</span> <i>▾</i>
+          </button>
+          <div class="skill-menu" id="skillMenu" hidden></div>
+        </span>
+        <span class="right note"><span style="color:var(--ok)">초록</span>=파츠 · <span style="color:var(--skill)">보라</span>=스킬 · <span style="color:var(--skill2)">청록</span>=스킬 2개+ · <span class="over-tag">OVER</span>=상한 초과</span>
       </h2>
       <div class="stat-wrap">
         <div class="stat-row head">
