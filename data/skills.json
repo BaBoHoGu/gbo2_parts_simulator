@@ -1,0 +1,5681 @@
+{
+ "ブルーディスティニー2号機": [
+  {
+   "name": "能力UP「EXAM」",
+   "nameKo": "능력UP「EXAM」",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 25,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ブルーディスティニー3号機": [
+  {
+   "name": "能力UP「EXAM」",
+   "nameKo": "능력UP「EXAM」",
+   "forever": false,
+   "secs": 90,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 17,
+     "melee": 17,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ペイルライダー［陸戦重装備仕様］": [
+  {
+   "name": "能力UP「HADES」",
+   "nameKo": "능력UP「HADES」",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 25,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "イフリート（DS）": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ザクⅠ・スナイパータイプ": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "陸戦強襲型ガンタンク": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ヒルドルブ": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガンダム試作1号機": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ジム・スナイパーⅡ": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガーベラ・テトラ": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ジーライン・アサルトアーマー": [
+  {
+   "name": "シールドタックル改?",
+   "nameKo": "실드 태클 改",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 50
+    },
+    {
+     "from": 2,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 70
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 90
+    }
+   ]
+  }
+ ],
+ "ペイルライダー［空間戦仕様］": [
+  {
+   "name": "能力UP「HADES」",
+   "nameKo": "능력UP「HADES」",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 25,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガンダム試作2号機［MLRS］": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ゾック": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ペイルライダー・キャバルリー": [
+  {
+   "name": "能力UP「HADES-E」",
+   "nameKo": "능력UP「HADES-E」",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 20,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "高機動型ゲルググ（UL）": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "フルアーマーガンダム［タイプB］": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "リック・ディアス": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "百式": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ガルバルディβ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "スーパーガンダム": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ジム・クゥエル": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "グフ・フライトタイプ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ストライカー・カスタム": [
+  {
+   "name": "能力UP「妖刀システム」",
+   "nameKo": "능력UP「요도 시스템」",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "Ζガンダム": [
+  {
+   "name": "能力UP「バイオセンサー」",
+   "nameKo": "능력UP「바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 35,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ガンタンクⅡ": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガンキャノン・ディテクター": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ドム・トロピカルテストタイプ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ネモⅢ": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ハンブラビ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ドム・キャノン［単砲仕様］": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ΖΖガンダム": [
+  {
+   "name": "能力UP「バイオセンサー」",
+   "nameKo": "능력UP「바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 10,
+     "melee": 35,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 15,
+     "melee": 50,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガザC": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "R・ジャジャ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "キュベレイ": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "サイコミュシステム共振（H）",
+   "nameKo": "사이코뮤 시스템 공진 (H)",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 5,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 10,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ΖプラスA1型": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "パラス・アテネ": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "キュベレイMk-Ⅱ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "サイコミュシステム共振（E）",
+   "nameKo": "사이코뮤 시스템 공진 (E)",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 10,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 15,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ディジェSE-R": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ドーベン・ウルフ": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "水中型ガンダム": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ザク・ハーフキャノン": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "トーリス・リッター": [
+  {
+   "name": "能力UP「HADES」",
+   "nameKo": "능력UP「HADES」",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 40,
+     "melee": 40,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ジ・O": [
+  {
+   "name": "能力UP「バイオセンサーP」",
+   "nameKo": "능력UP「바이오센서 P」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 15,
+     "melee": 15,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 30,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ゲーマルク": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "リック・ディアスⅡ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "Ζガンダム［HML］": [
+  {
+   "name": "能力UP「バイオセンサー」",
+   "nameKo": "능력UP「바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 35,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "高機動型ガルバルディα": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ディジェ（CA）": [
+  {
+   "name": "能力UP「簡易バイオセンサー」",
+   "nameKo": "능력UP「간이 바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 25,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ペイルライダー（VG）": [
+  {
+   "name": "能力UP「HADES」",
+   "nameKo": "능력UP「HADES」",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 25,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "量産型キュベレイ": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ゲルググ・ウェルテクス": [
+  {
+   "name": "急速旋回",
+   "nameKo": "급속 선회",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "ザクⅢ改": [
+  {
+   "name": "能力UP「バイオセンサーM」",
+   "nameKo": "능력UP「바이오센서 M」",
+   "forever": false,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 5,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ザク・タンク［砲撃仕様］": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "リ・ガズィ": [
+  {
+   "name": "能力UP「簡易バイオセンサー」",
+   "nameKo": "능력UP「간이 바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 25,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "νガンダム": [
+  {
+   "name": "サイコフレーム共振（A）",
+   "nameKo": "사이코프레임 공진 (A)",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 10,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 15,
+     "melee": 15,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "フルアーマー・スレイヴ・レイス": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガンタンク": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "リ・ガズィ・カスタム": [
+  {
+   "name": "能力UP「簡易バイオセンサー」",
+   "nameKo": "능력UP「간이 바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 25,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ジェダ": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "リック・ディジェ": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ザク・ハーフキャノン（MB）": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガンダムEz8": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ドム・ノーミーデス": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "バルギル": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ムーンガンダム": [
+  {
+   "name": "サイコプレート共振",
+   "nameKo": "사이코플레이트 공진",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 15,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 25,
+     "melee": 40,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ブラックライダー": [
+  {
+   "name": "能力UP「THEMIS」",
+   "nameKo": "능력UP「THEMIS」",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ホワイトライダー": [
+  {
+   "name": "能力UP「ZEUS」",
+   "nameKo": "능력UP「ZEUS」",
+   "forever": false,
+   "secs": 55,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 20,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 25,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "強化型ΖΖガンダム": [
+  {
+   "name": "能力UP「バイオセンサー」",
+   "nameKo": "능력UP「바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 35,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ザクⅣ（IP）": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "量産型ガンタンク": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ギラ・ズール（アンジェロ機）": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "バイアラン・イゾルデ": [
+  {
+   "name": "空中停止射撃",
+   "nameKo": "공중 정지사격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 50
+    }
+   ]
+  }
+ ],
+ "シュツルム・ガルス": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "シャア専用ゲルググ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "バウンド・ドック": [
+  {
+   "name": "サイコ・ウェーブ",
+   "nameKo": "사이코 웨이브",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 50,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ジェスタ・キャノン": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ゲルググ・V・キュアノス": [
+  {
+   "name": "急速旋回",
+   "nameKo": "급속 선회",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "高機動型ゲルググ（GK）": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "FA・ストライカー・カスタム": [
+  {
+   "name": "能力UP「妖刀システム」",
+   "nameKo": "능력UP「요도 시스템」",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 40,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "シナンジュ・スタイン（ZA）": [
+  {
+   "name": "サイコフレーム共振（Z）",
+   "nameKo": "사이코프레임 공진 (Z)",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 40,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "グスタフ・カール": [
+  {
+   "name": "補助動力",
+   "nameKo": "보조 동력",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "ジェスタ［シェザール隊仕様B］": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ナラティブガンダム［B装備］": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "シルバー・ヘイズ改": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "リゼルC型［DbU装備］": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ガンダム試作1号機［アクア装備］": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ジム改陸戦型［CB装備］【TB】": [
+  {
+   "name": "SFS制御機構",
+   "nameKo": "SFS 제어기구",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 30,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "シスクード": [
+  {
+   "name": "能力UP「オフェンスモード・フェイズ2」",
+   "nameKo": "능력UP「오펜스 모드 페이즈2」",
+   "forever": false,
+   "secs": 90,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 40,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "能力UP「オフェンスモード・フェイズ1」",
+   "nameKo": "능력UP「오펜스 모드 페이즈1」",
+   "forever": false,
+   "secs": 90,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 10,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "量産型ΖΖガンダム": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "MSN-04FF サザビー": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "RX-93ff νガンダム": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "陸戦型ジム［WR装備］": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ジェガン重装型": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "Hi-νガンダム": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ナイチンゲール": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "グール": [
+  {
+   "name": "アクティブガード改",
+   "nameKo": "액티브 가드 改",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "フルアーマーΖΖガンダム": [
+  {
+   "name": "能力UP「バイオセンサーJ」",
+   "nameKo": "능력UP「바이오센서 J」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 75,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ホビー・ハイザック": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ガンキャノン重装型": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ディジェ・トラバーシア": [
+  {
+   "name": "能力UP「簡易バイオセンサー」",
+   "nameKo": "능력UP「간이 바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 40,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 20,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ジュリック": [
+  {
+   "name": "アクティブガード改",
+   "nameKo": "액티브 가드 改",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "ドルメル・ドゥーエ": [
+  {
+   "name": "能力UP「妖刀システム（D）」",
+   "nameKo": "능력UP「요도 시스템 (D)」",
+   "forever": false,
+   "secs": 90,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 40,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 50,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "シルヴァ・バレト・サプレッサー": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ナラティブガンダム［C装備］": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "能力UP「NT-D：ナラティブ」",
+   "nameKo": "능력UP「NT-D: 내러티브」",
+   "forever": true,
+   "secs": null,
+   "hp": 80,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 10,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 5,
+     "melee": 10,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ディジェ［ルオ商会仕様］": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "フルアーマー・アレックス": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ロト": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガンダム7号機": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 5,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ムーシカ": [
+  {
+   "name": "補助動力",
+   "nameKo": "보조 동력",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "パーフェクト・ガンダム【TB】": [
+  {
+   "name": "急速旋回",
+   "nameKo": "급속 선회",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  },
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "Ζガンダム3号機A型": [
+  {
+   "name": "能力UP「バイオセンサー」",
+   "nameKo": "능력UP「바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 30,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ギラ・ドーガ［サイコミュ試験型］": [
+  {
+   "name": "アクティブガード改",
+   "nameKo": "액티브 가드 改",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 40
+    }
+   ]
+  }
+ ],
+ "νガンダム［HWS装備］": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "メッサーF01型": [
+  {
+   "name": "V・テール・スタビライザー",
+   "nameKo": "V 테일 스태빌라이저",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 25
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "エンゲージガンダム［BST装備］": [
+  {
+   "name": "レイド・ブースター",
+   "nameKo": "레이드 부스터",
+   "forever": false,
+   "secs": 5,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 25
+    }
+   ]
+  }
+ ],
+ "オーヴェロン": [
+  {
+   "name": "グリモア（白）",
+   "nameKo": "그리모어 (백)",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 30,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ヘビーガンダム（I0）": [
+  {
+   "name": "能力UP「バイオセンサーI」",
+   "nameKo": "능력UP「바이오센서 I」",
+   "forever": true,
+   "secs": null,
+   "hp": 30,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 30,
+     "melee": 50,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ザク・マシーナリー（EB）": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "アトラスガンダム（BC）【TB】": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "サイコバウ": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "Ζガンダム3号機B型": [
+  {
+   "name": "能力UP「バイオセンサー」",
+   "nameKo": "능력UP「바이오센서」",
+   "forever": true,
+   "secs": null,
+   "hp": 30,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "FA・ユニコーンガンダム": [
+  {
+   "name": "能力UP「NT-D：共振」",
+   "nameKo": "능력UP「NT-D: 공진」",
+   "forever": true,
+   "secs": null,
+   "hp": 80,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 5,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "能力UP「覚醒」",
+   "nameKo": "능력UP「각성」",
+   "forever": true,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    }
+   ]
+  }
+ ],
+ "メッサーF02型": [
+  {
+   "name": "V・テール・スタビライザー",
+   "nameKo": "V 테일 스태빌라이저",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 25
+    }
+   ]
+  }
+ ],
+ "装甲強化型ジム（BA）": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ガンダムEz8［HMC］": [
+  {
+   "name": "スラスターバインダー制御装置",
+   "nameKo": "스러스터 바인더 제어장치",
+   "forever": false,
+   "secs": 40,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "Ξガンダム": [
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "スライフレイル": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ペーネロペー": [
+  {
+   "name": "補助動力",
+   "nameKo": "보조 동력",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  },
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "エンゲージゼロ・ヨンファヴィン": [
+  {
+   "name": "サイコ・フィールド（P）",
+   "nameKo": "사이코 필드 (P)",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 5,
+     "melee": 50,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 10,
+     "melee": 60,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ヘイズル改［イカロス・U装備］": [
+  {
+   "name": "空中停止射撃",
+   "nameKo": "공중 정지사격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 50
+    }
+   ]
+  }
+ ],
+ "ファーヴニル": [
+  {
+   "name": "グリモア（青）",
+   "nameKo": "그리모어 (청)",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    }
+   ]
+  }
+ ],
+ "量産型Ζガンダム": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ザクⅢ［サイコミュ装備型］": [
+  {
+   "name": "アクティブガード改",
+   "nameKo": "액티브 가드 改",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "プロトΖガンダム［X1型］": [
+  {
+   "name": "アクティブガード改",
+   "nameKo": "액티브 가드 改",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 40
+    }
+   ]
+  },
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "ゴッドガンダム": [
+  {
+   "name": "ハイパーモード",
+   "nameKo": "하이퍼 모드",
+   "forever": true,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 20,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 20,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "イフリート改": [
+  {
+   "name": "能力UP「EXAM」",
+   "nameKo": "능력UP「EXAM」",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 25,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ガンダムMk-Ⅴ［MP装備］": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ブルーディスティニー1号機": [
+  {
+   "name": "能力UP「EXAM」",
+   "nameKo": "능력UP「EXAM」",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 25,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "シルヴァ・バレト［F試験型］": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "クシャトリヤ・リペアード": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "シャア専用ズゴック": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "エンゲージガンダム［I装備］": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "GFタンク": [
+  {
+   "name": "クイックドリフト",
+   "nameKo": "퀵 드리프트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ユニコーンガンダム［覚醒］": [
+  {
+   "name": "能力UP「覚醒（B）」",
+   "nameKo": "능력UP「각성 (B)」",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 15,
+     "melee": 15,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ジム・シューター": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "RFザク": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "RFグフ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "G・ドアーズ": [
+  {
+   "name": "サイコプレート共振（GD）",
+   "nameKo": "사이코플레이트 공진 (GD)",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 10,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "Ζガンダム3号機P2型": [
+  {
+   "name": "サイコ・ニュートライザー",
+   "nameKo": "사이코 뉴트럴라이저",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 15,
+     "melee": 35,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 20,
+     "melee": 40,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "RFズゴック": [
+  {
+   "name": "補助動力",
+   "nameKo": "보조 동력",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "フルアーマー・オーヴェロン": [
+  {
+   "name": "グリモア（白）",
+   "nameKo": "그리모어 (백)",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 30,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "F91": [
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "最大稼働",
+   "nameKo": "최대 가동",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ウイングガンダムゼロ": [
+  {
+   "name": "ＺＥＲＯシステム?",
+   "nameKo": "ZERO 시스템",
+   "forever": false,
+   "secs": 25,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 15,
+     "meleePct": 30,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "RFドム": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 5,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "RFゲルググ": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "プロトタイプ・サイコ・ガンダム": [
+  {
+   "name": "サイコミュシステム暴走",
+   "nameKo": "사이코뮤 시스템 폭주",
+   "forever": false,
+   "secs": 100,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 35,
+     "melee": 35,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "オーヴェロン［アーマー形態］": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "フルアーマー陸戦型Ζガンダム": [
+  {
+   "name": "能力UP「バイオセンサーK」",
+   "nameKo": "능력UP「바이오센서 K」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ザメル": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "高機動型ゲルググ（JR）": [
+  {
+   "name": "急速旋回",
+   "nameKo": "급속 선회",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ガブスレイβ": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "クロスボーン・ガンダムX1改": [
+  {
+   "name": "最大出力（K）",
+   "nameKo": "최대 출력 (K)",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "スパーブ・ジェガン": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "クロスボーン・ガンダムX2改": [
+  {
+   "name": "最大出力（Z）",
+   "nameKo": "최대 출력 (Z)",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 20,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ビギナ・ギナ": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "ウイングガンダムゼロ【EW】": [
+  {
+   "name": "ＺＥＲＯシステム?",
+   "nameKo": "ZERO 시스템",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 30,
+     "meleePct": 30,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ネオガンダム": [
+  {
+   "name": "試作ネオ・サイコミュシステム",
+   "nameKo": "시작 네오 사이코뮤 시스템",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 20,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "リック・ドム（AG）": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "アマクサ": [
+  {
+   "name": "バイオ脳制御機構",
+   "nameKo": "바이오 뇌 제어기구",
+   "forever": false,
+   "secs": 60,
+   "hp": 80,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "アクト・ハイザック": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "クラスターガンダム": [
+  {
+   "name": "補助動力",
+   "nameKo": "보조 동력",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  },
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "シルエットガンダム改": [
+  {
+   "name": "MACSSオフ?",
+   "nameKo": "MACSS 오프",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    }
+   ]
+  }
+ ],
+ "デスティニーガンダム": [
+  {
+   "name": "最大稼働（S）",
+   "nameKo": "최대 가동 (S)",
+   "forever": false,
+   "secs": 80,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    }
+   ]
+  }
+ ],
+ "クロスボーン・ガンダムX3": [
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "最大出力（T）",
+   "nameKo": "최대 출력 (T)",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 10,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ペイルライダー［軽装備仕様］": [
+  {
+   "name": "能力UP「HADES」",
+   "nameKo": "능력UP「HADES」",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 25,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "RFケンプファー": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 5,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "クロスボーン・ガンダムX1FC": [
+  {
+   "name": "最大出力（T）",
+   "nameKo": "최대 출력 (T)",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 15,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    }
+   ]
+  },
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ガンタンクR-44": [
+  {
+   "name": "クイックドリフト",
+   "nameKo": "퀵 드리프트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ゾロアット": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "プロトタイプガンダム": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ガンダム・バルバトスルプス": [
+  {
+   "name": "阿頼耶識システム（リミッター解除）",
+   "nameKo": "아라야식 시스템 (리미터 해제)",
+   "forever": false,
+   "secs": 90,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 20,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ガンダム・端白星": [
+  {
+   "name": "出力リミッター解除機構",
+   "nameKo": "출력 리미터 해제기구",
+   "forever": false,
+   "secs": 60,
+   "hp": 80,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 20,
+     "melee": 20,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "V2ガンダム": [
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  },
+  {
+   "name": "M・ドライブ・ユニット制御機構",
+   "nameKo": "M 드라이브 유닛 제어기구",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    }
+   ]
+  }
+ ],
+ "ベルガ・ギロス（GK）": [
+  {
+   "name": "S・ノズル制御機構（G）",
+   "nameKo": "S 노즐 제어기구 (G)",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 10
+    }
+   ]
+  }
+ ],
+ "F91［BC装備］": [
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  },
+  {
+   "name": "最大稼働",
+   "nameKo": "최대 가동",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "リゼルN型": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "ゲンガオゾ": [
+  {
+   "name": "B・E・ユニット制御機構",
+   "nameKo": "B·E 유닛 제어기구",
+   "forever": false,
+   "secs": 5,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "ビギナ・ゼラ": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ],
+ "FAエンゲージガンダム［Bプラン］": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "Ζガンダム［IFC＆IFB装備］": [
+  {
+   "name": "能力UP「バイオセンサーK」",
+   "nameKo": "능력UP「바이오센서 K」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 15,
+     "melee": 25,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 15
+    }
+   ]
+  }
+ ],
+ "ユニコーンガンダム［HML装備］": [
+  {
+   "name": "能力UP「NT-D（B）」?",
+   "nameKo": "능력UP「NT-D (B)」",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 25
+    }
+   ]
+  }
+ ],
+ "ナラティブガンダム［B2装備］": [
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 20
+    }
+   ]
+  }
+ ],
+ "量産型ガンキャノン": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "ジュアッグ": [
+  {
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 5,
+     "meleePct": 0,
+     "dmgPct": 0
+    }
+   ]
+  }
+ ],
+ "アレックス": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "dmgPct": 30
+    }
+   ]
+  }
+ ]
+}

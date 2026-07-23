@@ -74,8 +74,13 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         || flat(0, /威力が\s*(\d+)\s*[%％]\s*(?:増加|上昇)/);
       if (!shoot && !melee && !shootPct && !meleePct && !dmgPct && !powerPct) continue;
 
+      // 표는 [스킬명, 스킬LV, 필요 기체LV, 설명, 효과] 순이다.
+      // 필요 기체LV 는 「LV1～」「Lv4～」「Lv1～3」 처럼 적혀 있다.
+      const need = (row[2] || '').match(/LV\s*(\d+)\s*[～~]?\s*(\d+)?/i);
       found.push({
         ms: ms[0].MS名.replace(/_LV\d+$/, ''), cost: ms[0].コスト, attr: ms[0].属性,
+        msLvFrom: need ? Number(need[1]) : 1,
+        msLvTo: need && need[2] ? Number(need[2]) : null,
         // 스킬명 = LV 표기가 아닌 첫 칸
         skill: row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)',
         shoot, melee, shootPct, meleePct, dmgPct, powerPct,
@@ -118,7 +123,50 @@ function show(title, list) {
   }
 }
 
-if (process.argv.includes('--json')) {
+if (process.argv.includes('--ui')) {
+  // 시뮬레이터가 쓰는 형태 — 기체마다 고를 수 있는 버프 스킬 목록.
+  // 태클·특정 무장의 위력만 올리는 스킬은 성능표·무장표에 얹을 자리가 없어 뺀다.
+  const usable = found.filter(r => r.shoot || r.melee || r.shootPct || r.meleePct || r.dmgPct);
+  const byMs = new Map();
+  for (const r of usable) {
+    if (!byMs.has(r.ms)) byMs.set(r.ms, []);
+    byMs.get(r.ms).push(r);
+  }
+  const weight = x => x.shoot + x.melee + x.shootPct + x.meleePct + x.dmgPct;
+  const out = {};
+  for (const [ms, list] of byMs) {
+    const skills = [];
+    for (const name of [...new Set(list.map(r => r.skill))]) {
+      const mine = list.filter(r => r.skill === name);
+      const seen = new Set();
+      const levels = mine
+        .sort((a, b) => a.msLvFrom - b.msLvFrom)
+        .map(r => ({
+          from: r.msLvFrom, to: r.msLvTo,
+          shoot: r.shoot, melee: r.melee,
+          shootPct: r.shootPct, meleePct: r.meleePct, dmgPct: r.dmgPct
+        }))
+        // 같은 구간·같은 수치가 표에 두 번 적힌 경우가 있어 하나만 남긴다
+        .filter(l => { const k = JSON.stringify(l); if (seen.has(k)) return false; seen.add(k); return true; });
+      const top = mine.reduce((a, b) => (weight(b) > weight(a) ? b : a));
+      skills.push({
+        name, nameKo: koSkill(name),
+        forever: top.forever, secs: top.secs, hp: top.hp, manual: top.manual,
+        levels
+      });
+    }
+    // 효과가 큰 것부터 — 드롭다운에서 위에 오게 한다
+    skills.sort((a, b) => Math.max(...b.levels.map(weight)) - Math.max(...a.levels.map(weight)));
+    out[ms] = skills;
+  }
+  const dest = path.join(ROOT, 'data', 'skills.json');
+  fs.writeFileSync(dest, JSON.stringify(out, null, 1));
+  const all = Object.values(out).flat();
+  console.log('기체 ' + Object.keys(out).length + '기 · 스킬 ' + all.length
+    + '개 (반영구 ' + all.filter(s => s.forever).length + ')');
+  console.log('스킬을 2개 이상 가진 기체: ' + Object.values(out).filter(v => v.length > 1).length + '기');
+  console.log('→', path.relative(process.cwd(), dest));
+} else if (process.argv.includes('--json')) {
   const dest = path.join(ROOT, 'data', 'buff_skills.json');
   fs.writeFileSync(dest, JSON.stringify(rows.map(r => ({ ...r, msKo: koName(r.ms), skillKo: koSkill(r.skill) })), null, 1));
   console.log('스킬 ' + rows.length + '건 (반영구 ' + perm.length + ' / 시간 제한 ' + temp.length + ')');
