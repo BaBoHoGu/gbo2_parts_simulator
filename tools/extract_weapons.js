@@ -10,8 +10,10 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const WIKI = path.join(ROOT, 'raw', 'wiki');
 
+// 備考는 원문에서 <br> 로 항목을 나눈다. 공백으로 뭉개면 한 줄로 이어져 읽기 어려우니
+// 구분자를 남긴다. 앞뒤 공백이 있어 「よろけ値：35%」 같은 \S+ 추출에는 영향이 없다.
 const clean = s => s
-  .replace(/<br\s*\/?>/gi, ' ')
+  .replace(/<br\s*\/?>/gi, ' / ')
   .replace(/<[^>]+>/g, '')
   .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
   .replace(/\s+/g, ' ').trim();
@@ -138,7 +140,10 @@ for (const f of files) {
     if (!sp) { skipped++; continue; }
     tableCount++;
 
-    const cols = columnNames(sp.head);
+    // clean() 이 <br> 을 ' / ' 로 남기지만 그게 필요한 곳은 備考뿐이다.
+    // 헤더와 나머지 값에서는 되돌려 「15초 / OH복귀」가 열 조회를 깨뜨리지 않게 한다.
+    const unbreak = v => String(v == null ? '' : v).split(' / ').join(' ');
+    const cols = columnNames(sp.head.map(r => r.map(unbreak)));
     const idx = name => cols.findIndex(c => c === name);
     const find = (...cands) => { for (const c of cands) { const i = idx(c); if (i >= 0) return i; } return -1; };
 
@@ -153,7 +158,8 @@ for (const f of files) {
     const isMelee = cols.some(c => /クールタイム/.test(c));
 
     const byName = new Map();
-    for (const row of sp.body) {
+    for (const rawRow of sp.body) {
+      const row = rawRow.map((v, i) => (i === iNote ? v : unbreak(v)));
       const lvCell = row[iLv >= 0 ? iLv : row.findIndex(c => LV.test(c))];
       const lvm = LV.exec(lvCell || '');
       if (!lvm) continue;

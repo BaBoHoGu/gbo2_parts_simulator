@@ -430,7 +430,9 @@
     ['連続', '연속'], ['連', '연'], ['消費', '소비'], ['単発', '단발'],
     ['秒', '초'], ['発', '발'], ['射', '발'], ['分', '분'], ['時', '시'], ['回', '회']
   ];
-  const jaUnits = s => JA_UNIT.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s));
+  // 전각 괄호·중점은 그대로 두면 표에서 일본어처럼 보여 반각으로 맞춘다.
+  const jaUnits = s => JA_UNIT.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s))
+    .replace(/（/g, '(').replace(/）/g, ')').replace(/・/g, '·').replace(/：/g, ':');
 
   /** 표 열 이름에 공백 표기가 섞여 있어(OH復帰時間 / OH復帰 時間) 공백을 무시하고 찾는다. */
   function infoOf(info, ...names) {
@@ -488,7 +490,7 @@
     // 사격 무기는 사격 보정, 격투 무기는 격투 보정을 쓴다.
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
     // 집속 시간·리로드를 줄여 주는 파츠 (집속 링, 퀵 로더 등)
-    const wm = D.weaponModsOf(state.equipped);
+    const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1);
 
     /** 단축된 값을 보여 주고, 줄어든 만큼을 초록으로 덧붙인다. */
     const cutSpan = (text, pct) => {
@@ -532,7 +534,9 @@
       const dmgCell = (base) => {
         const cell = el('span', 'w-dmg');
         if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
-        const total = w.type === 'melee' ? D.meleeDamage(base, a) : D.shootingDamage(base, a);
+        const pct = w.type === 'melee' ? (wm.meleePct || 0) : (wm.shootPct || 0);
+        const total = D.applyDamagePct(
+          w.type === 'melee' ? D.meleeDamage(base, a) : D.shootingDamage(base, a), pct);
         const gain = total - base;
         cell.append(document.createTextNode(base.toLocaleString()));
         if (gain > 0) cell.append(el('span', 'w-gain', ' (+' + gain.toLocaleString() + ')'));
@@ -548,12 +552,19 @@
       }
       row.append(full);
 
-      // ⑤ 탄 / 히트율 — 실탄은 탄수, 열무기는 히트율
+      // ⑤ 쿨타임
+      row.append(el('span', 'w-col', jaUnits(f('クールタイム') || '—')));
+
+      // ⑥ 탄 / 히트율 — 실탄은 탄수, 열무기는 히트율, 실드는 HP·크기
       const ammo = f('弾数');
       const heat = f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン');
       const ohShots = f('OHまでの弾数');
+      const shieldHp = f('HP'), shieldSize = f('サイズ');
       const ammoCell = el('span', 'w-col');
-      if (ammo) ammoCell.append(document.createTextNode(jaUnits(ammo)));
+      if (shieldHp || shieldSize) {                       // 실드는 HP·크기가 핵심이다
+        ammoCell.append(document.createTextNode(shieldHp ? 'HP ' + Number(shieldHp).toLocaleString() : '—'));
+        if (shieldSize) ammoCell.append(el('span', 'w-sub', '크기 ' + shieldSize));
+      } else if (ammo) ammoCell.append(document.createTextNode(jaUnits(ammo)));
       else if (heat) {
         ammoCell.append(document.createTextNode(heat));
         if (ohShots) ammoCell.append(el('span', 'w-sub', jaUnits(ohShots)));
@@ -569,18 +580,17 @@
       // ⑧ 리로드 / OH복귀 — 파츠로 줄어드는 만큼을 함께 보여 준다
       const reload = f('リロード時間');
       const ohBack = f('OH復帰時間', 'OH復帰速度');
-      const cool = f('クールタイム');
       const last = el('span', 'w-col');
       if (reload) {
         const cut = wm.reloadTime || 0;
         last.append(document.createTextNode(jaUnits(D.shortenTimeText(reload, cut))));
         if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
       } else if (ohBack) {
-        last.append(document.createTextNode(jaUnits(ohBack)));
+        // 보조 제네레이터 등은 무장 오버히트 복귀를 줄여 준다 (스러스터 OH 와는 별개)
+        const cut = wm.weaponOH || 0;
+        last.append(document.createTextNode(jaUnits(D.shortenTimeText(ohBack, cut))));
+        if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
         last.append(el('span', 'w-sub', 'OH복귀'));
-      } else if (cool) {
-        last.append(document.createTextNode(jaUnits(cool)));
-        last.append(el('span', 'w-sub', '쿨타임'));
       } else last.textContent = '—';
       row.append(last);
 
@@ -605,23 +615,126 @@
    * 사전에 없는 표현은 원문 그대로 두어 정보가 사라지지 않게 한다.
    */
   const NOTE_TERM = [
-    ['移動射撃可', '이동사격 가능'], ['ブースト射撃可', '부스트 사격 가능'], ['射撃時静止', '사격 시 정지'],
-    ['集束時よろけ有', '집속 시 비틀 있음'], ['集束時ユニット貫通効果付与', '집속 시 유닛 관통 부여'],
-    ['集束必須', '집속 필수'], ['集束可', '집속 가능'], ['集束時間', '집속 시간'],
-    ['ユニット貫通効果有', '유닛 관통 있음'], ['爆風範囲有', '폭풍 범위 있음'], ['照射攻撃', '조사 공격'],
+    // 사격 조건
+    ['ジャンプ射撃可', '점프사격 가능'], ['ブースト射撃可', '부스트사격 가능'],
+    ['空中射撃可', '공중사격 가능'], ['伏せ射撃可', '엎드려사격 가능'],
+    ['移動射撃可能', '이동사격 가능'], ['移動射撃可', '이동사격 가능'],
+    ['射撃時静止', '사격 시 정지'], ['水中時使用不可', '수중에서 사용 불가'],
+    ['空中格闘制御', '공중격투 제어'], ['連撃不可', '연격 불가'], ['射出可', '사출 가능'],
+    ['使用可', '사용 가능'], ['使用不可', '사용 불가'],
+    // 집속
+    ['集束時よろけ有', '집속 시 비틀 있음'], ['集束時ユニット貫通効果付与', '집속 시 유닛관통 부여'],
+    ['集束中移動可', '집속 중 이동 가능'], ['集束必須', '집속 필수'], ['集束可', '집속 가능'],
+    ['非集束時', '비집속 시'], ['集束時間', '집속 시간'], ['集束時', '집속 시'],
+    // 상태 이상·효과
     ['大よろけ有', '대비틀 있음'], ['よろけ有', '비틀 있음'], ['ひるみ有', '움찔 있음'],
-    ['非集束よろけ値', '비집속 누적치'], ['集束よろけ値', '집속 누적치'], ['よろけ値', '누적치'],
-    ['局部補正', '국부 보정'], ['シールド補正', '실드 보정'], ['頭部補正', '두부 보정'],
-    ['脚部・背部補正', '각부·배부 보정'], ['脚部補正', '각부 보정'], ['背部補正', '배부 보정'],
-    ['頭部・背部補正', '두부·배부 보정'],
-    ['ASL（自動照準補正）', 'ASL(자동조준보정)'], ['自動照準補正', '자동조준보정'],
-    ['二発同時発射', '2발 동시 발사'], ['最大', '최대'], ['倍率', '배율'],
-    ['連射', '연사'], ['貫通', '관통'], ['拡張', '확장'], ['短縮', '단축'], ['増加', '증가'],
+    ['ユニット貫通効果有', '유닛관통 있음'], ['爆風範囲有', '폭풍범위 있음'],
+    ['照射攻撃', '조사공격'], ['妨害効果付与', '방해효과 부여'], ['照準誘導効果有', '조준유도 있음'],
+    ['よろけ値', '누적치'], ['非集束', '비집속'],
+    // 발사 방식
+    ['二発同時発射', '2발 동시발사'], ['発同時発射', '발 동시발사'],
+    ['発連続発射', '발 연속발사'], ['左右交互発射', '좌우 교대발사'],
+    ['即撃ち', '즉시발사'], ['秒間', '초간'], ['回攻撃', '회 공격'],
+    ['パック式弾数所持', '팩식 탄수 보유'], ['秒長押しでロックオン', '초 길게 눌러 록온'],
+    ['高速移動中にロックオン', '고속이동 중 록온'], ['命中後', '명중 후'],
+    // 보정
+    ['局部補正', '국부 보정'], ['シールド補正', '실드 보정'], ['拠点補正', '거점 보정'],
+    ['頭部・背部補正', '두부·배부 보정'], ['脚部・背部補正', '각부·배부 보정'],
+    ['頭部補正', '두부 보정'], ['脚部補正', '각부 보정'], ['背部補正', '배부 보정'],
     ['耐ビーム補正', '내빔 보정'], ['耐実弾補正', '내실탄 보정'], ['耐格闘補正', '내격투 보정'],
-    ['ダメージ計算', '데미지 계산'], ['対象の', '대상의'], ['付与', '부여'], ['効果', '효과'],
+    ['自動照準補正', '자동조준보정'],
+
+    // 위키 備考 상용구
+    ['格闘方向に関わらず強制ダウン', '격투 방향에 관계없이 강제 다운'],
+    ['格闘方向によらず強制ダウン', '격투 방향에 관계없이 강제 다운'],
+    ['かつ小数点以下切り捨てで計算', '이며 소수점 이하 버림으로 계산'],
+    ['小数点以下切り捨て', '소수점 이하 버림'], ['自身のみが視認', '자신만 시인'],
+    ['命中対象に炎上デバフ', '명중 대상에 화상 디버프'], ['炎上デバフ', '화상 디버프'],
+    ['吹き飛ばしダウン', '날려버림 다운'], ['強制ダウン', '강제 다운'],
+    ['ボタン押下で', '버튼을 눌러'], ['ボタンで任意解除', '버튼으로 임의 해제'],
+    ['任意解除', '임의 해제'], ['使用後', '사용 후'], ['無効化', '무효화'],
+    ['特殊緩衝材', '특수완충재'], ['特殊偽装', '특수위장'], ['阿頼耶識', '아라야식'],
+    ['高速移動', '고속이동'], ['ブースト移動', '부스트 이동'], ['連動射撃', '연동사격'],
+    ['高速機動射撃', '고속기동사격'], ['格闘優先度', '격투 우선도'], ['連撃補正', '연격 보정'],
+    ['防御力上昇', '방어력 상승'], ['スピード低下', '스피드 저하'],
+    ['レーダー阻害', '레이더 저해'], ['レーダー障害', '레이더 장애'],
+    ['ビーム属性', '빔 속성'], ['実弾属性', '실탄 속성'], ['射撃属性', '사격 속성'],
+    ['伏せ撃ち', '엎드려 사격'], ['振り回し', '휘두르기'], ['機体後方', '기체 후방'],
+    ['着弾点', '착탄점'], ['着弾', '착탄'], ['射出直後', '사출 직후'], ['射出', '사출'],
+    ['与ダメージ', '주는 피해'], ['与ダメ', '주는 피해'], ['被ダメ', '받는 피해'],
+    ['以上の場合', '이상인 경우'], ['場合', '경우'], ['以上', '이상'], ['以下', '이하'],
+    // 외래어
+    ['マシンガン', '머신건'], ['ライフル', '라이플'], ['バズーカ', '바주카'],
+    ['レーダー', '레이더'], ['スコープ', '스코프'], ['ステルス', '스텔스'],
+    ['スポット', '스팟'], ['バースト', '버스트'], ['リアクション', '리액션'],
+    ['カウンター', '카운터'], ['バリア', '배리어'], ['デバフ', '디버프'],
+    ['ボタン', '버튼'], ['ヘビー', '헤비'], ['ダウン', '다운'], ['リロード', '리로드'],
+    // 일반어
+    ['不可能', '불가능'], ['不可', '불가'], ['可能', '가능'],
+    ['攻撃', '공격'], ['発生', '발생'], ['曲射', '곡사'], ['単発', '단발'],
+    ['弾数', '탄수'], ['消費', '소비'], ['持続', '지속'], ['射程', '사거리'],
+    ['低減', '저감'], ['出力', '출력'], ['能力', '능력'], ['段階', '단계'],
+    ['下格', '하격'], ['横格', '횡격'], ['連続', '연속'], ['維持', '유지'],
+    ['累計', '누계'], ['飛行', '비행'], ['味方', '아군'], ['展開', '전개'],
+    ['散弾', '산탄'], ['無視', '무시'], ['固定', '공통'], ['共通', '공통'],
+    ['時間', '시간'], ['上昇', '상승'], ['追加', '추가'], ['阻害', '저해'],
+    ['障害', '장애'], ['押下', '누름'], ['最長', '최장'], ['約', '약'],
+    ['直後', '직후'], ['命中', '명중'], ['対象', '대상'], ['計算', '계산'],
+    ['自身', '자신'], ['視認', '시인'], ['解除', '해제'], ['使用', '사용'],
+    ['移動', '이동'], ['防御', '방어'], ['属性', '속성'], ['優先', '우선'],
+    ['補正', '보정'], ['方向', '방향'], ['機体', '기체'], ['後方', '후방'],
+    ['無効', '무효'], ['偽装', '위장'], ['緩衝材', '완충재'],
+    ['能', '능'], ['改', '카이'], ['強', '강'], ['単', '단'], ['回', '회'],
+    ['中', '중'], ['後', '후'], ['前', '전'], ['時', '시'], ['内', '내'],
+    ['等', '등'], ['用', '용'], ['非', '비'], ['分', '분'], ['減', '감'],
+    ['爆', '폭'], ['腕', '팔'], ['格', '격'], ['射', '사'], ['動', '동'],
+    ['生', '생'], ['与', '주는'], ['無', '없음'],
+    // 조사 — 남겨 두면 문장이 일본어로 보인다
+    ['からの', '으로부터'], ['まで', '까지'], ['から', '부터'], ['ごと', '마다'],
+    ['かつ', '이며'], ['など', '등'], ['ため', '위해'],
+    ['を', '을'], ['が', '이'], ['は', '는'], ['の', '의'], ['に', '에'],
+    ['で', '로'], ['と', '와'], ['や', '나'], ['も', '도'], ['り', ''], ['な', ''],
+
+    ['狙撃', '저격'], ['砲撃', '포격'], ['迎撃', '요격'], ['爆撃', '폭격'],
+    ['集束', '집속'], ['ジャンプ', '점프'], ['リミッター', '리미터'],
+    ['敵機', '적기'], ['受けた', '받은'], ['入った', '들어간'], ['ずつ', '씩'],
+    ['撃', '격'], ['系', '계'], ['点', '점'], ['闘', '투'], ['風', '풍'],
+    ['自', '자'], ['空', '공'], ['同', '동'], ['行', '행'],
+    // 기타
+    ['スキル発動中', '스킬 발동 중'], ['スキル', '스킬'], ['武装', '무장'],
+    ['通常時', '통상 시'], ['変形時', '변형 시'], ['変身時', '변신 시'],
+    ['は機体', '는 기체'], ['依存', '의존'], ['に付属', '에 부속'], ['対応', '대응'],
+    ['ダメージ計算', '피해 계산'], ['対象の', '대상의'], ['付与', '부여'],
+    ['装備中', '장비 중'], ['シールドへの被ダメージ', '실드에 받는 피해'],
+    ['被ダメージ', '받는 피해'], ['シールド', '실드'], ['ダメージ', '피해'],
+    ['ヒット', '히트'], ['アタック', '어택'], ['ロックオン', '록온'],
+    ['頭部', '두부'], ['脚部', '각부'], ['背部', '배부'], ['腕部', '완부'],
+    ['最大', '최대'], ['倍率', '배율'], ['連射', '연사'], ['貫通', '관통'],
+    ['拡張', '확장'], ['短縮', '단축'], ['増加', '증가'], ['軽減', '경감'],
+    ['効果', '효과'], ['範囲', '범위'], ['威力', '위력'], ['装備', '장비'],
     ['倍', '배'], ['発', '발'], ['秒', '초'], ['有', '있음'], ['可', '가능']
   ];
-  const noteText = s => NOTE_TERM.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s));
+  // 짧은 항목이 긴 말을 잘라먹지 않도록 항상 긴 표기부터 치환한다 (「不可」가 「不가능」이 되던 문제)
+  const NOTE_SORTED = NOTE_TERM.slice().sort((a, b) => b[0].length - a[0].length);
+  /**
+   * 위키 備考를 읽을 수 있는 한국어로 옮긴다.
+   * ① 문장 사전을 먼저 돌리고 ② 남은 고유명사를 무장 용어 사전으로 마무리한다.
+   *    (순서를 바꾸면 용어 사전이 문장을 잘게 쪼개 오히려 읽기 어려워진다)
+   * 두 글자 이상 항목은 앞뒤에 공백을 넣어 어절이 붙지 않게 하고, 마지막에 정리한다.
+   * 단위(秒·発)는 한 글자 항목이라 「2.5초」처럼 숫자에 붙은 채로 남는다.
+   */
+  const noteText = s => {
+    let t = String(s).replace(/可能/g, '可');   // 「〜可」와 「〜可能」을 한 표기로 모은다
+    for (const [ja, ko] of NOTE_SORTED) t = t.split(ja).join(ja.length > 1 ? ' ' + ko + ' ' : ko);
+    return T.weaponTerms(t)
+      .replace(/・/g, '·').replace(/：/g, ': ').replace(/、/g, ', ')
+      .replace(/（/g, ' (').replace(/）/g, ') ')
+      .replace(/\s+/g, ' ')
+      .replace(/\s+([),:;%·])/g, '$1')
+      .replace(/\(\s+/g, '(')
+      .replace(/\s*\/\s*/g, ' / ')
+      .trim();
+  };
 
   /** 무장 행 아래에 위키의 설명과 표 값을 그대로 펼친다. */
   function toggleWeaponDetail(row, w, d, lv) {
@@ -641,29 +754,64 @@
       + ' · ' + (w.type === 'melee' ? '격투' : '사격')));
     box.append(head);
 
-    // 표에 있던 값을 모두 나열한다 (레벨별 값 + 무장 공통 값)
-    const grid = el('div', 'wd-grid');
-    const put = (k, v) => {
-      if (v == null || v === '' || v === '-') return;
-      grid.append(el('span', 'wd-k', wcol(k)));
-      grid.append(el('span', 'wd-v', jaUnits(String(v))));
-    };
-    put('논차지 위력', d.power != null ? d.power.toLocaleString() : null);
-    put('풀차지 위력', d.powerCharged != null ? d.powerCharged.toLocaleString() : null);
-    for (const [k, v] of Object.entries(d.raw || {})) put(k, v);
-    for (const [k, v] of Object.entries(w.info || {})) if (k !== '備考') put(k, v);
+    // 성격별로 묶어 보여 준다 — 한 덩어리로 나열하면 읽기 어렵다
+    const groups = [
+      ['위력', ['논차지 위력', '풀차지 위력', '집속 시간', '집속 배율', '누적치']],
+      ['운용', ['쿨타임', '무장 전환', '전환 시간', '발사 간격', '발사 속도', 'DPS']],
+      ['탄약·열', ['탄수', '리로드 시간', '히트율', '히트율(논차지)', '히트율(풀차지)',
+        'OH까지 발수', 'OH 복귀 시간', 'OH 복귀 속도']],
+      ['방어·보정', ['HP', '크기', '사거리', '국부 보정', '실드 보정']]
+    ];
+
+    // 표시할 값을 한곳에 모은 뒤 그룹으로 나눈다
+    const vals = new Map();
+    const set = (k, v) => { if (v != null && v !== '' && v !== '-') vals.set(k, jaUnits(String(v))); };
+    set('논차지 위력', d.power != null ? d.power.toLocaleString() : null);
+    set('풀차지 위력', d.powerCharged != null ? d.powerCharged.toLocaleString() : null);
+    for (const [k, v] of Object.entries(d.raw || {})) set(wcol(k), v);
+    for (const [k, v] of Object.entries(w.info || {})) if (k !== '備考') set(wcol(k), v);
     const m = w.mods || {};
-    put('집속 시간', m.chargeTime ? m.chargeTime + '초' : null);
-    put('집속 배율', m.chargeRatio ? m.chargeRatio + '배' : null);
-    put('누적치', m.stagger);
-    put('국부 보정', m.partMod ? m.partMod + '배' : null);
-    put('실드 보정', m.shieldMod ? m.shieldMod + '배' : null);
-    box.append(grid);
+    set('집속 시간', m.chargeTime ? m.chargeTime + '초' : null);
+    set('집속 배율', m.chargeRatio ? m.chargeRatio + '배' : null);
+    set('누적치', m.stagger);
+    set('국부 보정', m.partMod ? m.partMod + '배' : null);
+    set('실드 보정', m.shieldMod ? m.shieldMod + '배' : null);
+
+    for (const [title, keys] of groups) {
+      const rows = keys.filter(k => vals.has(k));
+      if (!rows.length) continue;
+      const sec = el('div', 'wd-sec');
+      sec.append(el('div', 'wd-sec-lb', title));
+      const grid = el('div', 'wd-grid');
+      for (const k of rows) {
+        const line = el('div', 'wd-row');
+        line.append(el('span', 'wd-k', k));
+        line.append(el('span', 'wd-v', vals.get(k)));
+        grid.append(line);
+        vals.delete(k);
+      }
+      sec.append(grid);
+      box.append(sec);
+    }
+    // 어느 묶음에도 안 들어간 값은 마지막에 모아 둔다
+    if (vals.size) {
+      const sec = el('div', 'wd-sec');
+      sec.append(el('div', 'wd-sec-lb', '기타'));
+      const grid = el('div', 'wd-grid');
+      for (const [k, v] of vals) {
+        const line = el('div', 'wd-row');
+        line.append(el('span', 'wd-k', k));
+        line.append(el('span', 'wd-v', v));
+        grid.append(line);
+      }
+      sec.append(grid);
+      box.append(sec);
+    }
 
     // 위키 설명 원문 (계산에 안 들어가는 부가 효과까지 전부)
     if (w.info && w.info['備考']) {
-      const note = el('div', 'wd-note');
-      note.append(el('div', 'wd-note-lb', '위키 설명'));
+      const note = el('div', 'wd-sec');
+      note.append(el('div', 'wd-sec-lb', '위키 설명'));
       note.append(el('div', 'wd-note-tx', noteText(w.info['備考'])));
       box.append(note);
     }
