@@ -90,6 +90,8 @@
     detailPart: null,      // 상세 미리보기에 고정된 파츠
     openWeapon: null,      // 펼쳐 둔 무장 이름 — 파츠를 갈아 끼워도 닫히지 않게 유지한다
     skillPicks: new Set(), // 발동시킨 기체 스킬의 인덱스 (여러 개를 겹칠 수 있다)
+    posture: 'stand',      // 사격 자세 'stand'|'crouch'|'prone' — 무장 피해에 자세 보정을 얹는다
+    scope: false,          // 스코프 조준 (자세와 별개로 얹힌다)
     partTab: C.CATEGORY_ALL,
     partQuery: '',
     weights: { ...O.PRESETS['밸런스'] },
@@ -175,8 +177,13 @@
     if (!sk || !sk.levels.length) return null;
     const lv = state.ms ? msLevel(state.ms) : 1;
     const fit = sk.levels.filter(l => lv >= l.from && (l.to == null || lv <= l.to));
-    return fit.length ? fit[fit.length - 1] : sk.levels[0];
+    // 기체 LV 이 스킬 요구 LV 에 못 미치면 그 스킬은 아직 못 쓴다 (예: 백식 LV1 의 LV4 스킬)
+    return fit.length ? fit[fit.length - 1] : null;
   }
+
+  /** 지금 기체 LV 에서 실제로 쓸 수 있는 스킬만 (인덱스와 함께). */
+  const availableSkills = () =>
+    msSkills().map((sk, i) => ({ sk, i })).filter(x => skillLevel(x.sk) != null);
 
   /**
    * 발동시킨 스킬들의 효과 합계. 아무것도 안 골랐으면 null.
@@ -185,12 +192,16 @@
   function skillEffect() {
     const list = activeSkills();
     if (!list.length) return null;
-    const sum = { shoot: 0, melee: 0, dmgAny: 0, dmgShoot: 0, dmgMelee: 0, count: list.length };
+    const sum = { shoot: 0, melee: 0, shootPct: 0, meleePct: 0, crouchPct: 0,
+      dmgAny: 0, dmgShoot: 0, dmgMelee: 0, count: list.length };
     for (const sk of list) {
       const e = skillLevel(sk);
       if (!e) continue;
       sum.shoot += e.shoot;
       sum.melee += e.melee;
+      sum.shootPct += e.shootPct;
+      sum.meleePct += e.meleePct;
+      sum.crouchPct += e.crouchPct || 0;
       sum.dmgAny += e.dmgAny;
       sum.dmgShoot += e.dmgShoot;
       sum.dmgMelee += e.dmgMelee;
@@ -202,11 +213,22 @@
   const skillDmgPct = (e, kind) =>
     (e ? e.dmgAny + (kind === 'melee' ? e.dmgMelee : e.dmgShoot) : 0);
 
-  /** calcStats 에 넘길 스탯 가산분. 피해 % 는 스탯이 아니라 무장 쪽에서 쓴다. */
+  /**
+   * calcStats 에 넘길 스탯 가산분. 피해 % 는 스탯이 아니라 무장 쪽에서 쓴다.
+   * 사격/격투 보정 % (ZERO 시스템)는 스킬을 뺀 총보정에 곱해 정수로 더한다.
+   * (ZERO 는 상한도 올리지만 그 폭이 위키에 없어, 여기서는 통상 상한을 그대로 둔다)
+   */
   function skillStatBonus() {
     const e = skillEffect();
-    if (!e || (!e.shoot && !e.melee)) return null;
-    return { shoot: e.shoot, meleeCorrection: e.melee };
+    if (!e) return null;
+    let shoot = e.shoot, melee = e.melee;
+    if (e.shootPct || e.meleePct) {
+      const bare = stats(null).total;
+      shoot += Math.round(bare.shoot * e.shootPct / 100);
+      melee += Math.round(bare.meleeCorrection * e.meleePct / 100);
+    }
+    if (!shoot && !melee) return null;
+    return { shoot, meleeCorrection: melee };
   }
 
   /** 스킬 몫을 칠할 클래스 — 하나면 보라, 겹쳐 발동하면 청록. */
@@ -563,6 +585,19 @@
     const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1,
       state.ms && state.ms.属性);
 
+    // 자세·스코프 보정 — 사격 무장에만, (1+etcA) 로 공격 배율에 곱해진다
+    const postureEtcA = w => {
+      if (w.type === 'melee') return 0;
+      let e = 0;
+      if (state.posture === 'crouch') e += D.ETC_ATTACK.crouch;
+      else if (state.posture === 'prone') e += D.ETC_ATTACK.prone;
+      if (state.scope) e += D.ETC_ATTACK.scope;
+      return e;
+    };
+    // 고정밀 포격 스킬 — 앉기·정지에서만 사격 피해 +N% (스킬 몫이라 보라로 나온다)
+    const skEtcOf = w => (w.type !== 'melee' && sk && sk.crouchPct && state.posture === 'crouch')
+      ? sk.crouchPct / 100 : 0;
+
     /** 단축된 값을 보여 주고, 줄어든 만큼을 초록으로 덧붙인다. */
     const cutSpan = (text, pct) => {
       const span = el('span');
@@ -609,11 +644,13 @@
         if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
         const kind = w.type === 'melee' ? 'melee' : 'shoot';
         const pct = D.damagePctFor(wm, w, kind);
-        const dmg = (corrOf, extraPct) => D.applyDamagePct(
-          w.type === 'melee' ? D.meleeDamage(base, corrOf) : D.shootingDamage(base, corrOf),
-          pct + extraPct);
-        const withSkill = dmg(a, skillDmgPct(sk, kind));
-        const withoutSkill = sk ? dmg(aBare, 0) : withSkill;
+        const baseEtc = postureEtcA(w);         // 자세·스코프 (스킬과 무관, 초록에 포함)
+        const skEtc = skEtcOf(w);               // 고정밀 포격 (스킬 몫)
+        const dmg = (corrOf, extraPct, etc) => D.applyDamagePct(
+          w.type === 'melee' ? D.meleeDamage(base, corrOf, { etcA: etc })
+            : D.shootingDamage(base, corrOf, { etcA: etc }), pct + extraPct);
+        const withoutSkill = dmg(aBare, 0, baseEtc);
+        const withSkill = dmg(a, skillDmgPct(sk, kind), baseEtc + skEtc);
         const gain = withoutSkill - base;
         const skillGain = withSkill - withoutSkill;
 
@@ -1171,6 +1208,7 @@
       minimums: state.minimums,
       locked: [...state.locked],
       banned: [...state.banned],
+      skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       restarts: 1
     };
 
@@ -1224,10 +1262,12 @@
     // 손상된 저장본이 들어와도 계산이 어긋나지 않게 아는 값만 받는다
     state.stage = [0, 4, 6].includes(Number(obj.stage)) ? Number(obj.stage) : 6;
     state.expansion = C.EXPANSION_SKILLS.includes(obj.expansion) ? obj.expansion : C.EXPANSION_NONE;
-    // 불러온 구성이 그대로 보이도록 제외·변형 표시는 초기 상태로 되돌린다
+    // 불러온 구성이 그대로 보이도록 제외·변형·스킬 표시는 초기 상태로 되돌린다.
+    // (스킬 선택은 기체별 인덱스라 다른 기체를 불러오면 어긋난다)
     state.banned.clear();
     state.form = 'normal';
     state.openWeapon = null;
+    state.skillPicks.clear();
     // expLevel 이 없던 시절의 저장본은 앱 기본값(최대 레벨)으로 맞춘다
     state.expLevel = Number(obj.expLevel) || C.MAX_EXPANSION_LEVEL;
     const wanted = obj.parts || [];
@@ -1370,38 +1410,46 @@
     if (e.dmgAny) num.push('피해 +' + e.dmgAny + '%');
     if (e.dmgShoot) num.push('사격 피해 +' + e.dmgShoot + '%');
     if (e.dmgMelee) num.push('격투 피해 +' + e.dmgMelee + '%');
+    if (e.crouchPct) num.push('앉기·정지 사격 +' + e.crouchPct + '%');
     const how = [skillDur(sk), sk.hp ? 'HP ' + sk.hp + '% 이하' : null, sk.manual ? '수동' : null]
       .filter(Boolean).join(' · ');
     return { num: num.join(' · ') || '—', how };
   }
 
+  /** 버튼 라벨·색만 갱신한다 (메뉴는 다시 그리지 않아 체크 시 스크롤이 튀지 않는다). */
+  function updateSkillButton() {
+    const n = state.skillPicks.size;
+    const box = $('#skillBox'), act = activeSkills();
+    box.classList.toggle('on', n === 1);
+    box.classList.toggle('multi', n > 1);
+    $('#skillBtnText').textContent = n === 0 ? '스킬' : n === 1 ? act[0].nameKo : '스킬 ' + n + '개';
+    $('#skillBtn').title = n
+      ? act.map(s => s.nameKo + ' (' + skillDur(s) + ')').join('\n')
+      : '발동할 기체 스킬 고르기';
+  }
+
   /**
    * 기체 스킬 선택 드롭다운. 체크박스라 여러 개를 겹쳐 발동할 수 있다.
-   * 스킬이 없는 기체에서는 통째로 숨긴다.
+   * 스킬이 아예 없거나, 현재 기체 LV 에서 쓸 수 있는 스킬이 없으면 통째로 숨긴다.
    */
   function renderSkillControls() {
-    const list = msSkills();
-    const box = $('#skillBox'), menu = $('#skillMenu'), label = $('#skillBtnText');
-    if (!list.length) {
+    const box = $('#skillBox'), menu = $('#skillMenu');
+    const avail = availableSkills();       // 현재 LV 에서 쓸 수 있는 스킬만
+    if (!avail.length) {
       box.hidden = true;
       menu.hidden = true;
+      menu.innerHTML = '';               // 이전 기체의 항목·상태를 남기지 않는다
       state.skillPicks.clear();
+      box.classList.remove('on', 'multi');
+      $('#skillBtnText').textContent = '스킬';
       return;
     }
     box.hidden = false;
-
-    const n = state.skillPicks.size;
-    box.classList.toggle('on', n === 1);
-    box.classList.toggle('multi', n > 1);
-    label.textContent = n === 0 ? '스킬'
-      : n === 1 ? activeSkills()[0].nameKo
-        : '스킬 ' + n + '개';
-    $('#skillBtn').title = n
-      ? activeSkills().map(s => s.nameKo + ' (' + skillDur(s) + ')').join('\n')
-      : '발동할 기체 스킬 고르기';
+    // LV 이 바뀌어 못 쓰게 된 선택은 정리한다
+    for (const i of [...state.skillPicks]) if (!avail.some(x => x.i === i)) state.skillPicks.delete(i);
 
     menu.innerHTML = '';
-    list.forEach((sk, i) => {
+    for (const { sk, i } of avail) {
       const s = skillSummary(sk);
       const item = el('label', 'skill-item');
       const cb = el('input');
@@ -1409,7 +1457,7 @@
       cb.checked = state.skillPicks.has(i);
       cb.onchange = () => {
         cb.checked ? state.skillPicks.add(i) : state.skillPicks.delete(i);
-        renderSkillControls();
+        updateSkillButton();            // 메뉴는 그대로 두고 버튼·성능·무장만 갱신
         renderStats();
         renderWeapons();
       };
@@ -1422,7 +1470,8 @@
       tx.append(v);
       item.append(tx);
       menu.append(item);
-    });
+    }
+    updateSkillButton();
   }
 
   function renderAll() {
@@ -1535,6 +1584,24 @@
     };
     $('#skillMenu').onclick = ev => ev.stopPropagation();
     document.addEventListener('click', () => { $('#skillMenu').hidden = true; });
+
+    // 사격 자세 — 선 자세 / 앉기·정지 / 엎드리기 중 하나. 스코프는 자세와 별개 토글.
+    const postureSeg = $('#postureSeg');
+    for (const [v, label] of [['stand', '선 자세'], ['crouch', '앉기·정지'], ['prone', '엎드리기']]) {
+      const b = el('button', 'seg-btn' + (state.posture === v ? ' on' : ''), label);
+      b.onclick = () => {
+        state.posture = v;
+        [...postureSeg.children].forEach(c => c.classList.remove('on'));
+        b.classList.add('on');
+        renderWeapons();            // 자세 보정은 무장 피해에만 영향
+      };
+      postureSeg.append(b);
+    }
+    $('#scopeBtn').onclick = () => {
+      state.scope = !state.scope;
+      $('#scopeBtn').classList.toggle('on', state.scope);
+      renderWeapons();
+    };
 
     $('#backToSelect').onclick = () => setView('select');
 
