@@ -9,6 +9,8 @@
   const C = window.GBO2Core;
   const O = window.GBO2Optimizer;
   const T = window.GBO2i18n;
+  const D = window.GBO2Damage;
+  const weaponData = window.GBO2_WEAPONS || {};
   const { msData, parts: partsByCat, fullst } = window.GBO2_DATA;
 
   const allParts = [].concat(...C.CATEGORIES.map(c => partsByCat[c]));
@@ -84,6 +86,7 @@
     msRarity: 'all',
     msLimit: 80,
     detailPart: null,      // 상세 미리보기에 고정된 파츠
+    weaponLv: 5,           // 무장 레벨 (기체 LV 와 별개)
     partTab: C.CATEGORY_ALL,
     partQuery: '',
     weights: { ...O.PRESETS['밸런스'] },
@@ -390,6 +393,91 @@
       eff.append(el('div', 'd-eff-lb', '특성'));
       eff.append(el('div', 'd-eff-tx', desc));
       box.append(eff);
+    }
+  }
+
+  /* ---------- 무장 ---------- */
+
+  /** 표에서 그대로 가져온 단위 표기를 한글로 바꾼다. */
+  const jaUnits = s => String(s)
+    .split('発/分').join('발/분')
+    .split('秒').join('초')
+    .split('発').join('발')
+    .split('射').join('발')
+    .split('分').join('분');
+
+  /** 현재 기체의 무장 목록 (위키 페이지 ID 로 찾는다). */
+  function msWeapons() {
+    if (!state.ms) return [];
+    const id = (String(state.ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
+    const page = id && weaponData[id];
+    return page ? page.weapons : [];
+  }
+
+  /** 무장이 가진 LV 중 선택값에 가장 가까운(초과하지 않는) 레벨 */
+  function weaponLevel(w) {
+    const lvs = Object.keys(w.levels).map(Number).sort((a, b) => a - b);
+    if (!lvs.length) return null;
+    const want = state.weaponLv;
+    const fit = lvs.filter(l => l <= want);
+    return String(fit.length ? fit[fit.length - 1] : lvs[0]);
+  }
+
+  function renderWeapons() {
+    const box = $('#weaponList');
+    box.innerHTML = '';
+    const list = msWeapons();
+    $('#weaponCount').textContent = list.length ? `${list.length}종` : '';
+
+    if (!list.length) {
+      box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
+      return;
+    }
+
+    const r = stats();
+    // 사격 무기는 사격 보정, 격투 무기는 격투 보정을 쓴다.
+    const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
+
+    for (const w of list) {
+      const lv = weaponLevel(w);
+      const d = lv ? w.levels[lv] : null;
+      if (!d) continue;
+
+      const row = el('div', 'weapon');
+      row.append(el('span', 'w-sec' + (w.section === '主兵装' ? ' main' : ''),
+        w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
+      row.append(el('span', 'w-type ' + w.type, w.type === 'melee' ? '격투' : '사격'));
+
+      const nm = el('span', 'w-nm', T.weaponName(w.name));   // 원문은 툴팁으로
+      nm.title = w.name + (w.info && w.info['備考'] ? '\n\n' + w.info['備考'] : '');
+      row.append(nm);
+      row.append(el('span', 'w-lv', 'LV' + lv));
+
+      // 위력 — 기본값과 보정으로 늘어난 분을 함께 보여준다
+      const dmgCell = el('span', 'w-dmg');
+      const a = corr[w.type] || 0;
+      const put = (base, label) => {
+        if (base == null) return;
+        const total = w.type === 'melee' ? D.meleeDamage(base, a) : D.shootingDamage(base, a);
+        const gain = total - base;
+        const cell = el('span', 'w-val');
+        if (label) cell.append(el('span', 'w-tag', label));
+        cell.append(document.createTextNode(base.toLocaleString()));
+        if (gain > 0) cell.append(el('span', 'w-gain', ' (+' + gain.toLocaleString() + ')'));
+        dmgCell.append(cell);
+      };
+      if (d.power != null && d.powerCharged != null) { put(d.power, '논차지'); put(d.powerCharged, '풀차지'); }
+      else if (d.powerCharged != null) put(d.powerCharged, '집속');
+      else put(d.power, w.powerLabel && /x\d/.test(w.powerLabel) ? w.powerLabel.replace('威力', '') : '');
+      row.append(dmgCell);
+
+      const info = w.info || {};
+      const meta = [d.raw && d.raw['弾数'] ? '탄 ' + d.raw['弾数'] : '', info['射程'] || '',
+        info['リロード時間'] ? '리로드 ' + info['リロード時間'] : '',
+        info['クールタイム'] ? '쿨 ' + info['クールタイム'] : ''].filter(Boolean);
+      row.append(el('span', 'w-meta', jaUnits(meta.join(' · '))));
+
+      box.append(row);
     }
   }
 
@@ -759,6 +847,7 @@
     renderPartList();
     renderBannedCount();
     renderDetail(state.detailPart);
+    renderWeapons();
   }
 
   /* ---------- 초기화 ---------- */
@@ -845,6 +934,12 @@
       };
       tabs.append(b);
     }
+
+    // 무장 레벨 — 기체 LV 와 별개로 고를 수 있다
+    const wlv = $('#weaponLv');
+    for (let lv = 1; lv <= 5; lv++) wlv.append(new Option('LV' + lv, String(lv)));
+    wlv.value = String(state.weaponLv);
+    wlv.onchange = () => { state.weaponLv = Number(wlv.value); renderWeapons(); };
 
     $('#backToSelect').onclick = () => setView('select');
 

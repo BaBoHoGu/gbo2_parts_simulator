@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const raw = window.GBO2_I18N || { ms: {}, parts: {}, kind: {}, attr: {} };
+  const raw = window.GBO2_I18N || { ms: {}, parts: {}, kind: {}, attr: {}, weapons: {} };
 
   // 원본 데이터에 결합문자(バ = ハ+゛) 형태가 섞여 있어 NFC로 맞춰 조회한다.
   const norm = s => (typeof s === 'string' ? s.normalize('NFC') : s);
@@ -20,6 +20,7 @@
   const PARTS = table(raw.parts);
   const KIND = table(raw.kind);
   const ATTR = table(raw.attr);
+  const WEAPONS = table(raw.weapons || {});
 
   /** 기체명. `_LV3` 접미사는 사전에 없으므로 떼었다가 다시 붙인다. */
   function msName(name) {
@@ -35,6 +36,7 @@
   const partDesc = (name, fallback) => (partEntry(name) || {}).d || fallback || '';
   const kindName = k => (k ? KIND.get(norm(k)) || k : k);
   const attrName = a => (a ? ATTR.get(norm(a)) || a : a);
+  const weaponName = n => (n ? WEAPONS.get(norm(n)) || n : n);
 
-  window.GBO2i18n = { msName, partName, partDesc, kindName, attrName, norm };
+  window.GBO2i18n = { msName, partName, partDesc, kindName, attrName, weaponName, norm };
 })();
