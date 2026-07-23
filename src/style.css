@@ -187,7 +187,7 @@ body.view-build  #screenSelect { display: none; }
 /* 구분 · 이름 · 논차지 · 풀차지 · 탄/히트율 · 누적치 · 사거리 · 리로드 */
 .weapon, .weapon-head {
   display: grid;
-  grid-template-columns: 50px minmax(140px, 1.5fr) 105px 125px 76px 92px 88px 96px 112px;
+  grid-template-columns: 50px minmax(140px, 1.5fr) 105px 125px 104px 92px 88px 96px 112px;
   gap: 10px;
   align-items: center;
   padding: 7px 6px;
