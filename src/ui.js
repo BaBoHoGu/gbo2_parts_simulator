@@ -86,7 +86,6 @@
     msRarity: 'all',
     msLimit: 80,
     detailPart: null,      // 상세 미리보기에 고정된 파츠
-    weaponLv: 5,           // 무장 레벨 (기체 LV 와 별개)
     partTab: C.CATEGORY_ALL,
     partQuery: '',
     weights: { ...O.PRESETS['밸런스'] },
@@ -414,11 +413,15 @@
     return page ? page.weapons : [];
   }
 
-  /** 무장이 가진 LV 중 선택값에 가장 가까운(초과하지 않는) 레벨 */
+  /**
+   * 무장 레벨은 기체 레벨을 따라간다.
+   * 기체 LV 보다 높은 무장 LV 는 쓰지 않고, 그보다 낮으면 가진 것 중 가장 높은 레벨을 쓴다.
+   * (무장이 기체보다 적은 레벨만 가진 경우가 있다)
+   */
   function weaponLevel(w) {
     const lvs = Object.keys(w.levels).map(Number).sort((a, b) => a - b);
     if (!lvs.length) return null;
-    const want = state.weaponLv;
+    const want = state.ms ? msLevel(state.ms) : lvs[0];
     const fit = lvs.filter(l => l <= want);
     return String(fit.length ? fit[fit.length - 1] : lvs[0]);
   }
@@ -935,11 +938,6 @@
       tabs.append(b);
     }
 
-    // 무장 레벨 — 기체 LV 와 별개로 고를 수 있다
-    const wlv = $('#weaponLv');
-    for (let lv = 1; lv <= 5; lv++) wlv.append(new Option('LV' + lv, String(lv)));
-    wlv.value = String(state.weaponLv);
-    wlv.onchange = () => { state.weaponLv = Number(wlv.value); renderWeapons(); };
 
     $('#backToSelect').onclick = () => setView('select');
 
