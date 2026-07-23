@@ -16,3 +16,4 @@ raw/wiki/
 # 임시 파일
 _*.js
 *.log
+data/buff_skills.json
