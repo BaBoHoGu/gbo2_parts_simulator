@@ -17,6 +17,7 @@
   --mid: #5bc0ff;
   --long: #b78bff;
   --skill: #c08bff;   /* 기체 스킬 발동분 — 초록(파츠)·빨강(감소)·노랑(UI)과 겹치지 않게 */
+  --skill2: #2ee6d6;  /* 스킬을 2개 이상 겹쳐 발동했을 때 */
   --radius: 10px;
 }
 
@@ -261,23 +262,36 @@ body.view-build  #screenSelect { display: none; }
 .form-seg .seg-btn { padding: 2px 10px; font-size: 11.5px; }
 .stat-row.transform .total { color: var(--mid); }   /* 변형 전용 수치는 파랗게 */
 
-/* 기체 스킬 발동 토글 — 노랑(--accent)은 버튼·제목에 이미 쓰고 있어 보라를 쓴다 */
-.skill-toggle {
-  display: inline-flex; align-items: center; gap: 5px;
-  margin-left: 8px; padding: 2px 9px 2px 6px;
-  border: 1px solid var(--line); border-radius: 7px;
-  background: var(--panel-2); font-size: 11.5px; color: var(--muted);
-  cursor: pointer; user-select: none; vertical-align: middle;
+/* 기체 스킬 선택 — 노랑(--accent)은 버튼·제목에 이미 쓰고 있어 보라/청록을 쓴다 */
+.skill-box { position: relative; display: inline-block; margin-left: 8px; vertical-align: middle; }
+.skill-btn {
+  padding: 2px 8px; font-size: 11.5px; color: var(--muted);
+  border-radius: 7px; max-width: 230px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
 }
-.skill-toggle:hover { border-color: var(--skill); }
-.skill-toggle input { width: 13px; height: 13px; margin: 0; accent-color: var(--skill); cursor: pointer; }
-.skill-toggle.on { border-color: var(--skill); color: var(--skill); }
-.skill-pick {
-  margin-left: 5px; padding: 2px 6px; font-size: 11.5px;
-  max-width: 200px; vertical-align: middle;
+.skill-btn i { font-style: normal; opacity: .7; }
+.skill-box.on .skill-btn { border-color: var(--skill); color: var(--skill); }
+.skill-box.multi .skill-btn { border-color: var(--skill2); color: var(--skill2); }
+
+.skill-menu {
+  position: absolute; z-index: 30; top: calc(100% + 4px); left: 0;
+  min-width: 280px; max-width: 380px; max-height: 320px; overflow-y: auto;
+  padding: 5px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--panel-2); box-shadow: 0 10px 26px #0009;
 }
-.skill-pick:disabled { opacity: .45; }
-.s-gain { color: var(--skill); font-weight: 700; }   /* 스킬로 늘어난 몫 */
+.skill-item {
+  display: flex; align-items: flex-start; gap: 7px;
+  padding: 5px 7px; border-radius: 6px; cursor: pointer; font-weight: 400;
+}
+.skill-item:hover { background: var(--panel-3); }
+.skill-item input { width: 13px; height: 13px; margin: 2px 0 0; accent-color: var(--skill); cursor: pointer; }
+.skill-item .k { color: var(--text); font-size: 12px; }
+.skill-item .v { display: block; color: var(--dim); font-size: 10.5px; margin-top: 1px; }
+.skill-item .v b { color: var(--skill); font-weight: 700; }
+.skill-menu .none { padding: 6px 8px; color: var(--dim); font-size: 11.5px; }
+
+.s-gain { color: var(--skill); font-weight: 700; }        /* 스킬 1개 */
+.s-gain.multi { color: var(--skill2); }                   /* 2개 이상을 겹쳐 발동 */
 
 /* 파츠 상세 미리보기 */
 .detail-body { flex: 1; min-height: 300px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
@@ -572,6 +586,7 @@ body.view-build  #screenSelect { display: none; }
 .meter > i.gain.capped { background: var(--accent); }
 .meter > i.gain.over { background: var(--close); }
 .meter > i.skill { background: var(--skill); }
+.meter > i.skill.multi { background: var(--skill2); }
 
 .over-warn {
   margin-left: 5px; font-size: 10px; font-weight: 700; color: var(--bad);
