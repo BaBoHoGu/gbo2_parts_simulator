@@ -535,10 +535,12 @@ body.view-build  #screenSelect { display: none; }
 .build-parts h2 .right input[type="search"] { width: 220px; max-width: 44vw; padding: 4px 10px; font-size: 12px; }
 
 /* 원본처럼 파츠를 아이콘 그리드로 — 아이콘 + LV 배지 + 짧은 이름 */
+/* 자식의 offsetTop 이 이 요소 기준이 되도록 (fitWholeRows 계산용) */
 .part-list {
+  position: relative;
   overflow-y: auto;
-  flex: 1;
-  min-height: 300px;
+  /* fitWholeRows 가 정한 높이를 flex 가 늘려 덮어쓰지 않도록 늘림을 끈다 */
+  flex: 0 0 auto;
   max-height: 46vh;
   padding: 8px;
   display: grid;

@@ -242,6 +242,8 @@
     const scr = view === 'build' ? $('#screenBuild') : $('#screenSelect');
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
+    // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
+    if (view === 'build') fitWholeRows($('#partList'));
   }
 
   function selectMs(m) {
@@ -646,7 +648,40 @@
       frag.append(t.tile);              // 기존 노드를 옮길 뿐, 새로 만들지 않는다
     }
     box.replaceChildren(frag);
+    fitWholeRows(box);
     box.scrollTop = keepScroll;
+  }
+
+  /**
+   * 목록 높이를 줄 경계에 맞춘다 — 마지막 줄이 반쯤 잘려 보이지 않게.
+   * 타일 높이가 제각각(장착 불가 사유가 붙으면 더 커진다)이라 고정 계산이 아니라
+   * 실제 배치된 위치를 읽어 "예산(max-height) 안에 온전히 들어가는 마지막 줄"을 찾는다.
+   */
+  function fitWholeRows(box) {
+    box.style.height = '';                       // 예산을 다시 재려면 먼저 비운다
+    // 화면이 숨겨져 있으면 좌표가 전부 0이라 계산할 수 없다 (보이게 된 뒤 다시 부른다)
+    if (!box.offsetParent) return;
+    const cs = getComputedStyle(box);
+    const budget = parseFloat(cs.maxHeight);
+    if (!isFinite(budget)) return;
+    const padBottom = parseFloat(cs.paddingBottom) || 0;
+
+    // 같은 줄에 놓인 타일끼리 묶어 줄마다 가장 아래 지점을 구한다
+    const rowBottom = new Map();
+    for (const t of box.children) {
+      const top = t.offsetTop;
+      rowBottom.set(top, Math.max(rowBottom.get(top) || 0, top + t.offsetHeight));
+    }
+
+    let fit = 0, nextTop = null;
+    for (const [top, bottom] of [...rowBottom].sort((a, b) => a[0] - b[0])) {
+      if (bottom + padBottom > budget) { nextTop = top; break; }   // 이 줄부터는 잘린다
+      fit = bottom;
+    }
+    if (!fit) return;
+    // 아래 여백이 줄 간격보다 넓으면 다음 줄 윗머리가 비어져 나오므로 그 앞에서 끊는다
+    const h = nextTop == null ? fit + padBottom : Math.min(fit + padBottom, nextTop);
+    box.style.height = h + 'px';
   }
 
   function renderBannedCount() {
@@ -1055,6 +1090,13 @@
       const r = deserialize(obj);
       toast(r.ok ? loadedMsg(r, '구성을 불러왔습니다') : '알 수 없는 기체입니다');
     };
+
+    // 창 크기가 바뀌면 예산(vh)이 달라지므로 줄 맞춤을 다시 한다
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => fitWholeRows($('#partList')), 120);
+    });
 
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
