@@ -9,6 +9,10 @@ dist/
 shots/
 tools/_original_calc.js   # extract_original_calc.js 가 raw/app.js 에서 생성
 
+# 위키 원본 캐시 (~170MB) — `node tools/fetch_wiki.js` 로 다시 받는다.
+# 추출 결과인 data/weapons.json 만 버전 관리한다.
+raw/wiki/
+
 # 임시 파일
 _*.js
 *.log
