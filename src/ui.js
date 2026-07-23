@@ -424,13 +424,24 @@
 
   /* ---------- 무장 ---------- */
 
-  /** 표에서 그대로 가져온 단위 표기를 한글로 바꾼다. */
-  const jaUnits = s => String(s)
-    .split('発/分').join('발/분')
-    .split('秒').join('초')
-    .split('発').join('발')
-    .split('射').join('발')
-    .split('分').join('분');
+  /** 표에서 그대로 가져온 표기를 한글로 바꾼다. (「即2発 フル1+即1」 같은 값까지) */
+  const JA_UNIT = [
+    ['発/分', '발/분'], ['フル', '풀'], ['ノン', '논'], ['即', '즉'],
+    ['連続', '연속'], ['連', '연'], ['消費', '소비'], ['単発', '단발'],
+    ['秒', '초'], ['発', '발'], ['射', '발'], ['分', '분'], ['時', '시'], ['回', '회']
+  ];
+  const jaUnits = s => JA_UNIT.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s));
+
+  /** 표 열 이름에 공백 표기가 섞여 있어(OH復帰時間 / OH復帰 時間) 공백을 무시하고 찾는다. */
+  function infoOf(info, ...names) {
+    const flat = s => s.replace(/\s+/g, '');
+    for (const n of names) {
+      const key = Object.keys(info).find(k => flat(k) === flat(n));
+      const v = key && info[key];
+      if (v && v !== '-') return v;
+    }
+    return null;
+  }
 
   /** 현재 기체의 무장 목록 (위키 페이지 ID 로 찾는다). */
   function msWeapons() {
@@ -496,15 +507,33 @@
         if (gain > 0) cell.append(el('span', 'w-gain', ' (+' + gain.toLocaleString() + ')'));
         dmgCell.append(cell);
       };
-      if (d.power != null && d.powerCharged != null) { put(d.power, '논차지'); put(d.powerCharged, '풀차지'); }
-      else if (d.powerCharged != null) put(d.powerCharged, '집속');
+      const info = w.info || {};
+      const mods = w.mods || {};
+      const note = info['備考'] || '';
+      const mustCharge = /集束必須/.test(note);       // 집속해야만 쏠 수 있는 무장
+      const chargeSec = mods.chargeTime ? mods.chargeTime + '초' : '';
+      // 집속 표기에 시간을 함께 적어 얼마나 모아야 하는지 바로 보이게 한다
+      const fullTag = (mustCharge ? '집속 필수' : '풀차지') + (chargeSec ? ' ' + chargeSec : '');
+
+      if (d.power != null && d.powerCharged != null) { put(d.power, '논차지'); put(d.powerCharged, fullTag); }
+      else if (d.powerCharged != null) put(d.powerCharged, fullTag);
       else put(d.power, w.powerLabel && /x\d/.test(w.powerLabel) ? w.powerLabel.replace('威力', '') : '');
       row.append(dmgCell);
 
-      const info = w.info || {};
-      const meta = [d.raw && d.raw['弾数'] ? '탄 ' + d.raw['弾数'] : '', info['射程'] || '',
-        info['リロード時間'] ? '리로드 ' + info['リロード時間'] : '',
-        info['クールタイム'] ? '쿨 ' + info['クールタイム'] : ''].filter(Boolean);
+      // 오버히트(히트율·OH까지 발수·복귀 시간)와 집속 시간을 함께 알려 준다
+      const heat = infoOf(info, 'ヒート率', 'ヒート率/フル', 'ヒート率/ノン');
+      const ohShots = infoOf(info, 'OHまでの弾数');
+      const ohBack = infoOf(info, 'OH復帰時間', 'OH復帰速度');
+      const meta = [
+        d.raw && d.raw['弾数'] ? '탄 ' + d.raw['弾数'] : '',
+        infoOf(info, '射程') || '',
+        infoOf(info, 'リロード時間') ? '리로드 ' + infoOf(info, 'リロード時間') : '',
+        infoOf(info, 'クールタイム') ? '쿨 ' + infoOf(info, 'クールタイム') : '',
+        heat ? '히트율 ' + heat : '',
+        ohShots ? 'OH까지 ' + ohShots : '',
+        ohBack ? 'OH복귀 ' + ohBack : '',
+        chargeSec && !d.powerCharged ? '집속 ' + chargeSec : ''
+      ].filter(Boolean);
       row.append(el('span', 'w-meta', jaUnits(meta.join(' · '))));
 
       box.append(row);
