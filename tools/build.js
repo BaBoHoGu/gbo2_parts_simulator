@@ -16,6 +16,8 @@ const i18n = {
   ms: readJson('data', 'i18n', 'ms.json'),
   parts: readJson('data', 'i18n', 'parts.json'),
   weapons: readJson('data', 'i18n', 'weapons.json'),
+  // 설명문 안의 고유명사도 같은 사전으로 옮긴다
+  terms: readJson('data', 'i18n', 'weapon_terms.json'),
   attr: misc.attr,
   kind: misc.kind
 };

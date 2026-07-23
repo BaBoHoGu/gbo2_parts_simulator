@@ -21,6 +21,12 @@
   const KIND = table(raw.kind);
   const ATTR = table(raw.attr);
   const WEAPONS = table(raw.weapons || {});
+  // 설명문에 섞인 고유명사(ビーム・ライフル 등)를 옮긴다. 긴 표기부터 치환해야
+  // 짧은 항목이 긴 이름을 잘라먹지 않는다.
+  const TERMS = Object.entries(raw.terms || {})
+    .filter(([k]) => !k.startsWith('_'))
+    .map(([k, v]) => [norm(k), v])
+    .sort((a, b) => b[0].length - a[0].length);
 
   /** 기체명. `_LV3` 접미사는 사전에 없으므로 떼었다가 다시 붙인다. */
   function msName(name) {
@@ -37,6 +43,7 @@
   const kindName = k => (k ? KIND.get(norm(k)) || k : k);
   const attrName = a => (a ? ATTR.get(norm(a)) || a : a);
   const weaponName = n => (n ? WEAPONS.get(norm(n)) || n : n);
+  const weaponTerms = s => TERMS.reduce((t, [ja, ko]) => t.split(ja).join(ko), norm(String(s)));
 
-  window.GBO2i18n = { msName, partName, partDesc, kindName, attrName, weaponName, norm };
+  window.GBO2i18n = { msName, partName, partDesc, kindName, attrName, weaponName, weaponTerms, norm };
 })();

@@ -108,20 +108,49 @@ const chargedPower = (wp, ratio) => Math.floor(Number(wp) * Number(ratio));
  */
 const WEAPON_MOD_RULES = [
   { key: 'chargeTime', re: /集束時間を([\d.]+)%短縮/ },
-  { key: 'reloadTime', re: /リロード時間を([\d.]+)%短縮/ }
+  { key: 'reloadTime', re: /リロード時間を([\d.]+)%短縮/ },
+  // 무장 오버히트 복귀 (보조 제네레이터·커넥팅[지원Ⅰ형]).
+  // 스러스터 OH 는 「スラスターオーバーヒート時の回復時間」이라 표현이 달라 걸리지 않는다.
+  { key: 'weaponOH', re: /オーバーヒートからの復帰時間を([\d.]+)%短縮/ }
 ];
 
-/** 장착 파츠에서 무장 보정(%)을 모은다. @returns {{chargeTime?:number, reloadTime?:number}} */
-function weaponModsOf(equipped) {
+/**
+ * 오버튠 계열 — 기체 LV 에 비례해 최종 피해량이 늘어난다.
+ *   값 = min(기본 + 증가 × (기체LV − 1), 상한)
+ * 위키에는 「射撃」LV1 의 증가치만 2%로 적혀 있는데, 나머지 11종이 모두 기체 LV4 에서
+ * 정확히 상한에 닿는 규칙과 어긋난다(1 + 2×3 = 7 ≠ 상한 10). 실제 게임값인 3%로 바로잡는다.
+ */
+const OVERTUNE_RE = /(射撃|格闘)攻撃で与えるダメージが(\d+)%増加。機体LVが1上昇するごとに(\d+)%増加。同一のパーツ効果による最大上昇値は(\d+)%/;
+const OVERTUNE_FIX = { 'オーバーチューン[射撃]_LV1': 3 };
+
+/**
+ * 장착 파츠에서 무장 보정을 모은다.
+ * @param {object[]} equipped 장착 파츠
+ * @param {number} [msLv] 기체 레벨 (오버튠 계산에 쓴다)
+ * @returns {{chargeTime?:number, reloadTime?:number, weaponOH?:number, shootPct?:number, meleePct?:number}}
+ */
+function weaponModsOf(equipped, msLv) {
   const out = {};
+  const lv = Number(msLv) || 1;
   for (const p of equipped || []) {
+    const desc = p.description || '';
     for (const rule of WEAPON_MOD_RULES) {
-      const m = rule.re.exec(p.description || '');
+      const m = rule.re.exec(desc);
       if (m) out[rule.key] = (out[rule.key] || 0) + Number(m[1]);
+    }
+    const ot = OVERTUNE_RE.exec(desc.replace(/\\n/g, ''));
+    if (ot) {
+      const inc = OVERTUNE_FIX[p.name] ?? Number(ot[3]);
+      const pct = Math.min(Number(ot[2]) + inc * (lv - 1), Number(ot[4]));
+      const key = ot[1] === '射撃' ? 'shootPct' : 'meleePct';
+      out[key] = (out[key] || 0) + pct;
     }
   }
   return out;
 }
+
+/** 최종 피해량에 곱하는 % 보정 (오버튠 등). */
+const applyDamagePct = (dmg, pct) => (pct ? Math.floor(dmg * (1 + pct / 100)) : dmg);
 
 /** 시간을 percent 만큼 단축한다. 소수 둘째 자리까지. */
 const shortenTime = (sec, pct) =>
@@ -136,7 +165,7 @@ function shortenTimeText(text, pct) {
 const GBO2Damage = {
   CAP_A, CAP_ATT, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
-  weaponModsOf, shortenTime, shortenTimeText
+  weaponModsOf, shortenTime, shortenTimeText, applyDamagePct
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Damage;
