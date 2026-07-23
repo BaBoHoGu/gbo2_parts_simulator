@@ -214,6 +214,7 @@ body.view-build  #screenSelect { display: none; }
 .w-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .w-dot.shooting { background: var(--mid); }
 .w-dot.melee { background: var(--close); }
+.w-dot.shield { background: var(--long); }
 
 .w-dmg, .w-col { font-variant-numeric: tabular-nums; }
 .w-dmg { font-weight: 700; }
