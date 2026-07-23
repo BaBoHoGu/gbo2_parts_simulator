@@ -124,6 +124,7 @@
     full: () => '슬롯 8개 가득 참',
     category: attr => `${T.attrName(attr)} 전용`,
     kind: kind => `${T.kindName(kind)} 계열 중복`,
+    banned: () => '제외한 파츠',
     effect: name => `${T.partName(name)} 효과 중복`,
     movement: () => '스피드/선회 중복',
     slotClose: () => '근접 슬롯 부족',
@@ -254,9 +255,29 @@
   /* ---------- 장착 ---------- */
 
   function equip(part) {
+    // 우클릭으로 제외한 파츠는 자동 구성뿐 아니라 직접 장착도 막는다
+    if (state.banned.has(part.name)) {
+      toast('제외한 파츠입니다 — 우클릭으로 해제하세요');
+      return;
+    }
     const chk = C.checkEquip(part, state.ms, state.equipped, slots());
     if (!chk.ok) { toast(reasonText(chk) + ' — 장착할 수 없습니다'); return; }
     state.equipped.push(part);
+    renderAll();
+  }
+
+  /** 제외 토글. 이미 장착 중인 파츠를 제외하면 함께 해제해 상태를 어긋나지 않게 한다. */
+  function toggleBan(part) {
+    if (state.banned.has(part.name)) {
+      state.banned.delete(part.name);
+    } else {
+      state.banned.add(part.name);
+      if (state.equipped.some(e => e.name === part.name)) {
+        state.equipped = state.equipped.filter(e => e.name !== part.name);
+        state.locked.delete(part.name);
+        toast(T.partName(part.name) + ' — 제외하면서 장착도 해제했습니다');
+      }
+    }
     renderAll();
   }
 
@@ -280,6 +301,8 @@
 
       const tile = el('div', 'eq' + (state.locked.has(p.name) ? ' locked' : ''));
       tile.title = p.name + '\n\n' + T.partDesc(p.name, p.description);
+      // 장착된 파츠도 목록 타일과 똑같이 상세 패널에 띄운다
+      tile.onmouseenter = () => { state.detailPart = p; renderDetail(p); };
 
       const lock = el('span', 'lock' + (state.locked.has(p.name) ? ' on' : ''), '🔒');
       lock.title = '자동 구성 시 이 파츠 고정';
@@ -352,7 +375,8 @@
 
     const { lv, fullNm, desc, cat } = partView(part);
     const isEquipped = state.equipped.some(e => e.name === part.name);
-    const chk = state.ms ? C.checkEquip(part, state.ms, state.equipped, slots()) : { ok: false, code: null };
+    const chk = state.banned.has(part.name) ? { ok: false, code: 'banned', param: null }
+      : state.ms ? C.checkEquip(part, state.ms, state.equipped, slots()) : { ok: false, code: null };
 
     const head = el('div', 'd-head');
     const thumb = el('div', 'd-thumb');
@@ -547,8 +571,11 @@
     const s = slots();
     const rows = list.map(p => {
       const isEquipped = state.equipped.some(e => e.name === p.name);
-      const chk = state.ms ? C.checkEquip(p, state.ms, state.equipped, s) : { ok: false, code: null };
-      return { p, isEquipped, chk, blocked: !isEquipped && !chk.ok };
+      const banned = state.banned.has(p.name);
+      // 제외한 파츠는 장착 불가로 취급한다 (사유도 그렇게 보여 준다)
+      const chk = banned ? { ok: false, code: 'banned', param: null }
+        : state.ms ? C.checkEquip(p, state.ms, state.equipped, s) : { ok: false, code: null };
+      return { p, isEquipped, chk, banned, blocked: !isEquipped && !chk.ok };
     });
 
     // 장착 가능한 것을 위로, 그 다음 장착 중, 마지막이 불가.
@@ -585,9 +612,8 @@
     };
     tile.oncontextmenu = ev => {
       ev.preventDefault();
-      state.banned.has(p.name) ? state.banned.delete(p.name) : state.banned.add(p.name);
-      renderPartList();
-      renderBannedCount();
+      state.detailPart = p;
+      toggleBan(p);
     };
 
     const entry = { tile, hint, why };
@@ -606,12 +632,12 @@
     }
 
     const frag = document.createDocumentFragment();
-    for (const { p, isEquipped, chk, blocked } of rows) {
+    for (const { p, isEquipped, chk, blocked, banned } of rows) {
       const t = tileCache.get(p) || createTile(p);
       t.tile.className = 'part-tile'
         + (isEquipped ? ' on' : '')
         + (blocked ? ' blocked' : '')
-        + (state.banned.has(p.name) ? ' banned' : '');
+        + (banned ? ' banned' : '');
       // 호버 힌트: 장착 가능/해제일 때만 (불가면 비워 둔다)
       t.hint.className = 'pt-hint' + (isEquipped ? ' rm' : '') + (blocked ? ' off' : '');
       t.hint.textContent = blocked ? '' : (isEquipped ? '해제' : '장비 가능');
@@ -631,7 +657,7 @@
     const btn = el('button', 'btn-ghost', '초기화');
     btn.style.padding = '1px 7px';
     btn.style.fontSize = '11px';
-    btn.onclick = () => { state.banned.clear(); renderPartList(); renderBannedCount(); };
+    btn.onclick = () => { state.banned.clear(); renderAll(); };
     box.append(btn);
   }
 
