@@ -178,8 +178,42 @@ function msLevel(name) {
   return m ? Number(m[1]) : 1;
 }
 
-function getBaseStats(ms) {
+/**
+ * 변형/변신 시에만 쓰는 소체 값. 절대값이라 통상치를 대체한다.
+ * 원본 시뮬레이터는 이 필드를 읽지 않아 대조할 기준이 없다 — 위키 수치표를 근거로 한다.
+ * 파츠·강화·확장 보정은 통상시와 똑같이 이 값 위에 얹힌다.
+ */
+const TRANSFORM_FIELD = {
+  speed: 'スピード_変形時',
+  highSpeedMovement: '高速移動_変形時',
+  turnPerformanceGround: '旋回_地上_変形時',
+  turnPerformanceSpace: '旋回_宇宙_変形時',
+  shoot: '射撃補正_変身時',
+  meleeCorrection: '格闘補正_変身時'
+};
+
+/** 변형 시 수치가 따로 있는 기체인가. */
+const hasTransform = ms =>
+  !!ms && (Object.values(TRANSFORM_FIELD).some(f => ms[f] != null) || ms['旋回_変形時'] != null);
+
+function getBaseStats(ms, form) {
   if (!ms) return zeroStats();
+  const base = baseStatsNormal(ms);
+  if (form !== 'transform') return base;
+
+  // 지상·우주 구분 없이 하나로 주는 기체가 있어 먼저 깔고, 개별 값이 있으면 덮어쓴다
+  if (ms['旋回_変形時'] != null) {
+    const v = Number(ms['旋回_変形時']);
+    base.turnPerformanceGround = v;
+    base.turnPerformanceSpace = v;
+  }
+  for (const [key, field] of Object.entries(TRANSFORM_FIELD)) {
+    if (ms[field] != null) base[key] = Number(ms[field]);
+  }
+  return base;
+}
+
+function baseStatsNormal(ms) {
   return {
     hp: Number(ms.HP || 0),
     armorRange: Number(ms.耐実弾補正 || 0),
@@ -257,8 +291,9 @@ function calcSlots(ms, equipped, stage, fullstDefs) {
  * @param {object} partsByCat  { 防御:[], 攻撃:[], ... }
  * @param {object[]} fullstDefs 강화리스트 정의
  * @param {number} [expLevel]  확장 스킬 레벨 1~5 (생략 시 최대치)
+ * @param {'normal'|'transform'} [form] 변형 시 수치로 볼지 (기본 통상)
  */
-function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel) {
+function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel, form) {
   if (!ms) {
     const z = zeroStats();
     return {
@@ -269,7 +304,7 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
     };
   }
 
-  const base = getBaseStats(ms);
+  const base = getBaseStats(ms, form);
   const partBonus = zeroStats();
   const fullStrengthenBonus = zeroStats();
   const expansionBonus = zeroStats();
@@ -537,7 +572,7 @@ const GBO2Core = {
   STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL,
   EXPANSION_SKILLS, EXPANSION_LABEL, EXPANSION_LEVELS, MAX_EXPANSION_LEVEL, MAX_PARTS,
   CATEGORY_ALL, EXPANSION_NONE,
-  zeroStats, msLevel, getBaseStats, initializeLimits,
+  zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted,
   effectConflict, partBase
 };
