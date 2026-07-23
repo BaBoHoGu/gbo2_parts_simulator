@@ -135,6 +135,19 @@
     </section>
   </div>
 
+  <!-- 최하단: 무장 -->
+  <div class="build-weapons">
+    <section class="panel">
+      <h2>무장 <span id="weaponCount"></span>
+        <span class="right note">
+          기본 위력 <span style="color:var(--ok)">(+보정 증가분)</span> · 무장 LV
+          <select id="weaponLv"></select>
+        </span>
+      </h2>
+      <div class="weapon-list" id="weaponList"></div>
+    </section>
+  </div>
+
 </section>
 
 <!-- ========== 자동 구성 드로어 ========== -->
@@ -166,10 +179,12 @@
 <div class="toast" id="toast"></div>
 
 <script>/*__DATA__*/</script>
+<script>/*__WEAPONS__*/</script>
 <script>/*__I18N_DATA__*/</script>
 <script>/*__CORE__*/</script>
 <script>/*__I18N__*/</script>
 <script>/*__OPT__*/</script>
+<script>/*__DAMAGE__*/</script>
 <script>/*__UI__*/</script>
 </body>
 </html>

@@ -9,11 +9,13 @@ const readJson = (...p) => JSON.parse(read(...p));
 const msData = readJson('data', 'msData.json');
 const parts = readJson('data', 'parts.json');
 const fullst = readJson('data', 'fullst.json');
+const weapons = readJson('data', 'weapons.json');
 
 const misc = readJson('data', 'i18n', 'misc.json');
 const i18n = {
   ms: readJson('data', 'i18n', 'ms.json'),
   parts: readJson('data', 'i18n', 'parts.json'),
+  weapons: readJson('data', 'i18n', 'weapons.json'),
   attr: misc.attr,
   kind: misc.kind
 };
@@ -25,13 +27,15 @@ const inline = (name, value) =>
 const html = read('src', 'index.html')
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst }))
+  .replace('/*__WEAPONS__*/', () => inline('GBO2_WEAPONS', weapons))
   .replace('/*__I18N_DATA__*/', () => inline('GBO2_I18N', i18n))
   .replace('/*__CORE__*/', () => read('src', 'core.js'))
   .replace('/*__I18N__*/', () => read('src', 'i18n.js'))
   .replace('/*__OPT__*/', () => read('src', 'optimizer.js'))
+  .replace('/*__DAMAGE__*/', () => read('src', 'damage.js'))
   .replace('/*__UI__*/', () => read('src', 'ui.js'));
 
-for (const marker of ['__CSS__', '__DATA__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__UI__']) {
+for (const marker of ['__CSS__', '__DATA__', '__WEAPONS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__UI__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 
@@ -60,4 +64,5 @@ console.log('built', out, (Buffer.byteLength(html) / 1024 / 1024).toFixed(2) + '
   '| 이미지', imgCount + '개 ' + (imgBytes / 1024 / 1024).toFixed(2) + ' MB',
   '| MS', msData.length,
   '| parts', Object.values(parts).reduce((a, b) => a + b.length, 0),
+  '| 무장', Object.values(weapons).reduce((a, p) => a + p.weapons.length, 0),
   '| 사전', Object.keys(i18n.ms).length + '기체 / ' + Object.keys(i18n.parts).length + '파츠');
