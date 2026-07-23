@@ -292,13 +292,14 @@ function calcSlots(ms, equipped, stage, fullstDefs) {
  * @param {object[]} fullstDefs 강화리스트 정의
  * @param {number} [expLevel]  확장 스킬 레벨 1~5 (생략 시 최대치)
  * @param {'normal'|'transform'} [form] 변형 시 수치로 볼지 (기본 통상)
+ * @param {object} [skill] 기체 스킬 발동분 { shoot, meleeCorrection, ... } — 상한은 그대로 적용된다
  */
-function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel, form) {
+function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill) {
   if (!ms) {
     const z = zeroStats();
     return {
       base: z, partBonus: { ...z }, fullStrengthenBonus: { ...z }, expansionBonus: { ...z },
-      total: { ...z }, rawTotal: { ...z },
+      skillBonus: { ...z }, total: { ...z }, rawTotal: { ...z },
       currentLimits: { ...DEFAULT_LIMITS, flags: {} },
       fullStrengthenSlotBonus: { close: 0, medium: 0, long: 0 }, isModified: { ...z }
     };
@@ -308,6 +309,12 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   const partBonus = zeroStats();
   const fullStrengthenBonus = zeroStats();
   const expansionBonus = zeroStats();
+  // 기체 스킬(바이오센서·사이코프레임 공진 등) 발동분.
+  // 위키에 상한을 올린다는 언급이 없으므로 파츠·확장과 같이 상한 안에서 더한다.
+  const skillBonus = zeroStats();
+  for (const [k, v] of Object.entries(skill || {})) {
+    if (skillBonus.hasOwnProperty(k) && typeof v === 'number') skillBonus[k] += v;
+  }
   const partLimitBonus = zeroStats();
   const slotBonus = { close: 0, medium: 0, long: 0 };
   const { currentLimits: limits, limitChangedFlags: flags } = initializeLimits(ms);
@@ -436,11 +443,13 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   /* --- 합산 및 상한 적용 --- */
   const total = {}, rawTotal = {}, isModified = {};
   for (const k of STAT_KEYS) {
-    const raw = (base[k] || 0) + (partBonus[k] || 0) + (fullStrengthenBonus[k] || 0) + (expansionBonus[k] || 0);
+    const raw = (base[k] || 0) + (partBonus[k] || 0) + (fullStrengthenBonus[k] || 0)
+      + (expansionBonus[k] || 0) + (skillBonus[k] || 0);
     rawTotal[k] = raw;
     const cap = limits[k] == null ? Infinity : limits[k];
     total[k] = cap !== Infinity ? Math.min(raw, cap) : raw;
-    isModified[k] = base[k] !== total[k] || partBonus[k] !== 0 || fullStrengthenBonus[k] !== 0 || expansionBonus[k] !== 0;
+    isModified[k] = base[k] !== total[k] || partBonus[k] !== 0 || fullStrengthenBonus[k] !== 0
+      || expansionBonus[k] !== 0 || skillBonus[k] !== 0;
     if (total[k] === 0 && partBonus[k] === 0 && fullStrengthenBonus[k] === 0 && expansionBonus[k] === 0) {
       isModified[k] = false;
     }
@@ -461,7 +470,7 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   limits.flags = flags;
   return {
     base, partBonus, fullStrengthenBonus, fullStrengthenSlotBonus: slotBonus,
-    currentLimits: limits, expansionBonus, rawTotal, total, isModified, partLimitBonus
+    currentLimits: limits, expansionBonus, skillBonus, rawTotal, total, isModified, partLimitBonus
   };
 }
 

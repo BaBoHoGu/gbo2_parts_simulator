@@ -11,6 +11,7 @@
   const T = window.GBO2i18n;
   const D = window.GBO2Damage;
   const weaponData = window.GBO2_WEAPONS || {};
+  const skillData = window.GBO2_SKILLS || {};
   const { msData, parts: partsByCat, fullst } = window.GBO2_DATA;
 
   const allParts = [].concat(...C.CATEGORIES.map(c => partsByCat[c]));
@@ -88,6 +89,8 @@
     form: 'normal',        // 'normal' | 'transform' — 성능표를 어느 형태로 볼지
     detailPart: null,      // 상세 미리보기에 고정된 파츠
     openWeapon: null,      // 펼쳐 둔 무장 이름 — 파츠를 갈아 끼워도 닫히지 않게 유지한다
+    skillOn: false,        // 기체 스킬 발동분을 얹어서 볼지
+    skillPick: 0,          // 기체가 스킬을 여러 개 가질 때 고른 것의 인덱스
     partTab: C.CATEGORY_ALL,
     partQuery: '',
     weights: { ...O.PRESETS['밸런스'] },
@@ -153,7 +156,41 @@
   /* ---------- 파생값 ---------- */
 
   const slots = () => C.calcSlots(state.ms, state.equipped, state.stage, fullst);
-  const stats = () => C.calcStats(state.ms, state.equipped, state.stage, state.expansion, partsByCat, fullst, state.expLevel, state.form);
+
+  /* ---------- 기체 스킬 ---------- */
+
+  /** 현재 기체가 가진 버프 스킬 목록. */
+  const msSkills = () => (state.ms && skillData[baseName(state.ms.MS名)]) || [];
+
+  /** 지금 고른 스킬 (토글이 꺼져 있으면 null). */
+  function activeSkill() {
+    const list = msSkills();
+    if (!state.skillOn || !list.length) return null;
+    return list[Math.min(state.skillPick, list.length - 1)];
+  }
+
+  /**
+   * 스킬 수치는 기체 LV 구간마다 다르다 (「LV1～」「LV4～」).
+   * 지금 기체 LV 이 들어가는 구간 중 가장 높은 것을 쓴다.
+   */
+  function skillEffect(sk) {
+    if (!sk || !sk.levels.length) return null;
+    const lv = state.ms ? msLevel(state.ms) : 1;
+    const fit = sk.levels.filter(l => lv >= l.from && (l.to == null || lv <= l.to));
+    return fit.length ? fit[fit.length - 1] : sk.levels[0];
+  }
+
+  /** calcStats 에 넘길 스탯 가산분. 피해 % 는 스탯이 아니라 무장 쪽에서 쓴다. */
+  function skillStatBonus() {
+    const e = skillEffect(activeSkill());
+    if (!e) return null;
+    if (!e.shoot && !e.melee) return null;
+    return { shoot: e.shoot, meleeCorrection: e.melee };
+  }
+
+  const stats = (skill = skillStatBonus()) =>
+    C.calcStats(state.ms, state.equipped, state.stage, state.expansion, partsByCat, fullst,
+      state.expLevel, state.form, skill);
 
   /* ---------- 기체 목록 ---------- */
 
@@ -252,6 +289,7 @@
     state.equipped = [];
     state.locked.clear();
     state.detailPart = null;
+    state.skillPick = 0;
     renderAll();
     setView('build');           // 기체를 고르면 곧바로 파츠 적용 단계로
   }
@@ -491,6 +529,11 @@
     const r = stats();
     // 사격 무기는 사격 보정, 격투 무기는 격투 보정을 쓴다.
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
+    // 스킬을 뺀 값도 함께 구해, 스킬로 늘어난 위력만 따로 보여 준다
+    const sk = skillEffect(activeSkill());
+    const bare = sk ? stats(null) : null;
+    const corrBare = bare ? { shooting: bare.total.shoot, melee: bare.total.meleeCorrection } : corr;
+    const skillDmgPct = sk ? sk.dmgPct || 0 : 0;
     // 무장에 붙는 파츠 보정 (집속·리로드·OH·피해 %·실드 HP).
     // 효과마다 걸리는 무장 범위가 달라 무장별로 다시 뽑아 쓴다.
     const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1,
@@ -514,6 +557,7 @@
       const note = info['備考'] || '';
       const f = (...names) => wField(d, info, ...names);
       const a = corr[w.type] || 0;
+      const aBare = corrBare[w.type] || 0;
 
       // 집속 링·화기 관제는 「ビーム射撃兵装」만 줄여 준다 — 격투 무장의 집속은 절댓값이다
       const chargeCut = mods.chargeTime && w.type === 'shooting' ? D.timeCutFor(wm, 'chargeTime', w) : 0;
@@ -535,18 +579,26 @@
       nm.title = w.name;
       row.append(nm);
 
-      /** 위력 한 칸 — 기본값과 보정 증가분 */
+      /** 위력 한 칸 — 기본값 · 파츠 보정분(초록) · 스킬 발동분(보라) */
       const dmgCell = (base) => {
         const cell = el('span', 'w-dmg');
         if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
-        const pct = D.damagePctFor(wm, w, w.type === 'melee' ? 'melee' : 'shoot');
-        const total = D.applyDamagePct(
-          w.type === 'melee' ? D.meleeDamage(base, a) : D.shootingDamage(base, a), pct);
-        const gain = total - base;
+        const kind = w.type === 'melee' ? 'melee' : 'shoot';
+        const pct = D.damagePctFor(wm, w, kind);
+        const dmg = (corrOf, extraPct) => D.applyDamagePct(
+          w.type === 'melee' ? D.meleeDamage(base, corrOf) : D.shootingDamage(base, corrOf),
+          pct + extraPct);
+        const withSkill = dmg(a, skillDmgPct);
+        const withoutSkill = sk ? dmg(aBare, 0) : withSkill;
+        const gain = withoutSkill - base;
+        const skillGain = withSkill - withoutSkill;
+
         cell.append(document.createTextNode(base.toLocaleString()));
         // 특화 프로그램은 반대쪽 무장을 깎으므로 감소분도 보여 준다
         if (gain) cell.append(el('span', gain > 0 ? 'w-gain' : 'w-loss',
           ' (' + (gain > 0 ? '+' : '') + gain.toLocaleString() + ')'));
+        if (skillGain) cell.append(el('span', 's-gain',
+          ' (' + (skillGain > 0 ? '+' : '') + skillGain.toLocaleString() + ')'));
         return cell;
       };
 
@@ -853,10 +905,13 @@
     if (!state.ms) return;
 
     const r = stats();
+    // 스킬 몫은 상한에 걸려 잘릴 수 있으므로, 스킬을 뺀 결과와 비교해 실제로 늘어난 만큼만 센다
+    const bare = skillStatBonus() ? stats(null) : null;
 
     for (const k of C.STAT_KEYS) {
       const limit = r.currentLimits[k];
       const raw = r.rawTotal[k], tot = r.total[k], soche = r.base[k];
+      const skillGain = bare ? tot - bare.total[k] : 0;
       const over = limit !== Infinity && raw > limit ? raw - limit : 0;   // 상한 때문에 버려진 양
       const atCap = limit !== Infinity && tot >= limit;
       const gain = tot - soche;                                          // 강화+확장+파츠로 인한 증가분
@@ -869,20 +924,29 @@
       if (over) totalCell.append(el('span', 'over-warn', '+' + over));    // ⚠ 초과분
       row.append(totalCell);
 
-      // 증가 폭: 강화·확장·파츠로 늘어난 양을 초록(+)으로 표시
-      row.append(el('span', 'delta' + (gain > 0 ? ' up' : gain < 0 ? ' down' : ''),
-        gain === 0 ? '·' : (gain > 0 ? '+' : '') + gain.toLocaleString()));
+      // 증가 폭: 강화·확장·파츠는 초록, 스킬 발동분은 보라로 나눠 보여 준다
+      const base = gain - skillGain;
+      const delta = el('span', 'delta' + (base > 0 ? ' up' : base < 0 ? ' down' : ''));
+      delta.textContent = base === 0 && skillGain ? '' : (base === 0 ? '·' : (base > 0 ? '+' : '') + base.toLocaleString());
+      if (skillGain) delta.append(el('span', 's-gain', (base === 0 ? '' : ' ') + '+' + skillGain.toLocaleString()));
+      row.append(delta);
 
       // 소체분(회색) 위에 증가분(초록)을 겹쳐 보이고, 상한 초과는 OVER 로 표시
       const meter = el('div', 'meter');
       const scale = limit === Infinity ? Math.max(tot, soche, 1) * 1.15 : limit;
       const baseW = Math.min(100, (Math.min(soche, tot) / scale) * 100);
-      const gainW = Math.min(100 - baseW, (Math.max(gain, 0) / scale) * 100);
+      const gainW = Math.min(100 - baseW, (Math.max(base, 0) / scale) * 100);
+      const skillW = Math.min(100 - baseW - gainW, (Math.max(skillGain, 0) / scale) * 100);
       const basePart = el('i', 'base');
       basePart.style.width = baseW + '%';
       const gainPart = el('i', 'gain' + (atCap ? ' capped' : '') + (over ? ' over' : ''));
       gainPart.style.width = gainW + '%';
       meter.append(basePart, gainPart);
+      if (skillW > 0) {                       // 스킬 몫은 게이지에서도 보라로 구분한다
+        const skillPart = el('i', 'skill');
+        skillPart.style.width = skillW + '%';
+        meter.append(skillPart);
+      }
 
       const graph = el('div', 'graph');
       graph.append(meter);
@@ -1224,6 +1288,7 @@
     const had = state.equipped.length;
     state.ms = m;
     state.equipped = [];
+    state.skillPick = 0;
     state.locked.clear();
     renderAll();
     if (had) toast('레벨을 변경해 장착 파츠를 초기화했습니다');
@@ -1268,9 +1333,45 @@
     }
   }
 
+  /**
+   * 기체 스킬 토글과 선택 드롭다운.
+   * 스킬이 없는 기체에서는 둘 다 숨기고 토글도 꺼 둔다.
+   * 드롭다운은 스킬이 2개 이상일 때만 띄운다 (하나뿐이면 토글 라벨에 이름을 적는다).
+   */
+  function renderSkillControls() {
+    const list = msSkills();
+    const box = $('#skillToggle'), pick = $('#skillPick'), chk = $('#skillOn');
+    if (!list.length) {
+      box.hidden = pick.hidden = true;
+      state.skillOn = false;
+      return;
+    }
+    if (state.skillPick >= list.length) state.skillPick = 0;
+
+    box.hidden = false;
+    chk.checked = state.skillOn;
+    box.classList.toggle('on', state.skillOn);
+
+    const one = list.length === 1;
+    const sel = list[state.skillPick];
+    const dur = s => (s.forever ? '무제한' : s.secs ? s.secs + '초' : '시간 제한');
+    box.querySelector('span').textContent = one ? sel.nameKo : '스킬';
+    box.title = sel.nameKo + ' · 지속 ' + dur(sel)
+      + (sel.hp ? ' · HP ' + sel.hp + '% 이하' : '') + (sel.manual ? ' · 수동 발동' : '');
+
+    pick.hidden = one;
+    pick.innerHTML = '';                       // 이전 기체의 항목이 남지 않게 항상 비운다
+    if (!one) {
+      list.forEach((s, i) => pick.append(new Option(s.nameKo + ' (' + dur(s) + ')', String(i))));
+      pick.value = String(state.skillPick);
+      pick.disabled = !state.skillOn;
+    }
+  }
+
   function renderAll() {
     renderHero();
     renderFormSeg();
+    renderSkillControls();
     renderLevelSwitch();
     // 기체 목록은 ① 선택 화면에서만 갱신 (파츠 장착 때마다 1,671기를 재정렬·재생성하지 않도록)
     if (state.view !== 'build') renderMsList();
@@ -1368,6 +1469,11 @@
       tabs.append(b);
     }
 
+
+    // 기체 스킬 발동 — 성능표와 무장 위력에만 영향을 주므로 그 둘만 다시 그린다
+    const redrawSkill = () => { renderSkillControls(); renderStats(); renderWeapons(); };
+    $('#skillOn').onchange = e => { state.skillOn = e.target.checked; redrawSkill(); };
+    $('#skillPick').onchange = e => { state.skillPick = Number(e.target.value) || 0; redrawSkill(); };
 
     $('#backToSelect').onclick = () => setView('select');
 

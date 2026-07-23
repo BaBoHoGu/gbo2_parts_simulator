@@ -10,6 +10,7 @@ const msData = readJson('data', 'msData.json');
 const parts = readJson('data', 'parts.json');
 const fullst = readJson('data', 'fullst.json');
 const weapons = readJson('data', 'weapons.json');
+const skills = readJson('data', 'skills.json');
 
 const misc = readJson('data', 'i18n', 'misc.json');
 const i18n = {
@@ -30,6 +31,7 @@ const html = read('src', 'index.html')
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst }))
   .replace('/*__WEAPONS__*/', () => inline('GBO2_WEAPONS', weapons))
+  .replace('/*__SKILLS__*/', () => inline('GBO2_SKILLS', skills))
   .replace('/*__I18N_DATA__*/', () => inline('GBO2_I18N', i18n))
   .replace('/*__CORE__*/', () => read('src', 'core.js'))
   .replace('/*__I18N__*/', () => read('src', 'i18n.js'))
@@ -37,7 +39,7 @@ const html = read('src', 'index.html')
   .replace('/*__DAMAGE__*/', () => read('src', 'damage.js'))
   .replace('/*__UI__*/', () => read('src', 'ui.js'));
 
-for (const marker of ['__CSS__', '__DATA__', '__WEAPONS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__UI__']) {
+for (const marker of ['__CSS__', '__DATA__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__UI__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 
