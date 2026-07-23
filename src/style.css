@@ -479,15 +479,16 @@ body.view-build  #screenSelect { display: none; }
 
 .stat-wrap { display: flex; flex-direction: column; }
 #statBody { flex: 1; display: flex; flex-direction: column; }
-#statBody .stat-row { flex: 1; }        /* 남는 세로 공간을 행들이 고르게 채운다 */
+/* 남는 세로 공간을 고르게 나눠 갖되, 너무 벌어지지 않게 상한을 둔다 */
+#statBody .stat-row { flex: 1; max-height: 59px; }
 
 .stat-row {
   display: grid;
   grid-template-columns: 100px 66px 56px 1fr 48px;
   gap: 10px;
   align-items: center;
-  padding: 8px 14px;
-  min-height: 40px;
+  padding: 5px 14px;
+  min-height: 32px;
   border-top: 1px solid var(--line-soft);
   font-variant-numeric: tabular-nums;
 }
