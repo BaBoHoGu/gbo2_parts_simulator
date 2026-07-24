@@ -137,6 +137,85 @@ function parseShield(grid, section, heading) {
   return w;
 }
 
+/* ---------- 격투 방향·연격 보정 ---------- */
+
+/** 첫 칸이 `firstCell` 인 표를 찾는다 (格闘方向 / 連撃数). */
+function findGrid(grids, firstCell) {
+  for (const g of grids) if (g[0] && g[0][0] === firstCell) return g;
+  return null;
+}
+
+const OWN_COL = /^(本武器|本MS|本機).{0,2}倍率$/;   // 「本武器倍率」= 이 무장의 배율
+const stripName = s => String(s).replace(/^.*用/, '')
+  .replace(/[【［(（][^】］)）]*[】］)）]/g, '').replace(/[x×]\d+/g, '').replace(/倍率$/, '');
+const nameTokens = s => stripName(s).split(/[・\s]/).filter(Boolean);
+
+/**
+ * 방향/연격 표의 열(무장 약칭)을 무장명에 맞춘다.
+ *   ① 토큰 부분수열 일치(가장 구체적인 열) → ② 「本武器倍率」 → ③ 「標準倍率」
+ */
+function matchColumn(cols, wname) {
+  const wt = nameTokens(wname), wj = stripName(wname);
+  let best = -1, bestScore = 0, bestLen = 0;
+  for (let i = 1; i < cols.length; i++) {
+    const c = cols[i];
+    if (!c || c === '標準倍率' || OWN_COL.test(c)) continue;
+    const ct = nameTokens(c);
+    if (!ct.length) continue;
+    let wi = 0, matched = 0;
+    for (const t of ct) { while (wi < wt.length && wt[wi] !== t) wi++; if (wi < wt.length) { matched++; wi++; } }
+    if (matched < ct.length) {           // ・ 없이 붙여 쓴 열은 문자열 포함으로 한 번 더 본다
+      const cj = stripName(c);
+      if (cj.length >= 3 && (wj.includes(cj) || cj.includes(wj))) matched = ct.length;
+    }
+    if (matched === ct.length && (matched > bestScore || (matched === bestScore && c.length > bestLen))) {
+      best = i; bestScore = matched; bestLen = c.length;
+    }
+  }
+  if (best >= 0) return best;
+  const own = cols.findIndex(c => OWN_COL.test(c));
+  return own >= 0 ? own : cols.indexOf('標準倍率');
+}
+
+/** 「240%(120%x2)」→ [1.2,1.2], 「100%」→ [1.0], 「連撃不可」→ null. */
+function parseMult(raw) {
+  const s = String(raw || '').trim();
+  if (!s || /連撃不可|不可|-|―|無/.test(s)) return null;
+  const multi = s.match(/\((\d+(?:\.\d+)?)\s*[%％]\s*[x×]\s*(\d+)\)/);
+  if (multi) return Array(Number(multi[2])).fill(Number(multi[1]) / 100);
+  const one = s.match(/(\d+(?:\.\d+)?)\s*[%％]/);
+  return one ? [Number(one[1]) / 100] : null;
+}
+
+/** 페이지의 격투 무장에 방향·연격 보정을 붙인다. */
+function attachMeleeMods(weapons, grids) {
+  const dir = findGrid(grids, '格闘方向');
+  const combo = findGrid(grids, '連撃数');
+  for (const w of weapons) {
+    if (w.type !== 'melee') continue;
+    const melee = {};
+    if (dir) {
+      const col = matchColumn(dir[0], w.name);
+      const rows = [];
+      for (const r of dir.slice(1)) {
+        const hits = parseMult(r[col]);
+        if (hits) rows.push({ label: r[0], raw: r[col].trim(), hits });
+      }
+      if (rows.length) melee.direction = rows;
+    }
+    if (combo) {
+      const col = matchColumn(combo[0], w.name);
+      const rows = [];
+      for (const r of combo.slice(1)) {
+        const hits = parseMult(r[col]);
+        if (hits) rows.push({ label: r[0], raw: r[col].trim(), mult: hits[0] });
+      }
+      if (rows.length > 1) melee.combo = rows;   // 1격뿐이면 연격이 아니다
+    }
+    if (melee.direction || melee.combo) w.melee = melee;
+  }
+}
+
 /** 備考에서 계산·표시에 쓰는 값을 뽑아낸다. */
 function parseNote(note) {
   const pick = re => { const m = note.match(re); return m ? Number(m[1]) : null; };
@@ -179,6 +258,7 @@ for (const f of files) {
   }
 
   const weapons = [];
+  const allGrids = [];               // 방향·연격 보정 표를 나중에 찾으려고 전부 모아 둔다
   let section = null, lastHeading = null;
 
   for (const mk of marks) {
@@ -188,6 +268,7 @@ for (const f of files) {
       continue;
     }
     const grid = fixBareLevel(parseTable(mk.table));
+    allGrids.push(grid);
     const flat = grid.flat().join(' ');
     const shield = parseShield(grid, section, lastHeading);
     if (shield) { weapons.push(shield); weaponCount++; shieldCount++; continue; }
@@ -265,6 +346,7 @@ for (const f of files) {
     }
   }
 
+  attachMeleeMods(weapons, allGrids);   // 격투 무장에 방향·연격 보정을 붙인다
   if (weapons.length) out[id] = { names: namesByPage.get(id) || [], weapons };
 }
 

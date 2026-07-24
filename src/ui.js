@@ -944,6 +944,9 @@
       box.append(sec);
     }
 
+    // 격투 무장: 방향별 피해 + 연격 보정 (격투보정·파츠·스킬 반영)
+    if (w.type === 'melee' && w.melee && d.power != null) box.append(meleeSection(w, d.power));
+
     // 위키 설명 원문 (계산에 안 들어가는 부가 효과까지 전부)
     if (w.info && w.info['備考']) {
       const note = el('div', 'wd-sec');
@@ -953,6 +956,54 @@
     }
     row.after(box);
   }
+
+  const MELEE_LABEL = {
+    'N格': 'N격', '横格': '횡격', '下格': '하격', '特殊格闘': '특수격투', 'BD格': 'BD격',
+    '1撃目': '1격', '2撃目': '2격', '3撃目': '3격', '4撃目': '4격', '5撃目': '5격'
+  };
+  const mLabel = s => MELEE_LABEL[s] || s;
+
+  /**
+   * 격투 무장의 방향별 피해와 연격 보정을 보여 준다.
+   * 방향 피해 = 격투 피해(격투보정·파츠·스킬 반영)에 방향 배율(연타는 히트별)을 곱한 합.
+   */
+  function meleeSection(w, power) {
+    const r = stats();
+    const corr = r.total.meleeCorrection;
+    const sk = skillEffect();
+    const corrBare = sk ? stats(null).total.meleeCorrection : corr;
+    const pct = D.damagePctFor(wm0(), w, 'melee');   // 파츠 피해 % (특화 프로그램 등)
+    const skPct = skillDmgPct(sk, 'melee');          // 스킬 피해 % (추격 등)
+
+    const sec = el('div', 'wd-sec');
+    sec.append(el('div', 'wd-sec-lb', '격투 방향별 피해'));
+    const grid = el('div', 'wd-grid');
+    for (const dir of w.melee.direction || []) {
+      const line = el('div', 'wd-row');
+      line.append(el('span', 'wd-k', mLabel(dir.label) + '  ' + jaUnits(dir.raw)));
+      // 히트별로 방향 배율을 적용해 합산 (하격 240%(120%x2) = 2히트)
+      const withSkill = D.applyDamagePct(D.meleeDamage(power, corr, { ccd: dir.hits }), pct + skPct);
+      const without = sk ? D.applyDamagePct(D.meleeDamage(power, corrBare, { ccd: dir.hits }), pct) : withSkill;
+      const cell = el('span', 'wd-v');
+      cell.append(document.createTextNode(without.toLocaleString()));
+      if (withSkill !== without) cell.append(el('span', 's-gain' + skillCls(),
+        ' (+' + (withSkill - without).toLocaleString() + ')'));
+      line.append(cell);
+      grid.append(line);
+    }
+    sec.append(grid);
+
+    if (w.melee.combo) {
+      const cb = el('div', 'wd-combo');
+      cb.append(el('span', 'wd-k', '연격 보정'));
+      cb.append(el('span', '', w.melee.combo.map(c => mLabel(c.label) + ' ' + jaUnits(c.raw)).join(' · ')));
+      sec.append(cb);
+    }
+    return sec;
+  }
+
+  /** 현재 장착 기준 파츠 무장 보정 (상세 패널에서도 쓴다). */
+  const wm0 = () => D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性);
 
   /* ---------- 스탯 ---------- */
 
