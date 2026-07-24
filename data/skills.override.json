@@ -1,0 +1,13 @@
+{
+ "_설명": "스킬 정보 표에 없어 자동 추출이 안 되는 무장 발동형 자기 강화. find_buff_skills.js --ui 가 skills.json 에 합친다.",
+ "リゼルN型": [
+  {
+   "name": "サイコフレーム展開",
+   "nameKo": "사이코 프레임 전개",
+   "forever": false, "secs": 10, "hp": null, "manual": true,
+   "levels": [
+    { "from": 1, "to": null, "shoot": 15, "melee": 15, "shootPct": 0, "meleePct": 0, "crouchPct": 0, "limitUp": 0, "dmgAny": 0, "dmgShoot": 0, "dmgMelee": 0 }
+   ]
+  }
+ ]
+}
