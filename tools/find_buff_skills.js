@@ -78,14 +78,21 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       //   「射撃属性与ダメージ ＋20%」「格闘兵装で与えるダメージが 15% 上昇」
       // 수식어가 없으면 사격·격투 모두에 걸리는 것으로 본다.
       // 「与ダメージ15%分のHP回復」은 회복량이라 ＋ 나 増加/上昇 표기를 요구해 걸러 낸다.
+      // 「与えるダメージが 20% 上昇」「与えるダメージを 50% 増加」 — 조사가 が·を 로 갈린다
       let dmgShoot = 0, dmgMelee = 0, dmgAny = 0;
-      const DMG_RE = /([^。]{0,26})(?:与ダメージ|与えるダメージ)\s*(?:が\s*)?([＋+]?)\s*(\d+)\s*[%％]\s*(増加|上昇)?/g;
+      const DMG_RE = /([^。]{0,26})(?:与ダメージ|与えるダメージ)\s*(?:[がをは]\s*)?([＋+]?)\s*(\d+)\s*[%％]\s*(増加|上昇)?/g;
       for (const m of line.matchAll(DMG_RE)) {
         if (!m[2] && !m[4]) continue;                    // 피해 상승이 아닌 표현
         const v = Number(m[3]);
         if (/射撃(属性|兵装|攻撃)/.test(m[1])) dmgShoot = Math.max(dmgShoot, v);
         else if (/格闘(属性|兵装|攻撃)/.test(m[1])) dmgMelee = Math.max(dmgMelee, v);
         else dmgAny = Math.max(dmgAny, v);
+      }
+      // 「攻撃力が N% 上昇」 — 대부분 「タックル発生時の攻撃力」이라 태클 전용이다.
+      // 태클이 앞에 없는 것(고정밀 스나이프의 스나이프 모드 등)만 사격·격투 공통 피해로 받는다.
+      const atk = line.match(/攻撃力(?:が|を)\s*(\d+)\s*[%％]\s*(?:上昇|増加)/);
+      if (atk && !/タックル/.test(line.slice(Math.max(0, atk.index - 12), atk.index))) {
+        dmgAny = Math.max(dmgAny, Number(atk[1]));
       }
       const dmgPct = dmgAny || dmgShoot || dmgMelee;
       const powerPct = flat(0, /威力\s*[＋+]\s*(\d+)\s*[%％]/)

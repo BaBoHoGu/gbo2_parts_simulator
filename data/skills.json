@@ -2088,6 +2088,31 @@
    ]
   }
  ],
+ "ゲルググキャノン（JN）": [
+  {
+   "name": "高精度スナイプ",
+   "nameKo": "고정밀 스나이프",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
+   ]
+  }
+ ],
  "ガンダムEz8": [
   {
    "name": "追撃格闘補助プログラム",
@@ -2538,6 +2563,29 @@
  ],
  "ジェスタ・キャノン": [
   {
+   "name": "高精度スナイプ",
+   "nameKo": "고정밀 스나이프",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 35,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
+   ]
+  },
+  {
    "name": "高精度砲撃",
    "nameKo": "고정밀 포격",
    "forever": false,
@@ -2569,6 +2617,31 @@
    "secs": 10,
    "hp": null,
    "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
+   ]
+  }
+ ],
+ "ゲルググ・V・クサントス": [
+  {
+   "name": "高精度スナイプ",
+   "nameKo": "고정밀 스나이프",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
    "levels": [
     {
      "from": 1,
@@ -2655,6 +2728,31 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
+   ]
+  }
+ ],
+ "ジムSPⅢ［中距離支援ユニット］": [
+  {
+   "name": "高精度スナイプ",
+   "nameKo": "고정밀 스나이프",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
      "dmgShoot": 0,
      "dmgMelee": 0
     }
@@ -3774,6 +3872,31 @@
      "limitUp": 0,
      "dmgAny": 0,
      "dmgShoot": 15,
+     "dmgMelee": 0
+    }
+   ]
+  }
+ ],
+ "ディジェ・アサルトパッケージ": [
+  {
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 50,
      "dmgMelee": 0
     }
    ]
@@ -5092,6 +5215,29 @@
  ],
  "ジム・シューター": [
   {
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 50,
+     "dmgMelee": 0
+    }
+   ]
+  },
+  {
    "name": "高精度砲撃",
    "nameKo": "고정밀 포격",
    "forever": false,
@@ -5243,6 +5389,29 @@
  ],
  "RFズゴック": [
   {
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 50,
+     "dmgMelee": 0
+    }
+   ]
+  },
+  {
    "name": "補助動力",
    "nameKo": "보조 동력",
    "forever": false,
@@ -5390,6 +5559,29 @@
   }
  ],
  "RFゲルググ": [
+  {
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 50,
+     "dmgMelee": 0
+    }
+   ]
+  },
   {
    "name": "カウンターブースト",
    "nameKo": "카운터 부스트",
@@ -5683,6 +5875,29 @@
  ],
  "スパーブ・ジェガン": [
   {
+   "name": "高精度スナイプ",
+   "nameKo": "고정밀 스나이프",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
+   ]
+  },
+  {
    "name": "追撃射撃補助プログラム",
    "nameKo": "추격 사격 보조 프로그램",
    "forever": false,
@@ -5823,6 +6038,31 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0
+    }
+   ]
+  }
+ ],
+ "トールギスⅢ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }
@@ -6811,6 +7051,56 @@
      "dmgAny": 0,
      "dmgShoot": 20,
      "dmgMelee": 20
+    }
+   ]
+  }
+ ],
+ "フルアーマー・ガンナーガンダム": [
+  {
+   "name": "高精度スナイプ",
+   "nameKo": "고정밀 스나이프",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
+   ]
+  }
+ ],
+ "ギラ・ズール（CM）": [
+  {
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 50,
+     "dmgMelee": 0
     }
    ]
   }
