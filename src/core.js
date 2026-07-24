@@ -309,8 +309,8 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   const partBonus = zeroStats();
   const fullStrengthenBonus = zeroStats();
   const expansionBonus = zeroStats();
-  // 기체 스킬(바이오센서·사이코프레임 공진 등) 발동분.
-  // 위키에 상한을 올린다는 언급이 없으므로 파츠·확장과 같이 상한 안에서 더한다.
+  // 기체 스킬(바이오센서·사이코프레임 공진 등) 발동분. 파츠·확장과 같이 상한 안에서 더한다.
+  // 단 ZERO 시스템처럼 스킬이 상한 자체를 올리기도 해(skill.limit), 그 경우는 상한을 함께 올린다.
   const skillBonus = zeroStats();
   for (const [k, v] of Object.entries(skill || {})) {
     if (skillBonus.hasOwnProperty(k) && typeof v === 'number') skillBonus[k] += v;
@@ -318,6 +318,11 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   const partLimitBonus = zeroStats();
   const slotBonus = { close: 0, medium: 0, long: 0 };
   const { currentLimits: limits, limitChangedFlags: flags } = initializeLimits(ms);
+  if (skill && skill.limit) {
+    for (const [k, v] of Object.entries(skill.limit)) {
+      if (limits.hasOwnProperty(k) && typeof v === 'number' && !isNaN(v)) { limits[k] += v; flags[k] = true; }
+    }
+  }
   const level = msLevel(ms.MS名);
   const attribute = ms.属性 || ms.カテゴリ || ms.category;
 
