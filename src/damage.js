@@ -242,8 +242,21 @@ function weaponModsOf(equipped, msLv, msAttr) {
 /** 무장이 어느 `scope` 에 해당하는지. */
 const weaponScopes = w => ['all', isBeamWeapon(w) ? 'beam' : 'solid'];
 
+/**
+ * 시간이 절댓값으로 고정돼 파츠 단축을 안 받는 무장. 備考에 명시돼 있다.
+ *   리로드 — 「リロード短縮系の効果なし」 (GN 소드Ⅱ[R 소드] 등)
+ *   OH 복귀 — 「OH短縮系の効果なし」 (ZERO 시스템 기동 등)
+ * 대용량 보급 팩·퀵 로더·보조 제네레이터 등 어떤 파츠로도 줄지 않는다.
+ */
+const NO_CUT_NOTE = {
+  reloadTime: /リロード短縮系の効果なし/,
+  weaponOH: /OH短縮系の効果なし|オーバーヒート[^\/]{0,8}短縮系の効果なし/
+};
+
 /** 이 무장에 실제로 걸리는 시간 단축 %. */
 function timeCutFor(mods, key, w) {
+  const note = (w && w.info && w.info['備考']) || '';
+  if (NO_CUT_NOTE[key] && NO_CUT_NOTE[key].test(note)) return 0;
   const bucket = (mods && mods.time && mods.time[key]) || {};
   return weaponScopes(w).reduce((s, sc) => s + (bucket[sc] || 0), 0);
 }
