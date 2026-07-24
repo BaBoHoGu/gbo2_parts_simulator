@@ -191,6 +191,15 @@ if (process.argv.includes('--ui')) {
     skills.sort((a, b) => Math.max(...b.levels.map(lvWeight)) - Math.max(...a.levels.map(lvWeight)));
     out[ms] = skills;
   }
+  // 스킬 정보 표에 없어 자동 추출이 안 되는 무장 발동형 버프(리젤 N형 사이코 프레임 전개 등)를 합친다
+  const ovPath = path.join(ROOT, 'data', 'skills.override.json');
+  if (fs.existsSync(ovPath)) {
+    const ov = JSON.parse(fs.readFileSync(ovPath, 'utf8'));
+    for (const [ms, list] of Object.entries(ov)) {
+      if (ms.startsWith('_')) continue;
+      out[ms] = (out[ms] || []).concat(list);
+    }
+  }
   const dest = path.join(ROOT, 'data', 'skills.json');
   fs.writeFileSync(dest, JSON.stringify(out, null, 1));
   const all = Object.values(out).flat();
