@@ -192,7 +192,7 @@
   function skillEffect() {
     const list = activeSkills();
     if (!list.length) return null;
-    const sum = { shoot: 0, melee: 0, shootPct: 0, meleePct: 0, crouchPct: 0,
+    const sum = { shoot: 0, melee: 0, shootPct: 0, meleePct: 0, crouchPct: 0, limitUp: 0,
       dmgAny: 0, dmgShoot: 0, dmgMelee: 0, count: list.length };
     for (const sk of list) {
       const e = skillLevel(sk);
@@ -202,6 +202,7 @@
       sum.shootPct += e.shootPct;
       sum.meleePct += e.meleePct;
       sum.crouchPct += e.crouchPct || 0;
+      sum.limitUp += e.limitUp || 0;
       sum.dmgAny += e.dmgAny;
       sum.dmgShoot += e.dmgShoot;
       sum.dmgMelee += e.dmgMelee;
@@ -228,7 +229,10 @@
       melee += Math.round(bare.meleeCorrection * e.meleePct / 100);
     }
     if (!shoot && !melee) return null;
-    return { shoot, meleeCorrection: melee };
+    const out = { shoot, meleeCorrection: melee };
+    // ZERO 시스템은 발동 중 사격·격투 상한도 올린다 (파츠로 상한 근처까지 올린 구성에서 차이가 난다)
+    if (e.limitUp) out.limit = { shoot: e.limitUp, meleeCorrection: e.limitUp };
+    return out;
   }
 
   /** 스킬 몫을 칠할 클래스 — 하나면 보라, 겹쳐 발동하면 청록. */

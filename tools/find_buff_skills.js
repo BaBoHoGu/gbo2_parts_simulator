@@ -71,6 +71,8 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       const crouchPct = crouch ? Number(crouch[1]) : 0;
       const shootPct = crouchPct ? 0 : flat(0, /射撃補正を?[^。]{0,12}[＋+]\s*(\d+)\s*%/);
       const meleePct = flat(0, /格闘補正を?[^。]{0,12}[＋+]\s*(\d+)\s*%/);
+      // ZERO 시스템: 「射撃/格闘補正の上限値 ＋20」 — 발동 중 사격·격투 상한이 오른다
+      const limitUp = flat(0, /射撃[／/]格闘補正の上限値\s*[＋+]\s*(\d+)/);
       // 보정이 아니라 피해량을 직접 올리는 스킬도 함께 잡는다.
       // 적용 대상은 수치 앞쪽 수식어로 갈린다 —
       //   「射撃属性与ダメージ ＋20%」「格闘兵装で与えるダメージが 15% 上昇」
@@ -99,7 +101,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         msLvTo: need && need[2] ? Number(need[2]) : null,
         // 스킬명 = LV 표기가 아닌 첫 칸
         skill: row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)',
-        shoot, melee, shootPct, meleePct, crouchPct, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
+        shoot, melee, shootPct, meleePct, crouchPct, limitUp, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
         forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
         secs: Number((line.match(/効果時間は?[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
         hp: Number((line.match(/機体HPが?\s*(\d+)\s*[%％]以下/) || [])[1]) || null,
@@ -163,6 +165,7 @@ if (process.argv.includes('--ui')) {
           shoot: r.shoot, melee: r.melee,
           shootPct: r.shootPct, meleePct: r.meleePct,
           crouchPct: r.crouchPct,   // 고정밀 포격 — 앉기·정지에서만 사격 피해 +N%
+          limitUp: r.limitUp,       // ZERO 시스템 — 사격·격투 상한 상승
           // 피해 % 는 걸리는 대상이 갈린다 — any 는 사격·격투 모두에 얹는다
           dmgAny: r.dmgAny, dmgShoot: r.dmgShoot, dmgMelee: r.dmgMelee
         }))
