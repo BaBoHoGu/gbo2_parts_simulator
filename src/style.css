@@ -255,6 +255,8 @@ body.view-build  #screenSelect { display: none; }
 .wd-v { color: var(--text); font-variant-numeric: tabular-nums; text-align: right; }
 .wd-v .s-gain { margin-left: 4px; }
 .wd-note-tx { margin-top: 3px; font-size: 12px; line-height: 1.7; color: var(--muted); }
+/* 격투 상태(기본/헤비어택/최대출력) 소제목 */
+.wd-var-lb { margin: 5px 0 1px; font-size: 11px; color: var(--skill); letter-spacing: .3px; }
 /* 격투 연격 보정 한 줄 — 왼쪽 정렬 (space-between 이면 값이 화면 밖으로 밀린다) */
 .wd-combo { display: flex; gap: 10px; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
 .wd-combo .wd-k { color: var(--dim); flex-shrink: 0; }

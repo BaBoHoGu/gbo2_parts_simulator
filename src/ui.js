@@ -966,6 +966,7 @@
   /**
    * 격투 무장의 방향별 피해와 연격 보정을 보여 준다.
    * 방향 피해 = 격투 피해(격투보정·파츠·스킬 반영)에 방향 배율(연타는 히트별)을 곱한 합.
+   * 상태(기본/헤비어택/최대출력 등)가 여러 개면 각각 소제목을 달아 나눠 보여 준다.
    */
   function meleeSection(w, power) {
     const r = stats();
@@ -977,21 +978,27 @@
 
     const sec = el('div', 'wd-sec');
     sec.append(el('div', 'wd-sec-lb', '격투 방향별 피해'));
-    const grid = el('div', 'wd-grid');
-    for (const dir of w.melee.direction || []) {
-      const line = el('div', 'wd-row');
-      line.append(el('span', 'wd-k', mLabel(dir.label) + '  ' + jaUnits(dir.raw)));
-      // 히트별로 방향 배율을 적용해 합산 (하격 240%(120%x2) = 2히트)
-      const withSkill = D.applyDamagePct(D.meleeDamage(power, corr, { ccd: dir.hits }), pct + skPct);
-      const without = sk ? D.applyDamagePct(D.meleeDamage(power, corrBare, { ccd: dir.hits }), pct) : withSkill;
-      const cell = el('span', 'wd-v');
-      cell.append(document.createTextNode(without.toLocaleString()));
-      if (withSkill !== without) cell.append(el('span', 's-gain' + skillCls(),
-        ' (+' + (withSkill - without).toLocaleString() + ')'));
-      line.append(cell);
-      grid.append(line);
+
+    const variants = w.melee.variants || [];
+    const multi = variants.length > 1;
+    for (const v of variants) {
+      if (multi) sec.append(el('div', 'wd-var-lb', v.label));   // 상태 소제목
+      const grid = el('div', 'wd-grid');
+      for (const dir of v.direction) {
+        const line = el('div', 'wd-row');
+        line.append(el('span', 'wd-k', mLabel(dir.label) + '  ' + jaUnits(dir.raw)));
+        // 히트별로 방향 배율을 적용해 합산 (하격 240%(120%x2) = 2히트)
+        const withSkill = D.applyDamagePct(D.meleeDamage(power, corr, { ccd: dir.hits }), pct + skPct);
+        const without = sk ? D.applyDamagePct(D.meleeDamage(power, corrBare, { ccd: dir.hits }), pct) : withSkill;
+        const cell = el('span', 'wd-v');
+        cell.append(document.createTextNode(without.toLocaleString()));
+        if (withSkill !== without) cell.append(el('span', 's-gain' + skillCls(),
+          ' (+' + (withSkill - without).toLocaleString() + ')'));
+        line.append(cell);
+        grid.append(line);
+      }
+      sec.append(grid);
     }
-    sec.append(grid);
 
     if (w.melee.combo) {
       const cb = el('div', 'wd-combo');

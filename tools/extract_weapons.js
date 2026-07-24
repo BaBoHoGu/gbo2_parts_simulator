@@ -191,32 +191,88 @@ function parseMult(raw) {
   return one ? [Number(one[1]) / 100] : null;
 }
 
-/** 페이지의 격투 무장에 방향·연격 보정을 붙인다. */
+/** 방향 표의 한 열을 {방향:히트} 행 목록으로. */
+function dirRows(grid, col) {
+  const rows = [];
+  for (const r of grid.slice(1)) {
+    const hits = parseMult(r[col]);
+    if (hits) rows.push({ label: r[0], raw: r[col].trim(), hits });
+  }
+  return rows;
+}
+
+/** 스킬 상태 라벨 한글화 (「最大出力（T）」→ 최대출력). */
+const STATE_KO = {
+  '最大出力': '최대출력', 'レイド中': '레이드 중', '覚醒': '각성', 'ハイパーモード': '하이퍼 모드',
+  'トランザム': '트랜잠', 'バーサク': '버서크', 'MEPE': 'MEPE', 'サイコフレーム共振': '사이코프레임 공진'
+};
+const stateLabel = s => {
+  const core = s.replace(/[（(][^）)]*[）)]/g, '').trim();   // (T) 같은 부기 제거
+  return STATE_KO[core] || STATE_KO[s] || core || s;
+};
+
+/**
+ * 페이지의 격투 무장에 방향·연격 보정을 붙인다.
+ * 한 무장이 상태(기본/헤비어택/최대출력 등)별로 방향 배율이 다를 수 있어 variants 로 담는다.
+ *   기본       — 무장명이 맞는 열
+ *   헤비어택   — 「ヘビーアタック」 열 (備考에 대응 표기가 있는 무장)
+ *   <상태>     — 「<기본열>（상태）」 열 (스킬 발동 시)
+ */
 function attachMeleeMods(weapons, grids) {
   const dir = findGrid(grids, '格闘方向');
   const combo = findGrid(grids, '連撃数');
-  for (const w of weapons) {
-    if (w.type !== 'melee') continue;
-    const melee = {};
+  const melees = weapons.filter(w => w.type === 'melee');
+  if (!dir && !combo) return;
+
+  // 각 무장의 기본 열 (상태 열은 무장명에 상태 토큰이 없어 여기 안 걸린다)
+  const baseIdx = new Map();
+  const isBaseName = new Set();
+  if (dir) for (const w of melees) {
+    const ci = matchColumn(dir[0], w.name);
+    baseIdx.set(w, ci);
+    const cn = dir[0][ci];
+    if (cn && cn !== '標準倍率' && !OWN_COL.test(cn)) isBaseName.add(cn);
+  }
+
+  for (const w of melees) {
+    const variants = [];
     if (dir) {
-      const col = matchColumn(dir[0], w.name);
-      const rows = [];
-      for (const r of dir.slice(1)) {
-        const hits = parseMult(r[col]);
-        if (hits) rows.push({ label: r[0], raw: r[col].trim(), hits });
+      const bi = baseIdx.get(w), bn = dir[0][bi];
+      const base = dirRows(dir, bi);
+      if (base.length) variants.push({ label: '기본', direction: base });
+      const note = (w.info && w.info['備考']) || '';
+      for (let i = 1; i < dir[0].length; i++) {
+        const c = dir[0][i];
+        if (!c || i === bi || isBaseName.has(c)) continue;   // 다른 무장의 기본 열은 건너뛴다
+        // 헤비어택 — 이 무장이 대응할 때만
+        if (/ヘビーアタック/.test(c) && /ヘビーアタック/.test(note)) {
+          const rows = dirRows(dir, i);
+          if (rows.length) variants.push({ label: '헤비어택', direction: rows });
+          continue;
+        }
+        // 「<기본열>（상태）」 — 스킬 발동 상태
+        const m = c.match(/^(.*?)[（(]([^）)]+)[）)]\s*$/);
+        if (m && m[1] === bn) {
+          const rows = dirRows(dir, i);
+          if (rows.length) variants.push({ label: stateLabel(m[2]), direction: rows });
+        }
       }
-      if (rows.length) melee.direction = rows;
     }
+    let comboRows = null;
     if (combo) {
-      const col = matchColumn(combo[0], w.name);
+      const ci = matchColumn(combo[0], w.name);
       const rows = [];
       for (const r of combo.slice(1)) {
-        const hits = parseMult(r[col]);
-        if (hits) rows.push({ label: r[0], raw: r[col].trim(), mult: hits[0] });
+        const hits = parseMult(r[ci]);
+        if (hits) rows.push({ label: r[0], raw: r[ci].trim(), mult: hits[0] });
       }
-      if (rows.length > 1) melee.combo = rows;   // 1격뿐이면 연격이 아니다
+      if (rows.length > 1) comboRows = rows;   // 1격뿐이면 연격이 아니다
     }
-    if (melee.direction || melee.combo) w.melee = melee;
+    if (variants.length || comboRows) {
+      w.melee = {};
+      if (variants.length) w.melee.variants = variants;
+      if (comboRows) w.melee.combo = comboRows;
+    }
   }
 }
 
