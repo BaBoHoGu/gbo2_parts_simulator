@@ -146,32 +146,41 @@ function findGrid(grids, firstCell) {
 }
 
 const OWN_COL = /^(本武器|本MS|本機).{0,2}倍率$/;   // 「本武器倍率」= 이 무장의 배율
+// xN(x2·x3)은 남긴다 — 방향 표에 「B・サーベルx2」「B・サーベルx3」가 따로 있어 구분해야 한다.
 const stripName = s => String(s).replace(/^.*用/, '')
-  .replace(/[【［(（][^】］)）]*[】］)）]/g, '').replace(/[x×]\d+/g, '').replace(/倍率$/, '');
+  .replace(/[【［(（][^】］)）]*[】］)）]/g, '').replace(/倍率$/, '').replace(/×/g, 'x');
 const nameTokens = s => stripName(s).split(/[・\s]/).filter(Boolean);
 
 /**
  * 방향/연격 표의 열(무장 약칭)을 무장명에 맞춘다.
- *   ① 토큰 부분수열 일치(가장 구체적인 열) → ② 「本武器倍率」 → ③ 「標準倍率」
+ *   ① xN 까지 포함해 토큰 부분수열 일치 → ② xN 뗀 채로 다시 시도 → ③ 本武器倍率 → ④ 標準倍率
+ * xN 을 먼저 엄격히 맞춰야 x2/x3 변형이 섞이지 않는다.
  */
-function matchColumn(cols, wname) {
-  const wt = nameTokens(wname), wj = stripName(wname);
+function bestSubseq(cols, wname, dropX) {
+  const norm = s => (dropX ? stripName(s).replace(/x\d+/g, '') : stripName(s));
+  const wt = norm(wname).split(/[・\s]/).filter(Boolean), wj = norm(wname);
   let best = -1, bestScore = 0, bestLen = 0;
   for (let i = 1; i < cols.length; i++) {
     const c = cols[i];
     if (!c || c === '標準倍率' || OWN_COL.test(c)) continue;
-    const ct = nameTokens(c);
+    const ct = norm(c).split(/[・\s]/).filter(Boolean);
     if (!ct.length) continue;
     let wi = 0, matched = 0;
     for (const t of ct) { while (wi < wt.length && wt[wi] !== t) wi++; if (wi < wt.length) { matched++; wi++; } }
     if (matched < ct.length) {           // ・ 없이 붙여 쓴 열은 문자열 포함으로 한 번 더 본다
-      const cj = stripName(c);
+      const cj = norm(c);
       if (cj.length >= 3 && (wj.includes(cj) || cj.includes(wj))) matched = ct.length;
     }
     if (matched === ct.length && (matched > bestScore || (matched === bestScore && c.length > bestLen))) {
       best = i; bestScore = matched; bestLen = c.length;
     }
   }
+  return best;
+}
+
+function matchColumn(cols, wname) {
+  let best = bestSubseq(cols, wname, false);   // xN 엄격 일치 우선
+  if (best < 0) best = bestSubseq(cols, wname, true);   // 못 찾으면 xN 떼고
   if (best >= 0) return best;
   const own = cols.findIndex(c => OWN_COL.test(c));
   return own >= 0 ? own : cols.indexOf('標準倍率');
