@@ -602,14 +602,6 @@
     const skEtcOf = w => (w.type !== 'melee' && sk && sk.crouchPct && state.posture === 'crouch')
       ? sk.crouchPct / 100 : 0;
 
-    /** 단축된 값을 보여 주고, 줄어든 만큼을 초록으로 덧붙인다. */
-    const cutSpan = (text, pct) => {
-      const span = el('span');
-      span.append(document.createTextNode(D.shortenTimeText(text, pct)));
-      if (pct) span.append(el('span', 'w-gain', ' (-' + pct + '%)'));
-      return span;
-    };
-
     for (const w of list) {
       const lv = weaponLevel(w);
       const d = lv ? w.levels[lv] : null;
