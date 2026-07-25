@@ -1280,6 +1280,7 @@
     const bar = $('#progressBar');
     $('#autoNote').textContent = '탐색 중…';
 
+    try {
     const opts = {
       stage: state.stage,
       expansion: state.expansion,
@@ -1365,9 +1366,6 @@
         if (best) { best.label = obj.name; cands.push(best); }
       }
     }
-    state.running = false;
-    btn.disabled = false;
-    bar.style.width = '0';
 
     // 프로필이 겹쳐 같은 구성이 나오면 하나만 남기고, 최대 3개
     const seen = new Set();
@@ -1383,6 +1381,11 @@
     note.textContent = `후보 ${picks.length}개 · 평가 ${evals.toLocaleString()}회 — 원하는 구성을 고르세요`;
     renderAutoResults(picks);
     applyCandidate(0);   // 가장 좋은 후보를 우선 적용해 두고, 다른 것도 고를 수 있게 한다
+    } finally {          // 예외가 나도 버튼이 영구 비활성으로 남지 않게 한다
+      state.running = false;
+      btn.disabled = false;
+      bar.style.width = '0';
+    }
   }
 
   /**
@@ -1484,14 +1487,15 @@
     const c = cands[i];
     if (!c) return;
     state.equipped = c.parts.slice();
-    // 확장 스킬을 자동으로 골랐으면 그 값도 함께 적용한다 (후보를 갈아탈 때마다)
-    if (state.autoExpansion && c.expansion && c.expansion !== C.EXPANSION_NONE) {
+    // 확장 스킬을 자동으로 골랐으면 그 값도 함께 적용한다 (후보를 갈아탈 때마다).
+    // NONE 후보로 갈아탈 수도 있으므로 확장이 NONE 이어도 반드시 맞춘다.
+    if (state.autoExpansion && c.expansion) {
       state.expansion = c.expansion;
       state.expLevel = c.expLevel || C.MAX_EXPANSION_LEVEL;
       $('#expansion').value = state.expansion;
       const expLv = $('#expLevel');
       expLv.value = String(state.expLevel);
-      expLv.disabled = false;
+      expLv.disabled = state.expansion === C.EXPANSION_NONE;
     }
     [...$('#autoResults').children].forEach(el => el.classList.toggle('on', Number(el.dataset.i) === i));
     renderAll();
@@ -1528,6 +1532,7 @@
     state.form = 'normal';
     state.openWeapon = null;
     state.skillPicks.clear();
+    clearAutoResults();         // 이전 기체의 자동 구성 후보가 남아 잘못 적용되지 않게 지운다
     // expLevel 이 없던 시절의 저장본은 앱 기본값(최대 레벨)으로 맞춘다
     state.expLevel = Number(obj.expLevel) || C.MAX_EXPANSION_LEVEL;
     const wanted = obj.parts || [];
