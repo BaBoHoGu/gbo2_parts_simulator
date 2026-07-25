@@ -1407,6 +1407,18 @@
       head.append(el('span', 'ac-parts', `파츠 ${c.parts.length}개`));
       card.append(head);
 
+      // 파츠를 아이콘으로 보여 준다 — 어떤 파츠가 들어갔는지 한눈에 비교
+      const thumbs = el('div', 'ac-thumbs');
+      for (const part of c.parts) {
+        const th = el('div', 'ac-thumb');
+        th.append(img(partImg(part.name), 'parts', part.name));
+        const lv = lvOf(part.name);
+        if (lv) th.append(el('span', 'ac-lv', lv));
+        th.title = T.partName(part.name);
+        thumbs.append(th);
+      }
+      card.append(thumbs);
+
       const stats = el('div', 'ac-stats');
       for (const k of keys) {
         const cell = el('span', 'ac-stat');
