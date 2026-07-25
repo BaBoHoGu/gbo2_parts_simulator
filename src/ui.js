@@ -98,12 +98,14 @@
     minimums: {},
     weightsTouched: false,  // 사용자가 가중치·하한·프리셋을 직접 만졌는가
     running: false,
-    autoCandidates: null   // 자동 구성 후보 3개 (사용자가 고른다)
+    autoCandidates: null,  // 자동 구성 후보 3개 (사용자가 고른다)
+    autoExpansion: false   // 자동 구성이 확장 스킬까지 골랐는가
   };
 
   /** 기체가 바뀌면 이전 자동 구성 후보는 무효라 지운다. */
   function clearAutoResults() {
     state.autoCandidates = null;
+    state.autoExpansion = false;
     const box = document.getElementById('autoResults');
     if (box) box.innerHTML = '';
     const note = document.getElementById('autoNote');
@@ -1287,13 +1289,22 @@
     const perObj = state.weightsTouched ? rounds : Math.max(4, Math.ceil(rounds / objectives.length));
     const total = objectives.length * perObj;
 
+    // 확장 스킬을 사용자가 안 정했으면(확장 없음) 목표에 맞춰 자동으로 고른다.
+    // 후보를 갈아탈 때도 이 판단을 유지하려고 실행 시점 값을 state 에 남긴다.
+    const autoExp = state.expansion === C.EXPANSION_NONE;
+    state.autoExpansion = autoExp;
+
     let evals = 0, step = 0;
     const cands = [];
     for (const obj of objectives) {
+      const exp = autoExp ? expansionFor(obj.weights) : state.expansion;
+      const expLevel = autoExp ? C.MAX_EXPANSION_LEVEL : state.expLevel;
       const results = [];
       for (let i = 0; i < perObj; i++) {
-        const r = O.optimize(state.ms, { ...opts, weights: obj.weights, seed: (step + 1) * 7919 }, partsByCat, fullst);
-        if (r.parts.length || r.feasible) results.push(r);
+        const r = O.optimize(state.ms,
+          { ...opts, weights: obj.weights, expansion: exp, expLevel, seed: (step + 1) * 7919 },
+          partsByCat, fullst);
+        if (r.parts.length || r.feasible) { r.expansion = exp; r.expLevel = expLevel; results.push(r); }
         evals += r.evaluations || 0;
         bar.style.width = (++step / total * 100) + '%';
         await nextFrame();
@@ -1323,6 +1334,24 @@
     note.textContent = `후보 ${picks.length}개 · 평가 ${evals.toLocaleString()}회 — 원하는 구성을 고르세요`;
     renderAutoResults(picks);
     applyCandidate(0);   // 가장 좋은 후보를 우선 적용해 두고, 다른 것도 고를 수 있게 한다
+  }
+
+  /**
+   * 목표 가중치에 가장 잘 맞는 확장 스킬을 고른다 (사용자가 확장을 안 정했을 때).
+   * 각 확장의 최대 LV 효과(가산·상한·파츠당)를 가중치×UNIT 로 환산해 점수를 매긴다.
+   */
+  function expansionFor(weights) {
+    let best = C.EXPANSION_NONE, bestFit = 0;
+    for (const [exp, levels] of Object.entries(C.EXPANSION_LEVELS)) {
+      const e = levels[levels.length - 1];   // 최대 LV
+      let fit = 0;
+      const add = (k, v, w) => { fit += (weights[k] || 0) * v / (O.UNIT[k] || 1) * w; };
+      if (e.add) for (const [k, v] of Object.entries(e.add)) add(k, v, 1);
+      if (e.limit) for (const [k, v] of Object.entries(e.limit)) add(k, v, 0.5);   // 상한은 절반 비중
+      if (e.per) for (const [k, v] of Object.entries(e.per.add)) add(k, v, 3);      // 파츠 3개 가정
+      if (fit > bestFit) { bestFit = fit; best = exp; }
+    }
+    return best;
   }
 
   /**
@@ -1387,6 +1416,12 @@
       }
       card.append(stats);
 
+      // 자동으로 고른 확장 스킬 (사용자가 지정했으면 표시 안 함)
+      if (state.autoExpansion && c.expansion && c.expansion !== C.EXPANSION_NONE) {
+        const expName = (C.EXPANSION_LABEL[c.expansion] || c.expansion).replace(/\s*\(.*\)$/, '');
+        card.append(el('div', 'ac-exp', '확장: ' + expName));
+      }
+
       // 하한 미달 표시
       const unmet = Object.entries(state.minimums)
         .filter(([k, v]) => v && c.stats.total[k] < v)
@@ -1404,9 +1439,18 @@
     const c = cands[i];
     if (!c) return;
     state.equipped = c.parts.slice();
+    // 확장 스킬을 자동으로 골랐으면 그 값도 함께 적용한다 (후보를 갈아탈 때마다)
+    if (state.autoExpansion && c.expansion && c.expansion !== C.EXPANSION_NONE) {
+      state.expansion = c.expansion;
+      state.expLevel = c.expLevel || C.MAX_EXPANSION_LEVEL;
+      $('#expansion').value = state.expansion;
+      const expLv = $('#expLevel');
+      expLv.value = String(state.expLevel);
+      expLv.disabled = false;
+    }
     [...$('#autoResults').children].forEach(el => el.classList.toggle('on', Number(el.dataset.i) === i));
     renderAll();
-    toast(`구성 ${i + 1} 적용 — 파츠 ${c.parts.length}개`);
+    toast(`${c.label || '구성 ' + (i + 1)} 적용 — 파츠 ${c.parts.length}개`);
   }
 
   function openDrawer(open) {
@@ -1685,7 +1729,7 @@
     expLv.value = String(state.expLevel);
     const syncExpLv = () => { expLv.disabled = state.expansion === C.EXPANSION_NONE; };
     syncExpLv();
-    exp.onchange = () => { state.expansion = exp.value; syncExpLv(); renderAll(); };
+    exp.onchange = () => { state.expansion = exp.value; state.autoExpansion = false; syncExpLv(); renderAll(); };
     expLv.onchange = () => { state.expLevel = Number(expLv.value); renderAll(); };
 
     const preset = $('#preset');
