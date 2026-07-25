@@ -748,6 +748,24 @@ body.view-build  #screenSelect { display: none; }
 .progress { height: 6px; background: #262a34; border-radius: 3px; overflow: hidden; margin-top: 10px; }
 .progress > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .12s; }
 
+/* 자동 구성 후보 카드 */
+.auto-results { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+.auto-cand {
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); cursor: pointer; transition: border-color .12s, background .12s;
+}
+.auto-cand:hover { border-color: var(--muted); }
+.auto-cand.on { border-color: var(--accent); background: #201d0e; }
+.ac-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ac-rank { font-weight: 700; font-size: 12.5px; }
+.auto-cand.on .ac-rank { color: var(--accent); }
+.ac-parts { font-size: 11px; color: var(--dim); }
+.ac-stats { display: flex; flex-wrap: wrap; gap: 3px 12px; margin-top: 5px; }
+.ac-stat { display: flex; gap: 5px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.ac-k { color: var(--dim); }
+.ac-v { color: var(--text); font-weight: 600; }
+.ac-warn { margin-top: 4px; font-size: 11px; color: var(--bad); }
+
 /* ============ 공통 ============ */
 
 .note { color: var(--muted); font-size: 11.5px; }

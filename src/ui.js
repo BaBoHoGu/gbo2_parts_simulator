@@ -96,8 +96,19 @@
     partQuery: '',
     weights: { ...O.PRESETS['밸런스'] },
     minimums: {},
-    running: false
+    weightsTouched: false,  // 사용자가 가중치·하한·프리셋을 직접 만졌는가
+    running: false,
+    autoCandidates: null   // 자동 구성 후보 3개 (사용자가 고른다)
   };
+
+  /** 기체가 바뀌면 이전 자동 구성 후보는 무효라 지운다. */
+  function clearAutoResults() {
+    state.autoCandidates = null;
+    const box = document.getElementById('autoResults');
+    if (box) box.innerHTML = '';
+    const note = document.getElementById('autoNote');
+    if (note) note.textContent = '';
+  }
 
   const SAVE_KEY = 'gbo2-offline-build';
 
@@ -340,6 +351,7 @@
     state.locked.clear();
     state.detailPart = null;
     state.skillPicks.clear();
+    clearAutoResults();
     renderAll();
     setView('build');           // 기체를 고르면 곧바로 파츠 적용 단계로
   }
@@ -1226,7 +1238,7 @@
       // 0 보다 큰 항목에 테두리 강조 — 어떤 스탯을 노리는지 한눈에 보이게
       const mark = () => w.classList.toggle('active', Number(w.value) > 0);
       mark();
-      w.oninput = () => { state.weights[k] = Number(w.value) || 0; mark(); };
+      w.oninput = () => { state.weights[k] = Number(w.value) || 0; state.weightsTouched = true; mark(); };
       box.append(w);
 
       const m = el('input');
@@ -1236,6 +1248,7 @@
         const v = Number(m.value);
         if (m.value === '' || isNaN(v)) delete state.minimums[k];
         else state.minimums[k] = v;
+        state.weightsTouched = true;
       };
       box.append(m);
     }
@@ -1266,30 +1279,134 @@
       restarts: 1
     };
 
-    let best = null;
-    for (let i = 0; i < rounds; i++) {
-      const r = O.optimize(state.ms, { ...opts, seed: (i + 1) * 7919 }, partsByCat, fullst);
-      if (!best || r.score > best.score) best = r;
-      bar.style.width = ((i + 1) / rounds * 100) + '%';
-      await nextFrame();
-    }
+    // 사용자가 가중치를 안 만졌으면 목표를 임의로 정해 서로 다른 방향의 후보 3개를 낸다.
+    // 만졌으면 그 가중치로 서로 다른 상위 3개를 뽑는다.
+    const objectives = state.weightsTouched
+      ? [{ name: null, weights: state.weights }]
+      : autoProfiles(state.ms);
+    const perObj = state.weightsTouched ? rounds : Math.max(4, Math.ceil(rounds / objectives.length));
+    const total = objectives.length * perObj;
 
-    state.equipped = best.parts.slice();
+    let evals = 0, step = 0;
+    const cands = [];
+    for (const obj of objectives) {
+      const results = [];
+      for (let i = 0; i < perObj; i++) {
+        const r = O.optimize(state.ms, { ...opts, weights: obj.weights, seed: (step + 1) * 7919 }, partsByCat, fullst);
+        if (r.parts.length || r.feasible) results.push(r);
+        evals += r.evaluations || 0;
+        bar.style.width = (++step / total * 100) + '%';
+        await nextFrame();
+      }
+      if (state.weightsTouched) {
+        for (const c of topCandidates(results, 3)) cands.push(c);
+      } else {
+        const best = results.slice().sort((a, b) => b.score - a.score)[0];
+        if (best) { best.label = obj.name; cands.push(best); }
+      }
+    }
     state.running = false;
     btn.disabled = false;
     bar.style.width = '0';
 
-    const unmet = Object.entries(state.minimums)
-      .filter(([k, v]) => v && best.stats.total[k] < v)
-      .map(([k, v]) => `${C.STAT_LABEL[k]} ${best.stats.total[k]}/${v}`);
-    const note = $('#autoNote');
-    note.className = 'note mt' + (unmet.length ? ' warn' : '');
-    note.textContent = unmet.length
-      ? `하한 미달: ${unmet.join(', ')} — 상한이나 슬롯 때문에 도달 불가일 수 있습니다.`
-      : `완료 · 파츠 ${best.parts.length}개 · 평가 ${best.evaluations.toLocaleString()}회`;
+    // 프로필이 겹쳐 같은 구성이 나오면 하나만 남기고, 최대 3개
+    const seen = new Set();
+    const picks = cands.filter(c => {
+      const s = c.parts.map(p => p.name).slice().sort().join('|');
+      if (seen.has(s)) return false; seen.add(s); return true;
+    }).slice(0, 3);
 
+    state.autoCandidates = picks;
+    const note = $('#autoNote');
+    if (!picks.length) { note.className = 'note mt'; note.textContent = '구성을 찾지 못했습니다.'; return; }
+    note.className = 'note mt';
+    note.textContent = `후보 ${picks.length}개 · 평가 ${evals.toLocaleString()}회 — 원하는 구성을 고르세요`;
+    renderAutoResults(picks);
+    applyCandidate(0);   // 가장 좋은 후보를 우선 적용해 두고, 다른 것도 고를 수 있게 한다
+  }
+
+  /**
+   * 가중치를 안 정했을 때 쓸 3가지 목표. 기체 성향(사격/격투)에 맞춰 공격 방향을 정한다.
+   */
+  function autoProfiles(ms) {
+    const melee = Number(ms && ms.格闘補正 || 0) >= Number(ms && ms.射撃補正 || 0);
+    return [
+      { name: '밸런스', weights: O.PRESETS['밸런스'] },
+      melee
+        ? { name: '격투 중심', weights: O.PRESETS['격투 강습'] }
+        : { name: '사격 중심', weights: O.PRESETS['사격 지원'] },
+      { name: '방어형', weights: O.PRESETS['탱커 (범용 방어)'] }
+    ];
+  }
+
+  /** 시작점별 결과에서 서로 겹치지 않는 상위 후보를 고른다 (파츠가 1개 이하만 다르면 같은 구성으로 본다). */
+  function topCandidates(results, n) {
+    const sig = r => r.parts.map(p => p.name).slice().sort().join('|');
+    const seen = new Set();
+    const uniq = results.slice().sort((a, b) => b.score - a.score)
+      .filter(r => { const s = sig(r); if (seen.has(s)) return false; seen.add(s); return true; });
+
+    const picks = [];
+    const differs = (a, b) => {
+      const A = new Set(a.parts.map(p => p.name));
+      let common = 0;
+      for (const p of b.parts) if (A.has(p.name)) common++;
+      return Math.max(a.parts.length, b.parts.length) - common >= 2;   // 2개 이상 달라야 다른 구성
+    };
+    for (const r of uniq) {
+      if (picks.length >= n) break;
+      if (picks.every(p => differs(p, r))) picks.push(r);
+    }
+    for (const r of uniq) { if (picks.length >= n) break; if (!picks.includes(r)) picks.push(r); }
+    return picks;
+  }
+
+  /** 자동 구성 후보 카드를 그린다. 클릭하면 그 구성을 장착한다. */
+  function renderAutoResults(cands) {
+    const box = $('#autoResults');
+    box.innerHTML = '';
+    // 보여줄 스탯: 사용자가 가중치를 줬으면 그 항목, 아니면 대표 스탯
+    let keys = state.weightsTouched ? C.STAT_KEYS.filter(k => (state.weights[k] || 0) > 0) : [];
+    if (!keys.length) keys = ['hp', 'shoot', 'meleeCorrection', 'thruster'];
+    keys = keys.slice(0, 4);
+
+    cands.forEach((c, i) => {
+      const card = el('div', 'auto-cand');
+      card.dataset.i = String(i);
+      const head = el('div', 'ac-head');
+      head.append(el('span', 'ac-rank', c.label || '구성 ' + (i + 1)));
+      head.append(el('span', 'ac-parts', `파츠 ${c.parts.length}개`));
+      card.append(head);
+
+      const stats = el('div', 'ac-stats');
+      for (const k of keys) {
+        const cell = el('span', 'ac-stat');
+        cell.append(el('span', 'ac-k', C.STAT_LABEL[k]));
+        cell.append(el('span', 'ac-v', (c.stats.total[k] ?? 0).toLocaleString()));
+        stats.append(cell);
+      }
+      card.append(stats);
+
+      // 하한 미달 표시
+      const unmet = Object.entries(state.minimums)
+        .filter(([k, v]) => v && c.stats.total[k] < v)
+        .map(([k, v]) => `${C.STAT_LABEL[k]} ${c.stats.total[k]}/${v}`);
+      if (unmet.length) card.append(el('div', 'ac-warn', '하한 미달: ' + unmet.join(', ')));
+
+      card.title = c.parts.map(p => T.partName(p.name)).join(', ');
+      card.onclick = () => applyCandidate(i);
+      box.append(card);
+    });
+  }
+
+  function applyCandidate(i) {
+    const cands = state.autoCandidates || [];
+    const c = cands[i];
+    if (!c) return;
+    state.equipped = c.parts.slice();
+    [...$('#autoResults').children].forEach(el => el.classList.toggle('on', Number(el.dataset.i) === i));
     renderAll();
-    if (!unmet.length) toast(`자동 구성 완료 — 파츠 ${best.parts.length}개 장착`);
+    toast(`구성 ${i + 1} 적용 — 파츠 ${c.parts.length}개`);
   }
 
   function openDrawer(open) {
@@ -1408,6 +1525,7 @@
     state.equipped = [];
     state.skillPicks.clear();
     state.locked.clear();
+    clearAutoResults();
     renderAll();
     if (had) toast('레벨을 변경해 장착 파츠를 초기화했습니다');
   }
@@ -1578,6 +1696,7 @@
       state.weights = {};
       for (const k of C.STAT_KEYS) state.weights[k] = 0;
       Object.assign(state.weights, O.PRESETS[preset.value]);
+      state.weightsTouched = true;
       renderAutoGrid();
     };
 
