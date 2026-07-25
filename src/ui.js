@@ -354,8 +354,19 @@
     state.detailPart = null;
     state.skillPicks.clear();
     clearAutoResults();
+    resetEnhance();             // 다른 기체를 고르면 확장·강화 설정을 초기값으로 되돌린다
     renderAll();
     setView('build');           // 기체를 고르면 곧바로 파츠 적용 단계로
+  }
+
+  /** 확장 스킬·강화 단계를 초기 상태로 되돌리고 컨트롤도 맞춘다. (기체를 새로 고를 때) */
+  function resetEnhance() {
+    state.expansion = C.EXPANSION_NONE;
+    state.expLevel = C.MAX_EXPANSION_LEVEL;
+    const exp = $('#expansion');
+    if (exp) exp.value = C.EXPANSION_NONE;
+    const expLv = $('#expLevel');
+    if (expLv) { expLv.value = String(state.expLevel); expLv.disabled = true; }
   }
 
   /* ---------- 장착 ---------- */
