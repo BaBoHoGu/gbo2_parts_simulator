@@ -1297,33 +1297,53 @@
     const objectives = state.weightsTouched
       ? [{ name: null, weights: state.weights }]
       : autoProfiles(state.ms);
-    const perObj = state.weightsTouched ? rounds : Math.max(4, Math.ceil(rounds / objectives.length));
-    const total = objectives.length * perObj;
-
-    // 확장 스킬을 사용자가 안 정했으면(확장 없음) 목표에 맞춰 자동으로 고른다.
-    // 후보를 갈아탈 때도 이 판단을 유지하려고 실행 시점 값을 state 에 남긴다.
+    // 확장 스킬을 사용자가 안 정했으면(확장 없음) 확장별로 실제 구성을 만들어 비교해 고른다.
+    // (최적화 점수는 "파츠 증가분"만 재서 확장의 고정 보너스를 못 보므로, 절대 가중총점으로 비교한다)
     const autoExp = state.expansion === C.EXPANSION_NONE;
     state.autoExpansion = autoExp;
+    const expList = autoExp
+      ? Object.keys(C.EXPANSION_LEVELS).concat([C.EXPANSION_NONE])
+      : [state.expansion];
+    const expLevel = autoExp ? C.MAX_EXPANSION_LEVEL : state.expLevel;
 
+    // 절대 가중총점 — 확장의 고정 보너스까지 반영된다
+    const absScore = (tot, w) => C.STAT_KEYS.reduce((s, k) => s + (w[k] || 0) * (tot[k] || 0) / (O.UNIT[k] || 1), 0);
+
+    // 확장별로 매번 최적화하면 너무 느리다. 대신 기준 파츠 셋을 한 번 뽑고, 그 셋을 각 확장에
+    // 얹어(calcStats) 절대총점을 비교해 최고 확장을 고른 뒤, 그 확장으로만 다시 최적화한다.
+    const optRounds = state.weightsTouched ? rounds : Math.max(3, Math.ceil(rounds / 2));
+    const total = objectives.length * (1 + optRounds);
     let evals = 0, step = 0;
     const cands = [];
+    const yieldMaybe = async () => { bar.style.width = (++step / total * 100) + '%'; if (step % 3 === 0) await nextFrame(); };
+
     for (const obj of objectives) {
-      const exp = autoExp ? expansionFor(obj.weights) : state.expansion;
-      const expLevel = autoExp ? C.MAX_EXPANSION_LEVEL : state.expLevel;
+      // 1) 기준 파츠 셋 (확장 없이)
+      const base = O.optimize(state.ms, { ...opts, weights: obj.weights, expansion: C.EXPANSION_NONE, expLevel, seed: 7919 }, partsByCat, fullst);
+      evals += base.evaluations || 0; await yieldMaybe();
+
+      // 2) 그 셋을 각 확장에 얹어 절대총점 비교
+      let exp = state.expansion;
+      if (autoExp && base.parts.length) {
+        let bestAbs = -1e9;
+        for (const e of expList) {
+          const st = C.calcStats(state.ms, base.parts, state.stage, e, partsByCat, fullst, expLevel, null, opts.skill);
+          const a = absScore(st.total, obj.weights);
+          if (a > bestAbs) { bestAbs = a; exp = e; }
+        }
+      }
+
+      // 3) 고른 확장으로 다시 최적화
       const results = [];
-      for (let i = 0; i < perObj; i++) {
-        const r = O.optimize(state.ms,
-          { ...opts, weights: obj.weights, expansion: exp, expLevel, seed: (step + 1) * 7919 },
-          partsByCat, fullst);
-        if (r.parts.length || r.feasible) { r.expansion = exp; r.expLevel = expLevel; results.push(r); }
-        evals += r.evaluations || 0;
-        bar.style.width = (++step / total * 100) + '%';
-        await nextFrame();
+      for (let i = 0; i < optRounds; i++) {
+        const r = O.optimize(state.ms, { ...opts, weights: obj.weights, expansion: exp, expLevel, seed: (i + 2) * 7919 }, partsByCat, fullst);
+        if (r.parts.length || r.feasible) { r.expansion = exp; r.expLevel = expLevel; r.abs = absScore(r.stats.total, obj.weights); results.push(r); }
+        evals += r.evaluations || 0; await yieldMaybe();
       }
       if (state.weightsTouched) {
         for (const c of topCandidates(results, 3)) cands.push(c);
       } else {
-        const best = results.slice().sort((a, b) => b.score - a.score)[0];
+        const best = results.slice().sort((a, b) => b.abs - a.abs)[0];
         if (best) { best.label = obj.name; cands.push(best); }
       }
     }
@@ -1348,42 +1368,26 @@
   }
 
   /**
-   * 목표 가중치에 가장 잘 맞는 확장 스킬을 고른다 (사용자가 확장을 안 정했을 때).
-   * 각 확장의 최대 LV 효과(가산·상한·파츠당)를 가중치×UNIT 로 환산해 점수를 매긴다.
-   */
-  function expansionFor(weights) {
-    let best = C.EXPANSION_NONE, bestFit = 0;
-    for (const [exp, levels] of Object.entries(C.EXPANSION_LEVELS)) {
-      const e = levels[levels.length - 1];   // 최대 LV
-      let fit = 0;
-      const add = (k, v, w) => { fit += (weights[k] || 0) * v / (O.UNIT[k] || 1) * w; };
-      if (e.add) for (const [k, v] of Object.entries(e.add)) add(k, v, 1);
-      if (e.limit) for (const [k, v] of Object.entries(e.limit)) add(k, v, 0.5);   // 상한은 절반 비중
-      if (e.per) for (const [k, v] of Object.entries(e.per.add)) add(k, v, 3);      // 파츠 3개 가정
-      if (fit > bestFit) { bestFit = fit; best = exp; }
-    }
-    return best;
-  }
-
-  /**
    * 가중치를 안 정했을 때 쓸 3가지 목표. 기체 성향(사격/격투)에 맞춰 공격 방향을 정한다.
    */
   function autoProfiles(ms) {
     const melee = Number(ms && ms.格闘補正 || 0) >= Number(ms && ms.射撃補正 || 0);
+    // 공격 프로필은 HP 가중치를 빼야 공격 보정·확장이 뽑힌다 (HP 는 절대치가 커서 총점을 지배한다)
     return [
       { name: '밸런스', weights: O.PRESETS['밸런스'] },
       melee
-        ? { name: '격투 중심', weights: O.PRESETS['격투 강습'] }
-        : { name: '사격 중심', weights: O.PRESETS['사격 지원'] },
-      { name: '방어형', weights: O.PRESETS['탱커 (범용 방어)'] }
+        ? { name: '격투 중심', weights: { meleeCorrection: 4, speed: 1.5, thruster: 1.5, highSpeedMovement: 1 } }
+        : { name: '사격 중심', weights: { shoot: 4, thruster: 1, armorBeam: 0.5, armorRange: 0.5 } },
+      { name: '방어형', weights: { hp: 3, armorRange: 2, armorBeam: 2, armorMelee: 2, thruster: 0.5 } }
     ];
   }
 
-  /** 시작점별 결과에서 서로 겹치지 않는 상위 후보를 고른다 (파츠가 1개 이하만 다르면 같은 구성으로 본다). */
+  /** 결과에서 서로 겹치지 않는 상위 후보를 고른다 (파츠가 1개 이하만 다르면 같은 구성으로 본다). */
   function topCandidates(results, n) {
+    const rank = r => (r.abs != null ? r.abs : r.score);   // 확장 비교엔 절대 총점, 없으면 점수
     const sig = r => r.parts.map(p => p.name).slice().sort().join('|');
     const seen = new Set();
-    const uniq = results.slice().sort((a, b) => b.score - a.score)
+    const uniq = results.slice().sort((a, b) => rank(b) - rank(a))
       .filter(r => { const s = sig(r); if (seen.has(s)) return false; seen.add(s); return true; });
 
     const picks = [];
