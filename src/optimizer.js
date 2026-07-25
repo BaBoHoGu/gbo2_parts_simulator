@@ -130,6 +130,7 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
   const stage = opts.stage || 0;
   const expansion = opts.expansion || EXPANSION_NONE;
   const restarts = opts.restarts || 10;
+  const maxIter = opts.iters || 60;   // 확장 비교용 스캔은 반복을 줄여 빠르게 돌린다
   const banned = new Set(opts.banned || []);
   const rnd = mulberry32(opts.seed || 12345);
 
@@ -165,7 +166,7 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
     let curScore = evaluate(cur);
 
     // --- 최급상승 국소탐색: 교체 / 추가 / 제거 ---
-    for (let iter = 0; iter < 60; iter++) {
+    for (let iter = 0; iter < maxIter; iter++) {
       let bestMove = null;
       const swappable = cur.filter(p => !locked.some(l => l.name === p.name));
 

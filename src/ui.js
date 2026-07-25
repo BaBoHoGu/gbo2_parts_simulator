@@ -1309,36 +1309,54 @@
     // 절대 가중총점 — 확장의 고정 보너스까지 반영된다
     const absScore = (tot, w) => C.STAT_KEYS.reduce((s, k) => s + (w[k] || 0) * (tot[k] || 0) / (O.UNIT[k] || 1), 0);
 
-    // 확장별로 매번 최적화하면 너무 느리다. 대신 기준 파츠 셋을 한 번 뽑고, 그 셋을 각 확장에
-    // 얹어(calcStats) 절대총점을 비교해 최고 확장을 고른 뒤, 그 확장으로만 다시 최적화한다.
-    const optRounds = state.weightsTouched ? rounds : Math.max(3, Math.ceil(rounds / 2));
-    const total = objectives.length * (1 + optRounds);
+    // 확장을 고르는 방식:
+    //   고정형(사격보정 확장 등)은 파츠 선택을 바꾸지 않으므로 기준 셋에 얹어(calcStats) 싸게 평가.
+    //   파츠당(per: 파츠확장[HP]·[장갑] 등)은 그 확장에 맞는 파츠(특히 보조)를 끌어와야 이득이 나므로
+    //   따로 재최적화해서 공정하게 비교한다. 안 그러면 보조 계열 확장이 늘 과소평가된다.
+    const isPer = e => C.EXPANSION_LEVELS[e] && C.EXPANSION_LEVELS[e][C.EXPANSION_LEVELS[e].length - 1].per;
+    const perExps = autoExp ? expList.filter(isPer) : [];
+    // 지정 시엔 상위 3개를 뽑아야 하니 넉넉히, 임의 목표는 목표당 후보 1개라 몇 번만 돌린다
+    const optRounds = state.weightsTouched ? rounds : Math.max(2, Math.ceil(rounds / 10));
+    const total = objectives.length * (1 + perExps.length + optRounds);
     let evals = 0, step = 0;
     const cands = [];
+    const opt = (weights, exp, seed, iters) => {
+      const r = O.optimize(state.ms, { ...opts, weights, expansion: exp, expLevel, seed, iters }, partsByCat, fullst);
+      evals += r.evaluations || 0;
+      if (r.parts.length || r.feasible) { r.expansion = exp; r.expLevel = expLevel; r.abs = absScore(r.stats.total, weights); }
+      return r;
+    };
     const yieldMaybe = async () => { bar.style.width = (++step / total * 100) + '%'; if (step % 3 === 0) await nextFrame(); };
 
     for (const obj of objectives) {
-      // 1) 기준 파츠 셋 (확장 없이)
-      const base = O.optimize(state.ms, { ...opts, weights: obj.weights, expansion: C.EXPANSION_NONE, expLevel, seed: 7919 }, partsByCat, fullst);
-      evals += base.evaluations || 0; await yieldMaybe();
+      // 1) 기준 셋 (확장 없이) — 고정형 확장 평가의 바탕. 스캔이라 반복을 줄여 빠르게.
+      const base = opt(obj.weights, C.EXPANSION_NONE, 7919, 25);
+      await yieldMaybe();
 
-      // 2) 그 셋을 각 확장에 얹어 절대총점 비교
       let exp = state.expansion;
       if (autoExp && base.parts.length) {
+        // 고정형: 기준 셋에 얹어 절대총점 비교 (파츠 선택을 안 바꾸므로 재최적화 불필요)
         let bestAbs = -1e9;
         for (const e of expList) {
+          if (isPer(e)) continue;
           const st = C.calcStats(state.ms, base.parts, state.stage, e, partsByCat, fullst, expLevel, null, opts.skill);
           const a = absScore(st.total, obj.weights);
           if (a > bestAbs) { bestAbs = a; exp = e; }
         }
+        // 파츠당: 각각 재최적화(빠른 스캔)해서 비교 — 보조 계열 파츠를 끌어와야 이득이 난다
+        for (const e of perExps) {
+          const r = opt(obj.weights, e, 7919 * 2, 25);
+          await yieldMaybe();
+          if ((r.parts.length || r.feasible) && r.abs > bestAbs) { bestAbs = r.abs; exp = e; }
+        }
       }
 
-      // 3) 고른 확장으로 다시 최적화
+      // 2) 고른 확장으로 제대로 다시 최적화 (풀 반복)
       const results = [];
       for (let i = 0; i < optRounds; i++) {
-        const r = O.optimize(state.ms, { ...opts, weights: obj.weights, expansion: exp, expLevel, seed: (i + 2) * 7919 }, partsByCat, fullst);
-        if (r.parts.length || r.feasible) { r.expansion = exp; r.expLevel = expLevel; r.abs = absScore(r.stats.total, obj.weights); results.push(r); }
-        evals += r.evaluations || 0; await yieldMaybe();
+        const r = opt(obj.weights, exp, (i + 3) * 7919);
+        if (r.parts.length || r.feasible) results.push(r);
+        await yieldMaybe();
       }
       if (state.weightsTouched) {
         for (const c of topCandidates(results, 3)) cands.push(c);
