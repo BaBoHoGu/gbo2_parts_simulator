@@ -1604,8 +1604,7 @@
 
   /**
    * 같은 기체의 다른 레벨로 전환.
-   * 레벨이 바뀌면 슬롯 상한도 바뀌어 기존 구성이 성립하지 않으므로 파츠는 항상 초기화한다.
-   * (강화·확장 설정은 유지)
+   * 레벨이 바뀌면 슬롯 상한도 바뀌어 기존 구성이 성립하지 않으므로 파츠·확장을 초기화한다.
    */
   function switchLevel(m) {
     if (!m || m === state.ms) return;
@@ -1615,6 +1614,7 @@
     state.skillPicks.clear();
     state.locked.clear();
     clearAutoResults();
+    resetEnhance();             // 레벨이 바뀌면 슬롯도 바뀌므로 확장 스킬도 초기화한다
     renderAll();
     if (had) toast('레벨을 변경해 장착 파츠를 초기화했습니다');
   }
