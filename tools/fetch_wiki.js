@@ -1,6 +1,7 @@
 // 기체별 위키 페이지를 raw/wiki/ 에 내려받는다 (무장 표 추출용).
-//   node tools/fetch_wiki.js         이미 받은 것은 건너뛰고 새 것만
-//   node tools/fetch_wiki.js --force 전부 다시 받기
+//   node tools/fetch_wiki.js               이미 받은 것은 건너뛰고 새 것만
+//   node tools/fetch_wiki.js --force       전부 다시 받기
+//   node tools/fetch_wiki.js --pages=ID,ID 지정한 페이지만 받기(증분 업데이트용)
 //
 // atwiki 는 UA 없는 요청을 403 으로 막으므로 브라우저 UA 를 보내고,
 // 서버 부담을 줄이려고 요청 사이에 간격을 둔다.
@@ -17,12 +18,17 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 
 const msData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
 
+// --pages=ID,ID : 이 페이지들만 받는다 (배포본 증분 업데이트 — 캐시 전체를 받지 않음)
+const pagesArg = process.argv.find(a => a.startsWith('--pages='));
+const onlyIds = pagesArg ? new Set(pagesArg.slice('--pages='.length).split(',').filter(Boolean)) : null;
+
 // 같은 기체의 LV 변형은 위키 페이지가 같으므로 URL 기준으로 묶는다.
 const pages = new Map();
 for (const m of msData) {
   if (!m.wiki_url) continue;
   const id = (m.wiki_url.match(/pages\/(\d+)\.html/) || [])[1];
   if (!id) continue;
+  if (onlyIds && !onlyIds.has(id)) continue;
   if (!pages.has(id)) pages.set(id, { id, url: m.wiki_url, names: [] });
   pages.get(id).names.push(m.MS名);
 }
