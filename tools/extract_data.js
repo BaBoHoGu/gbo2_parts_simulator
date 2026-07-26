@@ -6,7 +6,11 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const src = fs.readFileSync(path.join(ROOT, 'raw', 'app.js'), 'utf8');
+// 기본은 raw/app.js → data/ 이지만, 업데이트 감지용으로 소스·출력 경로를 넘길 수 있다.
+//   node tools/extract_data.js [소스 app.js] [출력 폴더]
+const SRC_PATH = process.argv[2] || path.join(ROOT, 'raw', 'app.js');
+const OUT_DIR = process.argv[3] || path.join(ROOT, 'data');
+const src = fs.readFileSync(SRC_PATH, 'utf8');
 
 function matchBracket(s, start) {
   let depth = 0, i = start;
@@ -73,7 +77,7 @@ for (const m of src.matchAll(/\b(\w+)\s*=\s*\[\s*\{\s*name:"[^"]+",levels:\[/g))
 }
 if (!fullst) throw new Error('fullst table not found');
 
-const outDir = path.join(ROOT, 'data');
+const outDir = OUT_DIR;
 fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(path.join(outDir, 'parts.json'), JSON.stringify(parts));
 fs.writeFileSync(path.join(outDir, 'fullst.json'), JSON.stringify(fullst));

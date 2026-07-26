@@ -13,7 +13,11 @@ tools/_original_calc.js   # extract_original_calc.js 가 raw/app.js 에서 생�
 # 추출 결과인 data/weapons.json 만 버전 관리한다.
 raw/wiki/
 
+# 업데이트 감지용 임시 다운로드 (tools/update.js) — 언제든 다시 받는다.
+raw/remote/
+
 # 임시 파일
 _*.js
 *.log
 data/buff_skills.json
+release/

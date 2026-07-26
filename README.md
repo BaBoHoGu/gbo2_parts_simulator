@@ -82,9 +82,14 @@
 ## 구조
 
 ```
-raw/          gbo2.jp에서 받은 원본 (번들 JS, msData.json)
+raw/          gbo2.jp에서 받은 원본 (번들 JS, msData.json). remote/ 는 업데이트 감지용 임시본
 tools/
-  extract_data.js  번들에서 파츠/강화리스트 데이터 추출
+  update.js        데이터 자동 업데이트 (감지→수신→추출→재빌드)
+  build_release.js 자기 업데이트 가능한 배포 패키지(+node.exe) 생성
+  extract_data.js  번들에서 파츠/강화리스트 데이터 추출 ([app.js] [outDir] 인자 가능)
+  fetch_wiki.js    기체별 위키 페이지 내려받기 (--pages=ID,ID 로 일부만 가능)
+  extract_weapons.js 위키 표 → 무장 데이터 (--merge 로 증분 병합)
+  find_buff_skills.js 위키 표 → 버프 스킬 (--ui / --merge)
   fetch_images.js  기체·파츠 이미지 내려받기 (assets/images/)
   build.js         src/ + data/ + assets/ → dist/
   test.js          계산 엔진 + 최적화기 검증 (node)
@@ -113,22 +118,53 @@ npm i --no-save jsdom && node tools/smoke.js       # 27개 항목 자동 검사
 npm i --no-save puppeteer && node tools/shot.js    # 스크린샷으로 육안 확인
 ```
 
-원본 사이트가 갱신되면 데이터도 갱신할 수 있다.
+## 데이터 자동 업데이트
+
+원본이 갱신되면(신규 기체·파츠·밸런스 조정) **명령 한 줄로** 감지·수신·재빌드까지 끝난다.
 
 ```bash
-curl -sL https://gbo2.jp/ -o raw/index.html
-# raw/index.html 안의 /assets/index-*.js 경로를 확인해서
-curl -sL https://gbo2.jp/assets/index-XXXX.js -o raw/app.js
-curl -sL https://gbo2.jp/data/msData.json -o raw/msData.json
-cp raw/msData.json data/msData.json
-node tools/extract_data.js
-node tools/fetch_images.js   # 이미 받은 것은 건너뛰고 새 항목만 받는다
-node tools/build.js
+node tools/update.js            # 감지 → 변경 있으면 받기·추출·재빌드
+node tools/update.js --check    # 감지만 하고 무엇이 바뀌는지 리포트 (반영 안 함)
 ```
 
-갱신으로 새 기체·파츠가 늘어나면 `data/i18n/` 에 항목을 추가해야 한다.
-빠진 항목이 있으면 `node tools/smoke.js` 의 "사전 전수 번역" 검사가 잡아낸다
-(번역이 없는 항목은 원본 일본어가 그대로 표시된다).
+Windows 에서는 PowerShell 진입점을 쓴다 (아래 "배포" 참고).
+
+```powershell
+.\update.ps1          # 자동 갱신
+.\update.ps1 -Check   # 미리보기
+```
+
+동작:
+
+1. **감지** — `gbo2.jp/data/msData.json` 을 받아 로컬과 `MS名` 기준으로 비교한다
+   (신규·삭제·스탯 변경). 파츠·강화는 앱 번들(`/assets/index-*.js`)을 받아 임시로
+   추출해 `parts.json`/`fullst.json` 과 **실제 내용을 대조**한다.
+2. **수신** — 새/변경된 기체의 **위키 페이지만** 받는다 (`fetch_wiki --pages=ID,ID`).
+   변경된 기체는 캐시를 지워 다시 받고, 신규는 캐시에 없어 자동으로 받는다.
+3. **추출·병합** — `extract_weapons --merge` / `find_buff_skills --merge` 가 받은
+   페이지만 다시 뽑아 기존 데이터에 덮어쓴다 (위키 캐시 172MB 전체 없이도 동작).
+4. **재빌드** — 이미지(신규만) → `build.js` 로 `dist/` 를 다시 만든다.
+
+변경 종류에 따라 필요한 단계만 돈다 (파츠만 바뀌면 위키는 건드리지 않음).
+
+> **새 기체 한글명** 은 자동 번역되지 않는다(음역 사전에 기체 용어가 없음). 업데이트가
+> 끝나면 `data/i18n/ms.json` 에 추가할 이름을 리포트로 알려준다. 사전에 없으면 원본
+> 일본어가 그대로 표시되며, 성능·무장 계산에는 지장이 없다. 무장명은 자동 음역된다.
+
+## 배포
+
+`dist/` 만 넘겨도 시뮬레이터는 돌지만, **받은 사람이 직접 업데이트까지 하려면** 갱신
+파이프라인과 실행 런타임을 함께 담아야 한다. 이를 자동으로 묶어 준다.
+
+```bash
+node tools/build_release.js   # release/<이름>/ 폴더 + 같은 이름 .zip
+```
+
+- 개발 저장소와 **같은 레이아웃**(`dist/` + `assets/images` + `src` + `tools` + `data`)에
+  **`update.ps1` 과 내장 `node.exe`** 를 함께 담는다 (약 44MB zip).
+- 받은 사람은 아무것도 설치하지 않고 `update.ps1` 실행만으로 최신 데이터를 받는다.
+  `update.ps1` 은 동봉된 `node\node.exe` 를 먼저 쓰고, 없으면 시스템 `node` 로 넘어간다.
+- 사용자는 `dist\gbo2-simulator.html` 을 연다. 폴더 구성은 그대로 두어야 한다.
 
 ## 알려진 차이
 

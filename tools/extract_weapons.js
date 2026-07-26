@@ -290,6 +290,11 @@ function parseNote(note) {
 
 const files = fs.existsSync(WIKI) ? fs.readdirSync(WIKI).filter(f => f.endsWith('.html')) : [];
 if (!files.length) {
+  if (process.argv.includes('--merge')) {
+    // 병합 모드에서 받은 페이지가 없으면 기존 weapons.json 을 그대로 둔다.
+    console.log('갱신할 위키 페이지 없음 — 기존 weapons.json 유지');
+    process.exit(0);
+  }
   console.error('raw/wiki 가 비어 있습니다. 먼저 `node tools/fetch_wiki.js` 를 실행하세요.');
   process.exit(1);
 }
@@ -303,7 +308,12 @@ for (const m of msData) {
   namesByPage.get(id).push(m.MS名);
 }
 
-const out = {};
+// --merge: 기존 weapons.json 을 바탕으로, raw/wiki 에 있는 페이지만 다시 뽑아 덮어쓴다.
+// (배포본 증분 업데이트용 — 위키 캐시 전체 없이 새/변경 페이지만 반영)
+const DEST = path.join(ROOT, 'data', 'weapons.json');
+const MERGE = process.argv.includes('--merge');
+const out = MERGE && fs.existsSync(DEST) ? JSON.parse(fs.readFileSync(DEST, 'utf8')) : {};
+const baseCount = Object.keys(out).length;
 let tableCount = 0, weaponCount = 0, skipped = 0, shieldCount = 0;
 
 for (const f of files) {
@@ -410,7 +420,7 @@ for (const f of files) {
   if (weapons.length) out[id] = { names: namesByPage.get(id) || [], weapons };
 }
 
-const dest = path.join(ROOT, 'data', 'weapons.json');
-fs.writeFileSync(dest, JSON.stringify(out, null, 1));
-console.log(`페이지 ${Object.keys(out).length}/${files.length} · 무장 ${weaponCount}종(실드 ${shieldCount}) · 표 ${tableCount}개 (건너뜀 ${skipped})`);
-console.log('→', path.relative(process.cwd(), dest), (fs.statSync(dest).size / 1024).toFixed(0) + 'KB');
+fs.writeFileSync(DEST, JSON.stringify(out, null, 1));
+const mode = MERGE ? `병합(기존 ${baseCount} → ${Object.keys(out).length}, 이번 갱신 ${files.length}페이지)` : `${Object.keys(out).length}/${files.length}`;
+console.log(`페이지 ${mode} · 무장 ${weaponCount}종(실드 ${shieldCount}) · 표 ${tableCount}개 (건너뜀 ${skipped})`);
+console.log('→', path.relative(process.cwd(), DEST), (fs.statSync(DEST).size / 1024).toFixed(0) + 'KB');

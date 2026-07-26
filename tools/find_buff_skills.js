@@ -47,11 +47,18 @@ for (const m of MS) {
   byPage.get(id).push(m);
 }
 
+// --merge: raw/wiki 에 있는 페이지의 기체만 다시 뽑아 기존 skills.json 에 덮어쓴다.
+// (배포본 증분 업데이트용 — 나머지 기체의 스킬은 그대로 둔다)
+const MERGE = process.argv.includes('--merge');
+const baseName = n => n.replace(/_LV\d+$/, '');
+const touchedMs = new Set();   // 이번에 다시 뽑은 페이지에 속한 기체들(기본 이름)
+
 const found = [];
 for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
   const id = f.replace('.html', '');
   const ms = byPage.get(id);
   if (!ms) continue;
+  for (const m of ms) touchedMs.add(baseName(m.MS名));
   const html = fs.readFileSync(path.join(WIKI, f), 'utf8').replace(/<script[\s\S]*?<\/script>/gi, '');
   const at = html.search(/<h[2-5][^>]*>[^<]*スキル情報/);
   if (at < 0) continue;
@@ -191,21 +198,32 @@ if (process.argv.includes('--ui')) {
     skills.sort((a, b) => Math.max(...b.levels.map(lvWeight)) - Math.max(...a.levels.map(lvWeight)));
     out[ms] = skills;
   }
-  // 스킬 정보 표에 없어 자동 추출이 안 되는 무장 발동형 버프(리젤 N형 사이코 프레임 전개 등)를 합친다
+  const dest = path.join(ROOT, 'data', 'skills.json');
+  // 병합: 이번에 다시 뽑은 기체만 교체(스킬이 사라졌으면 제거)하고 나머지는 그대로 둔다.
+  let result = out;
+  if (MERGE && fs.existsSync(dest)) {
+    result = JSON.parse(fs.readFileSync(dest, 'utf8'));
+    for (const ms of touchedMs) {
+      if (out[ms]) result[ms] = out[ms];
+      else delete result[ms];
+    }
+  }
+  // 스킬 정보 표에 없어 자동 추출이 안 되는 무장 발동형 버프(리젤 N형 사이코 프레임 전개 등)를
+  // 마지막에 멱등하게 얹는다 — 같은 이름의 기존 override 스킬은 지우고 다시 넣어 중복을 막는다.
   const ovPath = path.join(ROOT, 'data', 'skills.override.json');
   if (fs.existsSync(ovPath)) {
     const ov = JSON.parse(fs.readFileSync(ovPath, 'utf8'));
     for (const [ms, list] of Object.entries(ov)) {
       if (ms.startsWith('_')) continue;
-      out[ms] = (out[ms] || []).concat(list);
+      const names = new Set(list.map(s => s.name));
+      result[ms] = (result[ms] || []).filter(s => !names.has(s.name)).concat(list);
     }
   }
-  const dest = path.join(ROOT, 'data', 'skills.json');
-  fs.writeFileSync(dest, JSON.stringify(out, null, 1));
-  const all = Object.values(out).flat();
-  console.log('기체 ' + Object.keys(out).length + '기 · 스킬 ' + all.length
+  fs.writeFileSync(dest, JSON.stringify(result, null, 1));
+  const all = Object.values(result).flat();
+  console.log('기체 ' + Object.keys(result).length + '기 · 스킬 ' + all.length
     + '개 (반영구 ' + all.filter(s => s.forever).length + ')');
-  console.log('스킬을 2개 이상 가진 기체: ' + Object.values(out).filter(v => v.length > 1).length + '기');
+  console.log('스킬을 2개 이상 가진 기체: ' + Object.values(result).filter(v => v.length > 1).length + '기');
   console.log('→', path.relative(process.cwd(), dest));
 } else if (process.argv.includes('--json')) {
   const dest = path.join(ROOT, 'data', 'buff_skills.json');
