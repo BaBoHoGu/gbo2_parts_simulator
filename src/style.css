@@ -803,6 +803,20 @@ body.view-build  #screenSelect { display: none; }
 .am-foot[hidden] { display: none; }
 .am-foot button { width: 100%; }
 
+/* 저장한 구성 카드 */
+.sc-name { cursor: text; }
+.sc-name:hover { text-decoration: underline dotted; }
+.sc-del {
+  border: none; background: none; color: var(--dim); cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 2px 4px; border-radius: 4px;
+}
+.sc-del:hover { color: var(--bad); background: #2a1416; }
+.sc-ms { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.sc-ms img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #0b0d10; border: 1px solid var(--line-soft); flex-shrink: 0; }
+.sc-meta { display: flex; flex-direction: column; min-width: 0; }
+.sc-msname { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-tags { font-size: 11px; color: var(--muted); }
+
 /* ============ 공통 ============ */
 
 .note { color: var(--muted); font-size: 11.5px; }
