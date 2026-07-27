@@ -1689,17 +1689,29 @@
       }
       card.append(thumbs);
 
-      // 스탯 요약 (저장된 강화·확장으로 실제 계산)
+      // 스탯 요약 (저장된 강화·확장으로 실제 계산) — gbo2.jp 성능표처럼 핵심 스탯 + 내구 지표
       if (ms) {
         const r = C.calcStats(ms, parts, bld.stage, bld.expansion, partsByCat, fullst, bld.expLevel);
         const stats = el('div', 'ac-stats');
-        for (const k of ['hp', 'shoot', 'meleeCorrection', 'thruster']) {
+        for (const k of ['hp', 'shoot', 'meleeCorrection', 'speed', 'thruster']) {
           const cell = el('span', 'ac-stat');
           cell.append(el('span', 'ac-k', C.STAT_LABEL[k]));
           cell.append(el('span', 'ac-v', (r.total[k] ?? 0).toLocaleString()));
           stats.append(cell);
         }
         card.append(stats);
+
+        // 내구 지표 = HP / (1 - 내성/100) — 피해 종류별 실효 HP (내성은 상한 반영된 값)
+        const dura = a => Math.round((r.total.hp || 0) / (1 - Math.min(r.total[a] || 0, 99) / 100));
+        const du = el('div', 'sc-dura');
+        du.append(el('span', 'sc-dura-lb', '내구 지표'));
+        for (const [k, label] of [['armorRange', '실탄'], ['armorBeam', '빔'], ['armorMelee', '격투']]) {
+          const cell = el('span', 'ac-stat');
+          cell.append(el('span', 'ac-k', label));
+          cell.append(el('span', 'ac-v', dura(k).toLocaleString()));
+          du.append(cell);
+        }
+        card.append(du);
       } else {
         card.append(el('div', 'ac-warn', '이 기체 데이터를 찾을 수 없습니다'));
       }
