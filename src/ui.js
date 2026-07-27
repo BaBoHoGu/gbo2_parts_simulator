@@ -100,18 +100,30 @@
     minimums: {},
     weightsTouched: false,  // 사용자가 가중치·하한·프리셋을 직접 만졌는가
     running: false,
-    autoCandidates: null,  // 자동 구성 후보 3개 (사용자가 고른다)
-    autoExpansion: false   // 자동 구성이 확장 스킬까지 골랐는가
+    autoCandidates: null,  // 자동 구성 후보 (최대 10개, 사용자가 고른다)
+    autoExpansion: false,  // 자동 구성이 확장 스킬까지 골랐는가
+    autoShown: 3,          // 결과 모달에서 지금 보여 주는 후보 수 (더보기로 늘린다)
+    autoApplied: 0         // 지금 적용해 강조 중인 후보 인덱스
   };
 
   /** 기체가 바뀌면 이전 자동 구성 후보는 무효라 지운다. */
   function clearAutoResults() {
     state.autoCandidates = null;
     state.autoExpansion = false;
+    state.autoShown = 3;
     const box = document.getElementById('autoResults');
     if (box) box.innerHTML = '';
     const note = document.getElementById('autoNote');
     if (note) note.textContent = '';
+    openResultModal(false);
+  }
+
+  /** 자동 구성 결과 모달(화면 중앙)을 열고 닫는다. */
+  function openResultModal(open) {
+    const modal = document.getElementById('autoModal');
+    const back = document.getElementById('autoModalBack');
+    if (modal) modal.hidden = !open;
+    if (back) back.hidden = !open;
   }
 
   const SAVE_KEY = 'gbo2-offline-build';
@@ -1349,8 +1361,9 @@
     //   따로 재최적화해서 공정하게 비교한다. 안 그러면 보조 계열 확장이 늘 과소평가된다.
     const isPer = e => C.EXPANSION_LEVELS[e] && C.EXPANSION_LEVELS[e][C.EXPANSION_LEVELS[e].length - 1].per;
     const perExps = autoExp ? expList.filter(isPer) : [];
-    // 지정 시엔 상위 3개를 뽑아야 하니 넉넉히, 임의 목표는 목표당 후보 1개라 몇 번만 돌린다
-    const optRounds = state.weightsTouched ? rounds : Math.max(2, Math.ceil(rounds / 10));
+    // 최대 10개까지 뽑으려면 후보 풀을 넉넉히 만든다.
+    // 지정 목표: 그 가중치로 여러 번 재시작 / 임의 목표: 프로필당 상위 몇 개씩
+    const optRounds = state.weightsTouched ? Math.max(rounds, 10) : Math.max(3, Math.ceil(rounds / 3));
     const total = objectives.length * (1 + perExps.length + optRounds);
     let evals = 0, step = 0;
     const cands = [];
@@ -1393,27 +1406,33 @@
         await yieldMaybe();
       }
       if (state.weightsTouched) {
-        for (const c of topCandidates(results, 3)) cands.push(c);
+        for (const c of topCandidates(results, 10)) cands.push(c);
       } else {
-        const best = results.slice().sort((a, b) => b.abs - a.abs)[0];
-        if (best) { best.label = obj.name; cands.push(best); }
+        // 프로필 대표(최고)에 라벨을 달고, 변형 몇 개를 함께 담는다 (더보기용 후보 확보)
+        const top = topCandidates(results, 4);
+        top.forEach((c, idx) => { if (idx === 0) c.label = obj.name; });
+        cands.push(...top);
       }
     }
 
-    // 프로필이 겹쳐 같은 구성이 나오면 하나만 남기고, 최대 3개
+    // 같은 구성은 하나만. 프로필 대표(라벨)를 앞에, 그다음 변형. 최대 10개.
     const seen = new Set();
-    const picks = cands.filter(c => {
-      const s = c.parts.map(p => p.name).slice().sort().join('|');
-      if (seen.has(s)) return false; seen.add(s); return true;
-    }).slice(0, 3);
+    const key = c => c.parts.map(p => p.name).slice().sort().join('|');
+    const dedup = arr => arr.filter(c => { const s = key(c); if (seen.has(s)) return false; seen.add(s); return true; });
+    const picks = dedup([...cands.filter(c => c.label), ...cands.filter(c => !c.label)]).slice(0, 10);
 
     state.autoCandidates = picks;
+    state.autoShown = Math.min(3, picks.length);   // 처음엔 3개, 더보기로 최대 10개
+    state.autoApplied = 0;
     const note = $('#autoNote');
     if (!picks.length) { note.className = 'note mt'; note.textContent = '구성을 찾지 못했습니다.'; return; }
     note.className = 'note mt';
-    note.textContent = `후보 ${picks.length}개 · 평가 ${evals.toLocaleString()}회 — 원하는 구성을 고르세요`;
+    note.textContent = `후보 ${picks.length}개를 찾았습니다.`;
+    $('#autoModalNote').textContent = `후보 ${picks.length}개 · 평가 ${evals.toLocaleString()}회 — 원하는 구성을 고르세요`;
     renderAutoResults(picks);
     applyCandidate(0);   // 가장 좋은 후보를 우선 적용해 두고, 다른 것도 고를 수 있게 한다
+    openDrawer(false);   // 결과는 화면 중앙 모달로 보여 준다
+    openResultModal(true);
     } finally {          // 예외가 나도 버튼이 영구 비활성으로 남지 않게 한다
       state.running = false;
       btn.disabled = false;
@@ -1459,7 +1478,7 @@
     return picks;
   }
 
-  /** 자동 구성 후보 카드를 그린다. 클릭하면 그 구성을 장착한다. */
+  /** 자동 구성 후보 카드를 그린다. 클릭하면 그 구성을 장착한다. (처음 autoShown 개만, 나머지는 더보기) */
   function renderAutoResults(cands) {
     const box = $('#autoResults');
     box.innerHTML = '';
@@ -1468,7 +1487,8 @@
     if (!keys.length) keys = ['hp', 'shoot', 'meleeCorrection', 'thruster'];
     keys = keys.slice(0, 4);
 
-    cands.forEach((c, i) => {
+    const shown = Math.min(state.autoShown || 3, cands.length);
+    cands.slice(0, shown).forEach((c, i) => {
       const card = el('div', 'auto-cand');
       card.dataset.i = String(i);
       const head = el('div', 'ac-head');
@@ -1513,12 +1533,25 @@
       card.onclick = () => applyCandidate(i);
       box.append(card);
     });
+
+    // 지금 적용된 후보 강조 유지 (더보기로 다시 그려도)
+    [...box.children].forEach(el => el.classList.toggle('on', Number(el.dataset.i) === state.autoApplied));
+
+    // 더보기 — 아직 안 보여준 후보가 있으면 노출
+    const moreWrap = document.getElementById('autoMoreWrap');
+    if (moreWrap) {
+      const remaining = cands.length - shown;
+      moreWrap.hidden = remaining <= 0;
+      const btn = document.getElementById('autoMore');
+      if (btn) btn.textContent = `더보기 (${remaining}개 더)`;
+    }
   }
 
   function applyCandidate(i) {
     const cands = state.autoCandidates || [];
     const c = cands[i];
     if (!c) return;
+    state.autoApplied = i;
     state.equipped = c.parts.slice();
     // 확장 스킬을 자동으로 골랐으면 그 값도 함께 적용한다 (후보를 갈아탈 때마다).
     // NONE 후보로 갈아탈 수도 있으므로 확장이 NONE 이어도 반드시 맞춘다.
@@ -1925,6 +1958,13 @@
     $('#closeAuto').onclick = () => openDrawer(false);
     $('#drawerBack').onclick = () => openDrawer(false);
     $('#runAuto').onclick = runAuto;
+    // 결과 모달 — 더보기(최대 10개)·닫기·배경 클릭
+    $('#autoMore').onclick = () => {
+      state.autoShown = Math.min(10, (state.autoCandidates || []).length);
+      renderAutoResults(state.autoCandidates || []);
+    };
+    $('#autoModalClose').onclick = () => openResultModal(false);
+    $('#autoModalBack').onclick = () => openResultModal(false);
     $('#clearParts').onclick = () => {
       state.equipped = [];
       state.locked.clear();
@@ -1986,6 +2026,7 @@
 
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
+      if (!$('#autoModal').hidden) { openResultModal(false); return; }
       if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return; }
 
       // 입력 중이면 화면을 벗어나지 않는다 — 내용이 있으면 비우고, 없으면 포커스만 해제
