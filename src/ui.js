@@ -592,6 +592,26 @@
     return String(fit.length ? fit[fit.length - 1] : lvs[0]);
   }
 
+  // 조사·산탄·동시발사 무장은 무장 표의 위력이 1히트/1발당 값이라, 備考의 배수를 읽어
+  // 전탄(전히트) 명중 시 총 피해를 함께 보여 준다. (격투는 방향/연격으로 따로 표기)
+  const CJK_NUM = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+  const cjkNum = s => (CJK_NUM[s] ?? Number(s));
+  function fireMult(w) {
+    if (!w || w.type === 'melee') return null;
+    const note = (w.info && w.info['備考']) || '';
+    let m = note.match(/最大\s*(\d+)\s*ヒット/);            // 조사: 최대 N 히트
+    if (m && Number(m[1]) > 1) return { n: Number(m[1]), label: '최대 ' + m[1] + '히트' };
+    m = note.match(/([一二三四五六七八九十]|\d+)発同時発射/);  // 동시발사(산탄 포함)
+    if (m) {
+      const proj = cjkNum(m[1]);
+      const rep = note.match(/[x×]\s*(\d+)\s*(?:回攻撃|射)/);   // 「x3回攻撃」「x3射」 연사
+      const r = rep ? Number(rep[1]) : 1;
+      const n = proj * r;
+      if (n > 1) return { n, label: rep ? proj + '발 ×' + r + '연사' : proj + '발 동시' };
+    }
+    return null;
+  }
+
   function renderWeapons() {
     const box = $('#weaponList');
     box.innerHTML = '';
@@ -655,9 +675,11 @@
           : w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
 
       // ② 이름 (격투/사격 점으로 구분)
+      const mult = fireMult(w);              // 조사·산탄·동시발사 배수
       const nm = el('span', 'w-nm');
       nm.append(el('i', 'w-dot ' + w.type));
       nm.append(document.createTextNode(T.weaponName(w.name)));
+      if (mult) { const b = el('span', 'w-mult', mult.label); nm.append(b); }
       nm.title = w.name;
       row.append(nm);
 
@@ -683,6 +705,15 @@
           ' (' + (gain > 0 ? '+' : '') + gain.toLocaleString() + ')'));
         if (skillGain) cell.append(el('span', 's-gain' + sCls,
           ' (' + (skillGain > 0 ? '+' : '') + skillGain.toLocaleString() + ')'));
+        // 조사·산탄·동시발사: 전탄(전히트) 명중 시 총 피해 = 1발 피해 × 배수
+        if (mult) {
+          const totalNo = withoutSkill * mult.n, totalSk = withSkill * mult.n;
+          const sub = el('span', 'w-sub');
+          sub.append(document.createTextNode('전탄 ' + totalNo.toLocaleString() + ' (×' + mult.n + ')'));
+          if (totalSk !== totalNo) sub.append(el('span', 's-gain' + sCls,
+            ' (+' + (totalSk - totalNo).toLocaleString() + ')'));
+          cell.append(sub);
+        }
         return cell;
       };
 
