@@ -1583,6 +1583,142 @@
     expLevel: state.expLevel
   });
 
+  /* ---------- 저장한 구성(이름 지정·다중) ---------- */
+
+  const BUILDS_KEY = 'gbo2-offline-builds';
+
+  function loadBuilds() {
+    let list;
+    try { list = JSON.parse(localStorage.getItem(BUILDS_KEY)) || []; } catch { list = []; }
+    // 예전 단일 저장 슬롯이 있으면 목록으로 한 번 옮겨 온다
+    if (!list.length) {
+      try {
+        const old = localStorage.getItem(SAVE_KEY);
+        const o = old && JSON.parse(old);
+        if (o && o.ms) { list = [{ id: Date.now(), name: '이전 저장', ...o, ts: Date.now() }]; writeBuilds(list); }
+      } catch { /* 무시 */ }
+    }
+    return list;
+  }
+  function writeBuilds(list) {
+    try { localStorage.setItem(BUILDS_KEY, JSON.stringify(list)); return true; } catch { return false; }
+  }
+
+  const expShort = e => (C.EXPANSION_LABEL[e] || e).replace(/\s*\(.*\)$/, '');
+
+  /** 현재 구성을 이름을 지정해 목록에 저장한다. */
+  function saveCurrentBuild() {
+    if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
+    const name = (prompt('구성 이름을 지정하세요', T.msName(state.ms.MS名) + ' 구성') || '').trim();
+    if (!name) return;
+    const list = loadBuilds();
+    list.unshift({ id: Date.now(), name, ...serialize(), ts: Date.now() });
+    if (!writeBuilds(list)) { toast('저장에 실패했습니다 (브라우저 저장 공간 제한)'); return; }
+    toast('「' + name + '」 저장했습니다');
+  }
+
+  function openSavedModal(open) {
+    const m = document.getElementById('savedModal'), b = document.getElementById('savedModalBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (open) renderSavedBuilds();
+  }
+
+  function renameBuild(id) {
+    const list = loadBuilds();
+    const b = list.find(x => x.id === id);
+    if (!b) return;
+    const name = (prompt('새 이름을 입력하세요', b.name) || '').trim();
+    if (!name) return;
+    b.name = name; writeBuilds(list); renderSavedBuilds();
+  }
+
+  function deleteBuild(id) {
+    const list = loadBuilds();
+    const b = list.find(x => x.id === id);
+    if (b && !confirm('「' + b.name + '」 구성을 삭제할까요?')) return;
+    writeBuilds(list.filter(x => x.id !== id)); renderSavedBuilds();
+  }
+
+  /** 저장한 구성을 자동 구성 카드처럼 파츠 아이콘·스탯 요약으로 보여 준다. */
+  function renderSavedBuilds() {
+    const box = $('#savedResults');
+    box.innerHTML = '';
+    const list = loadBuilds();
+    $('#savedModalNote').textContent = list.length ? list.length + '개' : '';
+    if (!list.length) {
+      box.append(el('div', 'detail-empty', '저장된 구성이 없습니다.\n구성을 만든 뒤 상단 “저장”을 누르세요.'));
+      return;
+    }
+    for (const bld of list) {
+      const ms = msData.find(m => m.MS名 === bld.ms);
+      const parts = (bld.parts || []).map(n => partByName.get(n)).filter(Boolean);
+      const card = el('div', 'auto-cand saved-card');
+
+      const head = el('div', 'ac-head');
+      const nm = el('span', 'ac-rank sc-name', bld.name);
+      nm.title = '클릭해서 이름 변경';
+      nm.onclick = ev => { ev.stopPropagation(); renameBuild(bld.id); };
+      head.append(nm);
+      const del = el('button', 'sc-del', '✕');
+      del.title = '이 구성 삭제';
+      del.onclick = ev => { ev.stopPropagation(); deleteBuild(bld.id); };
+      head.append(del);
+      card.append(head);
+
+      // 기체 한 줄 (썸네일 + 이름 · 강화 · 확장)
+      const msLine = el('div', 'sc-ms');
+      msLine.append(img(msImg(bld.ms), 'ms', bld.ms));
+      const meta = el('div', 'sc-meta');
+      meta.append(el('span', 'sc-msname', ms ? T.msName(ms.MS名) : bld.ms));
+      const tags = [STAGE_LABEL[bld.stage] || ''];
+      if (bld.expansion && bld.expansion !== C.EXPANSION_NONE) tags.push(expShort(bld.expansion));
+      meta.append(el('span', 'sc-tags', tags.filter(Boolean).join(' · ')));
+      msLine.append(meta);
+      card.append(msLine);
+
+      // 파츠 아이콘
+      const thumbs = el('div', 'ac-thumbs');
+      for (const part of parts) {
+        const th = el('div', 'ac-thumb');
+        th.append(img(partImg(part.name), 'parts', part.name));
+        const lv = lvOf(part.name);
+        if (lv) th.append(el('span', 'ac-lv', lv));
+        th.title = T.partName(part.name);
+        thumbs.append(th);
+      }
+      card.append(thumbs);
+
+      // 스탯 요약 (저장된 강화·확장으로 실제 계산)
+      if (ms) {
+        const r = C.calcStats(ms, parts, bld.stage, bld.expansion, partsByCat, fullst, bld.expLevel);
+        const stats = el('div', 'ac-stats');
+        for (const k of ['hp', 'shoot', 'meleeCorrection', 'thruster']) {
+          const cell = el('span', 'ac-stat');
+          cell.append(el('span', 'ac-k', C.STAT_LABEL[k]));
+          cell.append(el('span', 'ac-v', (r.total[k] ?? 0).toLocaleString()));
+          stats.append(cell);
+        }
+        card.append(stats);
+      } else {
+        card.append(el('div', 'ac-warn', '이 기체 데이터를 찾을 수 없습니다'));
+      }
+
+      const lost = (bld.parts || []).length - parts.length;
+      card.append(el('div', 'ac-parts', `파츠 ${parts.length}개` + (lost ? ` (없는 파츠 ${lost}개 제외)` : '')));
+
+      card.title = '클릭해서 이 구성 불러오기';
+      card.onclick = () => {
+        const r = deserialize(bld);
+        openSavedModal(false);
+        toast(r.ok
+          ? ('「' + bld.name + '」 불러왔습니다' + (r.missing ? ` — 알 수 없는 파츠 ${r.missing}개 제외` : ''))
+          : '이 구성의 기체를 찾을 수 없습니다');
+      };
+      box.append(card);
+    }
+  }
+
   /** @returns {{ok: boolean, missing?: number}} missing = 사전에 없어 제외된 파츠 수 */
   function deserialize(obj) {
     if (!obj || !obj.ms) return { ok: false };
@@ -1971,31 +2107,16 @@
       renderAll();
     };
 
-    $('#save').onclick = () => {
-      if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
-      try {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(serialize()));
-        toast('구성을 저장했습니다');
-      } catch { toast('저장에 실패했습니다 (브라우저 저장 공간 제한)'); }
-    };
-    // 불러오기 결과 안내 — 제외된 파츠가 있으면 조용히 넘기지 않는다
+    // 저장: 이름을 지정해 목록에 담는다 / 불러오기: 저장 목록을 카드로 연다
+    $('#save').onclick = saveCurrentBuild;
+    $('#load').onclick = () => openSavedModal(true);
+    $('#savedModalClose').onclick = () => openSavedModal(false);
+    $('#savedModalBack').onclick = () => openSavedModal(false);
+
+    // 불러오기 결과 안내 — 제외된 파츠가 있으면 조용히 넘기지 않는다 (가져오기에서 사용)
     const loadedMsg = (r, okText) => r.missing
       ? `${okText} — 알 수 없는 파츠 ${r.missing}개는 제외했습니다`
       : okText;
-
-    $('#load').onclick = () => {
-      let raw;
-      try { raw = localStorage.getItem(SAVE_KEY); }
-      catch { toast('브라우저 저장소를 읽을 수 없습니다'); return; }
-      if (!raw) { toast('저장된 구성이 없습니다'); return; }
-
-      let obj;
-      try { obj = JSON.parse(raw); }
-      catch { toast('저장된 구성이 손상되었습니다'); return; }
-
-      const r = deserialize(obj);
-      toast(r.ok ? loadedMsg(r, '저장한 구성을 불러왔습니다') : '저장된 구성의 기체를 찾을 수 없습니다');
-    };
     $('#share').onclick = () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
       const text = JSON.stringify(serialize(), null, 2);
@@ -2026,6 +2147,7 @@
 
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
+      if (!$('#savedModal').hidden) { openSavedModal(false); return; }
       if (!$('#autoModal').hidden) { openResultModal(false); return; }
       if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return; }
 
