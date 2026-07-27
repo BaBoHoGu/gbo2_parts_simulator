@@ -64,6 +64,11 @@
   /** 표시용 LV 추출 — 접미사가 없는 파츠(이레귤러DBL 등)는 undefined. */
   const lvOf = name => (name.match(/_LV(\d+)/) || [])[1];
 
+  // 내구 지표 = HP / (1 - 내성/100) — 피해 종류별 실효 HP. 원본 번들(of 함수)과 동일 공식.
+  // HP·내성은 상한 반영된 total 값을 넣는다.
+  const durabilityOf = (total, armorKey) =>
+    Math.round((total.hp || 0) / (1 - Math.min(total[armorKey] || 0, 99) / 100));
+
   // 같은 기체의 레벨 변형 묶음 (base 이름 → 레벨 오름차순 목록)
   const msByBase = new Map();
   for (const m of msData) {
@@ -1087,6 +1092,8 @@
   function renderStats() {
     const body = $('#statBody');
     body.innerHTML = '';
+    const duraRow = $('#duraRow');
+    if (duraRow) duraRow.innerHTML = '';
     if (!state.ms) return;
 
     const r = stats();
@@ -1140,6 +1147,17 @@
 
       row.append(el('span', 'cap', limit === Infinity ? '—' : limit.toLocaleString()));
       body.append(row);
+    }
+
+    // 내구 지표 — 원본 성능표처럼 피해 종류별 실효 HP 를 하단에 표시
+    if (duraRow) {
+      duraRow.append(el('span', 'dura-lb', '내구 지표'));
+      for (const [k, label] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']]) {
+        const cell = el('span', 'dura-cell');
+        cell.append(el('span', 'dura-k', label));
+        cell.append(el('span', 'dura-v', durabilityOf(r.total, k).toLocaleString()));
+        duraRow.append(cell);
+      }
     }
   }
 
@@ -1701,14 +1719,13 @@
         }
         card.append(stats);
 
-        // 내구 지표 = HP / (1 - 내성/100) — 피해 종류별 실효 HP (내성은 상한 반영된 값)
-        const dura = a => Math.round((r.total.hp || 0) / (1 - Math.min(r.total[a] || 0, 99) / 100));
+        // 내구 지표 — 피해 종류별 실효 HP (내성은 상한 반영된 값)
         const du = el('div', 'sc-dura');
         du.append(el('span', 'sc-dura-lb', '내구 지표'));
         for (const [k, label] of [['armorRange', '실탄'], ['armorBeam', '빔'], ['armorMelee', '격투']]) {
           const cell = el('span', 'ac-stat');
           cell.append(el('span', 'ac-k', label));
-          cell.append(el('span', 'ac-v', dura(k).toLocaleString()));
+          cell.append(el('span', 'ac-v', durabilityOf(r.total, k).toLocaleString()));
           du.append(cell);
         }
         card.append(du);
