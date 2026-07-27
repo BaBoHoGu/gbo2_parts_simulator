@@ -816,6 +816,14 @@ body.view-build  #screenSelect { display: none; }
 .sc-meta { display: flex; flex-direction: column; min-width: 0; }
 .sc-msname { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-tags { font-size: 11px; color: var(--muted); }
+/* 내구 지표 (실효 HP) — 한 단 아래에 강조 */
+.sc-dura {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 3px 12px;
+  margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line);
+}
+.sc-dura .ac-stat { font-size: 11.5px; }
+.sc-dura .ac-v { color: var(--info); }
+.sc-dura-lb { font-size: 10.5px; color: var(--dim); margin-right: 2px; }
 
 /* ============ 공통 ============ */
 
