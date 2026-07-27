@@ -43,6 +43,13 @@ const run = (script, args = []) => {
   execFileSync(process.execPath, [path.join('tools', script), ...args], { cwd: ROOT, stdio: 'inherit' });
 };
 
+// 실패해도 예외를 던지지 않고 종료 코드만 돌려준다 (검증처럼 "실패=경고"인 단계용).
+const runSoft = (script, args = []) => {
+  console.log(`\n▶ ${script} ${args.join(' ')}`.trimEnd());
+  try { execFileSync(process.execPath, [path.join('tools', script), ...args], { cwd: ROOT, stdio: 'inherit' }); return 0; }
+  catch (e) { return e.status ?? 1; }
+};
+
 const pageId = url => (String(url || '').match(/pages\/(\d+)\.html/) || [])[1];
 // 변경 감지에 쓰는 계산 관련 필드 (표기·설명 등 잡음은 뺀다)
 const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム補正', '耐格闘補正',
@@ -105,7 +112,12 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
   console.log(`  신규  ${added.length}`);
   added.forEach(m => console.log(`     + ${m.MS名}  (${m.属性} 코스트${m.コスト})  ${m.wiki_url}`));
   console.log(`  스탯 변경  ${changed.length}`);
-  changed.slice(0, 20).forEach(c => console.log(`     ~ ${c.ms.MS名}: ${c.diff.map(k => k + ' ' + localByName.get(c.ms.MS名)[k] + '→' + c.ms[k]).join(', ')}`));
+  changed.slice(0, 20).forEach(c => {
+    const o = localByName.get(c.ms.MS名);
+    // fullst 는 객체 배열이라 값 대신 라벨만 보여 준다
+    const parts = c.diff.map(k => k === 'fullst' ? '강화리스트' : `${k} ${o[k]}→${c.ms[k]}`);
+    console.log(`     ~ ${c.ms.MS名}: ${parts.join(', ')}`);
+  });
   if (changed.length > 20) console.log(`     … 외 ${changed.length - 20}건`);
   console.log(`  삭제  ${removed.length}` + (removed.length ? '  ' + removed.slice(0, 5).map(m => m.MS名).join(', ') : ''));
   console.log(`  파츠 변경  ${partsChanged ? '있음' : '없음'}`);
@@ -122,6 +134,8 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
   if (partsChanged && fs.existsSync(path.join(REMOTE, 'app.js'))) {
     fs.copyFileSync(path.join(REMOTE, 'app.js'), path.join(ROOT, 'raw', 'app.js'));
     run('extract_data.js');
+    // 번들이 바뀌면 계산 로직도 바뀔 수 있다 — 대조 기준을 새 번들에서 다시 뽑아 둔다.
+    run('extract_original_calc.js');
   }
 
   // (b) 기체(스탯·신규·삭제)가 바뀐 경우에만 msData 교체 + 위키·무장·스킬 갱신
@@ -157,6 +171,16 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
 
   // (d) 언제나 재빌드
   run('build.js');
+
+  // (e) 번들(계산 로직)이 바뀌었으면 원본 계산과 대조해, 아직 이식 안 된 새 규칙이 있는지 본다.
+  //     (이번 ハロ（V） 처럼 gbo2.jp 가 파츠 특수 계산을 추가하면 여기서 불일치로 드러난다)
+  if (partsChanged) {
+    const code = runSoft('verify_against_original.js', ['5000']);
+    if (code !== 0) {
+      console.log('\n⚠ 원본 계산과 불일치가 있습니다 — gbo2.jp 가 계산 로직을 바꿨을 수 있습니다.');
+      console.log('  위 "불일치 사례"를 보고 src/core.js 에 새 규칙을 반영해야 할 수 있습니다.');
+    }
+  }
 
   // 5) 마무리 리포트 — 새 기체 한글명은 사람이 확인해야 한다
   const msDict = rdJson('data', 'i18n', 'ms.json');

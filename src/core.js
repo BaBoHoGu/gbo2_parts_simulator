@@ -154,6 +154,13 @@ const connectingKind = name => {
 /** 스피드를 올리는 커넥팅 시스템 (수치가 아닌 이름으로 판정). */
 const CONNECT_RAISES_SPEED = ['強襲I', '汎用I'];
 
+/** ハロ（V）: 기체 속성에 따라 평면 효과 위에 얹히는 추가 보너스 (원본 번들 로직). */
+const HARO_V_BONUS = {
+  '強襲': { highSpeedMovement: 3, thruster: 3, speed: 3 },
+  '汎用': { hp: 1000 },
+  '支援': { armorRange: 3, armorBeam: 3, armorMelee: 3 }
+};
+
 /** 레벨링크 시스템: 기체 LV에 비례해 스탯이 오른다. `stats` 는 스탯키→파츠필드. */
 const LEVEL_LINK_RULES = {
   '格闘': { stats: { meleeCorrection: 'melee' }, bonus: lv => lv * 2 + 1 },
@@ -358,6 +365,12 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
         partBonus[key] += (typeof p[field] === 'number' ? p[field] : 0) + bonus;
       }
       continue;
+    }
+
+    // ハロ（V）: 평면 효과에 더해 기체 속성별 추가 보너스가 붙는다 (continue 하지 않고 아래 평면값도 그대로 적용)
+    if (p.name.includes('ハロ（V）')) {
+      const b = HARO_V_BONUS[attribute];
+      if (b) for (const [k, v] of Object.entries(b)) partBonus[k] += v;
     }
 
     // 기체 LV 스케일 파츠
