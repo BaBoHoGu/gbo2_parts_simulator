@@ -1604,17 +1604,20 @@
   /* ---------- 저장한 구성(이름 지정·다중) ---------- */
 
   const BUILDS_KEY = 'gbo2-offline-builds';
+  // 시간이 같아도 겹치지 않는 고유 id (Date.now() 만 쓰면 연속 저장 시 충돌해 삭제가 꼬인다)
+  const uid = () => Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
 
   function loadBuilds() {
     let list;
     try { list = JSON.parse(localStorage.getItem(BUILDS_KEY)) || []; } catch { list = []; }
-    // 예전 단일 저장 슬롯이 있으면 목록으로 한 번 옮겨 온다
-    if (!list.length) {
-      try {
-        const old = localStorage.getItem(SAVE_KEY);
-        const o = old && JSON.parse(old);
-        if (o && o.ms) { list = [{ id: Date.now(), name: '이전 저장', ...o, ts: Date.now() }]; writeBuilds(list); }
-      } catch { /* 무시 */ }
+    // 예전 단일 저장 슬롯이 남아 있으면 "한 번만" 목록으로 옮기고 슬롯을 지운다.
+    // (지우지 않으면 목록을 비울 때마다 되살아나 삭제되지 않는다)
+    let legacy = null;
+    try { legacy = localStorage.getItem(SAVE_KEY); } catch { /* 무시 */ }
+    if (legacy != null) {
+      try { const o = JSON.parse(legacy); if (o && o.ms) list.push({ id: uid(), name: '이전 저장', ...o, ts: Date.now() }); } catch { /* 손상된 슬롯도 아래서 제거 */ }
+      try { localStorage.removeItem(SAVE_KEY); } catch { /* 무시 */ }
+      writeBuilds(list);
     }
     return list;
   }
@@ -1630,7 +1633,7 @@
     const name = (prompt('구성 이름을 지정하세요', T.msName(state.ms.MS名) + ' 구성') || '').trim();
     if (!name) return;
     const list = loadBuilds();
-    list.unshift({ id: Date.now(), name, ...serialize(), ts: Date.now() });
+    list.unshift({ id: uid(), name, ...serialize(), ts: Date.now() });
     if (!writeBuilds(list)) { toast('저장에 실패했습니다 (브라우저 저장 공간 제한)'); return; }
     toast('「' + name + '」 저장했습니다');
   }
@@ -1710,8 +1713,9 @@
       // 스탯 요약 (저장된 강화·확장으로 실제 계산) — gbo2.jp 성능표처럼 핵심 스탯 + 내구 지표
       if (ms) {
         const r = C.calcStats(ms, parts, bld.stage, bld.expansion, partsByCat, fullst, bld.expLevel);
+        // 원본 성능표 순서대로 — HP · 내성 3종 · 사격 · 격투 · 스피드 · 스러스터
         const stats = el('div', 'ac-stats');
-        for (const k of ['hp', 'shoot', 'meleeCorrection', 'speed', 'thruster']) {
+        for (const k of ['hp', 'armorRange', 'armorBeam', 'armorMelee', 'shoot', 'meleeCorrection', 'speed', 'thruster']) {
           const cell = el('span', 'ac-stat');
           cell.append(el('span', 'ac-k', C.STAT_LABEL[k]));
           cell.append(el('span', 'ac-v', (r.total[k] ?? 0).toLocaleString()));
