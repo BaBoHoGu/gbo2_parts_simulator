@@ -54,7 +54,13 @@ copyDir(p('src'), path.join(STAGE, 'src'));
 // 4) 데이터 (진단용 buff_skills.json 은 뺀다)
 copyDir(p('data'), path.join(STAGE, 'data'), s => !s.endsWith('buff_skills.json'));
 
-// 4) 내장 node.exe — 설치 없이 update.ps1 이 바로 동작하도록
+// 4) 내장 node.exe — 설치 없이 update.ps1 이 바로 동작하도록.
+//    빌드 머신의 node 를 그대로 복사하므로, 배포 대상(win-x64)과 다른 환경에서
+//    빌드하면 사용자 PC에서 실행되지 않는다. 아키텍처가 다르면 경고한다.
+if (process.platform !== 'win32' || process.arch !== 'x64') {
+  console.warn(`⚠ 경고: 이 node 는 ${process.platform}/${process.arch} 용입니다. `
+    + '대부분의 사용자(win-x64)에게 맞지 않으니 win-x64 환경에서 빌드하세요.');
+}
 copyFile(process.execPath, path.join(STAGE, 'node', 'node.exe'));
 
 // 5) 사용법

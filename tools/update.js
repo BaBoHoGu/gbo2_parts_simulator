@@ -69,6 +69,8 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
     const o = localByName.get(m.MS名);
     if (!o) continue;
     const diff = STAT_KEYS.filter(k => m[k] !== o[k]);
+    // 강화리스트(fullst)만 리밸런싱돼도 감지되도록 함께 비교한다.
+    if (JSON.stringify(m.fullst) !== JSON.stringify(o.fullst)) diff.push('fullst');
     if (diff.length) changed.push({ ms: m, diff });
   }
 
@@ -141,16 +143,19 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
     const targetIds = [...new Set([...added, ...changed.map(c => c.ms)]
       .map(m => pageId(m.wiki_url)).filter(Boolean))];
 
-    // 위키 받기 → 무장·스킬 추출(증분 병합) → 무장명 한글화 → 이미지
+    // 위키 받기 → 무장·스킬 추출(증분 병합) → 무장명 한글화
     // --merge: 위키 캐시 전체 없이 새/변경 페이지만 기존 데이터에 덮어쓴다(배포본 대응).
     if (targetIds.length) run('fetch_wiki.js', ['--pages=' + targetIds.join(',')]);
     run('extract_weapons.js', ['--merge']);
     run('find_buff_skills.js', ['--ui', '--merge']);
     run('build_weapon_i18n.js');
-    run('fetch_images.js');
   }
 
-  // (c) 언제나 재빌드
+  // (c) 이미지 — 새 기체뿐 아니라 새 파츠도 받아야 하므로 둘 중 하나만 바뀌어도 실행한다.
+  //     (이미 받은 것은 건너뛰므로 새 항목만 내려받는다)
+  if (partsChanged || msChanged) run('fetch_images.js');
+
+  // (d) 언제나 재빌드
   run('build.js');
 
   // 5) 마무리 리포트 — 새 기체 한글명은 사람이 확인해야 한다

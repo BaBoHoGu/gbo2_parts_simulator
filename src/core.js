@@ -269,7 +269,8 @@ function calcSlots(ms, equipped, stage, fullstDefs) {
   const slotEntries = stage && Array.isArray(ms.fullst) ? ms.fullst : [];
   for (const entry of slotEntries) {
     const def = fullstDefs.find(d => d.name === entry.name);
-    const eff = def && def.levels.find(l => l.level === entry.level)?.effects;
+    // calcStats 와 동일하게 숫자로 비교한다(문자열 레벨이 섞여도 어긋나지 않게).
+    const eff = def && def.levels.find(l => Number(l.level) === Number(entry.level))?.effects;
     if (!eff) continue;
     if (typeof eff.近スロット === 'number') add.close += eff.近スロット;
     if (typeof eff.中スロット === 'number') add.mid += eff.中スロット;
