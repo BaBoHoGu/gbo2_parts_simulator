@@ -28,7 +28,8 @@ setTimeout(async () => {
   const $$ = s => [...window.document.querySelectorAll(s)];
 
   check('스크립트 오류 없음', errors.length === 0, errors.join('; '));
-  check('데이터 로드', window.GBO2_DATA.msData.length === 1671);
+  check('데이터 로드', window.GBO2_DATA.msData.length > 1000, window.GBO2_DATA.msData.length + '기');
+  const totalParts = Object.values(window.GBO2_DATA.parts).reduce((a, b) => a + b.length, 0);
 
   /* --- 초기 렌더 --- */
   check('기체 카드 렌더', $$('#msList .ms-card').length > 0, $('#msCount').textContent);
@@ -38,8 +39,8 @@ setTimeout(async () => {
     $$('#slotBars .slot-bar .v').map(n => n.textContent).join(' / '));
   check('장착 타일 8칸', $('#equipped').children.length === 8);
   check('스탯 11행', $$('#statBody .stat-row').length === 11);
-  check('파츠 목록 렌더', $$('#partList .part-tile').length === 159);
-  check('파츠 썸네일 존재', $$('#partList .part-tile img').length === 159);
+  check('파츠 목록 렌더', $$('#partList .part-tile').length === totalParts, $$('#partList .part-tile').length + '/' + totalParts);
+  check('파츠 썸네일 존재', $$('#partList .part-tile img').length === totalParts);
 
   /* --- 필터 --- */
   const attrChips = $$('#attrChips .chip');

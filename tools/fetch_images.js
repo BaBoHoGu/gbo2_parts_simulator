@@ -59,9 +59,11 @@ async function run() {
   const msNames = [...new Set(msData.map(m => baseName(m.MS名)))].sort();
   const partNames = [...new Set([].concat(...Object.values(parts)).map(p => p.name))].sort();
 
+  // 저장 파일명은 NFC 로 통일한다 (원본에 NFD 결합문자 이름이 섞여 있어 환경에 따라
+  // 경로가 어긋나는 것을 막는다). 내려받기 후보(URL)는 원본 표기를 그대로 시도한다.
   const jobs = [
-    ...msNames.map(n => ({ dir: 'ms', file: n, candidates: [...new Set([n, romanize(n)])] })),
-    ...partNames.map(n => ({ dir: 'parts', file: n, candidates: [...new Set([n, baseName(n)])] }))
+    ...msNames.map(n => ({ dir: 'ms', file: n.normalize('NFC'), candidates: [...new Set([n, romanize(n)])] })),
+    ...partNames.map(n => ({ dir: 'parts', file: n.normalize('NFC'), candidates: [...new Set([n, baseName(n)])] }))
   ];
 
   let ok = 0, miss = 0, bytes = 0;

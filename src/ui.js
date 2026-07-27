@@ -20,8 +20,10 @@
   /* ---------- 이미지 ---------- */
 
   const baseName = C.partBase;
-  const msImg = name => `images/ms/${encodeURIComponent(baseName(name))}.webp`;
-  const partImg = name => `images/parts/${encodeURIComponent(name)}.webp`;
+  // 파일명은 NFC로 통일돼 있다. 원본 데이터에 결합문자(バ=ハ+゛)로 된 NFD 이름이 섞여 있어
+  // 정규화하지 않으면 압축·해제 환경에 따라 이미지 경로가 어긋난다.
+  const msImg = name => `images/ms/${encodeURIComponent(baseName(name).normalize('NFC'))}.webp`;
+  const partImg = name => `images/parts/${encodeURIComponent(name.normalize('NFC'))}.webp`;
 
   /** 이미지가 없으면 기본 이미지로 한 번만 대체한다. */
   function img(src, fallbackDir, alt) {

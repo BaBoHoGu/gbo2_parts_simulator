@@ -62,9 +62,13 @@ function readArray(ident) {
   return eval('(' + src.slice(brk, matchBracket(src, brk)) + ')');
 }
 
+// 원본 번들에 파츠명이 NFD(결합문자, バ=ハ+゛)로 섞여 들어오는 경우가 있다.
+// 사전 키·이미지 파일명은 NFC 기준이므로 이름을 NFC 로 통일해 어긋남을 막는다.
+const nfc = s => (typeof s === 'string' ? s.normalize('NFC') : s);
+
 const parts = {};
 for (const [cat, ident] of Object.entries(catOf)) {
-  parts[cat] = readArray(ident).map(p => ({ ...p, category: cat }));
+  parts[cat] = readArray(ident).map(p => ({ ...p, name: nfc(p.name), category: cat }));
   console.log(cat.padEnd(3), ident.padEnd(3), parts[cat].length);
 }
 
@@ -76,6 +80,7 @@ for (const m of src.matchAll(/\b(\w+)\s*=\s*\[\s*\{\s*name:"[^"]+",levels:\[/g))
   break;
 }
 if (!fullst) throw new Error('fullst table not found');
+fullst = fullst.map(d => ({ ...d, name: nfc(d.name) }));
 
 const outDir = OUT_DIR;
 fs.mkdirSync(outDir, { recursive: true });

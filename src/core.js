@@ -262,8 +262,12 @@ function calcSlots(ms, equipped, stage, fullstDefs) {
   const baseMid = Number(ms.中スロット || 0);
   const baseLong = Number(ms.遠スロット || 0);
 
+  // 원본(gbo2.jp)은 슬롯 보너스만은 단계(4/6)와 무관하게 강화리스트 "전체"를 더한다.
+  // (스탯은 4단계에서 앞 4개만 — activeFullst) 그래서 슬롯 강화가 5·6번째 항목에 들어간
+  // ギャプランTR-5_LV4·バウンド・ドック_LV2 는 4단계에서도 파츠칸이 늘어난다.
   const add = { close: 0, mid: 0, long: 0 };
-  for (const entry of activeFullst(ms, stage)) {
+  const slotEntries = stage && Array.isArray(ms.fullst) ? ms.fullst : [];
+  for (const entry of slotEntries) {
     const def = fullstDefs.find(d => d.name === entry.name);
     const eff = def && def.levels.find(l => l.level === entry.level)?.effects;
     if (!eff) continue;
