@@ -13,9 +13,13 @@
  * 즉 Def = 1, ETCb = 0 으로 고정하며, 구조는 남겨 두어 나중에 방어를 넣을 수 있게 한다.
  * ------------------------------------------------------------------ */
 
-/** 공격 보정 상한 (보정값 100 = 피해 2배) */
+/**
+ * 공격 보정 "기본" 상한 (보정 100 = 피해 2배). 참고용 상수 — 실제 차단엔 쓰지 않는다.
+ * 위키(与ダメージ計算/数値のキャップ): 이 상한은 확장 스킬·커스텀 파츠·기체 스킬의
+ * 상한 상승으로 늘어나며, 늘어난 만큼 배율에 그대로 반영된다(예: 사격보정확장 LV5 → 112 → 2.12배).
+ * 상한 차단은 calcStats(스탯 계산) 단계에서 이미 이뤄지므로, 여기서는 다시 자르지 않는다.
+ */
 const CAP_A = 100;
-const CAP_ATT = 2.0;
 
 /** 속성 간 보정 — 유리 +0.3 / 동일 0 / 불리 -0.2 */
 const ATTR_BONUS = { advantage: 0.3, same: 0, disadvantage: -0.2 };
@@ -35,13 +39,14 @@ const floorTo = (v, n) => {
 };
 
 /**
- * 기체 공격력 배율 Att = 1 + A/100  (상한 2.0)
- * @param {number} correction 사격보정 또는 격투보정 (기체 소수치 + 파츠 합계)
+ * 기체 공격력 배율 Att = 1 + 보정/100.
+ * 보정값은 이미 스탯 계산에서 현재 상한(기본 100, 확장·파츠·스킬로 확장)까지 잘려 들어오므로
+ * 여기서 다시 상한을 적용하지 않는다 → 보정 112면 2.12배가 그대로 반영된다.
+ * @param {number} correction 사격보정 또는 격투보정 (기체 소수치 + 파츠·확장·스킬 합계, 상한 반영됨)
  * @param {number} [extra] EXAM·두부손괴 등 배율로 직접 더해지는 보정
  */
 function attackPower(correction, extra = 0) {
-  const att = 1 + (Math.min(Number(correction) || 0, CAP_A) / 100 + extra);
-  return Math.min(att, CAP_ATT);
+  return 1 + (Number(correction) || 0) / 100 + extra;
 }
 
 /**
@@ -287,7 +292,7 @@ function shortenTimeText(text, pct) {
 }
 
 const GBO2Damage = {
-  CAP_A, CAP_ATT, ATTR_BONUS, ETC_ATTACK,
+  CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon,
   shortenTime, shortenTimeText, applyDamagePct
