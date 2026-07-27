@@ -1092,8 +1092,6 @@
   function renderStats() {
     const body = $('#statBody');
     body.innerHTML = '';
-    const duraRow = $('#duraRow');
-    if (duraRow) duraRow.innerHTML = '';
     if (!state.ms) return;
 
     const r = stats();
@@ -1149,16 +1147,16 @@
       body.append(row);
     }
 
-    // 내구 지표 — 원본 성능표처럼 피해 종류별 실효 HP 를 하단에 표시
-    if (duraRow) {
-      duraRow.append(el('span', 'dura-lb', '내구 지표'));
-      for (const [k, label] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']]) {
-        const cell = el('span', 'dura-cell');
-        cell.append(el('span', 'dura-k', label));
-        cell.append(el('span', 'dura-v', durabilityOf(r.total, k).toLocaleString()));
-        duraRow.append(cell);
-      }
+    // 내구 지표 — 스탯 행들과 같은 흐름(마지막 행)에 두어 사이가 벌어지지 않게 한다
+    const du = el('div', 'dura-row');
+    du.append(el('span', 'dura-lb', '내구 지표'));
+    for (const [k, label] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']]) {
+      const cell = el('span', 'dura-cell');
+      cell.append(el('span', 'dura-k', label));
+      cell.append(el('span', 'dura-v', durabilityOf(r.total, k).toLocaleString()));
+      du.append(cell);
     }
+    body.append(du);
   }
 
   /* ---------- 파츠 목록 ---------- */
