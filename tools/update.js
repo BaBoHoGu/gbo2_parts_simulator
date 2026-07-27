@@ -163,4 +163,12 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
     console.log('  다음을 ms.json 에 추가하면 한글로 나옵니다:');
     needKo.forEach(n => console.log(`     "${n}": "",`));
   }
+  // 새 파츠도 한글 사전에 없으면 알려준다 (파츠명은 자동 번역이 없다).
+  const partDict = rdJson('data', 'i18n', 'parts.json');
+  const partNeed = Object.values(rdJson('data', 'parts.json')).flat()
+    .map(p => p.name).filter(n => !partDict[n]);
+  if (partNeed.length) {
+    console.log(`\n※ 새 파츠 ${partNeed.length}종은 한글 사전(data/i18n/parts.json)에 없어 일본어로 표시됩니다:`);
+    partNeed.forEach(n => console.log(`     "${n}": { "n": "", "d": "" },`));
+  }
 })().catch(e => { console.error('\n✗ 업데이트 실패:', e.message); process.exit(1); });
