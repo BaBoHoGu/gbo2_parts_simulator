@@ -187,9 +187,23 @@
     <button id="runAuto" class="btn-primary" style="width:100%">구성 찾기</button>
     <div class="progress"><i id="progressBar"></i></div>
     <div class="note mt" id="autoNote"></div>
-    <div class="auto-results" id="autoResults"></div>
   </div>
 </aside>
+
+<!-- ========== 자동 구성 결과 (화면 중앙) ========== -->
+<div class="auto-modal-back" id="autoModalBack" hidden></div>
+<div class="auto-modal" id="autoModal" hidden role="dialog" aria-label="자동 구성 결과">
+  <div class="am-head">
+    <b>⚡ 자동 구성 결과</b>
+    <span class="am-note" id="autoModalNote"></span>
+    <span class="grow"></span>
+    <button id="autoModalClose" class="btn-ghost">닫기</button>
+  </div>
+  <div class="auto-results" id="autoResults"></div>
+  <div class="am-foot" id="autoMoreWrap" hidden>
+    <button id="autoMore" class="btn-ghost">더보기</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
