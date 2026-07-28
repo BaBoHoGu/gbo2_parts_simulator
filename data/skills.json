@@ -6122,7 +6122,7 @@
    "name": "バイオ脳制御機構",
    "nameKo": "바이오 뇌 제어기구",
    "forever": false,
-   "secs": 60,
+   "secs": 90,
    "hp": 80,
    "manual": false,
    "levels": [
@@ -6160,7 +6160,7 @@
      "limitUp": 0,
      "dmgAny": 0,
      "dmgShoot": 0,
-     "dmgMelee": 15
+     "dmgMelee": 20
     }
    ]
   }
@@ -7322,6 +7322,82 @@
      "dmgAny": 30,
      "dmgShoot": 0,
      "dmgMelee": 0
+    }
+   ]
+  }
+ ],
+ "ドライセン": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
+    }
+   ]
+  }
+ ],
+ "リバウ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
     }
    ]
   }

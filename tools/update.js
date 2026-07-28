@@ -56,6 +56,31 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
   '射撃補正', '格闘補正', 'スピード', '高速移動', 'スラスター',
   '旋回_地上_通常時', '旋回_宇宙_通常時', '近スロット', '中スロット', '遠スロット'];
 
+// 적용한 밸런스 패치 날짜 기록 (새 패치가 있을 때만 해당 기체 페이지를 다시 받는다)
+const PATCH_FILE = path.join(ROOT, 'data', 'patch.json');
+const readPatchApplied = () => { try { return rdJson('data', 'patch.json').applied || ''; } catch { return ''; } };
+
+/**
+ * 위키 첫 페이지의 「パラメータ調整」(밸런스 패치) 목록을 읽어,
+ * 최근 패치들의 날짜와 조정된 "기체 페이지" ID(현재 msData 에 있는 것만)를 돌려준다.
+ * 무장 밸런스 변경은 기체 스탯이 안 바뀌어 다른 방법으론 못 잡는다 — 이 목록이 유일한 신호.
+ */
+async function detectPatch(msList) {
+  try {
+    const html = (await get('https://w.atwiki.jp/battle-operation2/')).toString('utf8');
+    const start = html.search(/パラメータ調整/);
+    if (start < 0) return { date: '', ids: [] };
+    const rest = html.slice(start + 10);
+    const endRel = rest.search(/<h3[ >]/);            // 다음 대분류 전까지
+    const seg = endRel < 0 ? rest : rest.slice(0, endRel);
+    const date = [...seg.matchAll(/(\d{8})アプデ分/g)].map(m => m[1]).sort().pop() || '';
+    const msIds = new Set();
+    for (const m of msList) { const id = (String(m.wiki_url || '').match(/pages\/(\d+)/) || [])[1]; if (id) msIds.add(id); }
+    const ids = [...new Set([...seg.matchAll(/pages\/(\d+)\.html/g)].map(m => m[1]))].filter(id => msIds.has(id));
+    return { date, ids };
+  } catch (e) { return { date: '', ids: [], error: e.message }; }
+}
+
 (async () => {
   fs.mkdirSync(REMOTE, { recursive: true });
   console.log('■ gbo2.jp 최신 데이터를 확인합니다…');
@@ -106,6 +131,13 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
     console.log('  (앱 번들 확인 건너뜀: ' + e.message + ')');
   }
 
+  // 2.5) 위키 밸런스 패치 감지 — 무장 누적치·위력 등은 기체 스탯이 안 바뀌어 msData 로는
+  //      못 잡는다. 위키 첫 페이지의 「パラメータ調整」 목록(조정 기체)만 보고, 새 패치면
+  //      해당 기체 페이지만 다시 받아 무장을 갱신한다. (전체 재수신 불필요)
+  const patch = await detectPatch(remote);
+  const patchApplied = readPatchApplied();
+  const patchNew = !!(patch.date && patch.date !== patchApplied);
+
   // 3) 리포트
   console.log('\n■ 변경 요약');
   console.log(`  기체  현재 ${local.length} / 원격 ${remote.length}`);
@@ -121,8 +153,10 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
   if (changed.length > 20) console.log(`     … 외 ${changed.length - 20}건`);
   console.log(`  삭제  ${removed.length}` + (removed.length ? '  ' + removed.slice(0, 5).map(m => m.MS名).join(', ') : ''));
   console.log(`  파츠 변경  ${partsChanged ? '있음' : '없음'}`);
+  console.log(`  밸런스 패치  ${patch.date || '(확인 실패)'}`
+    + (patchNew ? `  ← 새 패치 (조정 기체 ${patch.ids.length}개 무장 갱신)` : ' (이미 반영)'));
 
-  const nothing = !added.length && !changed.length && !removed.length && !partsChanged;
+  const nothing = !added.length && !changed.length && !removed.length && !partsChanged && !patchNew;
   if (nothing) { console.log('\n✔ 이미 최신 상태입니다.'); return; }
   if (CHECK_ONLY) { console.log('\n(--check: 감지만 하고 반영하지 않았습니다. 반영하려면 --check 없이 실행하세요.)'); return; }
 
@@ -138,27 +172,24 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
     run('extract_original_calc.js');
   }
 
-  // (b) 기체(스탯·신규·삭제)가 바뀐 경우에만 msData 교체 + 위키·무장·스킬 갱신
-  if (msChanged) {
-    fs.copyFileSync(path.join(REMOTE, 'msData.json'), path.join(ROOT, 'data', 'msData.json'));
+  // (b) 기체 스탯이 바뀐 경우에만 msData 교체
+  if (msChanged) fs.copyFileSync(path.join(REMOTE, 'msData.json'), path.join(ROOT, 'data', 'msData.json'));
 
-    // 변경된 기체의 위키 캐시는 지워 다시 받게 한다 (신규는 캐시에 없어 자동으로 받는다)
+  // (c) 위키·무장·스킬 — 신규/변경 기체 + 새 패치로 조정된 기체 페이지를 다시 받아 병합
+  if (msChanged || patchNew) {
     const wikiDir = path.join(ROOT, 'raw', 'wiki');
+    const ids = new Set();
+    for (const m of added) { const id = pageId(m.wiki_url); if (id) ids.add(id); }
+    for (const c of changed) { const id = pageId(c.ms.wiki_url); if (id) ids.add(id); }
+    if (patchNew) for (const id of patch.ids) ids.add(id);   // 밸런스 패치로 무장이 바뀐 기체
+
+    // 대상 페이지의 캐시는 지워 강제로 다시 받는다 (신규는 캐시에 없어 그냥 받힌다)
     let refetch = 0;
-    for (const c of changed) {
-      const id = pageId(c.ms.wiki_url);
-      const f = id && path.join(wikiDir, id + '.html');
-      if (f && fs.existsSync(f)) { fs.rmSync(f); refetch++; }
-    }
-    if (refetch) console.log(`  변경 기체 위키 캐시 ${refetch}개 삭제 (재수신 대상)`);
+    for (const id of ids) { const f = path.join(wikiDir, id + '.html'); if (fs.existsSync(f)) { fs.rmSync(f); refetch++; } }
+    console.log(`  갱신 대상 위키 페이지 ${ids.size}개 (캐시 삭제 ${refetch})`);
 
-    // 새·변경 기체의 위키 페이지 ID만 골라 그것만 받는다 (배포본은 캐시가 비어 있으므로
-    // 전체를 받지 않도록 반드시 --pages 로 한정한다).
-    const targetIds = [...new Set([...added, ...changed.map(c => c.ms)]
-      .map(m => pageId(m.wiki_url)).filter(Boolean))];
-
-    // 위키 받기 → 무장·스킬 추출(증분 병합) → 무장명 한글화
-    // --merge: 위키 캐시 전체 없이 새/변경 페이지만 기존 데이터에 덮어쓴다(배포본 대응).
+    // --pages 로 한정해 그 페이지만 받는다(배포본 캐시가 비어도 전체 584개를 받지 않도록).
+    const targetIds = [...ids];
     if (targetIds.length) run('fetch_wiki.js', ['--pages=' + targetIds.join(',')]);
     run('extract_weapons.js', ['--merge']);
     run('find_buff_skills.js', ['--ui', '--merge']);
@@ -181,6 +212,9 @@ const STAT_KEYS = ['属性', 'コスト', 'HP', '耐実弾補正', '耐ビーム
       console.log('  위 "불일치 사례"를 보고 src/core.js 에 새 규칙을 반영해야 할 수 있습니다.');
     }
   }
+
+  // 반영한 밸런스 패치 날짜를 기록해, 다음 실행 때 같은 패치를 다시 받지 않게 한다.
+  if (patchNew && patch.date) fs.writeFileSync(PATCH_FILE, JSON.stringify({ applied: patch.date }, null, 1) + '\n');
 
   // 5) 마무리 리포트 — 새 기체 한글명은 사람이 확인해야 한다
   const msDict = rdJson('data', 'i18n', 'ms.json');
