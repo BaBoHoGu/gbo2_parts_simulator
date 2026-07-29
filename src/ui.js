@@ -64,6 +64,12 @@
   /** 표시용 LV 추출 — 접미사가 없는 파츠(이레귤러DBL 등)는 undefined. */
   const lvOf = name => (name.match(/_LV(\d+)/) || [])[1];
 
+  // 무장 유형(속성) 표시 — 위키 무장표 컨테이너에서 뽑은 attr(solid/beam/melee/shield/other).
+  // attr 이 없으면(옛 데이터·실드 등) 종류·빔 판정으로 보완한다.
+  const ATTR_LABEL = { solid: '실탄', beam: '빔', melee: '격투', shield: '실드', other: '기타' };
+  const weaponAttr = w => w.attr
+    || (w.type === 'shield' ? 'shield' : w.type === 'melee' ? 'melee' : D.isBeamWeapon(w) ? 'beam' : 'solid');
+
   // 내구 지표 = HP / (1 - 내성/100) — 피해 종류별 실효 HP. 원본 번들(of 함수)과 동일 공식.
   // HP·내성은 상한 반영된 total 값을 넣는다.
   const durabilityOf = (total, armorKey) =>
@@ -706,10 +712,12 @@
       nm.append(el('i', 'w-dot ' + w.type));
       nm.append(document.createTextNode(T.weaponName(w.name)));
       if (mult) { const b = el('span', 'w-mult', mult.label); nm.append(b); }
-      // 격투 판정 사격무장(부메랑·인컴·투척 등) — 격투 보정을 받음을 배지로 알린다
-      if (dmgKey(w) === 'melee' && w.type !== 'melee') nm.append(el('span', 'w-mjudge', '격투판정'));
       nm.title = w.name;
       row.append(nm);
+
+      // ②-b 무장 유형 (실탄/빔/격투/실드/기타) — 위키 무장표 속성과 동일
+      const at = weaponAttr(w);
+      row.append(el('span', 'w-type type-' + at, ATTR_LABEL[at]));
 
       /** 위력 한 칸 — 기본값 · 파츠 보정분(초록) · 스킬 발동분(보라) */
       const dmgCell = (base) => {
