@@ -242,9 +242,16 @@
     return sum;
   }
 
-  /** 이 무장에 걸리는 스킬 피해 %. */
-  const skillDmgPct = (e, kind) =>
-    (e ? e.dmgAny + (kind === 'melee' ? e.dmgMelee : e.dmgShoot) : 0);
+  /**
+   * 발동한 스킬들의 피해 % 를 "스킬별로" 돌려준다 (곱연산용).
+   * 최대출력·레이즈 카운터 등 여러 스킬의 피해 증가는 서로 합산이 아니라 각각 곱해진다.
+   */
+  function skillDmgPctList(kind) {
+    return activeSkills().map(sk => {
+      const e = skillLevel(sk) || {};
+      return (e.dmgAny || 0) + (kind === 'melee' ? (e.dmgMelee || 0) : (e.dmgShoot || 0));
+    }).filter(p => p);
+  }
 
   /**
    * calcStats 에 넘길 스탯 가산분. 피해 % 는 스탯이 아니라 무장 쪽에서 쓴다.
@@ -709,14 +716,16 @@
         const cell = el('span', 'w-dmg');
         if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
         const kind = dmgKey(w) === 'melee' ? 'melee' : 'shoot';   // 격투 판정이면 격투 피해 % 적용
-        const pct = D.damagePctFor(wm, w, kind);
+        const pct = D.damagePctFor(wm, w, kind);   // 파츠 피해 % (한 배율로 합산)
+        const skPcts = skillDmgPctList(kind);      // 스킬 피해 % — 스킬별 별도 곱연산 배율
         const baseEtc = postureEtcA(w);         // 자세·스코프 (스킬과 무관, 초록에 포함)
         const skEtc = skEtcOf(w);               // 고정밀 포격 (스킬 몫)
-        const dmg = (corrOf, extraPct, etc) => D.applyDamagePct(
-          w.type === 'melee' ? D.meleeDamage(base, corrOf, { etcA: etc })
-            : D.shootingDamage(base, corrOf, { etcA: etc }), pct + extraPct);
-        const withoutSkill = dmg(aBare, 0, baseEtc);
-        const withSkill = dmg(a, skillDmgPct(sk, kind), baseEtc + skEtc);
+        const raw = (corrOf, etc) => (w.type === 'melee'
+          ? D.meleeDamage(base, corrOf, { etcA: etc })
+          : D.shootingDamage(base, corrOf, { etcA: etc }));
+        // 파츠 %는 한 배율, 스킬 %는 각각 곱연산으로 얹는다
+        const withoutSkill = D.applyDamagePct(raw(aBare, baseEtc), pct);
+        const withSkill = D.applyDamagePct(raw(a, baseEtc + skEtc), [pct, ...skPcts]);
         const gain = withoutSkill - base;
         const skillGain = withSkill - withoutSkill;
 
@@ -1052,8 +1061,8 @@
     const corr = r.total.meleeCorrection;
     const sk = skillEffect();
     const corrBare = sk ? stats(null).total.meleeCorrection : corr;
-    const pct = D.damagePctFor(wm0(), w, 'melee');   // 파츠 피해 % (특화 프로그램 등)
-    const skPct = skillDmgPct(sk, 'melee');          // 스킬 피해 % (추격 등)
+    const pct = D.damagePctFor(wm0(), w, 'melee');   // 파츠 피해 % (특화 프로그램 등, 한 배율)
+    const skPcts = skillDmgPctList('melee');         // 스킬 피해 % — 스킬별 별도 곱연산
 
     const sec = el('div', 'wd-sec');
     sec.append(el('div', 'wd-sec-lb', '격투 방향별 피해'));
@@ -1067,7 +1076,8 @@
         const line = el('div', 'wd-row');
         line.append(el('span', 'wd-k', mLabel(dir.label) + '  ' + jaUnits(dir.raw)));
         // 히트별로 방향 배율을 적용해 합산 (하격 240%(120%x2) = 2히트)
-        const withSkill = D.applyDamagePct(D.meleeDamage(power, corr, { ccd: dir.hits }), pct + skPct);
+        // 파츠 %는 한 배율, 스킬 %는 각각 곱연산으로 얹는다
+        const withSkill = D.applyDamagePct(D.meleeDamage(power, corr, { ccd: dir.hits }), [pct, ...skPcts]);
         const without = sk ? D.applyDamagePct(D.meleeDamage(power, corrBare, { ccd: dir.hits }), pct) : withSkill;
         const cell = el('span', 'wd-v');
         cell.append(document.createTextNode(without.toLocaleString()));
