@@ -277,9 +277,16 @@ function damagePctFor(mods, w, kind) {
     .reduce((s, d) => s + d.pct, 0);
 }
 
-/** 최종 피해량에 곱하는 % 보정 (오버튠·특화 프로그램 등). 감소도 받는다. */
-const applyDamagePct = (dmg, pct) =>
-  (pct ? Math.max(0, Math.floor(dmg * (1 + pct / 100))) : dmg);
+/**
+ * 최종 피해량에 % 보정을 적용한다 (오버튠·특화 프로그램·스킬 등). 감소도 받는다.
+ * 배열을 주면 각 % 를 "곱연산"으로 순차 적용한다 — 스킬 피해 증가(최대출력·레이즈 카운터 등)는
+ * 파츠 % 와 합산되지 않고 별도 배율로 곱해지므로, 스킬 몫은 별도 원소로 넣는다.
+ * 단계마다 버림(게임 계산 관례).
+ */
+function applyDamagePct(dmg, pct) {
+  const arr = Array.isArray(pct) ? pct : [pct];
+  return arr.reduce((d, p) => (p ? Math.max(0, Math.floor(d * (1 + p / 100))) : d), dmg);
+}
 
 /** 시간을 percent 만큼 단축한다. 소수 둘째 자리까지. */
 const shortenTime = (sec, pct) =>
