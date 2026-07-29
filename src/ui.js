@@ -642,7 +642,9 @@
 
     const r = stats();
     // 사격 무기는 사격 보정, 격투 무기는 격투 보정을 쓴다.
+    // 단 부메랑·인컴·투척 소드처럼 "격투 판정" 사격무장(attr==melee)은 위력이 격투 보정을 받는다.
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
+    const dmgKey = w => (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shooting';
     // 스킬을 뺀 값도 함께 구해, 스킬로 늘어난 위력만 따로 보여 준다
     const sk = skillEffect();
     const bare = sk ? stats(null) : null;
@@ -653,9 +655,9 @@
     const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1,
       state.ms && state.ms.属性);
 
-    // 자세·스코프 보정 — 사격 무장에만, (1+etcA) 로 공격 배율에 곱해진다
+    // 자세·스코프 보정 — 사격 판정 무장에만 (격투 판정이면 attr==melee 라 제외), (1+etcA) 로 곱해진다
     const postureEtcA = w => {
-      if (w.type === 'melee') return 0;
+      if (dmgKey(w) === 'melee') return 0;
       let e = 0;
       if (state.posture === 'crouch') e += D.ETC_ATTACK.crouch;
       else if (state.posture === 'prone') e += D.ETC_ATTACK.prone;
@@ -663,7 +665,7 @@
       return e;
     };
     // 고정밀 포격 스킬 — 앉기·정지에서만 사격 피해 +N% (스킬 몫이라 보라로 나온다)
-    const skEtcOf = w => (w.type !== 'melee' && sk && sk.crouchPct && state.posture === 'crouch')
+    const skEtcOf = w => (dmgKey(w) === 'shooting' && sk && sk.crouchPct && state.posture === 'crouch')
       ? sk.crouchPct / 100 : 0;
 
     for (const w of list) {
@@ -675,8 +677,8 @@
       const mods = w.mods || {};
       const note = info['備考'] || '';
       const f = (...names) => wField(d, info, ...names);
-      const a = corr[w.type] || 0;
-      const aBare = corrBare[w.type] || 0;
+      const a = corr[dmgKey(w)] || 0;
+      const aBare = corrBare[dmgKey(w)] || 0;
 
       // 집속 링·화기 관제는 「ビーム射撃兵装」만 줄여 준다 — 격투 무장의 집속은 절댓값이다
       const chargeCut = mods.chargeTime && w.type === 'shooting' ? D.timeCutFor(wm, 'chargeTime', w) : 0;
@@ -697,6 +699,8 @@
       nm.append(el('i', 'w-dot ' + w.type));
       nm.append(document.createTextNode(T.weaponName(w.name)));
       if (mult) { const b = el('span', 'w-mult', mult.label); nm.append(b); }
+      // 격투 판정 사격무장(부메랑·인컴·투척 등) — 격투 보정을 받음을 배지로 알린다
+      if (dmgKey(w) === 'melee' && w.type !== 'melee') nm.append(el('span', 'w-mjudge', '격투판정'));
       nm.title = w.name;
       row.append(nm);
 
@@ -704,7 +708,7 @@
       const dmgCell = (base) => {
         const cell = el('span', 'w-dmg');
         if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
-        const kind = w.type === 'melee' ? 'melee' : 'shoot';
+        const kind = dmgKey(w) === 'melee' ? 'melee' : 'shoot';   // 격투 판정이면 격투 피해 % 적용
         const pct = D.damagePctFor(wm, w, kind);
         const baseEtc = postureEtcA(w);         // 자세·스코프 (스킬과 무관, 초록에 포함)
         const skEtc = skEtcOf(w);               // 고정밀 포격 (스킬 몫)

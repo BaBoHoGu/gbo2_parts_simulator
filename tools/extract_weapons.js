@@ -322,16 +322,27 @@ for (const f of files) {
     .replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '');
 
   // 표 직전의 제목을 따라가며 「主兵装 / 副兵装」 구획과 이름 없는 표의 무장명을 잡는다.
+  // 각 무장 표는 <div id="table_weapon_XXX"> 로 감싸여 있고, 그 접미사가 무장의 속성이다
+  //   _shell=실탄 · _beam=빔 · _close=격투 · _shield=실드 · _etc=기타 (atwiki 렌더가 이 id 로 속성을 색칠한다)
   const marks = [];
-  for (const m of html.matchAll(/<h[2-5][^>]*>([\s\S]*?)<\/h[2-5]>|<table[\s\S]*?<\/table>/gi)) {
-    marks.push({ at: m.index, heading: m[1] !== undefined ? clean(m[1]) : null, table: m[1] === undefined ? m[0] : null });
+  for (const m of html.matchAll(/<h[2-5][^>]*>([\s\S]*?)<\/h[2-5]>|id="table_weapon(\w*)"|<table[\s\S]*?<\/table>/gi)) {
+    marks.push({
+      at: m.index,
+      heading: m[1] !== undefined ? clean(m[1]) : null,
+      container: m[2] !== undefined ? m[2] : null,
+      table: (m[1] === undefined && m[2] === undefined) ? m[0] : null
+    });
   }
 
+  const WEAPON_ATTR = { _shell: 'solid', _beam: 'beam', _close: 'melee', _shield: 'shield', _etc: 'other' };
   const weapons = [];
   const allGrids = [];               // 방향·연격 보정 표를 나중에 찾으려고 전부 모아 둔다
-  let section = null, lastHeading = null;
+  let section = null, lastHeading = null, curAttr = null;
 
   for (const mk of marks) {
+    // 속성 컨테이너(_close 등)는 curAttr 설정. 데이터 표는 무접미 <div id="table_weapon"> 안에
+    // 따로 있으므로, 미인식 접미사('' / _initial 등)에서는 curAttr 을 유지한다.
+    if (mk.container !== null) { if (mk.container in WEAPON_ATTR) curAttr = WEAPON_ATTR[mk.container]; continue; }
     if (mk.heading !== null) {
       if (/^(主兵装|副兵装|射撃武器|格闘武器|その他)/.test(mk.heading)) section = mk.heading;
       else lastHeading = mk.heading;
@@ -377,6 +388,7 @@ for (const f of files) {
           name: wname,
           section: section || '主兵装',
           type: isMelee ? 'melee' : 'shooting',
+          attr: curAttr,                 // 컨테이너 id 기반 실제 속성(격투 판정 사격무장 구분용)
           columns: cols.filter(Boolean),
           levels: {}
         });
@@ -414,6 +426,7 @@ for (const f of files) {
       weapons.push(w);
       weaponCount++;
     }
+    curAttr = null;   // 이 데이터 표에만 적용 — 다음 무장으로 새지 않게 리셋
   }
 
   attachMeleeMods(weapons, allGrids);   // 격투 무장에 방향·연격 보정을 붙인다
