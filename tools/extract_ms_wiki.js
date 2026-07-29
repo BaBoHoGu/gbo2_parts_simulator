@@ -63,10 +63,14 @@ for (const f of files) {
       if (cells.length < 2) continue;
       const field = FIELD[cells[0]];
       if (!field) continue;
+      // 위키는 상위 LV 값이 이전과 같으면 칸을 비운다("이전 LV와 동일" 관례).
+      // 그래서 빈 칸은 직전 값을 이어(carry-forward) 채운다. 첫 값 전의 빈 칸은 그대로 둔다.
       wikiVals[field] = wikiVals[field] || {};
+      let last = null;
       cells.slice(1).forEach((c, i) => {
         const v = Number(c);
-        if (c !== '' && !isNaN(v)) wikiVals[field][i + 1] = v;
+        if (c !== '' && !isNaN(v)) last = v;
+        if (last != null) wikiVals[field][i + 1] = last;
       });
     }
   }

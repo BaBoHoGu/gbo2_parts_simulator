@@ -177,20 +177,16 @@ async function detectPatch(msList) {
 
   // (c) 위키·무장·스킬 — 신규/변경 기체 + 새 패치로 조정된 기체 페이지를 다시 받아 병합
   if (msChanged || patchNew) {
-    const wikiDir = path.join(ROOT, 'raw', 'wiki');
     const ids = new Set();
     for (const m of added) { const id = pageId(m.wiki_url); if (id) ids.add(id); }
     for (const c of changed) { const id = pageId(c.ms.wiki_url); if (id) ids.add(id); }
     if (patchNew) for (const id of patch.ids) ids.add(id);   // 밸런스 패치로 무장이 바뀐 기체
-
-    // 대상 페이지의 캐시는 지워 강제로 다시 받는다 (신규는 캐시에 없어 그냥 받힌다)
-    let refetch = 0;
-    for (const id of ids) { const f = path.join(wikiDir, id + '.html'); if (fs.existsSync(f)) { fs.rmSync(f); refetch++; } }
-    console.log(`  갱신 대상 위키 페이지 ${ids.size}개 (캐시 삭제 ${refetch})`);
-
-    // --pages 로 한정해 그 페이지만 받는다(배포본 캐시가 비어도 전체 584개를 받지 않도록).
     const targetIds = [...ids];
-    if (targetIds.length) run('fetch_wiki.js', ['--pages=' + targetIds.join(',')]);
+    console.log(`  갱신 대상 위키 페이지 ${targetIds.length}개`);
+
+    // --pages 로 한정하고 --force 로 강제 재수신한다(캐시를 미리 지우지 않아, 받기 실패해도
+    // 기존 캐시가 남는다). 배포본 캐시가 비어도 전체 584개를 받지 않는다.
+    if (targetIds.length) run('fetch_wiki.js', ['--pages=' + targetIds.join(','), '--force']);
     run('extract_weapons.js', ['--merge']);
     run('find_buff_skills.js', ['--ui', '--merge']);
     run('build_weapon_i18n.js');
@@ -198,14 +194,14 @@ async function detectPatch(msList) {
     if (targetIds.length) run('extract_ms_wiki.js', ['--pages=' + targetIds.join(',')]);
   }
 
-  // (c) 이미지 — 새 기체뿐 아니라 새 파츠도 받아야 하므로 둘 중 하나만 바뀌어도 실행한다.
+  // (d) 이미지 — 새 기체뿐 아니라 새 파츠도 받아야 하므로 둘 중 하나만 바뀌어도 실행한다.
   //     (이미 받은 것은 건너뛰므로 새 항목만 내려받는다)
   if (partsChanged || msChanged) run('fetch_images.js');
 
-  // (d) 언제나 재빌드
+  // (e) 언제나 재빌드
   run('build.js');
 
-  // (e) 번들(계산 로직)이 바뀌었으면 원본 계산과 대조해, 아직 이식 안 된 새 규칙이 있는지 본다.
+  // (f) 번들(계산 로직)이 바뀌었으면 원본 계산과 대조해, 아직 이식 안 된 새 규칙이 있는지 본다.
   //     (이번 ハロ（V） 처럼 gbo2.jp 가 파츠 특수 계산을 추가하면 여기서 불일치로 드러난다)
   if (partsChanged) {
     const code = runSoft('verify_against_original.js', ['5000']);
