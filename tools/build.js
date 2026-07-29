@@ -7,6 +7,17 @@ const read = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
 const readJson = (...p) => JSON.parse(read(...p));
 
 const msData = readJson('data', 'msData.json');
+// gbo2.jp 가 아직 반영 못 한 스탯·슬롯은 위키 값으로 교정한다 (extract_ms_wiki.js 가 만든 목록).
+const overridePath = path.join(ROOT, 'data', 'msData.override.json');
+if (fs.existsSync(overridePath)) {
+  const override = JSON.parse(fs.readFileSync(overridePath, 'utf8'));
+  let n = 0;
+  for (const m of msData) {
+    const ov = override[m.MS名];
+    if (ov) for (const [k, v] of Object.entries(ov)) { m[k] = v; n++; }
+  }
+  if (n) console.log(`위키 교정 적용: ${Object.keys(override).length}기 · ${n}개 필드`);
+}
 const parts = readJson('data', 'parts.json');
 const fullst = readJson('data', 'fullst.json');
 const weapons = readJson('data', 'weapons.json');
