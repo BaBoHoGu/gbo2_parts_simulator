@@ -723,6 +723,11 @@
       const dmgCell = (base) => {
         const cell = el('span', 'w-dmg');
         if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
+        // 실드(태클 등)의 피해는 고정피해 — 격투·사격 보정을 받지 않는다
+        if (w.attr === 'shield' || w.type === 'shield') {
+          cell.textContent = base.toLocaleString();
+          return cell;
+        }
         const kind = dmgKey(w) === 'melee' ? 'melee' : 'shoot';   // 격투 판정이면 격투 피해 % 적용
         const pct = D.damagePctFor(wm, w, kind);   // 파츠 피해 % (한 배율로 합산)
         const skPcts = skillDmgPctList(kind);      // 스킬 피해 % — 스킬별 별도 곱연산 배율
