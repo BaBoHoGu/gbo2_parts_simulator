@@ -196,8 +196,9 @@ body.view-build  #screenSelect { display: none; }
   font-size: 12.5px;
 }
 .weapon-head {
-  color: var(--dim);
-  font-size: 11px;
+  color: #fff;
+  font-size: 12.1px;
+  font-weight: 700;
   padding: 6px 6px 7px;
   margin: 0 10px;
   border-bottom: 1px solid var(--line);
@@ -243,9 +244,9 @@ body.view-build  #screenSelect { display: none; }
 .type-other  { color: #7ec98f; background: rgba(126, 201, 143, 0.13); }
 .w-col { color: var(--muted); }
 
-/* 이름을 뺀 모든 열: 헤더·내용 가운데 정렬 (열마다 헤더와 값이 세로로 정렬되게) */
+/* 모든 열: 헤더·내용 가운데 정렬 (열마다 헤더와 값이 세로로 정렬되게) */
 .weapon > *, .weapon-head > span { text-align: center; }
-.w-nm, .weapon-head > span:nth-child(2) { text-align: left; }
+.w-nm { justify-content: center; }
 
 /* 무장을 누르면 펼쳐지는 상세 */
 .weapon-detail {
