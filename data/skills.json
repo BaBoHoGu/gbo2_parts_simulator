@@ -7447,5 +7447,30 @@
     }
    ]
   }
+ ],
+ "ユニコーンガンダムPF": [
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20
+    }
+   ]
+  }
  ]
 }
