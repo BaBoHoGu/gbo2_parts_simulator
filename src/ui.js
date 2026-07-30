@@ -758,13 +758,16 @@
           ' (' + (gain > 0 ? '+' : '') + gain.toLocaleString() + ')'));
         if (skillGain) cell.append(el('span', 's-gain' + sCls,
           ' (' + (skillGain > 0 ? '+' : '') + skillGain.toLocaleString() + ')'));
-        // 조사·산탄·동시발사: 전탄(전히트) 명중 시 총 피해 = 1발 피해 × 배수
+        // 조사·산탄·동시발사: 전탄(전히트) 명중 시 총 피해 = 1발 피해 × 배수.
+        // 1발 칸과 같은 방식으로 — 기본×배수 · 파츠분(초록) · 스킬분(보라) 을 각각 표기한다.
         if (mult) {
-          const totalNo = withoutSkill * mult.n, totalSk = withSkill * mult.n;
+          const n = mult.n;
           const sub = el('span', 'w-sub');
-          sub.append(document.createTextNode('전탄 ' + totalNo.toLocaleString() + ' (×' + mult.n + ')'));
-          if (totalSk !== totalNo) sub.append(el('span', 's-gain' + sCls,
-            ' (+' + (totalSk - totalNo).toLocaleString() + ')'));
+          sub.append(document.createTextNode('전탄 ' + (base * n).toLocaleString() + ' (×' + n + ')'));
+          if (gain) sub.append(el('span', gain > 0 ? 'w-gain' : 'w-loss',
+            ' (' + (gain > 0 ? '+' : '') + (gain * n).toLocaleString() + ')'));
+          if (skillGain) sub.append(el('span', 's-gain' + sCls,
+            ' (' + (skillGain > 0 ? '+' : '') + (skillGain * n).toLocaleString() + ')'));
           cell.append(sub);
         }
         return cell;
