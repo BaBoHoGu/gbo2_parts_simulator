@@ -24,8 +24,11 @@ const weapons = readJson('data', 'weapons.json');
 const skills = readJson('data', 'skills.json');
 
 const misc = readJson('data', 'i18n', 'misc.json');
+// 신규 기체 자동 음차(ms.auto.json)를 밑에 깔고, 수작업 사전(ms.json)이 덮어쓴다.
+const msAuto = fs.existsSync(path.join(__dirname, '..', 'data', 'i18n', 'ms.auto.json'))
+  ? readJson('data', 'i18n', 'ms.auto.json') : {};
 const i18n = {
-  ms: readJson('data', 'i18n', 'ms.json'),
+  ms: { ...msAuto, ...readJson('data', 'i18n', 'ms.json') },
   parts: readJson('data', 'i18n', 'parts.json'),
   weapons: readJson('data', 'i18n', 'weapons.json'),
   // 설명문 안의 고유명사도 같은 사전으로 옮긴다
