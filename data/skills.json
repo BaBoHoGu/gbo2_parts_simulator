@@ -1196,6 +1196,44 @@
    ]
   }
  ],
+ "ドライセン": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
+    }
+   ]
+  }
+ ],
  "パラス・アテネ": [
   {
    "name": "高精度砲撃",
@@ -2423,6 +2461,44 @@
    ]
   }
  ],
+ "リバウ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20
+    }
+   ]
+  }
+ ],
  "ギラ・ズール（アンジェロ機）": [
   {
    "name": "追撃阻止攻勢プログラム",
@@ -2655,6 +2731,31 @@
      "dmgAny": 30,
      "dmgShoot": 0,
      "dmgMelee": 0
+    }
+   ]
+  }
+ ],
+ "ギラ・ズール（EH）": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -3284,6 +3385,31 @@
      "dmgAny": 0,
      "dmgShoot": 20,
      "dmgMelee": 20
+    }
+   ]
+  }
+ ],
+ "ジム・ドミナンス［水中用装備］": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15
     }
    ]
   }
@@ -5347,6 +5473,30 @@
      "dmgMelee": 0
     }
    ]
+  },
+  {
+   "_주석": "사이코플레이트 공진(HP 50% 이하 자동 발동) 시 '対空射撃補助プログラムLV1' 부여 — 사격 피해 +50%.",
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 50,
+     "dmgMelee": 0
+    }
+   ]
   }
  ],
  "Ζガンダム3号機P2型": [
@@ -6842,6 +6992,30 @@
      "dmgMelee": 0
     }
    ]
+  },
+  {
+   "_주석": "최대 가동 발동 시 '対空射撃補助プログラムLV1' 부여 — 사격 피해 +50%. 부모 스킬(최대 가동)과 별도 배율로 곱연산.",
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 50,
+     "dmgMelee": 0
+    }
+   ]
   }
  ],
  "リゼルN型": [
@@ -7176,6 +7350,31 @@
    ]
   }
  ],
+ "ジェガン［高機動仕様］": [
+  {
+   "name": "急速旋回",
+   "nameKo": "급속 선회",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
+   ]
+  }
+ ],
  "量産型ガンキャノン": [
   {
    "name": "高精度砲撃",
@@ -7247,157 +7446,6 @@
      "dmgAny": 30,
      "dmgShoot": 0,
      "dmgMelee": 0
-    }
-   ]
-  }
- ],
- "ギラ・ズール（EH）": [
-  {
-   "name": "追撃格闘補助プログラム",
-   "nameKo": "추격 격투 보조 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 15
-    }
-   ]
-  }
- ],
- "ジム・ドミナンス［水中用装備］": [
-  {
-   "name": "追撃格闘補助プログラム",
-   "nameKo": "추격 격투 보조 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 15
-    }
-   ]
-  }
- ],
- "ジェガン［高機動仕様］": [
-  {
-   "name": "急速旋回",
-   "nameKo": "급속 선회",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 30,
-     "dmgShoot": 0,
-     "dmgMelee": 0
-    }
-   ]
-  }
- ],
- "ドライセン": [
-  {
-   "name": "追撃格闘補助プログラム",
-   "nameKo": "추격 격투 보조 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": 2,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 15
-    },
-    {
-     "from": 3,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 20
-    }
-   ]
-  }
- ],
- "リバウ": [
-  {
-   "name": "追撃格闘補助プログラム",
-   "nameKo": "추격 격투 보조 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 20
-    },
-    {
-     "from": 2,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 20
     }
    ]
   }
