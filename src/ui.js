@@ -75,6 +75,10 @@
   const durabilityOf = (total, armorKey) =>
     Math.round((total.hp || 0) / (1 - Math.min(total[armorKey] || 0, 99) / 100));
 
+  // 요약 카드(자동 구성 결과·저장 목록)에 공통으로 보여 주는 핵심 스탯 — 선회는 지상만
+  const SUMMARY_STAT_KEYS = ['hp', 'armorRange', 'armorBeam', 'armorMelee', 'shoot',
+    'meleeCorrection', 'speed', 'highSpeedMovement', 'thruster', 'turnPerformanceGround'];
+
   // 같은 기체의 레벨 변형 묶음 (base 이름 → 레벨 오름차순 목록)
   const msByBase = new Map();
   for (const m of msData) {
@@ -1533,9 +1537,7 @@
   function renderAutoResults(cands) {
     const box = $('#autoResults');
     box.innerHTML = '';
-    // 저장 목록 요약과 같은 핵심 스탯 (선회는 지상만, 우주 제외)
-    const keys = ['hp', 'armorRange', 'armorBeam', 'armorMelee', 'shoot',
-      'meleeCorrection', 'speed', 'highSpeedMovement', 'thruster', 'turnPerformanceGround'];
+    const keys = SUMMARY_STAT_KEYS;   // 저장 목록 요약과 같은 핵심 스탯
 
     const shown = Math.min(state.autoShown || 3, cands.length);
     cands.slice(0, shown).forEach((c, i) => {
@@ -1745,9 +1747,9 @@
       // 스탯 요약 (저장된 강화·확장으로 실제 계산) — gbo2.jp 성능표처럼 핵심 스탯 + 내구 지표
       if (ms) {
         const r = C.calcStats(ms, parts, bld.stage, bld.expansion, partsByCat, fullst, bld.expLevel);
-        // 원본 성능표 순서대로 — HP · 내성 3종 · 사격 · 격투 · 스피드 · 스러스터
+        // 자동 구성 결과와 같은 핵심 스탯 10종 (선회는 지상만)
         const stats = el('div', 'ac-stats');
-        for (const k of ['hp', 'armorRange', 'armorBeam', 'armorMelee', 'shoot', 'meleeCorrection', 'speed', 'thruster']) {
+        for (const k of SUMMARY_STAT_KEYS) {
           const cell = el('span', 'ac-stat');
           cell.append(el('span', 'ac-k', C.STAT_LABEL[k]));
           cell.append(el('span', 'ac-v', (r.total[k] ?? 0).toLocaleString()));
