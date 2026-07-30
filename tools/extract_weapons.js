@@ -353,7 +353,8 @@ for (const f of files) {
     const flat = grid.flat().join(' ');
     const shield = parseShield(grid, section, lastHeading);
     if (shield) { weapons.push(shield); weaponCount++; shieldCount++; continue; }
-    if (!/威力/.test(flat)) continue;
+    // 威力 열이 있는 일반 무장, 또는 威力 없이 リペア(회복)만 있는 버프형 특수병장(サイコフレーム展開 등)
+    if (!/威力|リペア/.test(flat)) continue;
     if (/記号|意味/.test(grid[0].join(' '))) { skipped++; continue; }   // 범례 표
     const sp = splitHeader(grid);
     if (!sp) { skipped++; continue; }
@@ -371,8 +372,10 @@ for (const f of files) {
     // 「威力」「威力/ノン」 외에 다탄 무장의 「威力(x2)」 같은 표기도 받는다
     const iPowFull = cols.findIndex(c => c === '威力/フル');
     const iPow = cols.findIndex((c, i) => i !== iPowFull && /^威力/.test(c));
-    // 威力 열이 없으면 무장 표가 아니다 (スキル情報·運用 등이 걸리지 않게)
-    if (iPow < 0) { skipped++; continue; }
+    // 威力 도 リペア 도 없으면 무장 표가 아니다 (スキル情報·運用 등이 걸리지 않게).
+    // リペア만 있는 버프형 특수병장은 위력 없이(=null) 무장으로 남긴다.
+    const iRepair = cols.findIndex(c => /^リペア/.test(c));
+    if (iPow < 0 && iRepair < 0) { skipped++; continue; }
     const iNote = find('備考');
     const isMelee = cols.some(c => /クールタイム/.test(c));
 
@@ -394,10 +397,10 @@ for (const f of files) {
         });
       }
       const w = byName.get(wname);
-      const lvl = { power: num(row[iPow]), raw: {} };
+      const lvl = { power: iPow >= 0 ? num(row[iPow]) : null, raw: {} };
       if (iPowFull >= 0) lvl.powerCharged = num(row[iPowFull]);
       // 「威力(x2)」처럼 발수가 붙은 표기는 그대로 남겨 화면에서 알려준다
-      if (cols[iPow] !== '威力' && cols[iPow] !== '威力/ノン') w.powerLabel = cols[iPow];
+      if (iPow >= 0 && cols[iPow] !== '威力' && cols[iPow] !== '威力/ノン') w.powerLabel = cols[iPow];
       // 이미 따로 담는 열은 raw 에 중복 저장하지 않는다
       // 이름·LV·위력은 따로 담고, DP(획득 비용)는 빌드 계산과 무관해 버린다
       const SKIP = new Set(['武器名', 'LV', '威力', '威力/ノン', '威力/フル', 'DP', '必要DP']);
