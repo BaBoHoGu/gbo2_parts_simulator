@@ -54,6 +54,7 @@ const baseName = n => n.replace(/_LV\d+$/, '');
 const touchedMs = new Set();   // 이번에 다시 뽑은 페이지에 속한 기체들(기본 이름)
 
 const found = [];
+const grants = [];   // 「스킬「X」…付与」 — 다른 스킬 발동 시 부여되는 스킬 (F91[BC]·G도어즈 등)
 for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
   const id = f.replace('.html', '');
   const ms = byPage.get(id);
@@ -69,6 +70,19 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
   for (const t of seg.matchAll(/<table[\s\S]*?<\/table>/gi)) {
     for (const row of parseTable(t[0])) {
       const line = row.join(' ');
+      // 케이스 ② — 이 스킬(부모) 발동 시 「X」LV1 付与. 부모의 발동 조건을 그대로 물려준다.
+      // (부모 자신이 버프 수치가 없어 아래에서 걸러지더라도 부여 정보는 먼저 모아 둔다)
+      for (const gm of line.matchAll(/[「『]([^」『]{2,30})[」『][^。「『]{0,12}付与/g)) {
+        const gname = gm[1].replace(/(LV|Lv)\s*\d+.*$/, '').trim();
+        if (!gname || /タックル/.test(gname)) continue;   // 태클류는 제외
+        grants.push({
+          ms: ms[0].MS名.replace(/_LV\d+$/, ''), name: gname,
+          forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
+          secs: Number((line.match(/効果時間は?[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
+          hp: Number((line.match(/機体HPが?\s*(\d+)\s*[%％]以下/) || [])[1]) || null,
+          manual: /タッチパッドを押す/.test(line)
+        });
+      }
       const flat = (v, re) => { const m = line.match(re); return m ? Number(m[1]) : 0; };
       const shoot = flat(0, /射撃補正\s*[＋+]\s*(\d+)(?!\s*%)/);
       const melee = flat(0, /格闘補正\s*[＋+]\s*(\d+)(?!\s*%)/);
@@ -122,6 +136,66 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         manual: /タッチパッドを押す/.test(line)
       });
     }
+  }
+}
+
+// ── 케이스 ② 자동 반영 ─────────────────────────────────────────────
+// 「X」…付与로 부여되는 스킬 X 를, 다른 기체에서 정식 추출된 동일 스킬 X 의 수치를 빌려
+// (부모의 발동 조건으로) 그 기체에 얹는다. 표준 추출 이력이 아예 없는 스킬만 경고로 남긴다.
+{
+  const wOf = e => (e.shoot || 0) + (e.melee || 0) + (e.shootPct || 0) + (e.meleePct || 0)
+    + (e.crouchPct || 0) + (e.dmgAny || 0) + (e.dmgShoot || 0) + (e.dmgMelee || 0);
+  // 이름 → 표준 추출 수치(가장 높은 것). 이번 실행분(found) + 기존 skills.json(증분 실행 대비).
+  const buffByName = new Map();
+  const consider = (name, e, extra) => {
+    if (!wOf(e)) return;
+    const cur = buffByName.get(name);
+    if (!cur || wOf(e) > wOf(cur)) buffByName.set(name, { ...e, ...extra });
+  };
+  for (const r of found) consider(r.skill, r, { cost: r.cost, attr: r.attr });
+  try {
+    const prev = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'skills.json'), 'utf8'));
+    for (const list of Object.values(prev)) for (const sk of list) {
+      const e = (sk.levels || [])[0] || {};
+      consider(sk.name, { ...e, dmgPct: e.dmgAny || e.dmgShoot || e.dmgMelee || 0 }, { cost: 0, attr: null });
+    }
+  } catch { /* 최초 실행 */ }
+
+  // 이동·자세·방어계 등 '피해/보정과 무관'이 확인된 부여 스킬 — 경고에서 제외(매 실행 소음 방지).
+  // 여기 없는 새 부여 스킬이 수치를 못 구하면 경고가 뜬다(= 검토가 필요한 진짜 신규).
+  const NON_DMG_GRANT = new Set([
+    'パワーアクセラレータ', 'フラップ・ブースター', '空中制御プログラム', '空中格闘制御',
+    '攻撃姿勢制御', '攻撃姿勢制御改', '停止射撃姿勢制御', '強制噴射装置', 'スラスター出力強化',
+    'G-バード高速機動制御機構', 'タクティカルブースト', 'マニューバーアーマー', 'ダメージコントロール',
+    '水中機動射撃', '高速機動射撃', 'ステルス', '高性能AMBAC', '緊急回避制御', '高精度解析システム',
+    '廃熱効率適正化', '観測情報連結', '爆発反応装甲', '耐爆機構',
+    '頭部特殊緩衝材', '脚部特殊緩衝材', '肩部特殊緩衝材', '背部オプション特殊緩衝材'
+  ]);
+  const haveSkill = new Set(found.map(r => r.ms + '|' + r.skill));
+  const added = new Set();
+  const warn = [];
+  for (const g of grants) {
+    const key = g.ms + '|' + g.name;
+    if (haveSkill.has(key) || added.has(key)) continue;   // 이미 그 기체가 가진 스킬이면 스킵
+    const src = buffByName.get(g.name);
+    if (!src) { if (!NON_DMG_GRANT.has(g.name)) warn.push(g); continue; }   // 표준 이력 없음 → 수동 검토(비피해 스킬은 무시)
+    added.add(key);
+    found.push({
+      ms: g.ms, cost: src.cost || 0, attr: src.attr || null,
+      msLvFrom: 1, msLvTo: null, skill: g.name,
+      shoot: src.shoot || 0, melee: src.melee || 0, shootPct: src.shootPct || 0, meleePct: src.meleePct || 0,
+      crouchPct: src.crouchPct || 0, limitUp: src.limitUp || 0, dmgPct: src.dmgPct || 0,
+      dmgShoot: src.dmgShoot || 0, dmgMelee: src.dmgMelee || 0, dmgAny: src.dmgAny || 0, powerPct: 0,
+      // 발동 조건은 부모(부여한 스킬)의 것을 따른다
+      forever: g.forever, secs: g.secs, hp: g.hp, manual: g.manual
+    });
+  }
+  if (added.size) console.log('부여 스킬 자동 반영 ' + added.size + '건: '
+    + [...added].map(k => k.split('|').reverse().join(' ← ')).join(', '));
+  const uniqWarn = [...new Map(warn.map(g => [g.ms + '|' + g.name, g])).values()];
+  if (uniqWarn.length) {
+    console.log('⚠ 부여 스킬이지만 표준 추출 이력이 없어 자동 반영 못 함(수동 검토): '
+      + uniqWarn.map(g => koName(g.ms) + ' ← ' + koSkill(g.name)).join(', '));
   }
 }
 
