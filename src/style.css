@@ -834,12 +834,15 @@ body.view-build  #screenSelect { display: none; }
 .am-foot[hidden] { display: none; }
 .am-foot button { width: 100%; }
 
-/* 자동 구성 결과 밴드 (커스텀 파츠와 무장 사이, 전체 폭) — 후보를 다열 격자로.
-   많으면 밴드 안에서 스크롤(max-height) 하여 무장표를 과하게 밀지 않는다. */
+/* 자동 구성 결과 밴드 (커스텀 파츠와 무장 사이, 전체 폭) — 후보를 가로 한 줄로 나열하고
+   '더보기'로 늘면 아래가 아니라 옆으로(가로 스크롤). 밴드 높이는 카드 한 장 높이로 고정. */
 #autoResultPanel > .auto-results {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px;
-  margin: 10px 0 0; padding: 0 12px 4px;
-  max-height: 46vh; overflow-y: auto;
+  display: flex; flex-direction: row; gap: 10px;
+  margin: 10px 0 0; padding: 0 12px 10px;
+  overflow-x: auto; overflow-y: hidden;
+}
+#autoResultPanel > .auto-results > .auto-cand {
+  flex: 0 0 250px;   /* 고정 폭 — 가로로 나열 */
 }
 #autoResultPanel .am-foot { padding: 10px 12px 12px; flex-shrink: 0; }
 #autoResultPanel .am-note { margin-right: 2px; }
