@@ -198,8 +198,8 @@ async function detectPatch(msList) {
   //     (이미 받은 것은 건너뛰므로 새 항목만 내려받는다)
   if (partsChanged || msChanged) run('fetch_images.js');
 
-  // (e) 신규 기체 한글명 자동 음차(가타카나→한글) 후 재빌드
-  run('build_ms_i18n.js');
+  // (e) 신규 기체·파츠를 온라인 번역으로 자동 한글화(실패 시 음차 폴백) 후 재빌드
+  run('auto_translate.js');
   run('build.js');
 
   // (f) 번들(계산 로직)이 바뀌었으면 원본 계산과 대조해, 아직 이식 안 된 새 규칙이 있는지 본다.
