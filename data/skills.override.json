@@ -1,5 +1,5 @@
 {
- "_설명": "스킬 정보 표에 없어 자동 추출이 안 되는 무장 발동형 자기 강화. find_buff_skills.js --ui 가 skills.json 에 합친다.",
+ "_설명": "스킬 정보 표에 없어 자동 추출이 안 되는 무장 발동형 자기 강화, 또는 다른 스킬 발동 시 '부여'되어 자동 추출이 안 되는 스킬. find_buff_skills.js --ui 가 skills.json 에 합친다.",
  "リゼルN型": [
   {
    "name": "サイコフレーム展開",
@@ -7,6 +7,28 @@
    "forever": false, "secs": 10, "hp": null, "manual": true,
    "levels": [
     { "from": 1, "to": null, "shoot": 15, "melee": 15, "shootPct": 0, "meleePct": 0, "crouchPct": 0, "limitUp": 0, "dmgAny": 0, "dmgShoot": 0, "dmgMelee": 0 }
+   ]
+  }
+ ],
+ "F91［BC装備］": [
+  {
+   "_주석": "최대 가동 발동 시 '対空射撃補助プログラムLV1' 부여 — 사격 피해 +50%. 부모 스킬(최대 가동)과 별도 배율로 곱연산.",
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": false, "secs": 60, "hp": null, "manual": true,
+   "levels": [
+    { "from": 1, "to": null, "shoot": 0, "melee": 0, "shootPct": 0, "meleePct": 0, "crouchPct": 0, "limitUp": 0, "dmgAny": 0, "dmgShoot": 50, "dmgMelee": 0 }
+   ]
+  }
+ ],
+ "G・ドアーズ": [
+  {
+   "_주석": "사이코플레이트 공진(HP 50% 이하 자동 발동) 시 '対空射撃補助プログラムLV1' 부여 — 사격 피해 +50%.",
+   "name": "対空射撃補助プログラム",
+   "nameKo": "대공 사격 보조 프로그램",
+   "forever": true, "secs": null, "hp": 50, "manual": false,
+   "levels": [
+    { "from": 1, "to": null, "shoot": 0, "melee": 0, "shootPct": 0, "meleePct": 0, "crouchPct": 0, "limitUp": 0, "dmgAny": 0, "dmgShoot": 50, "dmgMelee": 0 }
    ]
   }
  ]
