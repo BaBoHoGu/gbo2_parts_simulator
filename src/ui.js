@@ -1533,10 +1533,9 @@
   function renderAutoResults(cands) {
     const box = $('#autoResults');
     box.innerHTML = '';
-    // 보여줄 스탯: 사용자가 가중치를 줬으면 그 항목, 아니면 대표 스탯
-    let keys = state.weightsTouched ? C.STAT_KEYS.filter(k => (state.weights[k] || 0) > 0) : [];
-    if (!keys.length) keys = ['hp', 'shoot', 'meleeCorrection', 'thruster'];
-    keys = keys.slice(0, 4);
+    // 저장 목록 요약과 같은 핵심 스탯 (선회는 지상만, 우주 제외)
+    const keys = ['hp', 'armorRange', 'armorBeam', 'armorMelee', 'shoot',
+      'meleeCorrection', 'speed', 'highSpeedMovement', 'thruster', 'turnPerformanceGround'];
 
     const shown = Math.min(state.autoShown || 3, cands.length);
     cands.slice(0, shown).forEach((c, i) => {
