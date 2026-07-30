@@ -198,7 +198,8 @@ async function detectPatch(msList) {
   //     (이미 받은 것은 건너뛰므로 새 항목만 내려받는다)
   if (partsChanged || msChanged) run('fetch_images.js');
 
-  // (e) 언제나 재빌드
+  // (e) 신규 기체 한글명 자동 음차(가타카나→한글) 후 재빌드
+  run('build_ms_i18n.js');
   run('build.js');
 
   // (f) 번들(계산 로직)이 바뀌었으면 원본 계산과 대조해, 아직 이식 안 된 새 규칙이 있는지 본다.
@@ -216,13 +217,16 @@ async function detectPatch(msList) {
 
   // 5) 마무리 리포트 — 새 기체 한글명은 사람이 확인해야 한다
   const msDict = rdJson('data', 'i18n', 'ms.json');
+  let msAuto = {}; try { msAuto = rdJson('data', 'i18n', 'ms.auto.json'); } catch { /* 없을 수 있음 */ }
   const base = n => n.replace(/_LV\d+$/, '');
-  const needKo = [...new Set(added.map(m => base(m.MS名)))].filter(n => !msDict[n]);
+  const newMs = [...new Set(added.map(m => base(m.MS名)))].filter(n => !msDict[n]);
+  // 자동 음차로 한자 등이 남은 것만 사람이 다듬으면 된다 (나머지는 자동 한글화됨).
+  const needKo = newMs.filter(n => !msAuto[n] || /[぀-ヿ一-鿿]/.test(msAuto[n]));
   console.log('\n✔ 반영 완료.');
+  if (newMs.length) console.log(`\n새 기체 ${newMs.length}종은 한글명이 자동 음차되었습니다(data/i18n/ms.auto.json).`);
   if (needKo.length) {
-    console.log(`\n※ 새 기체 ${needKo.length}종은 한글명 사전(data/i18n/ms.json)에 없어 일본어로 표시됩니다.`);
-    console.log('  다음을 ms.json 에 추가하면 한글로 나옵니다:');
-    needKo.forEach(n => console.log(`     "${n}": "",`));
+    console.log(`\n※ 그중 ${needKo.length}종은 한자 등이 남아 음차만으론 부족합니다 — ms.json 에 넣어 다듬어 주세요:`);
+    needKo.forEach(n => console.log(`     "${n}": "",   // 자동: ${msAuto[n] || '(음차 실패)'}`));
   }
   // 새 파츠도 한글 사전에 없으면 알려준다 (파츠명은 자동 번역이 없다).
   const partDict = rdJson('data', 'i18n', 'parts.json');
