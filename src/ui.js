@@ -129,12 +129,20 @@
     openResultModal(false);
   }
 
-  /** 자동 구성 결과 모달(화면 중앙)을 열고 닫는다. */
+  /**
+   * 자동 구성 결과를 중앙 '파츠 상세' 열에 인라인으로 토글한다 (모달 오버레이가 아니라서
+   * 하단 무장표·우측 성능을 가리지 않는다). 후보는 초기화(clearAutoResults) 전까지 유지되고,
+   * '닫기'는 지우지 않고 상세 보기로 되돌릴 뿐 — 상세 헤더의 '⚡ 자동 결과'로 다시 연다.
+   */
   function openResultModal(open) {
-    const modal = document.getElementById('autoModal');
-    const back = document.getElementById('autoModalBack');
-    if (modal) modal.hidden = !open;
-    if (back) back.hidden = !open;
+    const panel = document.getElementById('autoResultPanel');
+    const detail = document.getElementById('detailPanel');
+    const reopen = document.getElementById('autoResultShow');
+    const has = !!(state.autoCandidates && state.autoCandidates.length);
+    const showResult = open && has;
+    if (panel) panel.hidden = !showResult;
+    if (detail) detail.hidden = showResult;              // 같은 자리 — 하나만 보인다
+    if (reopen) reopen.hidden = !(has && !showResult);   // 상세가 보이고 결과가 남아 있으면 재열기 버튼
   }
 
   const SAVE_KEY = 'gbo2-offline-build';
@@ -2157,8 +2165,8 @@
       state.autoShown = Math.min(10, (state.autoCandidates || []).length);
       renderAutoResults(state.autoCandidates || []);
     };
-    $('#autoModalClose').onclick = () => openResultModal(false);
-    $('#autoModalBack').onclick = () => openResultModal(false);
+    $('#autoModalClose').onclick = () => openResultModal(false);   // 상세로 되돌림(후보는 유지)
+    $('#autoResultShow').onclick = () => openResultModal(true);     // 남아 있는 결과 다시 보기
     $('#clearParts').onclick = () => {
       state.equipped = [];
       state.locked.clear();
@@ -2206,7 +2214,7 @@
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
       if (!$('#savedModal').hidden) { openSavedModal(false); return; }
-      if (!$('#autoModal').hidden) { openResultModal(false); return; }
+      if (!$('#autoResultPanel').hidden) { openResultModal(false); return; }
       if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return; }
 
       // 입력 중이면 화면을 벗어나지 않는다 — 내용이 있으면 비우고, 없으면 포커스만 해제

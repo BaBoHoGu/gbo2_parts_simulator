@@ -831,6 +831,15 @@ body.view-build  #screenSelect { display: none; }
 .am-foot[hidden] { display: none; }
 .am-foot button { width: 100%; }
 
+/* 인라인(중앙 '파츠 상세' 열) 자동 구성 결과 — 모달 오버레이가 아니라 같은 자리에 세로 목록으로.
+   하단 무장표·우측 성능을 가리지 않는다. 후보가 많으면 열 안에서 스크롤. */
+#autoResultPanel > .auto-results {
+  margin: 10px 0 0; padding: 0 12px;
+  overflow-y: auto; max-height: 62vh; min-height: 140px;
+}
+#autoResultPanel .am-foot { padding: 10px 12px 12px; }
+#autoResultPanel .am-note { margin-right: 2px; }
+
 /* 저장한 구성 카드 */
 .sc-name { cursor: text; }
 .sc-name:hover { text-decoration: underline dotted; }
