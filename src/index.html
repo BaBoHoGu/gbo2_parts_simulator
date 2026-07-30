@@ -95,7 +95,7 @@
     </section>
   </div>
 
-  <!-- 중앙: 파츠 상세 미리보기 / 자동 구성 결과 (같은 자리에서 토글) -->
+  <!-- 중앙: 파츠 상세 미리보기 -->
   <div class="build-col build-detail">
     <section class="panel fill" id="detailPanel">
       <h2>파츠 상세
@@ -106,18 +106,6 @@
       </h2>
       <div class="detail-body" id="detailBody">
         <div class="detail-empty">파츠에 마우스를 올리거나 눌러<br>상세 정보를 확인하세요</div>
-      </div>
-    </section>
-    <section class="panel fill" id="autoResultPanel" hidden>
-      <h2>⚡ 자동 구성 결과
-        <span class="right">
-          <span class="am-note" id="autoModalNote"></span>
-          <button id="autoModalClose" class="btn-ghost small">닫기</button>
-        </span>
-      </h2>
-      <div class="auto-results" id="autoResults"></div>
-      <div class="am-foot" id="autoMoreWrap" hidden>
-        <button id="autoMore" class="btn-ghost">더보기</button>
       </div>
     </section>
   </div>
@@ -161,7 +149,22 @@
     </section>
   </div>
 
-  <!-- 최하단: 무장 -->
+  <!-- 하단: 자동 구성 결과(있을 때) + 무장 — 커스텀 파츠와 무장 사이 전체 폭 밴드 -->
+  <div class="build-bottom">
+  <section class="panel fill" id="autoResultPanel" hidden>
+    <h2>⚡ 자동 구성 결과
+      <span class="right">
+        <span class="am-note" id="autoModalNote"></span>
+        <button id="autoModalClose" class="btn-ghost small">닫기</button>
+      </span>
+    </h2>
+    <div class="auto-results" id="autoResults"></div>
+    <div class="am-foot" id="autoMoreWrap" hidden>
+      <button id="autoMore" class="btn-ghost">더보기</button>
+    </div>
+  </section>
+
+  <!-- 무장 -->
   <div class="build-weapons">
     <section class="panel">
       <h2>무장 <span id="weaponCount"></span>
@@ -178,6 +181,7 @@
       <div class="weapon-list" id="weaponList"></div>
     </section>
   </div>
+  </div><!-- /.build-bottom -->
 
 </section>
 

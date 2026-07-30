@@ -134,19 +134,17 @@
   }
 
   /**
-   * 자동 구성 결과를 중앙 '파츠 상세' 열에 인라인으로 토글한다 (모달 오버레이가 아니라서
-   * 하단 무장표·우측 성능을 가리지 않는다). 후보는 초기화(clearAutoResults) 전까지 유지되고,
-   * '닫기'는 지우지 않고 상세 보기로 되돌릴 뿐 — 상세 헤더의 '⚡ 자동 결과'로 다시 연다.
+   * 자동 구성 결과를 '커스텀 파츠와 무장 사이' 전체폭 밴드로 토글한다 (모달 오버레이가 아니라
+   * 다른 패널을 가리지 않는다). 후보는 초기화(clearAutoResults) 전까지 유지되고, '닫기'는 지우지
+   * 않고 밴드만 접을 뿐 — 파츠 상세 헤더의 '⚡ 자동 결과'로 다시 편다.
    */
   function openResultModal(open) {
     const panel = document.getElementById('autoResultPanel');
-    const detail = document.getElementById('detailPanel');
     const reopen = document.getElementById('autoResultShow');
     const has = !!(state.autoCandidates && state.autoCandidates.length);
     const showResult = open && has;
     if (panel) panel.hidden = !showResult;
-    if (detail) detail.hidden = showResult;              // 같은 자리 — 하나만 보인다
-    if (reopen) reopen.hidden = !(has && !showResult);   // 상세가 보이고 결과가 남아 있으면 재열기 버튼
+    if (reopen) reopen.hidden = !(has && !showResult);   // 결과가 남아 있고 밴드가 접혀 있으면 재열기 버튼
   }
 
   const SAVE_KEY = 'gbo2-offline-build';

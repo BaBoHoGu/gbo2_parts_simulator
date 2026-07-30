@@ -181,8 +181,9 @@ body.view-build  #screenSelect { display: none; }
 .build-stats { grid-column: 3; grid-row: 1 / 3; }
 /* 파츠: 왼쪽·가운데 열의 아랫줄만 차지 */
 .build-parts { grid-column: 1 / 3; grid-row: 2; display: flex; flex-direction: column; }
-/* 무장: 맨 아래 전체 폭 */
-.build-weapons { grid-column: 1 / -1; grid-row: 3; }
+/* 맨 아래 전체 폭: 자동 구성 결과(있을 때) + 무장을 세로로.
+   결과가 숨겨지면 flex 가 건너뛰어 빈 공간이 생기지 않는다(커스텀 파츠 바로 아래 무장). */
+.build-bottom { grid-column: 1 / -1; grid-row: 3; display: flex; flex-direction: column; gap: 12px; }
 
 .weapon-list { max-height: 60vh; overflow-y: auto; padding: 6px 10px 10px; }
 
@@ -833,14 +834,12 @@ body.view-build  #screenSelect { display: none; }
 .am-foot[hidden] { display: none; }
 .am-foot button { width: 100%; }
 
-/* 인라인(중앙 '파츠 상세' 열) 자동 구성 결과 — 모달 오버레이가 아니라 같은 자리에 세로 목록으로.
-   절대배치로 좌측 열(그리드 행) 높이에 딱 맞춰, '더보기'로 카드가 늘어도 패널이 커지지 않고
-   내부에서만 스크롤한다(하단 무장표·파츠 목록을 밀어내지 않음). */
-.build-detail { position: relative; }
-#autoResultPanel { position: absolute; inset: 0; }
+/* 자동 구성 결과 밴드 (커스텀 파츠와 무장 사이, 전체 폭) — 후보를 다열 격자로.
+   많으면 밴드 안에서 스크롤(max-height) 하여 무장표를 과하게 밀지 않는다. */
 #autoResultPanel > .auto-results {
-  flex: 1; min-height: 0; overflow-y: auto;
-  margin: 10px 0 0; padding: 0 12px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px;
+  margin: 10px 0 0; padding: 0 12px 4px;
+  max-height: 46vh; overflow-y: auto;
 }
 #autoResultPanel .am-foot { padding: 10px 12px 12px; flex-shrink: 0; }
 #autoResultPanel .am-note { margin-right: 2px; }
