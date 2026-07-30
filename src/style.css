@@ -377,6 +377,8 @@ body.view-build  #screenSelect { display: none; }
 }
 
 .panel.fill { flex: 1; }
+/* .panel 의 display:flex 가 UA [hidden] 을 덮으므로, 숨김을 명시해 준다 (자동 결과 토글) */
+.panel[hidden] { display: none; }
 
 .panel > h2 {
   margin: 0;
