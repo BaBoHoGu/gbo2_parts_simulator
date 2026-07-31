@@ -171,6 +171,7 @@
         <span class="right w-tools">
           <span class="seg posture-seg" id="postureSeg" title="사격 자세 — 피해에 자세 보정을 얹습니다"></span>
           <button type="button" class="tool-btn" id="scopeBtn" title="스코프 조준 (사격 피해 +5%)">스코프</button>
+          <button type="button" class="tool-btn" id="skillListBtn" title="이 기체의 스킬 목록·설명">🛠 스킬</button>
           <span class="note">기본 <span style="color:var(--ok)">(+보정)</span> <span style="color:var(--skill)">(+스킬)</span></span>
         </span>
       </h2>
@@ -221,6 +222,19 @@
     <button id="savedModalClose" class="btn-ghost">닫기</button>
   </div>
   <div class="auto-results" id="savedResults"></div>
+</div>
+
+<!-- ========== 기체 스킬 (무장 헤더 '스킬' 버튼) ========== -->
+<div class="auto-modal-back" id="mskillBack" hidden></div>
+<div class="auto-modal" id="mskillModal" hidden role="dialog" aria-label="기체 스킬">
+  <div class="am-head">
+    <b>🛠 스킬</b>
+    <span class="am-note" id="mskillMsName"></span>
+    <span class="seg mskill-tabs" id="mskillTabs" hidden></span>
+    <span class="grow"></span>
+    <button id="mskillClose" class="btn-ghost">닫기</button>
+  </div>
+  <div class="mskill-body" id="mskillBody"></div>
 </div>
 
 <div class="toast" id="toast"></div>
