@@ -154374,7 +154374,8 @@
     },
     "mods": {
      "stagger": "25% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ホッブバグ［感知］",
@@ -154397,7 +154398,8 @@
     },
     "mods": {
      "stagger": "17% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ベルガ・G（GK）用B・シールド",

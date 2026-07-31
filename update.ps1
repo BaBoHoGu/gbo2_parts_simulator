@@ -2,10 +2,11 @@
 #
 #   .\update.ps1            신규/변경 기체·파츠·밸런스 패치를 감지해 받고 재빌드까지 자동
 #   .\update.ps1 -Check     감지만 하고 무엇이 바뀌는지 리포트 (반영 안 함)
+#   .\update.ps1 -Rebuild   인터넷 없이 dist 만 다시 만든다 (오버라이드 패치 파일 적용용)
 #
 # gbo2.jp 최신 데이터·일본 위키(밸런스 패치 목록 포함)에서 변경분만 가져와
 # dist/gbo2-simulator.html 을 다시 만듭니다. node 가 있어야 합니다(폴더에 동봉).
-param([switch]$Check)
+param([switch]$Check, [switch]$Rebuild)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -39,8 +40,13 @@ if (Test-Path $bundled) {
   $node = $sys.Source
 }
 
-$nodeArgs = @('tools/update.js')
-if ($Check) { $nodeArgs += '--check' }
+# -Rebuild: 데이터 재수신 없이 build.js 만 실행 (psycommu.override.json 등 오버라이드 패치 적용)
+if ($Rebuild) {
+  $nodeArgs = @('tools/build.js')
+} else {
+  $nodeArgs = @('tools/update.js')
+  if ($Check) { $nodeArgs += '--check' }
+}
 
 $code = 0
 try {

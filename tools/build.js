@@ -23,6 +23,22 @@ const fullst = readJson('data', 'fullst.json');
 const weapons = readJson('data', 'weapons.json');
 const skills = readJson('data', 'skills.json');
 
+// 사이코뮤 태깅 오버라이드 — 록온 자동 태깅의 오탐/누락을 빌드 시 교정.
+// (작은 override 파일만 배포해 재빌드하면 패치됨 — extract 재수신 불필요, update 후에도 유지)
+{
+  const ovPath = path.join(ROOT, 'data', 'psycommu.override.json');
+  if (fs.existsSync(ovPath)) {
+    const ov = JSON.parse(fs.readFileSync(ovPath, 'utf8'));
+    const ex = ov.exclude || [], inc = ov.include || [];
+    let nEx = 0, nInc = 0;
+    for (const pg of Object.values(weapons)) for (const wp of pg.weapons || []) {
+      if (ex.some(s => wp.name.includes(s))) { if (wp.psycommu) { delete wp.psycommu; nEx++; } }
+      else if (inc.some(s => wp.name.includes(s))) { if (!wp.psycommu) { wp.psycommu = true; nInc++; } }
+    }
+    if (nEx || nInc) console.log(`사이코뮤 오버라이드 적용: 제외 ${nEx} · 추가 ${nInc}`);
+  }
+}
+
 const misc = readJson('data', 'i18n', 'misc.json');
 // 신규 기체·파츠 자동 번역(*.auto.json)을 밑에 깔고, 수작업 사전이 덮어쓴다(수작업 우선).
 const autoJson = f => fs.existsSync(path.join(ROOT, 'data', 'i18n', f)) ? readJson('data', 'i18n', f) : {};
