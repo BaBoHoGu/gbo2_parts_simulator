@@ -171,10 +171,21 @@
         <span class="right w-tools">
           <span class="seg posture-seg" id="postureSeg" title="사격 자세 — 피해에 자세 보정을 얹습니다"></span>
           <button type="button" class="tool-btn" id="scopeBtn" title="스코프 조준 (사격 피해 +5%)">스코프</button>
-          <button type="button" class="tool-btn" id="skillListBtn" title="이 기체의 스킬 목록·설명">🛠 스킬</button>
           <span class="note">기본 <span style="color:var(--ok)">(+보정)</span> <span style="color:var(--skill)">(+스킬)</span></span>
+          <button type="button" class="tool-btn" id="skillListBtn" title="이 기체의 스킬 목록·설명">🛠 스킬</button>
         </span>
       </h2>
+      <!-- 스킬 목록 (버튼으로 토글, 무장 칸 안 인라인) -->
+      <div class="mskill-inline" id="mskillInline" hidden>
+        <div class="mskill-inline-head">
+          <b>🛠 스킬</b>
+          <span class="am-note" id="mskillMsName"></span>
+          <span class="seg mskill-tabs" id="mskillTabs" hidden></span>
+          <span class="grow"></span>
+          <button id="mskillClose" class="btn-ghost small">닫기</button>
+        </div>
+        <div class="mskill-body" id="mskillBody"></div>
+      </div>
       <div class="weapon-head">
         <span>구분</span><span>이름</span><span>유형</span><span>논차지</span><span>풀차지</span>
         <span>쿨타임 / 발사간격</span><span>탄 / 히트율</span><span>누적치</span><span>사거리</span><span>리로드 / OH복귀</span>
@@ -222,19 +233,6 @@
     <button id="savedModalClose" class="btn-ghost">닫기</button>
   </div>
   <div class="auto-results" id="savedResults"></div>
-</div>
-
-<!-- ========== 기체 스킬 (무장 헤더 '스킬' 버튼) ========== -->
-<div class="auto-modal-back" id="mskillBack" hidden></div>
-<div class="auto-modal" id="mskillModal" hidden role="dialog" aria-label="기체 스킬">
-  <div class="am-head">
-    <b>🛠 스킬</b>
-    <span class="am-note" id="mskillMsName"></span>
-    <span class="seg mskill-tabs" id="mskillTabs" hidden></span>
-    <span class="grow"></span>
-    <button id="mskillClose" class="btn-ghost">닫기</button>
-  </div>
-  <div class="mskill-body" id="mskillBody"></div>
 </div>
 
 <div class="toast" id="toast"></div>

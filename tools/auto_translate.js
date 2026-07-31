@@ -26,8 +26,9 @@ function translateOnce(text) {
     const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ko&dt=t&q='
       + encodeURIComponent(text);
     const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
-      let b = ''; r.on('data', c => b += c);
-      r.on('end', () => { try { res(JSON.parse(b)[0].map(s => s[0]).join('').trim()); } catch { rej(new Error('bad response')); } });
+      // Buffer 로 모아 한 번에 UTF-8 디코드 (청크 경계에서 멀티바이트가 깨지지 않게)
+      const chunks = []; r.on('data', c => chunks.push(c));
+      r.on('end', () => { try { res(JSON.parse(Buffer.concat(chunks).toString('utf8'))[0].map(s => s[0]).join('').trim()); } catch { rej(new Error('bad response')); } });
     });
     req.on('error', rej);
     req.setTimeout(15000, () => req.destroy(new Error('timeout')));
