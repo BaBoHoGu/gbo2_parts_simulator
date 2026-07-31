@@ -288,6 +288,24 @@ function parseNote(note) {
   };
 }
 
+/**
+ * 사이코뮤 무장 표시. 판별 신호:
+ *   ① 備考에 「ロックオン」 (판넬·인컴·사이코플레이트 등 공격 모드의 공통 표기)
+ *   ② 같은 페이지에서 ①과 무장 계열(괄호·xN 제거한 이름)이 같은 무장 — [防御]/[射出] 등
+ *      다른 모드 전개까지 포함 (아비고르 빔 사이스[防御]처럼 록온 형제가 없는 건 제외됨)
+ * 리로드/OH 단축 파츠(CP 내장 특수 구조재 등)가 이 표시를 scope 로 노린다.
+ */
+function tagPsycommu(weapons) {
+  const fam = nm => String(nm).replace(/[［【（〔〈「].*$/, '').replace(/[x×]\d+.*$/i, '').trim();
+  const lockFams = new Set();
+  for (const w of weapons) {
+    if (/ロックオン/.test(JSON.stringify(w))) { w.psycommu = true; lockFams.add(fam(w.name)); }
+  }
+  for (const w of weapons) {
+    if (!w.psycommu && lockFams.has(fam(w.name))) w.psycommu = true;
+  }
+}
+
 const files = fs.existsSync(WIKI) ? fs.readdirSync(WIKI).filter(f => f.endsWith('.html')) : [];
 if (!files.length) {
   if (process.argv.includes('--merge')) {
@@ -433,6 +451,7 @@ for (const f of files) {
   }
 
   attachMeleeMods(weapons, allGrids);   // 격투 무장에 방향·연격 보정을 붙인다
+  tagPsycommu(weapons);                 // 사이코뮤 무장 표시(리로드/OH 단축 파츠가 이걸 노린다)
   if (weapons.length) out[id] = { names: namesByPage.get(id) || [], weapons };
 }
 
