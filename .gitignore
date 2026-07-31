@@ -21,3 +21,6 @@ _*.js
 *.log
 data/buff_skills.json
 release/
+
+# 하네스가 세션 중 권한 허용 규칙을 자동 추가하는 로컬 설정 (머신별 절대경로 포함) — 추적 안 함
+.claude/settings.json
