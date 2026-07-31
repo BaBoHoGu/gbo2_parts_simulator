@@ -179,6 +179,9 @@ const DAMAGE_PCT_RULES = [
   { kind: 'melee', scope: 'all', sign: -1, re: /格闘攻撃による敵に与えるダメージが(\d+)%減少/ },
   // 교육형 컴퓨터 — 작전 4분 경과 시 더 오르지만 기본값만 반영한다
   { kind: 'any', scope: 'all', sign: +1, re: /敵に与えるダメージを(\d+)%増加/ },
+  // CP내장특수구조재 등 — 「敵機に与えるダメージが N%増加」(전 무장). 文頭·구두점 뒤로 한정해
+  // 「ビーム射撃兵装で敵機に…」(커넥팅)·「射撃攻撃による敵に…」(특화)와 이중계산되지 않게 한다.
+  { kind: 'any', scope: 'all', sign: +1, re: /(?:^|[。、])\s*敵機に与えるダメージが(\d+)%増加/ },
   { kind: 'shoot', scope: 'all', sign: +1, re: /敵に与える射撃ダメージを(\d+)%増加/ },
   { kind: 'melee', scope: 'all', sign: +1, re: /敵に与える格闘ダメージを(\d+)%増加/ },
   // 화기 관제 최적화 시스템
@@ -218,7 +221,8 @@ function weaponModsOf(equipped, msLv, msAttr) {
   const addTime = (key, scope, v) => { time[key][scope] = (time[key][scope] || 0) + v; };
 
   for (const p of equipped || []) {
-    const desc = (p.description || '').replace(/\\n/g, '');
+    // 일부 신규 파츠 설명은 전각 ％(U+FF05) 를 쓴다 — 규칙(반각 %)이 매칭되도록 정규화한다
+    const desc = (p.description || '').replace(/\\n/g, '').replace(/／/g, '/').replace(/％/g, '%');
 
     for (const rule of WEAPON_MOD_RULES) {
       const m = rule.re.exec(desc);
