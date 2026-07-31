@@ -211,11 +211,11 @@
   /* ---------- 기체 스킬 ---------- */
 
   /** 현재 기체가 가진 버프 스킬 목록. */
-  const msSkills = () => (state.ms && skillData[baseName(state.ms.MS名)]) || [];
+  const msBuffSkills = () => (state.ms && skillData[baseName(state.ms.MS名)]) || [];
 
   /** 지금 발동시킨 스킬들. */
   function activeSkills() {
-    const list = msSkills();
+    const list = msBuffSkills();
     return [...state.skillPicks].sort((a, b) => a - b).map(i => list[i]).filter(Boolean);
   }
 
@@ -233,7 +233,7 @@
 
   /** 지금 기체 LV 에서 실제로 쓸 수 있는 스킬만 (인덱스와 함께). */
   const availableSkills = () =>
-    msSkills().map((sk, i) => ({ sk, i })).filter(x => skillLevel(x.sk) != null);
+    msBuffSkills().map((sk, i) => ({ sk, i })).filter(x => skillLevel(x.sk) != null);
 
   /**
    * 발동시킨 스킬들의 효과 합계. 아무것도 안 골랐으면 null.

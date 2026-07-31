@@ -5,33 +5,14 @@
 // 「효과 시간 무제한」인 것만 반영구로 본다. 위키가 「効果時間は、なし」「効果時間は 無し」
 // 처럼 제각각 적어 두어 표기 변형을 모두 받는다.
 const fs = require('fs'), path = require('path');
+const { parseTable: parseGrid } = require('./lib/table.js');
 
 const ROOT = path.join(__dirname, '..');
 const WIKI = path.join(ROOT, 'raw', 'wiki');
 const clean = s => s.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '')
   .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 
-/** rowspan/colspan 을 펼쳐 2차원 배열로. (extract_weapons 와 같은 방식) */
-function parseTable(html) {
-  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map(m => m[1]);
-  const grid = [];
-  rows.forEach((r, ri) => {
-    grid[ri] = grid[ri] || [];
-    let ci = 0;
-    for (const c of r.matchAll(/<(td|th)([^>]*)>([\s\S]*?)<\/\1>/gi)) {
-      const text = clean(c[3]);
-      const cs = Number((c[2].match(/colspan="?(\d+)/i) || [])[1] || 1);
-      const rs = Number((c[2].match(/rowspan="?(\d+)/i) || [])[1] || 1);
-      while (grid[ri][ci] !== undefined) ci++;
-      for (let dr = 0; dr < rs; dr++) {
-        grid[ri + dr] = grid[ri + dr] || [];
-        for (let dc = 0; dc < cs; dc++) grid[ri + dr][ci + dc] = text;
-      }
-      ci += cs;
-    }
-  });
-  return grid.map(r => Array.from(r, v => (v === undefined ? '' : v)));
-}
+const parseTable = html => parseGrid(html, clean);
 
 const MS = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
 const I18N = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'ms.json'), 'utf8'));

@@ -6,6 +6,7 @@
 // 헤더 이름으로 값을 읽는다. rowspan/colspan 을 펼쳐 2차원으로 만든 뒤 처리한다.
 const fs = require('fs');
 const path = require('path');
+const { parseTable: parseGrid } = require('./lib/table.js');
 
 const ROOT = path.join(__dirname, '..');
 const WIKI = path.join(ROOT, 'raw', 'wiki');
@@ -18,27 +19,7 @@ const clean = s => s
   .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
   .replace(/\s+/g, ' ').trim();
 
-/** rowspan/colspan 을 펼쳐 표를 2차원 배열로 만든다. */
-function parseTable(html) {
-  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map(m => m[1]);
-  const grid = [];
-  rows.forEach((r, ri) => {
-    grid[ri] = grid[ri] || [];
-    let ci = 0;
-    for (const c of r.matchAll(/<(td|th)([^>]*)>([\s\S]*?)<\/\1>/gi)) {
-      const text = clean(c[3]);
-      const cs = Number((c[2].match(/colspan="?(\d+)/i) || [])[1] || 1);
-      const rs = Number((c[2].match(/rowspan="?(\d+)/i) || [])[1] || 1);
-      while (grid[ri][ci] !== undefined) ci++;
-      for (let dr = 0; dr < rs; dr++) {
-        grid[ri + dr] = grid[ri + dr] || [];
-        for (let dc = 0; dc < cs; dc++) grid[ri + dr][ci + dc] = text;
-      }
-      ci += cs;
-    }
-  });
-  return grid.map(r => Array.from(r, v => (v === undefined ? '' : v)));
-}
+const parseTable = html => parseGrid(html, clean);
 
 const LV = /^LV\s*(\d+)$/i;
 
