@@ -26,20 +26,11 @@ function raw(text) {
   });
 }
 async function one(text) {
-  for (let i = 0; i < 3; i++) { try { const t = await raw(text); if (t) return t.trim(); } catch { } await sleep(500 * (i + 1)); }
+  for (let i = 0; i < 4; i++) { try { const t = await raw(text); if (t) return t.trim(); } catch { } await sleep(500 * (i + 1)); }
   return null;
 }
-// 여러 줄을 한 번에 — 줄 수가 맞으면 배치 성공, 아니면 한 개씩 폴백.
-async function batch(items) {
-  try {
-    const merged = await raw(items.join('\n'));
-    const lines = merged.split(/\r?\n/).map(s => s.trim());
-    if (lines.length === items.length) return lines;
-  } catch { /* 폴백 */ }
-  const out = [];
-  for (const it of items) { out.push(await one(it)); await sleep(120); }
-  return out;
-}
+// 배치(줄바꿈 묶음)는 요청이 길어지면 구글이 잘라 반환하거나 세그먼트가 어긋나
+// 숫자·내용이 누락된다. 텍스트가 최대 414자로 짧아 개별 번역이 안전·정확하다.
 
 (async () => {
   const skills = rd('data', 'ms_skills.json');
@@ -61,19 +52,32 @@ async function batch(items) {
   const todo = [...new Set([...names, ...texts])].filter(t => !cache[t]);
   console.log(`번역 대상 고유 텍스트 ${todo.length}개 (캐시 ${Object.keys(cache).length})`);
 
+  // gtx 는 「・A / ・B / …」 다중 불릿을 한 세그먼트로 보고 ~73자에서 잘라 반환한다.
+  // 그래서 ' / '(=원본 <br>) 로 쪼개 불릿별로 번역하고 다시 잇는다 — 각 불릿은 짧아 안 잘린다.
+  const partCache = new Map();
+  async function trPart(p) {
+    if (partCache.has(p)) return partCache.get(p);
+    const ko = await one(p);
+    const v = (ko && !hasJa(ko)) ? ko : null;
+    partCache.set(p, v);
+    await sleep(80);
+    return v;
+  }
   let done = 0, failed = 0;
-  const B = 20;
-  for (let i = 0; i < todo.length; i += B) {
-    const chunk = todo.slice(i, i + B);
-    const res = await batch(chunk);
-    chunk.forEach((jp, k) => {
-      const ko = res[k];
-      if (ko && !hasJa(ko)) { cache[jp] = ko; done++; } else failed++;
-    });
-    // 중간 저장(중단돼도 진행분 보존)
-    fs.writeFileSync(path.join(ROOT, 'data', 'i18n', 'skill_text.json'), JSON.stringify(cache, null, 1) + '\n');
-    process.stdout.write(`\r  번역 ${Math.min(i + B, todo.length)}/${todo.length}`);
-    await sleep(150);
+  for (let i = 0; i < todo.length; i++) {
+    const jp = todo[i];
+    const kos = [];
+    let ok = true;
+    for (const p of jp.split(' / ')) {
+      const kp = await trPart(p.trim());
+      if (kp == null) { ok = false; kos.push(p.trim()); } else kos.push(kp);
+    }
+    cache[jp] = kos.join(' / ');   // 일부 실패해도 나머지는 번역돼 저장
+    ok ? done++ : failed++;
+    if (i % 15 === 0 || i === todo.length - 1) {
+      fs.writeFileSync(path.join(ROOT, 'data', 'i18n', 'skill_text.json'), JSON.stringify(cache, null, 1) + '\n');
+      process.stdout.write(`\r  번역 ${i + 1}/${todo.length} (불릿 ${partCache.size})`);
+    }
   }
   console.log(`\n완료: 신규 번역 ${done} · 실패/잔존 ${failed} → data/i18n/skill_text.json (총 ${Object.keys(cache).length})`);
 })().catch(e => console.log('translate_skills 경고: ' + e.message));
