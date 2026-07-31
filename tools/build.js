@@ -42,12 +42,14 @@ const skills = readJson('data', 'skills.json');
 const misc = readJson('data', 'i18n', 'misc.json');
 // 신규 기체·파츠 자동 번역(*.auto.json)을 밑에 깔고, 수작업 사전이 덮어쓴다(수작업 우선).
 const autoJson = f => fs.existsSync(path.join(ROOT, 'data', 'i18n', f)) ? readJson('data', 'i18n', f) : {};
+const msSkills = fs.existsSync(path.join(ROOT, 'data', 'ms_skills.json')) ? readJson('data', 'ms_skills.json') : {};
 const i18n = {
   ms: { ...autoJson('ms.auto.json'), ...readJson('data', 'i18n', 'ms.json') },
   parts: { ...autoJson('parts.auto.json'), ...readJson('data', 'i18n', 'parts.json') },
   weapons: readJson('data', 'i18n', 'weapons.json'),
   // 설명문 안의 고유명사도 같은 사전으로 옮긴다
   terms: readJson('data', 'i18n', 'weapon_terms.json'),
+  skillText: autoJson('skill_text.json'),   // 스킬 효과·설명 번역 (jp→ko)
   attr: misc.attr,
   kind: misc.kind
 };
@@ -58,7 +60,7 @@ const inline = (name, value) =>
 
 const html = read('src', 'index.html')
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
-  .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst }))
+  .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills }))
   .replace('/*__WEAPONS__*/', () => inline('GBO2_WEAPONS', weapons))
   .replace('/*__SKILLS__*/', () => inline('GBO2_SKILLS', skills))
   .replace('/*__I18N_DATA__*/', () => inline('GBO2_I18N', i18n))

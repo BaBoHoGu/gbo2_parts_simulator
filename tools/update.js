@@ -188,6 +188,7 @@ async function detectPatch(msList) {
     // 기존 캐시가 남는다). 배포본 캐시가 비어도 전체 584개를 받지 않는다.
     if (targetIds.length) run('fetch_wiki.js', ['--pages=' + targetIds.join(','), '--force']);
     run('extract_weapons.js', ['--merge']);
+    run('extract_ms_skills.js', ['--merge']);   // 기체 스킬 목록·설명 (무장 헤더 '스킬' 버튼)
     run('find_buff_skills.js', ['--ui', '--merge']);
     run('build_weapon_i18n.js');
     // 위키 스탯·슬롯이 gbo2.jp 와 다르면(gbo2 가 아직 패치 미반영) 위키 값으로 교정한다.
@@ -200,6 +201,7 @@ async function detectPatch(msList) {
 
   // (e) 신규 기체·파츠를 온라인 번역으로 자동 한글화(실패 시 음차 폴백) 후 재빌드
   run('auto_translate.js');
+  run('translate_skills.js');   // 신규 스킬 효과·설명 온라인 번역(캐시 증분)
   run('build.js');
 
   // (f) 번들(계산 로직)이 바뀌었으면 원본 계산과 대조해, 아직 이식 안 된 새 규칙이 있는지 본다.

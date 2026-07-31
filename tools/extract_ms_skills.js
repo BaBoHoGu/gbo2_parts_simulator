@@ -1,0 +1,117 @@
+// 위키 「スキル情報」 표에서 기체의 전체 스킬(효과·설명 포함)을 뽑아 data/ms_skills.json 으로.
+//   node tools/extract_ms_skills.js [--merge]
+// 가변·변형 기체는 ＜通常時＞/＜変形時＞ 등 모드별로 나눠 담는다.
+// 구조: { "<기체>": [ { mode, skills: [ { cat, name, lv, msLv, eff, desc } ] } ] }
+const fs = require('fs');
+const path = require('path');
+const ROOT = path.join(__dirname, '..');
+const WIKI = path.join(ROOT, 'raw', 'wiki');
+const DEST = path.join(ROOT, 'data', 'ms_skills.json');
+
+const clean = s => s
+  .replace(/<br\s*\/?>/gi, ' / ').replace(/<[^>]+>/g, '')
+  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/\s+/g, ' ').replace(/(?:\s*\/\s*)+/g, ' / ').replace(/^\s*\/\s*|\s*\/\s*$/g, '').trim();
+
+/** rowspan/colspan 을 펼쳐 2차원 배열로. */
+function parseTable(html) {
+  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map(m => m[1]);
+  const g = [];
+  rows.forEach((r, ri) => {
+    g[ri] = g[ri] || [];
+    let ci = 0;
+    for (const c of r.matchAll(/<(td|th)([^>]*)>([\s\S]*?)<\/\1>/gi)) {
+      const t = clean(c[3]);
+      const cs = Number((c[2].match(/colspan="?(\d+)/i) || [])[1] || 1);
+      const rs = Number((c[2].match(/rowspan="?(\d+)/i) || [])[1] || 1);
+      while (g[ri][ci] !== undefined) ci++;
+      for (let dr = 0; dr < rs; dr++) { g[ri + dr] = g[ri + dr] || []; for (let dc = 0; dc < cs; dc++) g[ri + dr][ci + dc] = t; }
+      ci += cs;
+    }
+  });
+  return g.map(r => Array.from(r, v => (v === undefined ? '' : v)));
+}
+
+const CATS = ['足回り', '攻撃', '防御', 'その他', '移動', '格闘', '射撃'];
+const isLv = s => /^(LV|Lv)\s*\d/.test(String(s || '').trim());
+
+/** 한 모드 구간의 표들에서 스킬 목록을 뽑는다. */
+function parseSkills(seg) {
+  const skills = [];
+  for (const t of seg.matchAll(/<table[\s\S]*?<\/table>/gi)) {
+    const grid = parseTable(t[0]);
+    // 헤더 행에서 열 위치를 잡는다
+    const head = grid.find(r => r.includes('スキル') && (r.includes('効果') || r.includes('説明')));
+    if (!head) continue;
+    const iName = head.indexOf('スキル');
+    const iLv = head.findIndex(c => /レベル/.test(c));
+    const iMsLv = head.findIndex(c => /機体LV/.test(c));
+    const iEff = head.findIndex(c => /効果/.test(c));
+    const iDesc = head.findIndex(c => /説明/.test(c));
+    let cat = '';
+    for (const row of grid) {
+      if (row === head) continue;
+      const nameCell = (row[iName] || '').trim();
+      if (CATS.includes(nameCell) && !isLv(row[iLv])) { cat = nameCell; continue; }
+      if (!isLv(row[iLv])) continue;                 // 스킬 행이 아님
+      const name = nameCell || (row.find(c => c && !isLv(c)) || '');
+      if (!name || name.length < 2) continue;
+      skills.push({
+        cat,
+        name,
+        lv: (row[iLv] || '').trim(),
+        msLv: (row[iMsLv] || '').trim(),
+        eff: iEff >= 0 ? (row[iEff] || '').trim() : '',
+        desc: iDesc >= 0 ? (row[iDesc] || '').trim() : ''
+      });
+    }
+  }
+  // 표 밖(같은 열)에서 같은 스킬이 여러 번 잡히면 중복 제거
+  const seen = new Set();
+  return skills.filter(s => { const k = s.cat + '|' + s.name + '|' + s.lv; if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
+// page id → 기체 base 이름들
+const msData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
+const byPage = new Map();
+for (const m of msData) {
+  const id = (String(m.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
+  if (!id) continue;
+  const base = m.MS名.replace(/_LV\d+$/, '');
+  if (!byPage.has(id)) byPage.set(id, new Set());
+  byPage.get(id).add(base);
+}
+
+const MERGE = process.argv.includes('--merge');
+const out = MERGE && fs.existsSync(DEST) ? JSON.parse(fs.readFileSync(DEST, 'utf8')) : {};
+const files = fs.existsSync(WIKI) ? fs.readdirSync(WIKI).filter(f => f.endsWith('.html')) : [];
+let mechs = 0, modeCount = 0;
+
+for (const f of files) {
+  const id = f.replace('.html', '');
+  const bases = byPage.get(id);
+  if (!bases) continue;
+  const html = fs.readFileSync(path.join(WIKI, f), 'utf8').replace(/<script[\s\S]*?<\/script>/gi, '');
+
+  // 모든 「スキル情報[＜모드＞]」 제목 위치 + 라벨
+  const marks = [...html.matchAll(/<h[2-5][^>]*>([^<]*スキル情報[^<]*)<\/h[2-5]>/gi)]
+    .map(m => ({ at: m.index, label: (m[1].match(/＜([^＞]+)＞/) || [])[1] || '' }));
+  if (!marks.length) continue;
+  // 다음 큰 섹션(강화리스트/고찰/概要 등)까지가 스킬 구간
+  const endAt = (() => { const m = html.slice(marks[0].at).search(/<h[2-5][^>]*>[^<]*(強化リスト情報|機体考察|機体概要|アップデート履歴)/); return m < 0 ? html.length : marks[0].at + m; })();
+
+  const modes = [];
+  marks.forEach((mk, i) => {
+    const segEnd = i + 1 < marks.length ? marks[i + 1].at : endAt;
+    const skills = parseSkills(html.slice(mk.at, segEnd));
+    if (skills.length) modes.push({ mode: mk.label, skills });
+  });
+  if (!modes.length) continue;
+
+  for (const base of bases) { out[base] = modes; }
+  mechs++; modeCount += modes.length;
+}
+
+fs.writeFileSync(DEST, JSON.stringify(out, null, 1) + '\n');
+const kb = (fs.statSync(DEST).size / 1024).toFixed(0);
+console.log(`스킬 추출: 기체 ${Object.keys(out).length}기 (이번 ${mechs}) · 모드 ${modeCount} → data/ms_skills.json ${kb}KB`);

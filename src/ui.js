@@ -12,7 +12,8 @@
   const D = window.GBO2Damage;
   const weaponData = window.GBO2_WEAPONS || {};
   const skillData = window.GBO2_SKILLS || {};
-  const { msData, parts: partsByCat, fullst } = window.GBO2_DATA;
+  const { msData, parts: partsByCat, fullst, msSkills: msSkillsData = {} } = window.GBO2_DATA;
+  const skillText = (window.GBO2_I18N && window.GBO2_I18N.skillText) || {};
 
   const allParts = [].concat(...C.CATEGORIES.map(c => partsByCat[c]));
   const partByName = new Map(allParts.map(p => [p.name, p]));
@@ -1680,6 +1681,74 @@
     if (open) renderSavedBuilds();
   }
 
+  /* ---------- 기체 스킬 목록 (무장 헤더 '스킬' 버튼) ---------- */
+  const SKILL_MODE_KO = { '通常時': '통상', '変形時': '변형', '変身時': '변신', 'システム発動中': '시스템 발동중', '飛行時': '비행', '': '통상' };
+  const SKILL_CAT_KO = { '足回り': '기동', '攻撃': '공격', '防御': '방어', 'その他': '기타', '移動': '이동', '格闘': '격투', '射撃': '사격', '': '기타' };
+  const skTr = s => (s ? (skillText[s] || s) : '');            // 스킬 텍스트 번역 (없으면 원문)
+  let mskillMode = 0;                                          // 활성 모드 탭
+
+  // 「LV1～3」「LV4～」에 현재 기체 LV 이 드는지
+  function msLvHit(msLvStr, lv) {
+    const m = String(msLvStr || '').match(/LV\s*(\d+)\s*[～~]?\s*(\d+)?/i);
+    if (!m) return true;
+    return lv >= Number(m[1]) && lv <= (m[2] ? Number(m[2]) : 99);
+  }
+
+  function openMskill(open) {
+    const m = document.getElementById('mskillModal'), b = document.getElementById('mskillBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (open) { mskillMode = 0; renderMskill(); }
+  }
+
+  function renderMskill() {
+    const body = $('#mskillBody'), tabs = $('#mskillTabs');
+    $('#mskillMsName').textContent = state.ms ? T.msName(state.ms.MS名) : '';
+    const modes = (state.ms && msSkillsData[baseName(state.ms.MS名)]) || [];
+    body.innerHTML = '';
+    if (!modes.length) { body.append(el('div', 'detail-empty', '이 기체의 스킬 정보가 없습니다.')); tabs.hidden = true; return; }
+
+    // 모드 탭 (다중모드일 때만)
+    tabs.innerHTML = '';
+    tabs.hidden = modes.length < 2;
+    if (modes.length > 1) modes.forEach((md, i) => {
+      const t = el('button', 'seg-btn' + (i === mskillMode ? ' on' : ''), SKILL_MODE_KO[md.mode] || md.mode || '통상');
+      t.onclick = () => { mskillMode = i; renderMskill(); };
+      tabs.append(t);
+    });
+
+    const lv = state.ms ? msLevel(state.ms) : 1;
+    const mode = modes[Math.min(mskillMode, modes.length - 1)];
+    // 현재 기체 LV 에 맞는 스킬만 (LV 구간이 겹치는 같은 이름은 하나만)
+    const picked = new Map();
+    for (const s of mode.skills) {
+      if (!msLvHit(s.msLv, lv)) continue;
+      picked.set(s.cat + '|' + s.name, s);   // 같은 스킬은 매칭되는 LV 하나
+    }
+    // 분류별 그룹
+    const order = ['足回り', '攻撃', '防御', '移動', '格闘', '射撃', 'その他', ''];
+    const byCat = new Map();
+    for (const s of picked.values()) { if (!byCat.has(s.cat)) byCat.set(s.cat, []); byCat.get(s.cat).push(s); }
+    const cats = [...byCat.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    if (!cats.length) { body.append(el('div', 'detail-empty', '이 LV 에서 표시할 스킬이 없습니다.')); return; }
+
+    for (const cat of cats) {
+      const sec = el('div', 'msk-sec');
+      sec.append(el('div', 'msk-cat', SKILL_CAT_KO[cat] || cat || '기타'));
+      for (const s of byCat.get(cat)) {
+        const row = el('div', 'msk-row');
+        const head = el('div', 'msk-head');
+        head.append(el('span', 'msk-name', skTr(s.name)));
+        if (s.lv) head.append(el('span', 'msk-lv', s.lv));
+        row.append(head);
+        if (s.eff) row.append(el('div', 'msk-eff', skTr(s.eff)));
+        if (s.desc) row.append(el('div', 'msk-desc', skTr(s.desc)));
+        sec.append(row);
+      }
+      body.append(sec);
+    }
+  }
+
   function renameBuild(id) {
     const list = loadBuilds();
     const b = list.find(x => x.id === id);
@@ -2181,6 +2250,14 @@
     $('#savedModalClose').onclick = () => openSavedModal(false);
     $('#savedModalBack').onclick = () => openSavedModal(false);
 
+    // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명
+    $('#skillListBtn').onclick = () => {
+      if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
+      openMskill(true);
+    };
+    $('#mskillClose').onclick = () => openMskill(false);
+    $('#mskillBack').onclick = () => openMskill(false);
+
     // 불러오기 결과 안내 — 제외된 파츠가 있으면 조용히 넘기지 않는다 (가져오기에서 사용)
     const loadedMsg = (r, okText) => r.missing
       ? `${okText} — 알 수 없는 파츠 ${r.missing}개는 제외했습니다`
@@ -2215,6 +2292,7 @@
 
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
+      if (!$('#mskillModal').hidden) { openMskill(false); return; }
       if (!$('#savedModal').hidden) { openSavedModal(false); return; }
       if (!$('#autoResultPanel').hidden) { openResultModal(false); return; }
       if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return; }
