@@ -1313,10 +1313,11 @@
       rowBottom.set(top, Math.max(rowBottom.get(top) || 0, top + t.offsetHeight));
     }
 
-    let fit = 0, nextTop = null;
+    let fit = 0, nextTop = null, rows = 0;
+    const MAX_ROWS = 2;   // 파츠 목록은 최대 2행만 보이고, 그 이상은 스크롤
     for (const [top, bottom] of [...rowBottom].sort((a, b) => a[0] - b[0])) {
-      if (bottom + padBottom > budget) { nextTop = top; break; }   // 이 줄부터는 잘린다
-      fit = bottom;
+      if (rows >= MAX_ROWS || bottom + padBottom > budget) { nextTop = top; break; }   // 2행 넘거나 예산 초과면 끊는다
+      fit = bottom; rows++;
     }
     if (!fit) return;
     // 아래 여백이 줄 간격보다 넓으면 다음 줄 윗머리가 비어져 나오므로 그 앞에서 끊는다

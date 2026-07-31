@@ -173,6 +173,9 @@ body.view-build  #screenSelect { display: none; }
   gap: 9px;
   padding: 9px;
   overflow-y: auto;
+  max-width: 1440px;      /* 가로 폭 제한 — 좌우 여백을 두어 한눈에 */
+  margin: 0 auto;
+  width: 100%;
 }
 .build-col { display: flex; flex-direction: column; }
 .build-left  { grid-column: 1; grid-row: 1; }
