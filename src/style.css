@@ -637,12 +637,13 @@ body.view-build  #screenSelect { display: none; }
 .stat-row.capped .cap { color: var(--accent); }
 
 .graph { display: flex; align-items: center; gap: 6px; }
-.meter { flex: 1; height: 8px; background: #262a34; border-radius: 4px; overflow: hidden; display: flex; }
+.meter { flex: 1; height: 11px; background: #1b1f28; border: 1px solid var(--line-soft); border-radius: 4px; overflow: hidden; display: flex; }
 .meter > i { height: 100%; }
-.meter > i.base { background: #47506a; }
-.meter > i.gain { background: var(--ok); }
-.meter > i.gain.capped { background: var(--accent); }
-.meter > i.gain.over { background: var(--close); }
+/* 소체분을 선명한 청록으로 채워 '얼마나 찼는지'가 한눈에 (gbo2 그래프처럼). 증가분은 초록·스킬은 보라 오버레이 */
+.meter > i.base { background: linear-gradient(180deg, #3fb6c4, #2f97a6); }
+.meter > i.gain { background: linear-gradient(180deg, #57d977, #3fbf60); }
+.meter > i.gain.capped { background: linear-gradient(180deg, #ffd24d, var(--accent)); }
+.meter > i.gain.over { background: linear-gradient(180deg, #ff9a6b, var(--close)); }
 .meter > i.skill { background: var(--skill); }
 .meter > i.skill.multi { background: var(--skill2); }
 
