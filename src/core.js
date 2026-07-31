@@ -449,7 +449,9 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   };
   const expDef = EXPANSION_LEVELS[expansion];
   if (expDef) {
-    const lv = Math.min(Math.max(Number(expLevel) || MAX_EXPANSION_LEVEL, 1), expDef.length);
+    // expLevel 이 유효한 1 이상 숫자면 그대로, 아니면(0·NaN·미지정) 최대 레벨로 본다.
+    const n = Number(expLevel);
+    const lv = Math.min(Math.max(isFinite(n) && n >= 1 ? n : MAX_EXPANSION_LEVEL, 1), expDef.length);
     const e = expDef[lv - 1];
     if (e.add) {
       for (const [k, v] of Object.entries(e.add)) expansionBonus[k] += v;

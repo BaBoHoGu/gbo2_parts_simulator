@@ -1733,11 +1733,21 @@
 
     const lv = state.ms ? msLevel(state.ms) : 1;
     const mode = modes[Math.min(mskillMode, modes.length - 1)];
-    // 현재 기체 LV 에 맞는 스킬만 (LV 구간이 겹치는 같은 이름은 하나만)
-    const picked = new Map();
+    // 스킬명별로 현재 기체 LV 에 맞는 구간 하나를 고른다.
+    // 단일 닫힌 구간(예: 「LV1～2」)만 가진 스킬은 그 상한을 넘는 LV 에서 어떤 구간에도
+    // 안 맞아 사라지므로, 그럴 땐 가장 높은 from 구간으로 폴백해 계속 보여 준다.
+    const groups = new Map();
     for (const s of mode.skills) {
-      if (!msLvHit(s.msLv, lv)) continue;
-      picked.set(s.cat + '|' + s.name, s);   // 같은 스킬은 매칭되는 LV 하나
+      const key = s.cat + '|' + s.name;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(s);
+    }
+    const fromOf = s => { const m = String(s.msLv || '').match(/LV\s*(\d+)/i); return m ? Number(m[1]) : 1; };
+    const picked = new Map();
+    for (const [key, cands] of groups) {
+      const chosen = cands.find(s => msLvHit(s.msLv, lv))
+        || cands.slice().sort((a, b) => fromOf(b) - fromOf(a))[0];
+      if (chosen) picked.set(key, chosen);
     }
     // 분류별 그룹
     const order = ['足回り', '攻撃', '防御', '移動', '格闘', '射撃', 'その他', ''];
