@@ -295,14 +295,19 @@ function parseNote(note) {
  *      다른 모드 전개까지 포함 (아비고르 빔 사이스[防御]처럼 록온 형제가 없는 건 제외됨)
  * 리로드/OH 단축 파츠(CP 내장 특수 구조재 등)가 이 표시를 scope 로 노린다.
  */
+// 록온이지만 사이코뮤가 아닌 원격무기 예외(오탐). 베르가 기로스(GK)의 ホッブバグ 등.
+// TODO: 위키 스킬 구획의 「サイコミュ/サイコフレーム」 언급 유무로 게이팅하는 정식 규칙으로 대체.
+const NOT_PSYCOMMU = /ホッブバグ/;
 function tagPsycommu(weapons) {
   const fam = nm => String(nm).replace(/[［【（〔〈「].*$/, '').replace(/[x×]\d+.*$/i, '').trim();
   const lockFams = new Set();
   for (const w of weapons) {
+    if (NOT_PSYCOMMU.test(w.name)) continue;
     if (/ロックオン/.test(JSON.stringify(w))) { w.psycommu = true; lockFams.add(fam(w.name)); }
   }
   for (const w of weapons) {
-    if (!w.psycommu && lockFams.has(fam(w.name))) w.psycommu = true;
+    if (NOT_PSYCOMMU.test(w.name) || w.psycommu) continue;
+    if (lockFams.has(fam(w.name))) w.psycommu = true;
   }
 }
 
