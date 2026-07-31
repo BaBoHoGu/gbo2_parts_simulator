@@ -154,7 +154,10 @@ const WEAPON_MOD_RULES = [
   { key: 'weaponOH', scope: 'beam', re: /オーバーヒートからの復帰時間を([\d.]+)%短縮/ },
   // 대용량 보급 팩 — 리로드와 OH 복귀를 무장 종류와 무관하게 15% 줄인다
   { key: 'reloadTime', scope: 'all', re: /リロード時間、およびオーバーヒートからの回復速度が([\d.]+)%上昇/ },
-  { key: 'weaponOH', scope: 'all', re: /リロード時間、およびオーバーヒートからの回復速度が([\d.]+)%上昇/ }
+  { key: 'weaponOH', scope: 'all', re: /リロード時間、およびオーバーヒートからの回復速度が([\d.]+)%上昇/ },
+  // 사이코뮤 무장 전용 리로드·OH 단축 (CP 내장 특수 구조재 등). scope 'psycommu' 는 사이코뮤 무장에만 걸린다.
+  { key: 'reloadTime', scope: 'psycommu', re: /サイコミュ兵装の[^。]*?リロード時間[^。]*?(\d+)%短縮/ },
+  { key: 'weaponOH', scope: 'psycommu', re: /サイコミュ兵装の[^。]*?オーバーヒート時間[^。]*?(\d+)%短縮/ }
 ];
 
 /**
@@ -248,8 +251,12 @@ function weaponModsOf(equipped, msLv, msAttr) {
   return { time, damage, shieldHp };
 }
 
-/** 무장이 어느 `scope` 에 해당하는지. */
-const weaponScopes = w => ['all', isBeamWeapon(w) ? 'beam' : 'solid'];
+/** 무장이 어느 `scope` 에 해당하는지. 사이코뮤 무장은 'psycommu' scope 도 받는다. */
+const weaponScopes = w => {
+  const s = ['all', isBeamWeapon(w) ? 'beam' : 'solid'];
+  if (w && w.psycommu) s.push('psycommu');
+  return s;
+};
 
 /**
  * 시간이 절댓값으로 고정돼 파츠 단축을 안 받는 무장. 備考에 명시돼 있다.

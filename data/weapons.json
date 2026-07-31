@@ -31170,7 +31170,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -32070,7 +32071,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式メガ粒子砲x2［包囲］",
@@ -32099,7 +32101,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -37063,7 +37066,8 @@
     },
     "mods": {
      "stagger": "4% x10"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式メガ粒子砲x2［包囲］",
@@ -37095,7 +37099,8 @@
     },
     "mods": {
      "stagger": "15% x10"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "頭部メガ粒子砲",
@@ -52500,7 +52505,8 @@
     },
     "mods": {
      "stagger": "6% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［包囲］",
@@ -52529,7 +52535,8 @@
     },
     "mods": {
      "stagger": "20% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -52558,7 +52565,8 @@
     },
     "mods": {
      "stagger": "6% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -52828,7 +52836,8 @@
     "mods": {
      "shieldMod": 1,
      "stagger": "12% x 3"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -57257,7 +57266,8 @@
     },
     "mods": {
      "stagger": "10% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［包囲］",
@@ -57286,7 +57296,8 @@
     },
     "mods": {
      "stagger": "25% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -57315,7 +57326,8 @@
     },
     "mods": {
      "stagger": "12% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -58607,7 +58619,8 @@
     },
     "mods": {
      "stagger": "35% x2"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -60922,7 +60935,8 @@
      "shieldMod": 1,
      "partMod": 1.1,
      "stagger": "50% x3"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "リフレクター・インコムx2",
@@ -60953,7 +60967,8 @@
      "shieldMod": 1,
      "partMod": 1.1,
      "stagger": "50%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "Ex-Sガンダム用B・S（変形）",
@@ -61510,7 +61525,8 @@
     },
     "mods": {
      "stagger": "13% x4"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "インコム・トライ・ブレード",
@@ -61538,7 +61554,8 @@
     },
     "mods": {
      "stagger": "10% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "シールド内メガ粒子砲",
@@ -62187,7 +62204,8 @@
     },
     "mods": {
      "stagger": "35% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "背部ビーム・カノンx2",
@@ -64420,7 +64438,8 @@
     },
     "mods": {
      "stagger": "10% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "マザー・ファンネルx2［追従］",
@@ -64478,7 +64497,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -68376,7 +68396,8 @@
      "shieldMod": 1,
      "partMod": 1.1,
      "stagger": "5% x8"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx8［追従］",
@@ -68404,7 +68425,8 @@
      "shieldMod": 1,
      "partMod": 1.1,
      "stagger": "4% x8"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "アクティブ・カノンx2",
@@ -68458,7 +68480,8 @@
     },
     "mods": {
      "stagger": "10% x12"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx4［援護］",
@@ -68484,7 +68507,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -71910,7 +71934,8 @@
     },
     "mods": {
      "stagger": "9% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "フィン・ファンネル［防御］",
@@ -71936,7 +71961,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "シールド装着型ミサイルx4",
@@ -72249,7 +72275,8 @@
     },
     "mods": {
      "stagger": "6% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -72275,7 +72302,8 @@
     },
     "mods": {
      "stagger": "6% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "シールド内マイクロ・ミサイルx3",
@@ -73370,7 +73398,8 @@
     },
     "mods": {
      "stagger": "10% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -73399,7 +73428,8 @@
     },
     "mods": {
      "stagger": "10% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -74462,7 +74492,8 @@
     },
     "mods": {
      "stagger": "8% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［包囲］",
@@ -74491,7 +74522,8 @@
     },
     "mods": {
      "stagger": "20% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -81058,7 +81090,8 @@
     },
     "mods": {
      "stagger": "20% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -81087,7 +81120,8 @@
     },
     "mods": {
      "stagger": "10% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -81343,7 +81377,8 @@
     },
     "mods": {
      "stagger": "35% x8"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "サイコプレート［防御］",
@@ -81369,7 +81404,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -81920,7 +81956,8 @@
     },
     "mods": {
      "stagger": "25% x5"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ダグ・リーダー",
@@ -86017,7 +86054,8 @@
     },
     "mods": {
      "stagger": "7% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -86043,7 +86081,8 @@
     },
     "mods": {
      "stagger": "9% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx2［爆撃］",
@@ -86068,7 +86107,8 @@
     },
     "mods": {
      "stagger": "13% x12"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -89473,7 +89513,8 @@
     },
     "mods": {
      "stagger": "35% x4"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -89499,7 +89540,8 @@
     },
     "mods": {
      "stagger": "8% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx4［集中砲火］",
@@ -89525,7 +89567,8 @@
     },
     "mods": {
      "stagger": "15% x12"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -92814,7 +92857,8 @@
     },
     "mods": {
      "stagger": "35%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "インコム・ユニットx2［挟撃］",
@@ -92843,7 +92887,8 @@
     },
     "mods": {
      "stagger": "35% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ビーム・ランチャー",
@@ -94782,7 +94827,8 @@
     },
     "mods": {
      "stagger": "9% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ビーム・キャノン（変形）",
@@ -98350,7 +98396,8 @@
     },
     "mods": {
      "stagger": "25% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式遠隔攻撃端末x2［JAM］",
@@ -98379,7 +98426,8 @@
     },
     "mods": {
      "stagger": "50%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式遠隔攻撃端末x2［設置］",
@@ -98408,7 +98456,8 @@
     },
     "mods": {
      "stagger": "50%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -98828,7 +98877,8 @@
     },
     "mods": {
      "stagger": "35% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "アームド・アーマーDE［防御］",
@@ -98854,7 +98904,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "フェネクス用背部B・サーベルx2",
@@ -98966,7 +99017,8 @@
     },
     "mods": {
      "stagger": "35% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "A・アーマーDE［防御］（変身）",
@@ -98992,7 +99044,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "フェネクス用腕部B・トンファー",
@@ -101556,7 +101609,8 @@
     },
     "mods": {
      "stagger": "35% x3"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "Sガンダム用B・サーベルx2",
@@ -104576,7 +104630,8 @@
     },
     "mods": {
      "stagger": "10% x2"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -105313,7 +105368,8 @@
     },
     "mods": {
      "stagger": "10% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "D・H・ファンネル［挟撃］",
@@ -105339,7 +105395,8 @@
     },
     "mods": {
      "stagger": "10% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "D・H・ファンネル［追従］",
@@ -105365,7 +105422,8 @@
     },
     "mods": {
      "stagger": "10% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "D・H・ファンネル［照射］",
@@ -105391,7 +105449,8 @@
     },
     "mods": {
      "stagger": "40%ｘ2発ｘ4射"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -106367,7 +106426,8 @@
     },
     "mods": {
      "stagger": "50% x3"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ビーム・カノン",
@@ -106702,7 +106762,8 @@
     },
     "mods": {
      "stagger": "25% x4"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "L・フィン・ファンネル［速射］",
@@ -106733,7 +106794,8 @@
      "chargeRatio": 2.334,
      "chargeTime": 5,
      "stagger": "35% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "シールド装着型ミサイルx4",
@@ -108061,7 +108123,8 @@
     },
     "mods": {
      "stagger": "12% x18"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "F・ファンネル［援護］",
@@ -108087,7 +108150,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "F・ファンネル［防御］",
@@ -108113,7 +108177,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "Hi-νG用兵装装着シールド",
@@ -108439,7 +108504,8 @@
     },
     "mods": {
      "stagger": "9% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx4［設置］",
@@ -108465,7 +108531,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ナイチンゲール用シールド",
@@ -109367,7 +109434,8 @@
     },
     "mods": {
      "stagger": "25% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -109393,7 +109461,8 @@
     },
     "mods": {
      "stagger": "9% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -112609,7 +112678,8 @@
     },
     "mods": {
      "stagger": "13% x12"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［照射］",
@@ -112635,7 +112705,8 @@
     },
     "mods": {
      "stagger": "35% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -113509,7 +113580,8 @@
     },
     "mods": {
      "stagger": "35%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "インコム・ユニットx2［挟撃］",
@@ -113532,7 +113604,8 @@
     },
     "mods": {
      "stagger": "10% x 3"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "サイコ・ジャマー",
@@ -113555,7 +113628,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -119240,7 +119314,8 @@
     },
     "mods": {
      "stagger": "15% x12"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "腕部装着型ビーム・スプレーガン",
@@ -119451,7 +119526,8 @@
     },
     "mods": {
      "stagger": "10% x18"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "インコムx3［速射］",
@@ -119477,7 +119553,8 @@
     },
     "mods": {
      "stagger": "5% x3"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -119693,7 +119770,8 @@
     },
     "mods": {
      "stagger": "20% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "フィン・ファンネル［防御］",
@@ -119718,7 +119796,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ミサイルx4",
@@ -121604,7 +121683,8 @@
     },
     "mods": {
      "stagger": "25% x3"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ヘビーガンダム（I0）用シールド",
@@ -121824,7 +121904,8 @@
     },
     "mods": {
      "stagger": "15% x4"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "フィン・ファンネル［防御］",
@@ -121850,7 +121931,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -122803,7 +122885,8 @@
     },
     "mods": {
      "stagger": "10% x8"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "サイコプレート［防御］",
@@ -122829,7 +122912,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -123069,7 +123153,8 @@
     },
     "mods": {
      "stagger": "9% x18"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx6［追従］",
@@ -123092,7 +123177,8 @@
     },
     "mods": {
      "stagger": "15% x3"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "シールド内マイクロ・ミサイルx3",
@@ -124395,7 +124481,8 @@
     },
     "mods": {
      "stagger": "4% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "インコム・ビーム砲x2",
@@ -124418,7 +124505,8 @@
     },
     "mods": {
      "stagger": "17% x2"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -124830,7 +124918,8 @@
     },
     "mods": {
      "stagger": "13% x10"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -125521,7 +125610,8 @@
     },
     "mods": {
      "stagger": "17% x8"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "C・W・U［ミサイル］",
@@ -125664,7 +125754,8 @@
     },
     "mods": {
      "stagger": "17% x8"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -126137,7 +126228,8 @@
     },
     "mods": {
      "stagger": "2% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "フィン・ファンネル［防御］",
@@ -126163,7 +126255,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "腕部装着型ビーム・スプレーガン",
@@ -126405,7 +126498,8 @@
     },
     "mods": {
      "stagger": "12% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "R・ファンネルx4［集中砲火］",
@@ -126434,7 +126528,8 @@
     },
     "mods": {
      "stagger": "5% x12"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "R・ファンネルx4［照射］",
@@ -126463,7 +126558,8 @@
     },
     "mods": {
      "stagger": "17% x4"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -127239,7 +127335,8 @@
     },
     "mods": {
      "stagger": "25% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式大型ビットx2［連動］",
@@ -127265,7 +127362,8 @@
     },
     "mods": {
      "stagger": "5% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ネティクス用シールド",
@@ -127737,7 +127835,8 @@
     },
     "mods": {
      "stagger": "7% x5"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx5［追従］",
@@ -127763,7 +127862,8 @@
     },
     "mods": {
      "stagger": "15% x5"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx5［集中砲火］",
@@ -127789,7 +127889,8 @@
     },
     "mods": {
      "stagger": "6% x15"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -128246,7 +128347,8 @@
     },
     "mods": {
      "stagger": "3% x4"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx4［包囲］",
@@ -128272,7 +128374,8 @@
     },
     "mods": {
      "stagger": "35% x4"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -130115,7 +130218,8 @@
     },
     "mods": {
      "stagger": "35% x3"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "インコム・ビーム砲［L］",
@@ -130141,7 +130245,8 @@
     },
     "mods": {
      "stagger": "35% x3"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "背部ビーム・カノンx2",
@@ -131132,7 +131237,8 @@
     },
     "mods": {
      "stagger": "20%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式ハンド［サーベル左］",
@@ -131154,7 +131260,8 @@
     },
     "mods": {
      "stagger": "20%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式大型ファンネル［速射］",
@@ -131177,7 +131284,8 @@
     },
     "mods": {
      "stagger": "25% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式大型ファンネル［照射］",
@@ -131200,7 +131308,8 @@
     },
     "mods": {
      "stagger": "35% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -131394,7 +131503,8 @@
     },
     "mods": {
      "stagger": "17% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "3連装シュツルム・ファウスト",
@@ -132233,7 +132343,8 @@
     },
     "mods": {
      "stagger": "10% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "無線メガ粒子砲x2［サーベル］",
@@ -132264,7 +132375,8 @@
     },
     "mods": {
      "stagger": "20% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "インコム・ビーム砲x2［挟撃］",
@@ -132296,7 +132408,8 @@
     },
     "mods": {
      "stagger": "35% x2"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -132809,7 +132922,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "シールド・ファンネル［射出］",
@@ -132832,7 +132946,8 @@
     },
     "mods": {
      "stagger": "5% x15"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "シールド・ファンネルx2［感知］",
@@ -132854,7 +132969,8 @@
     },
     "mods": {
      "stagger": "15% x7"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -133963,7 +134079,8 @@
     },
     "mods": {
      "stagger": "5% x8"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "サイコプレート［防御］",
@@ -133985,7 +134102,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "サイコプレート［全射出］",
@@ -134007,7 +134125,8 @@
     },
     "mods": {
      "stagger": "35% x16"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -135329,7 +135448,8 @@
     },
     "mods": {
      "stagger": "25% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ファンネルx2［追従］",
@@ -135361,7 +135481,8 @@
     },
     "mods": {
      "stagger": "20% x2"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -138404,7 +138525,8 @@
     },
     "mods": {
      "stagger": "12% x10"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ビットx2［照射］",
@@ -138430,7 +138552,8 @@
     },
     "mods": {
      "stagger": "25% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "赤いガンダム用シールド",
@@ -138620,7 +138743,8 @@
     },
     "mods": {
      "stagger": "25% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "有線式腕部ビーム砲［打撃］",
@@ -138642,7 +138766,8 @@
     },
     "mods": {
      "stagger": "50%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -141805,7 +141930,8 @@
     },
     "mods": {
      "stagger": "6% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "インコムx6［斉射］",
@@ -141828,7 +141954,8 @@
     },
     "mods": {
      "stagger": "10% x6"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -149233,7 +149360,8 @@
     },
     "mods": {
      "stagger": "17% x12"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -154246,7 +154374,8 @@
     },
     "mods": {
      "stagger": "25% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ホッブバグ［感知］",
@@ -154269,7 +154398,8 @@
     },
     "mods": {
      "stagger": "17% x6"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ベルガ・G（GK）用B・シールド",
@@ -156132,7 +156262,8 @@
     },
     "mods": {
      "stagger": "14% x4"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "R・ファンネルx4［集中砲火］",
@@ -156155,7 +156286,8 @@
     },
     "mods": {
      "stagger": "5% x12"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "R・ファンネルx3［援護］",
@@ -156178,7 +156310,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -157071,7 +157204,8 @@
     },
     "mods": {
      "stagger": "6% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "S・B・ガトリングx2［感知］",
@@ -157097,7 +157231,8 @@
     },
     "mods": {
      "stagger": "6% x10"
-    }
+    },
+    "psycommu": true
    }
   ]
  },
@@ -158569,7 +158704,8 @@
        "mult": 0.5
       }
      ]
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "ビーム内蔵式Sクロー［射出］",
@@ -158591,7 +158727,8 @@
     },
     "mods": {
      "stagger": "50%"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "複合複眼式マルチセンサー",
@@ -160116,7 +160253,8 @@
     },
     "mods": {
      "stagger": "% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "アームド・アーマーDE［射出］",
@@ -160141,7 +160279,8 @@
     },
     "mods": {
      "stagger": "35% x2"
-    }
+    },
+    "psycommu": true
    },
    {
     "name": "アームド・アーマーDE［防御］",
@@ -160167,7 +160306,8 @@
     },
     "mods": {
      "stagger": "0%"
-    }
+    },
+    "psycommu": true
    }
   ]
  }
