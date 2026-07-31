@@ -73,7 +73,7 @@ function isValidSet(ms, set, stage, fullstDefs) {
 /* ---------- 평가 ---------- */
 
 function makeScorer(ms, opts, partsByCat, fullstDefs) {
-  const { stage, expansion, expLevel, weights, minimums, skill } = opts;
+  const { stage, expansion, expLevel, weights, minimums, maximums, skill } = opts;
   // 스킬을 켠 채로 자동 구성하면 그 보정까지 감안해 최적화한다 (상한에 걸려 파츠 선택이 달라진다)
   const base = calcStats(ms, [], stage, expansion, partsByCat, fullstDefs, expLevel, null, skill).total;
 
@@ -91,6 +91,12 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
       if (!target) continue;
       const short = target - res.total[k];
       if (short > 0) penalty += 1000 + 100 * (short / UNIT[k]);
+    }
+    // 상한 목표 — 초과하면 하한과 대칭으로 페널티를 준다(그 스탯을 넘기지 않는 구성으로 흐르게).
+    for (const [k, target] of Object.entries(maximums || {})) {
+      if (target == null || target === '') continue;
+      const over = res.total[k] - target;
+      if (over > 0) penalty += 1000 + 100 * (over / UNIT[k]);
     }
     return { value: value - penalty, feasible: penalty === 0, stats: res };
   };

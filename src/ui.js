@@ -114,7 +114,8 @@
     partQuery: '',
     weights: { ...O.PRESETS['밸런스'] },
     minimums: {},
-    weightsTouched: false,  // 사용자가 가중치·하한·프리셋을 직접 만졌는가
+    maximums: {},           // 상한 목표 (초과 시 페널티)
+    weightsTouched: false,  // 사용자가 가중치·하한·상한·프리셋을 직접 만졌는가
     running: false,
     autoCandidates: null,  // 자동 구성 후보 (최대 10개, 사용자가 고른다)
     autoExpansion: false,  // 자동 구성이 확장 스킬까지 골랐는가
@@ -1343,7 +1344,21 @@
   function renderAutoGrid() {
     const box = $('#autoGrid');
     box.innerHTML = '';
-    box.append(el('div', 'hd', '스탯'), el('div', 'hd', '가중치'), el('div', 'hd', '하한 목표'));
+    box.append(el('div', 'hd', '스탯'), el('div', 'hd', '가중치'), el('div', 'hd', '하한 목표'), el('div', 'hd', '상한 목표'));
+
+    // 하한·상한 목표 입력 한 칸을 만든다 (store = state.minimums / state.maximums)
+    const targetInput = (store, k) => {
+      const m = el('input');
+      m.type = 'number'; m.placeholder = '—';
+      m.value = store[k] ?? '';
+      m.oninput = () => {
+        const v = Number(m.value);
+        if (m.value === '' || isNaN(v)) delete store[k];
+        else store[k] = v;
+        state.weightsTouched = true;
+      };
+      return m;
+    };
 
     for (const k of C.STAT_KEYS) {
       box.append(el('div', 'lb', C.STAT_LABEL[k]));
@@ -1357,16 +1372,8 @@
       w.oninput = () => { state.weights[k] = Number(w.value) || 0; state.weightsTouched = true; mark(); };
       box.append(w);
 
-      const m = el('input');
-      m.type = 'number'; m.placeholder = '—';
-      m.value = state.minimums[k] ?? '';
-      m.oninput = () => {
-        const v = Number(m.value);
-        if (m.value === '' || isNaN(v)) delete state.minimums[k];
-        else state.minimums[k] = v;
-        state.weightsTouched = true;
-      };
-      box.append(m);
+      box.append(targetInput(state.minimums, k));
+      box.append(targetInput(state.maximums, k));
     }
   }
 
@@ -1390,6 +1397,7 @@
       expLevel: state.expLevel,
       weights: state.weights,
       minimums: state.minimums,
+      maximums: state.maximums,
       locked: [...state.locked],
       banned: [...state.banned],
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
@@ -1578,11 +1586,15 @@
         card.append(el('div', 'ac-exp', '확장: ' + expName));
       }
 
-      // 하한 미달 표시
+      // 하한 미달 · 상한 초과 표시
       const unmet = Object.entries(state.minimums)
         .filter(([k, v]) => v && c.stats.total[k] < v)
         .map(([k, v]) => `${C.STAT_LABEL[k]} ${c.stats.total[k]}/${v}`);
       if (unmet.length) card.append(el('div', 'ac-warn', '하한 미달: ' + unmet.join(', ')));
+      const over = Object.entries(state.maximums)
+        .filter(([k, v]) => v != null && v !== '' && c.stats.total[k] > v)
+        .map(([k, v]) => `${C.STAT_LABEL[k]} ${c.stats.total[k]}/${v}`);
+      if (over.length) card.append(el('div', 'ac-warn', '상한 초과: ' + over.join(', ')));
 
       card.title = c.parts.map(p => T.partName(p.name)).join(', ');
       card.onclick = () => applyCandidate(i);
