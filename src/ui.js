@@ -1695,10 +1695,11 @@
   }
 
   function openMskill(open) {
-    const m = document.getElementById('mskillModal'), b = document.getElementById('mskillBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
-    if (open) { mskillMode = 0; renderMskill(); }
+    const panel = document.getElementById('mskillInline');
+    const btn = document.getElementById('skillListBtn');
+    if (panel) panel.hidden = !open;
+    if (btn) btn.classList.toggle('on', open);
+    if (open) { mskillMode = 0; renderMskill(); if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest' }); }
   }
 
   function renderMskill() {
@@ -2101,6 +2102,7 @@
     renderBannedCount();
     renderDetail(state.detailPart);
     renderWeapons();
+    if (!document.getElementById('mskillInline').hidden) { mskillMode = 0; renderMskill(); }
   }
 
   /* ---------- 초기화 ---------- */
@@ -2250,13 +2252,12 @@
     $('#savedModalClose').onclick = () => openSavedModal(false);
     $('#savedModalBack').onclick = () => openSavedModal(false);
 
-    // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명
+    // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명 (무장 칸 안에서 토글)
     $('#skillListBtn').onclick = () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
-      openMskill(true);
+      openMskill($('#mskillInline').hidden);   // 토글
     };
     $('#mskillClose').onclick = () => openMskill(false);
-    $('#mskillBack').onclick = () => openMskill(false);
 
     // 불러오기 결과 안내 — 제외된 파츠가 있으면 조용히 넘기지 않는다 (가져오기에서 사용)
     const loadedMsg = (r, okText) => r.missing
@@ -2292,7 +2293,7 @@
 
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
-      if (!$('#mskillModal').hidden) { openMskill(false); return; }
+      if (!$('#mskillInline').hidden) { openMskill(false); return; }
       if (!$('#savedModal').hidden) { openSavedModal(false); return; }
       if (!$('#autoResultPanel').hidden) { openResultModal(false); return; }
       if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return; }

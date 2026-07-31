@@ -17,8 +17,9 @@ function raw(text) {
   return new Promise((res, rej) => {
     const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ko&dt=t&q=' + encodeURIComponent(text);
     const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
-      let b = ''; r.on('data', c => b += c);
-      r.on('end', () => { try { res(JSON.parse(b)[0].map(s => s[0]).join('')); } catch { rej(new Error('bad')); } });
+      // 청크를 문자열로 이어붙이면 UTF-8 멀티바이트가 경계에서 깨진다(�) — Buffer 로 모아 한 번에 디코드
+      const chunks = []; r.on('data', c => chunks.push(c));
+      r.on('end', () => { try { res(JSON.parse(Buffer.concat(chunks).toString('utf8'))[0].map(s => s[0]).join('')); } catch { rej(new Error('bad')); } });
     });
     req.on('error', rej);
     req.setTimeout(15000, () => req.destroy(new Error('timeout')));
