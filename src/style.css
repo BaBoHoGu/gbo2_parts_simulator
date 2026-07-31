@@ -167,11 +167,11 @@ body.view-build  #screenSelect { display: none; }
    행 높이는 내용만큼(auto) 잡고, 목록만 각자 최대 높이 안에서 스크롤한다. */
 .screen-build {
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(230px, 0.85fr) minmax(400px, 1.15fr);
+  grid-template-columns: minmax(280px, 1fr) minmax(210px, 0.8fr) minmax(380px, 1.15fr);
   grid-template-rows: auto auto auto;
   align-content: start;
-  gap: 12px;
-  padding: 12px;
+  gap: 9px;
+  padding: 9px;
   overflow-y: auto;
 }
 .build-col { display: flex; flex-direction: column; }
@@ -335,7 +335,7 @@ body.view-build  #screenSelect { display: none; }
 .tool-btn.on { border-color: var(--mid); color: var(--mid); background: #1a2733; }
 
 /* 파츠 상세 미리보기 */
-.detail-body { flex: 1; min-height: 300px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.detail-body { flex: 1; min-height: 200px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
 .detail-empty {
   flex: 1; display: flex; align-items: center; justify-content: center;
   text-align: center; color: var(--dim); font-size: 13px; line-height: 1.7;
@@ -366,7 +366,7 @@ body.view-build  #screenSelect { display: none; }
 .d-eff-lb { font-size: 11px; color: var(--dim); letter-spacing: .5px; margin-bottom: 4px; }
 .d-eff-tx { font-size: 12.5px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
 
-.stat-wrap { flex: 1; padding: 8px 0 12px; }
+.stat-wrap { flex: 1; padding: 5px 0 8px; }
 
 .panel {
   background: var(--panel);
@@ -383,7 +383,7 @@ body.view-build  #screenSelect { display: none; }
 
 .panel > h2 {
   margin: 0;
-  padding: 9px 12px;
+  padding: 6px 11px;
   font-size: 12px;
   letter-spacing: .5px;
   color: var(--muted);
@@ -458,7 +458,7 @@ body.view-build  #screenSelect { display: none; }
 
 /* ============ 히어로(선택 기체) ============ */
 
-.hero { display: flex; flex-direction: column; gap: 11px; padding: 12px; }
+.hero { display: flex; flex-direction: column; gap: 8px; padding: 9px 10px; }
 .hero-top { display: flex; align-items: center; gap: 8px; }
 .hero-body { display: flex; gap: 12px; align-items: center; }
 
@@ -473,7 +473,7 @@ body.view-build  #screenSelect { display: none; }
 .btn-ghost.small { padding: 4px 10px; font-size: 12px; }
 
 .hero-body > img {
-  width: 88px; height: 88px;
+  width: 72px; height: 72px;
   border-radius: 10px;
   object-fit: cover;
   background: #0b0d10;
@@ -482,7 +482,7 @@ body.view-build  #screenSelect { display: none; }
 }
 
 .hero .h-main { flex: 1; min-width: 0; }
-.hero h3 { margin: 0 0 3px; font-size: 18px; line-height: 1.25; word-break: keep-all; }
+.hero h3 { margin: 0 0 2px; font-size: 15.5px; line-height: 1.22; word-break: keep-all; }
 .hero .h-sub { color: var(--muted); font-size: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .hero .h-controls { display: flex; gap: 10px 12px; align-items: flex-end; flex-wrap: wrap; }
 .hero .h-controls .h-exp { min-width: 180px; }
@@ -515,7 +515,7 @@ body.view-build  #screenSelect { display: none; }
 
 /* ============ 슬롯 게이지 ============ */
 
-.slot-bars { display: flex; gap: 10px; padding: 0 12px 12px; }
+.slot-bars { display: flex; gap: 9px; padding: 0 10px 8px; }
 .slot-bar { flex: 1; }
 .slot-bar .top { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; }
 .slot-bar .top .k { color: var(--muted); }
@@ -540,8 +540,8 @@ body.view-build  #screenSelect { display: none; }
 .equip-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 10px 12px 12px;
+  gap: 6px;
+  padding: 8px 10px 8px;
 }
 
 .eq {
@@ -549,15 +549,15 @@ body.view-build  #screenSelect { display: none; }
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--panel-2);
-  padding: 7px 6px 6px;
+  padding: 5px 5px 4px;
   text-align: center;
   cursor: pointer;
-  min-height: 106px;
+  min-height: 84px;
 }
 
 .eq:hover { border-color: var(--bad); }
 .eq:hover .rm { opacity: 1; }
-.eq img { width: 46px; height: 46px; object-fit: contain; background: #0b0d10; border-radius: 7px; }
+.eq img { width: 40px; height: 40px; object-fit: contain; background: #0b0d10; border-radius: 7px; }
 .eq .nm { font-size: 10.5px; line-height: 1.25; margin-top: 5px; color: var(--text); word-break: keep-all; }
 .eq .cost { margin-top: 4px; font-size: 10px; display: flex; justify-content: center; gap: 5px; font-variant-numeric: tabular-nums; }
 
@@ -597,15 +597,15 @@ body.view-build  #screenSelect { display: none; }
 .stat-wrap { display: flex; flex-direction: column; }
 #statBody { flex: 1; display: flex; flex-direction: column; }
 /* 남는 세로 공간을 고르게 나눠 갖되, 너무 벌어지지 않게 상한을 둔다 */
-#statBody .stat-row { flex: 1; max-height: 59px; }
+#statBody .stat-row { flex: 1; max-height: 42px; }
 
 /* 내구 지표 — 성능표 마지막 행(원본 耐久指標). 스탯 행들과 같은 흐름에 두어 붙여 보여 준다 */
 .dura-row {
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px;
-  padding: 5px 14px; border-top: 1px solid var(--line);
+  padding: 4px 12px; border-top: 1px solid var(--line);
   font-variant-numeric: tabular-nums;
 }
-#statBody .dura-row { flex: 0 0 auto; min-height: 34px; }   /* 스탯 행처럼 퍼지지 않고 바로 뒤에 붙는다 */
+#statBody .dura-row { flex: 0 0 auto; min-height: 28px; }   /* 스탯 행처럼 퍼지지 않고 바로 뒤에 붙는다 */
 .dura-lb { font-size: 12px; color: var(--muted); font-weight: 600; }
 .dura-cell { display: flex; align-items: baseline; gap: 5px; }
 .dura-k { font-size: 11.5px; color: var(--dim); }
@@ -613,11 +613,11 @@ body.view-build  #screenSelect { display: none; }
 
 .stat-row {
   display: grid;
-  grid-template-columns: 100px 66px 56px 1fr 48px;
-  gap: 10px;
+  grid-template-columns: 92px 62px 52px 1fr 44px;
+  gap: 9px;
   align-items: center;
-  padding: 5px 14px;
-  min-height: 32px;
+  padding: 3px 12px;
+  min-height: 26px;
   border-top: 1px solid var(--line-soft);
   font-variant-numeric: tabular-nums;
 }
@@ -625,7 +625,7 @@ body.view-build  #screenSelect { display: none; }
 
 .stat-row.head { color: var(--muted); font-size: 11px; padding-bottom: 6px; border-top: none; flex: 0 0 auto; min-height: 0; }
 .stat-row .label { color: var(--muted); font-size: 12px; text-align: left; }
-.stat-row .total { font-weight: 700; font-size: 15px; text-align: right; }
+.stat-row .total { font-weight: 700; font-size: 13.5px; text-align: right; }
 .stat-row .delta { font-size: 12px; text-align: right; }
 .stat-row .delta.up { color: var(--ok); }
 .stat-row .delta.down { color: var(--bad); }
@@ -675,11 +675,11 @@ body.view-build  #screenSelect { display: none; }
   overflow-y: auto;
   /* fitWholeRows 가 정한 높이를 flex 가 늘려 덮어쓰지 않도록 늘림을 끈다 */
   flex: 0 0 auto;
-  max-height: 46vh;
-  padding: 8px;
+  max-height: 44vh;
+  padding: 7px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 5px;
   align-content: start;
 }
 .part-list .empty-state { grid-column: 1 / -1; }
@@ -688,8 +688,8 @@ body.view-build  #screenSelect { display: none; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 6px 4px 5px;
+  gap: 2px;
+  padding: 5px 4px 4px;
   border-radius: 9px;
   cursor: pointer;
   border: 1px solid var(--line-soft);
@@ -698,8 +698,8 @@ body.view-build  #screenSelect { display: none; }
 }
 .part-tile:hover { border-color: var(--accent); background: var(--panel-3); }
 
-.pt-thumb { position: relative; width: 52px; height: 52px; }
-.part-tile img { width: 52px; height: 52px; object-fit: contain; background: #0b0d10; border-radius: 7px; }
+.pt-thumb { position: relative; width: 46px; height: 46px; }
+.part-tile img { width: 46px; height: 46px; object-fit: contain; background: #0b0d10; border-radius: 7px; }
 .pt-hint {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
