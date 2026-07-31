@@ -5,30 +5,10 @@
 // - 인터넷 필요(업데이트 단계 1회성). 실패분은 남겨 두고(원문) 다음 실행에 재시도.
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
+const { translate: one, hasJa, sleep } = require('./lib/mt.js');
 const ROOT = path.join(__dirname, '..');
 const rd = (...p) => JSON.parse(fs.readFileSync(path.join(ROOT, ...p), 'utf8'));
 const rdSafe = (...p) => { try { return rd(...p); } catch { return {}; } };
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-// ・(중점)·ー(장음)·々(반복)은 구분자/기호라 번역 잔존으로 보지 않는다.
-const hasJa = s => /[぀-ヿ㐀-鿿]/.test(String(s).replace(/[・ー々]/g, ''));
-
-function raw(text) {
-  return new Promise((res, rej) => {
-    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ko&dt=t&q=' + encodeURIComponent(text);
-    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
-      // 청크를 문자열로 이어붙이면 UTF-8 멀티바이트가 경계에서 깨진다(�) — Buffer 로 모아 한 번에 디코드
-      const chunks = []; r.on('data', c => chunks.push(c));
-      r.on('end', () => { try { res(JSON.parse(Buffer.concat(chunks).toString('utf8'))[0].map(s => s[0]).join('')); } catch { rej(new Error('bad')); } });
-    });
-    req.on('error', rej);
-    req.setTimeout(15000, () => req.destroy(new Error('timeout')));
-  });
-}
-async function one(text) {
-  for (let i = 0; i < 4; i++) { try { const t = await raw(text); if (t) return t.trim(); } catch { } await sleep(500 * (i + 1)); }
-  return null;
-}
 // 배치(줄바꿈 묶음)는 요청이 길어지면 구글이 잘라 반환하거나 세그먼트가 어긋나
 // 숫자·내용이 누락된다. 텍스트가 최대 414자로 짧아 개별 번역이 안전·정확하다.
 

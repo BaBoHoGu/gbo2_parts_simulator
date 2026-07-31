@@ -7,7 +7,7 @@
 // - 번역 실패(오프라인·차단)면 기체·파츠명은 음차로 폴백하고, 남는 건 사람 검토로 안내한다.
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
+const { translate, hasJa, sleep } = require('./lib/mt.js');
 const ROOT = path.join(__dirname, '..');
 const rd = (...p) => JSON.parse(fs.readFileSync(path.join(ROOT, ...p), 'utf8'));
 const rdSafe = (...p) => { try { return rd(...p); } catch { return {}; } };
@@ -16,31 +16,7 @@ const write = (rel, obj) => fs.writeFileSync(path.join(ROOT, rel), JSON.stringif
 let translitName = s => s;                       // 음차 폴백
 try { translitName = require('./build_ms_i18n.js').translitName; } catch { /* 선택적 */ }
 
-const hasJa = s => /[぀-ヿ㐀-鿿]/.test(String(s));
 const base = n => n.normalize('NFC').replace(/_LV\d+$/, '');
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-// 구글 번역(비공식 gtx 엔드포인트) — ja→ko. 실패 시 예외.
-function translateOnce(text) {
-  return new Promise((res, rej) => {
-    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ko&dt=t&q='
-      + encodeURIComponent(text);
-    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
-      // Buffer 로 모아 한 번에 UTF-8 디코드 (청크 경계에서 멀티바이트가 깨지지 않게)
-      const chunks = []; r.on('data', c => chunks.push(c));
-      r.on('end', () => { try { res(JSON.parse(Buffer.concat(chunks).toString('utf8'))[0].map(s => s[0]).join('').trim()); } catch { rej(new Error('bad response')); } });
-    });
-    req.on('error', rej);
-    req.setTimeout(15000, () => req.destroy(new Error('timeout')));
-  });
-}
-async function translate(text) {
-  for (let i = 0; i < 3; i++) {
-    try { const t = await translateOnce(text); if (t) return t; } catch { /* 재시도 */ }
-    await sleep(600 * (i + 1));
-  }
-  return null;   // 실패
-}
 
 (async () => {
   let net = true;

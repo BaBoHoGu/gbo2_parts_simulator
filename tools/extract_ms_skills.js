@@ -4,6 +4,7 @@
 // 구조: { "<기체>": [ { mode, skills: [ { cat, name, lv, msLv, eff, desc } ] } ] }
 const fs = require('fs');
 const path = require('path');
+const { parseTable: parseGrid } = require('./lib/table.js');
 const ROOT = path.join(__dirname, '..');
 const WIKI = path.join(ROOT, 'raw', 'wiki');
 const DEST = path.join(ROOT, 'data', 'ms_skills.json');
@@ -13,26 +14,9 @@ const clean = s => s
   .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
   .replace(/\s+/g, ' ').replace(/(?:\s*\/\s*)+/g, ' / ').replace(/^\s*\/\s*|\s*\/\s*$/g, '').trim();
 
-/** rowspan/colspan 을 펼쳐 2차원 배열로. */
-function parseTable(html) {
-  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map(m => m[1]);
-  const g = [];
-  rows.forEach((r, ri) => {
-    g[ri] = g[ri] || [];
-    let ci = 0;
-    for (const c of r.matchAll(/<(td|th)([^>]*)>([\s\S]*?)<\/\1>/gi)) {
-      const t = clean(c[3]);
-      const cs = Number((c[2].match(/colspan="?(\d+)/i) || [])[1] || 1);
-      const rs = Number((c[2].match(/rowspan="?(\d+)/i) || [])[1] || 1);
-      while (g[ri][ci] !== undefined) ci++;
-      for (let dr = 0; dr < rs; dr++) { g[ri + dr] = g[ri + dr] || []; for (let dc = 0; dc < cs; dc++) g[ri + dr][ci + dc] = t; }
-      ci += cs;
-    }
-  });
-  return g.map(r => Array.from(r, v => (v === undefined ? '' : v)));
-}
+const parseTable = html => parseGrid(html, clean);
 
-const CATS = ['足回り', '攻撃', '防御', 'その他', '移動', '格闘', '射撃'];
+const CATS = ['足回り', '攻撃', '防御', 'その他', '移動'];
 const isLv = s => /^(LV|Lv)\s*\d/.test(String(s || '').trim());
 
 /** 한 모드 구간의 표들에서 스킬 목록을 뽑는다. */
