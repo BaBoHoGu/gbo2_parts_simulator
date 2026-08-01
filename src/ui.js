@@ -959,28 +959,33 @@
   ];
   // 짧은 항목이 긴 말을 잘라먹지 않도록 항상 긴 표기부터 치환한다 (「不可」가 「不가능」이 되던 문제)
   const NOTE_SORTED = NOTE_TERM.slice().sort((a, b) => b[0].length - a[0].length);
-  /**
-   * 위키 備考를 읽을 수 있는 한국어로 옮긴다.
-   * ① 문장 사전을 먼저 돌리고 ② 남은 고유명사를 무장 용어 사전으로 마무리한다.
-   *    (순서를 바꾸면 용어 사전이 문장을 잘게 쪼개 오히려 읽기 어려워진다)
-   * 두 글자 이상 항목은 앞뒤에 공백을 넣어 어절이 붙지 않게 하고, 마지막에 정리한다.
-   * 단위(秒·発)는 한 글자 항목이라 「2.5초」처럼 숫자에 붙은 채로 남는다.
-   */
-  const noteText = s => {
+
+  // 구두점·기호를 읽기 좋게 정리한다 (MT 결과·하드코딩 폴백 공통).
+  // 남은 단위·카운터(초·배·발·회·분·연사·탄)는 한 글자라 안전하게 마지막에 옮긴다.
+  const normNote = t => String(t)
+    .replace(/秒/g, '초').replace(/倍/g, '배').replace(/発/g, '발').replace(/回/g, '회')
+    .replace(/分/g, '분').replace(/射/g, '사').replace(/弾/g, '탄')
+    .replace(/・/g, '·').replace(/：/g, ': ').replace(/、/g, ', ')
+    .replace(/（/g, ' (').replace(/）/g, ') ')
+    .replace(/［/g, ' [').replace(/］/g, '] ')
+    .replace(/[「『]/g, ' “').replace(/[」』]/g, '” ')
+    .replace(/＋/g, '+').replace(/－/g, '-').replace(/％/g, '%')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([),\]:;%·”])/g, '$1')
+    .replace(/([(\[“])\s+/g, '$1')
+    .replace(/\s*\/\s*/g, ' / ')
+    .trim();
+
+  // 온라인 MT 로 번역해 둔 備考 사전 (빌드 시 인라인). 없으면 아래 하드코딩 사전으로 폴백.
+  const NOTE_MT = (window.GBO2_I18N && window.GBO2_I18N.weaponNote) || {};
+  /** 하드코딩 사전 폴백 — MT 캐시에 없는 備考(오프라인 미번역분)용. */
+  const noteFallback = s => {
     let t = String(s).replace(/可能/g, '可');   // 「〜可」와 「〜可能」을 한 표기로 모은다
     for (const [ja, ko] of NOTE_SORTED) t = t.split(ja).join(ja.length > 1 ? ' ' + ko + ' ' : ko);
-    return T.weaponTerms(t)
-      .replace(/・/g, '·').replace(/：/g, ': ').replace(/、/g, ', ')
-      .replace(/（/g, ' (').replace(/）/g, ') ')
-      .replace(/［/g, ' [').replace(/］/g, '] ')
-      .replace(/[「『]/g, ' “').replace(/[」』]/g, '” ')
-      .replace(/＋/g, '+').replace(/－/g, '-').replace(/％/g, '%')
-      .replace(/\s+/g, ' ')
-      .replace(/\s+([),\]:;%·”])/g, '$1')
-      .replace(/([(\[“])\s+/g, '$1')
-      .replace(/\s*\/\s*/g, ' / ')
-      .trim();
+    return T.weaponTerms(t);
   };
+  /** 위키 備考를 한국어로. MT 번역 사전 우선, 없으면 하드코딩 폴백. */
+  const noteText = s => (s ? normNote(NOTE_MT[s] != null ? NOTE_MT[s] : noteFallback(s)) : '');
 
   /** 누를 때마다 펼치거나 접는다. 열어 둔 무장은 state 에 남겨 다시 그려도 유지한다. */
   function toggleWeaponDetail(row, w, d, lv) {

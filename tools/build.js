@@ -49,7 +49,8 @@ const i18n = {
   weapons: readJson('data', 'i18n', 'weapons.json'),
   // 설명문 안의 고유명사도 같은 사전으로 옮긴다
   terms: readJson('data', 'i18n', 'weapon_terms.json'),
-  skillText: autoJson('skill_text.json'),   // 스킬 효과·설명 번역 (jp→ko)
+  skillText: autoJson('skill_text.json'),     // 스킬 효과·설명 번역 (jp→ko)
+  weaponNote: autoJson('weapon_note.json'),   // 무장 備考 번역 (jp→ko), 없으면 UI 하드코딩 폴백
   attr: misc.attr,
   kind: misc.kind
 };
