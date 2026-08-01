@@ -202,6 +202,7 @@ async function detectPatch(msList) {
   // (e) 신규 기체·파츠를 온라인 번역으로 자동 한글화(실패 시 음차 폴백) 후 재빌드
   run('auto_translate.js');
   run('translate_skills.js');   // 신규 스킬 효과·설명 온라인 번역(캐시 증분)
+  run('translate_notes.js');    // 신규 무장 備考 온라인 번역(캐시 증분)
   run('build.js');
 
   // (f) 번들(계산 로직)이 바뀌었으면 원본 계산과 대조해, 아직 이식 안 된 새 규칙이 있는지 본다.
