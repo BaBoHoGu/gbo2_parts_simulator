@@ -94,8 +94,7 @@
     ms: null,
     equipped: [],
     locked: new Set(),
-    banned: new Set(),      // 세션 한정 제외 (우클릭 토글)
-    unowned: new Set(),     // 미보유 파츠 — 영구 저장, 모든 기체에서 자동 배제
+    banned: new Set(),      // 기본 제외한 파츠 — 영구 저장, 우클릭·모달로 토글, 모든 기체 공통
     stage: 6,
     expansion: C.EXPANSION_NONE,
     expLevel: C.MAX_EXPANSION_LEVEL,   // 확장 스킬 레벨 (LV1~LV5)
@@ -151,19 +150,17 @@
   }
 
   const SAVE_KEY = 'gbo2-offline-build';
-  const OWNED_KEY = 'gbo2-offline-unowned';    // 미보유 파츠 목록 (영구 저장)
+  const OWNED_KEY = 'gbo2-offline-unowned';    // 기본 제외한 파츠 목록 (영구 저장)
 
-  /** 미보유 파츠 목록을 불러온다 — 사전에 없는(구버전) 이름은 조용히 버린다. */
-  function loadUnowned() {
+  /** 기본 제외 목록을 불러온다 — 사전에 없는(구버전) 이름은 조용히 버린다. */
+  function loadBanned() {
     let arr = [];
     try { arr = JSON.parse(localStorage.getItem(OWNED_KEY)) || []; } catch { arr = []; }
-    state.unowned = new Set(arr.filter(n => partByName.has(n)));
+    state.banned = new Set(arr.filter(n => partByName.has(n)));
   }
-  function saveUnowned() {
-    try { localStorage.setItem(OWNED_KEY, JSON.stringify([...state.unowned])); } catch { /* 저장 실패는 무시 */ }
+  function saveBanned() {
+    try { localStorage.setItem(OWNED_KEY, JSON.stringify([...state.banned])); } catch { /* 저장 실패는 무시 */ }
   }
-  /** 세션 제외(banned)든 미보유(unowned)든 장착·자동구성에서 빠지는 파츠. */
-  const isExcluded = name => state.banned.has(name) || state.unowned.has(name);
 
   const $ = sel => document.querySelector(sel);
   const el = (tag, cls, text) => {
@@ -194,8 +191,7 @@
     full: () => '슬롯 8개 가득 참',
     category: attr => `${T.attrName(attr)} 전용`,
     kind: kind => `${T.kindName(kind)} 계열 중복`,
-    banned: () => '제외한 파츠',
-    unowned: () => '미보유 파츠',
+    banned: () => '기본 제외',
     effect: name => `${T.partName(name)} 효과 중복`,
     movement: () => '스피드/선회 중복',
     slotClose: () => '근접 슬롯 부족',
@@ -431,14 +427,9 @@
   /* ---------- 장착 ---------- */
 
   function equip(part) {
-    // 미보유로 설정한 파츠는 장착 불가 (기본 파츠 설정에서만 변경)
-    if (state.unowned.has(part.name)) {
-      toast('미보유 파츠입니다 — 기본 파츠 설정에서 변경하세요');
-      return;
-    }
-    // 우클릭으로 제외한 파츠는 자동 구성뿐 아니라 직접 장착도 막는다
+    // 기본 제외한 파츠는 자동 구성뿐 아니라 직접 장착도 막는다 (우클릭으로 해제)
     if (state.banned.has(part.name)) {
-      toast('제외한 파츠입니다 — 우클릭으로 해제하세요');
+      toast('기본 제외한 파츠입니다 — 우클릭으로 해제하세요');
       return;
     }
     const chk = C.checkEquip(part, state.ms, state.equipped, slots());
@@ -447,12 +438,8 @@
     renderAll();
   }
 
-  /** 제외 토글. 이미 장착 중인 파츠를 제외하면 함께 해제해 상태를 어긋나지 않게 한다. */
+  /** 기본 제외 토글 (영구). 이미 장착 중인 파츠를 제외하면 함께 해제해 상태를 어긋나지 않게 한다. */
   function toggleBan(part) {
-    if (state.unowned.has(part.name)) {
-      toast('미보유 파츠입니다 — 기본 파츠 설정에서 변경하세요');
-      return;
-    }
     if (state.banned.has(part.name)) {
       state.banned.delete(part.name);
     } else {
@@ -463,6 +450,7 @@
         toast(T.partName(part.name) + ' — 제외하면서 장착도 해제했습니다');
       }
     }
+    saveBanned();
     renderAll();
   }
 
@@ -1262,11 +1250,9 @@
     const s = slots();
     const rows = list.map(p => {
       const isEquipped = state.equipped.some(e => e.name === p.name);
-      const unowned = state.unowned.has(p.name);
-      const banned = state.banned.has(p.name) || unowned;   // 회색 처리는 둘 다 동일
-      // 제외/미보유 파츠는 장착 불가로 취급한다 (사유는 출처에 맞게 보여 준다)
-      const chk = state.banned.has(p.name) ? { ok: false, code: 'banned', param: null }
-        : unowned ? { ok: false, code: 'unowned', param: null }
+      const banned = state.banned.has(p.name);
+      // 기본 제외한 파츠는 장착 불가로 취급한다 (사유도 그렇게 보여 준다)
+      const chk = banned ? { ok: false, code: 'banned', param: null }
         : state.ms ? C.checkEquip(p, state.ms, state.equipped, s) : { ok: false, code: null };
       return { p, isEquipped, chk, banned, blocked: !isEquipped && !chk.ok };
     });
@@ -1377,14 +1363,15 @@
 
   function renderBannedCount() {
     const n = state.banned.size;
+    updateOwnedUi();   // 우클릭·초기화 등 어떤 경로로 바뀌어도 버튼 배지를 맞춘다
     const box = $('#bannedCount');
     box.innerHTML = '';
     if (!n) return;
-    box.append(el('span', 'note', `제외 ${n}개`));
+    box.append(el('span', 'note', `기본 제외 ${n}개`));
     const btn = el('button', 'btn-ghost', '초기화');
     btn.style.padding = '1px 7px';
     btn.style.fontSize = '11px';
-    btn.onclick = () => { state.banned.clear(); renderAll(); };
+    btn.onclick = () => { state.banned.clear(); saveBanned(); renderAll(); };
     box.append(btn);
   }
 
@@ -1448,7 +1435,7 @@
       minimums: state.minimums,
       maximums: state.maximums,
       locked: [...state.locked],
-      banned: [...new Set([...state.banned, ...state.unowned])],   // 미보유도 자동 구성에서 배제
+      banned: [...state.banned],   // 기본 제외한 파츠는 자동 구성에서도 빠진다
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       restarts: 1
     };
@@ -1743,27 +1730,27 @@
     if (open) renderSavedBuilds();
   }
 
-  /* ---------- 기본 파츠 설정 (미보유 배제) ---------- */
+  /* ---------- 기본 파츠 설정 (기본 제외 파츠 관리) ---------- */
   const PART_CAT_KO = { '防御': '방어', '攻撃': '공격', '移動': '이동', '補助': '보조', '特殊': '특수' };
 
   function updateOwnedUi() {
-    const n = state.unowned.size;
+    const n = state.banned.size;
     const note = $('#ownedNote');
-    if (note) note.textContent = n ? `미보유 ${n}개 배제 중` : '전부 보유 (배제 없음)';
+    if (note) note.textContent = n ? `기본 제외 ${n}개` : '제외한 파츠 없음';
     const btn = $('#ownedBtn');
     if (btn) btn.textContent = '기본 파츠 설정' + (n ? ` (${n})` : '');
   }
 
-  /** 미보유 체크 토글 — 미보유로 바꾸면 장착·잠금에서도 즉시 뺀다. */
-  function toggleUnowned(name, on) {
+  /** 기본 제외 체크 토글 — 제외로 바꾸면 장착·잠금에서도 즉시 뺀다. */
+  function toggleExcluded(name, on) {
     if (on) {
-      state.unowned.add(name);
+      state.banned.add(name);
       state.equipped = state.equipped.filter(e => e.name !== name);
       state.locked.delete(name);
     } else {
-      state.unowned.delete(name);
+      state.banned.delete(name);
     }
-    saveUnowned();
+    saveBanned();
     updateOwnedUi();
   }
 
@@ -1779,13 +1766,13 @@
       box.append(el('div', 'owned-cat', PART_CAT_KO[cat] || cat));
       const grid = el('div', 'owned-grid');
       for (const p of list) {
-        const off = state.unowned.has(p.name);
+        const off = state.banned.has(p.name);
         const row = el('label', 'owned-row' + (off ? ' off' : ''));
         row.title = T.partName(p.name);
         const cb = el('input');
         cb.type = 'checkbox';
         cb.checked = off;
-        cb.onchange = () => { toggleUnowned(p.name, cb.checked); row.classList.toggle('off', cb.checked); };
+        cb.onchange = () => { toggleExcluded(p.name, cb.checked); row.classList.toggle('off', cb.checked); };
         row.append(cb);
         row.append(img(partImg(p.name), 'parts', p.name));
         row.append(el('span', 'owned-nm', T.partName(p.name)));
@@ -1999,9 +1986,9 @@
     // 손상된 저장본이 들어와도 계산이 어긋나지 않게 아는 값만 받는다
     state.stage = [0, 4, 6].includes(Number(obj.stage)) ? Number(obj.stage) : 6;
     state.expansion = C.EXPANSION_SKILLS.includes(obj.expansion) ? obj.expansion : C.EXPANSION_NONE;
-    // 불러온 구성이 그대로 보이도록 제외·변형·스킬 표시는 초기 상태로 되돌린다.
+    // 불러온 구성이 그대로 보이도록 변형·스킬 표시는 초기 상태로 되돌린다.
     // (스킬 선택은 기체별 인덱스라 다른 기체를 불러오면 어긋난다)
-    state.banned.clear();
+    // 기본 제외(banned)는 기체를 가리지 않는 영구 설정이므로 불러오기에서 건드리지 않는다.
     state.form = 'normal';
     state.openWeapon = null;
     state.skillPicks.clear();
@@ -2014,7 +2001,8 @@
     state.equipped = [];
     for (const n of wanted) {
       const p = partByName.get(n);
-      if (p && C.checkEquip(p, ms, state.equipped, C.calcSlots(ms, state.equipped, state.stage, fullst)).ok) {
+      if (p && !state.banned.has(n)   // 기본 제외한 파츠는 불러온 구성에서도 빼둔다
+        && C.checkEquip(p, ms, state.equipped, C.calcSlots(ms, state.equipped, state.stage, fullst)).ok) {
         state.equipped.push(p);
       }
     }
@@ -2417,15 +2405,15 @@
       toast(r.ok ? loadedMsg(r, '구성을 불러왔습니다') : '알 수 없는 기체입니다');
     };
 
-    // 기본 파츠 설정 — 미보유 파츠 배제 (영구 저장)
+    // 기본 파츠 설정 — 기본 제외 파츠 관리 (영구 저장, 우클릭과 동일 세트)
     $('#ownedBtn').onclick = () => openOwnedModal(true);
     $('#ownedModalClose').onclick = () => openOwnedModal(false);
     $('#ownedModalBack').onclick = () => openOwnedModal(false);
     $('#ownedQuery').oninput = () => renderOwnedList();
     $('#ownedClear').onclick = () => {
-      if (!state.unowned.size) return;
-      state.unowned.clear();
-      saveUnowned();
+      if (!state.banned.size) return;
+      state.banned.clear();
+      saveBanned();
       renderOwnedList();
       updateOwnedUi();
     };
@@ -2459,7 +2447,7 @@
 
   buildControls();
   renderAutoGrid();
-  loadUnowned();          // 저장된 미보유 파츠 복원
+  loadBanned();           // 저장된 기본 제외 파츠 복원
   updateOwnedUi();        // 버튼 배지·모달 노트 초기화
   // 빌드 화면이 곧바로 채워지도록 기본 기체를 잡아두되, 시작 화면은 ① 기체 선택.
   state.ms = msData.find(m => T.msName(m.MS名).startsWith('건담 ')) || msData[0];
