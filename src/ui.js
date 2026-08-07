@@ -643,7 +643,7 @@
     const note = (w.info && w.info['備考']) || '';
     let m = note.match(/最大\s*(\d+)\s*ヒット/);            // 조사: 최대 N 히트
     if (m && Number(m[1]) > 1) return { n: Number(m[1]), label: '최대 ' + m[1] + '히트' };
-    m = note.match(/([一二三四五六七八九十]|\d+)発同時発射/);  // 동시발사(산탄 포함)
+    m = note.match(/([一二三四五六七八九十]|\d+)発?同時発射/);  // 동시발사(산탄 포함) — 바르길은 「7同時発射」로 発 이 빠져 있다
     if (m) {
       const proj = cjkNum(m[1]);
       const rep = note.match(/[x×]\s*(\d+)\s*(?:回攻撃|射)/);   // 「x3回攻撃」「x3射」 연사
@@ -791,9 +791,11 @@
         jaUnits(f('クールタイム') || f('発射間隔', '発射速度', '発射間', '照射時間') || '—')));
 
       // ⑥ 탄 / 히트율 — 실탄은 탄수, 열무기는 히트율, 실드는 HP·크기
+      // E팩 탄창식 빔(히트율 없이 OH復帰만)은 OHまでの弾数 가 곧 탄창 크기다.
       const ammo = f('弾数');
       const heat = f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン');
       const ohShots = f('OHまでの弾数');
+      const isEpack = D.isEpackMag(w);
       const shieldHp = f('シールドHP', 'HP'), shieldSize = f('サイズ');
       const ammoCell = el('span', 'w-col');
       if (shieldHp || shieldSize) {                       // 실드는 HP·크기가 핵심이다
@@ -804,7 +806,10 @@
         if (bonus) ammoCell.append(el('span', 'w-gain', ' (+' + bonus.toLocaleString() + ')'));
         if (shieldSize) ammoCell.append(el('span', 'w-sub', '크기 ' + shieldSize));
       } else if (ammo) ammoCell.append(document.createTextNode(jaUnits(ammo)));
-      else if (heat) {
+      else if (isEpack && ohShots) {                      // E팩 탄창: 「6発OH」→ 탄수 6발
+        const mag = String(ohShots).match(/(\d+)\s*発/);
+        ammoCell.append(document.createTextNode(mag ? mag[1] + '발' : jaUnits(ohShots)));
+      } else if (heat) {
         ammoCell.append(document.createTextNode(heat));
         if (ohShots) ammoCell.append(el('span', 'w-sub', jaUnits(ohShots)));
       } else ammoCell.textContent = '—';
@@ -826,12 +831,12 @@
         last.append(document.createTextNode(jaUnits(D.shortenTimeText(reload, cut))));
         if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
       } else if (ohBack) {
-        // 보조 제네레이터는 빔 무장만, 대용량 보급 팩은 전 무장의 OH 복귀를 줄인다
-        // (스러스터 OH 와는 별개)
-        const cut = D.timeCutFor(wm, 'weaponOH', w);
+        // E팩 탄창식 빔은 OH 가 아니라 리로드 — 리로드 파츠(퀵로더 등)로 줄고 '리로드'로 표기한다.
+        // 진짜 열무기만: 보조 제네레이터(빔)·대용량 보급 팩(전 무장)이 OH 복귀를 줄인다(스러스터 OH 와 별개).
+        const cut = D.timeCutFor(wm, isEpack ? 'reloadTime' : 'weaponOH', w);
         last.append(document.createTextNode(jaUnits(D.shortenTimeText(ohBack, cut))));
         if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
-        last.append(el('span', 'w-sub', 'OH복귀'));
+        last.append(el('span', 'w-sub', isEpack ? '리로드' : 'OH복귀'));
       } else last.textContent = '—';
       row.append(last);
 

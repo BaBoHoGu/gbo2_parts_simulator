@@ -7471,6 +7471,29 @@
      "dmgMelee": 20
     }
    ]
+  },
+  {
+   "name": "能力UP「NT-D：共鳴」?",
+   "nameKo": "能力UP「NT-D：共鳴」?",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
+   ]
   }
  ]
 }
