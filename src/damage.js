@@ -122,14 +122,27 @@ const weaponColumns = w => [
   ...Object.values((w && w.levels) || {}).flatMap(l => Object.keys((l && l.raw) || {}))
 ];
 
-/** 열식(오버히트로 관리되는) 무장인가. */
-const isHeatWeapon = w => weaponColumns(w).some(k => /OH復帰|ヒート率/.test(k));
+/** 열식(진짜 오버히트: 연속 사격 열로 관리되는) 무장인가 — ヒート率 이 있어야 한다. */
+const isHeatWeapon = w => weaponColumns(w).some(k => /ヒート率/.test(k));
+
+/**
+ * E팩 탄창식 빔인가 — 히트율은 없는데 OH復帰(위키가 붙인 표기일 뿐, 실제로는 탄창 리로드)만 있는 무장.
+ * 이런 빔은 OH 가 아니라 리로드로 취급한다(탄수=OHまでの弾数, 시간 단축=리로드 파츠). 사용자 지적:
+ * "빔인데 히트율이 없으면 탄창식(E팩식)이며 리로드로 적용". 실드·리로드 표기가 있는 것은 제외.
+ */
+const isEpackMag = w => {
+  const cols = weaponColumns(w);
+  return cols.some(k => /OH復帰/.test(k))
+    && !cols.some(k => /ヒート率/.test(k))
+    && !cols.some(k => /リロード時間/.test(k))
+    && !cols.some(k => /シールドHP|サイズ/.test(k));
+};
 
 function isBeamWeapon(w) {
   const name = (w && w.name) || '';
   if (BEAM_NAME.test(name)) return true;
   if (NON_BEAM_HEAT.test(name)) return false;
-  return isHeatWeapon(w);
+  return weaponColumns(w).some(k => /OH復帰|ヒート率/.test(k));  // 열식·E팩 모두 에너지(빔)로 본다
 }
 
 /* ---------- 파츠가 무장에 거는 보정 ---------- */
@@ -312,7 +325,7 @@ function shortenTimeText(text, pct) {
 const GBO2Damage = {
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
-  weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon,
+  weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag,
   shortenTime, shortenTimeText, applyDamagePct
 };
 
