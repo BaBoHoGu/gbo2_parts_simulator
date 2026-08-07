@@ -262,7 +262,16 @@
     <button id="pietanClose" class="btn-ghost">닫기</button>
   </div>
   <div class="pietan-dura" id="pietanDura"></div>
-  <div class="pietan-hint">받는 쪽(적) 무장을 고르면 <b>격파까지</b>와 <b>다운까지</b> 필요한 피격 수를 계산합니다.</div>
+  <div class="pietan-ctrl">
+    <label class="pietan-corr">적 공격보정 <input type="number" id="pietanCorr" value="0" min="0" max="300" step="1"></label>
+    <span class="pietan-ctrl-lb">상성(적→나)</span>
+    <div class="seg" id="pietanAttr">
+      <button class="seg-btn" data-a="disadvantage">적 불리</button>
+      <button class="seg-btn on" data-a="same">동일</button>
+      <button class="seg-btn" data-a="advantage">적 유리</button>
+    </div>
+  </div>
+  <div class="pietan-hint">받는 쪽(적) 무장을 고르면 <b>격파까지</b>와 <b>다운까지</b> 필요한 피격 수를 계산합니다. (적 공격보정 0 = 위력 그대로)</div>
   <input type="search" id="pietanQuery" placeholder="적 무장 검색 (자쿠 머신건 / ビーム / バズ…)">
   <div class="pietan-cols">
     <div class="pietan-list" id="pietanList"></div>

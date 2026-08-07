@@ -849,6 +849,11 @@ body.view-build  #screenSelect { display: none; }
 .pietan-dot.armorRange { background: #e0a03a; }
 .pietan-dot.armorBeam { background: #4aa3ff; }
 .pietan-dot.armorMelee { background: #e6604a; }
+.pietan-ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 16px 2px; }
+.pietan-corr { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.pietan-corr input { width: 62px; padding: 3px 6px; }
+.pietan-ctrl-lb { font-size: 12px; color: var(--muted); margin-left: 2px; }
+.pietan-ctrl .seg { display: inline-flex; }
 .pietan-hint { padding: 2px 16px 0; color: var(--muted); font-size: 12px; }
 .pietan-hint b { color: var(--text); }
 .pietan-modal #pietanQuery { margin: 8px 16px 4px; width: calc(100% - 32px); }
