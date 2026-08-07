@@ -1796,10 +1796,12 @@
   //   격파까지 = 실효HP[속성] ÷ 무장 위력,  다운까지 = 100 ÷ よろけ値
   // 를 보여 준다. (1히트 근사 — 적 공격보정·국부보정·다운 감쇠는 미반영)
   const PIETAN_ARMOR = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee', shield: 'armorMelee' };
-  let pietanPick = null;         // 선택한 적 무장
-  let pietanCorr = 0;            // 적 공격보정 (사격/격투)
+  let pietanMs = null;           // 선택한 적 기체 (LV 엔트리)
+  let pietanMsBase = '';         // 그 기체의 base 이름
+  let pietanMsLv = 1;            // 선택한 적 기체 LV
+  let pietanPick = null;         // 선택한 적 무장 (그 LV 기준 위력)
+  let pietanCorr = 0;            // 적 공격보정 (기체에서 자동, 수정 가능)
   let pietanAttr = 'same';       // 적의 속성 상성 (same|advantage|disadvantage)
-  let _enemyCache = null;
 
   /** 무장의 누적치(よろけ値) — 히트당 %와 1트리거 다발수(x7 등)를 읽는다. */
   function parseStagger(w) {
@@ -1810,23 +1812,44 @@
     return { pct: pm ? Number(pm[1]) : 0, pellets: xm ? Number(xm[1]) : 1 };
   }
 
-  /** 전 기체 무장을 이름으로 합쳐(같은 이름은 최강 위력본) 적 무장 후보 목록을 만든다. */
-  function enemyWeapons() {
-    if (_enemyCache) return _enemyCache;
-    const map = new Map();
-    for (const id in weaponData) for (const w of (weaponData[id].weapons || [])) {
-      if (w.type === 'shield') continue;                 // 실드는 피해원이 아니라 제외
-      const lv = Object.values(w.levels || {});
-      const power = Math.max(0, ...lv.map(l => Number(l.power) || 0));
-      const charged = Math.max(0, ...lv.map(l => Number(l.powerCharged) || 0));
+  const pietanPageId = ms => (String(ms && ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
+
+  /** 무장 레벨을 적 기체 LV 에 맞춘다 (그보다 높은 레벨은 안 쓰고, 없으면 가진 최저). */
+  function pietanWeaponLv(w, msLv) {
+    const lvs = Object.keys(w.levels || {}).map(Number).sort((a, b) => a - b);
+    if (!lvs.length) return null;
+    const fit = lvs.filter(l => l <= msLv);
+    return String(fit.length ? fit[fit.length - 1] : lvs[0]);
+  }
+
+  /** 적 기체가 그 LV 에서 실제로 쓰는 무장 목록 (위력·누적치를 그 레벨로). */
+  function enemyWeaponsOfMs(ms, msLv) {
+    const id = pietanPageId(ms), page = id && weaponData[id];
+    if (!page) return [];
+    const out = [];
+    for (const w of page.weapons || []) {
+      if (w.type === 'shield') continue;
+      const lvk = pietanWeaponLv(w, msLv);
+      const dd = lvk && w.levels[lvk];
+      const power = Number(dd && dd.power) || 0;
+      const charged = Number(dd && dd.powerCharged) || 0;
       if (!power && !charged) continue;
       const st = parseStagger(w);
-      const cur = { name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets };
-      const prev = map.get(w.name);
-      if (!prev || cur.power > prev.power || (cur.power === prev.power && cur.charged > prev.charged)) map.set(w.name, cur);
+      out.push({ name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets });
     }
-    _enemyCache = [...map.values()].sort((a, b) => b.power - a.power);
-    return _enemyCache;
+    return out;
+  }
+
+  /** 적 기체의 기본 공격보정(파츠 없음·강화6) — 무장 종류에 맞는 값을 공격보정에 자동 채운다. */
+  function enemyBaseCorr(ms) {
+    const t = C.calcStats(ms, [], 6, C.EXPANSION_NONE, partsByCat, fullst, C.MAX_EXPANSION_LEVEL, null, null).total;
+    return { shoot: Math.round(t.shoot || 0), melee: Math.round(t.meleeCorrection || 0) };
+  }
+  function pietanAutoCorr() {
+    if (!pietanMs || !pietanPick) return;
+    const c = enemyBaseCorr(pietanMs);
+    pietanCorr = pietanPick.attr === 'melee' ? c.melee : c.shoot;
+    const inp = $('#pietanCorr'); if (inp) inp.value = pietanCorr;
   }
 
   function renderPietanDura() {
@@ -1843,23 +1866,69 @@
     }
   }
 
-  function renderPietanList() {
+  function selectPietanMs(base) {
+    const arr = msByBase.get(base) || [];
+    pietanMsBase = base;
+    pietanMs = arr[arr.length - 1] || null;      // 기본은 최고 LV
+    pietanMsLv = pietanMs ? msLevel(pietanMs) : 1;
+    pietanPick = null;
+    renderPietanLeft(); renderPietanResult();
+  }
+
+  function renderPietanLeft() {
     const box = $('#pietanList'); if (!box) return;
-    const q = ($('#pietanQuery').value || '').trim().toLowerCase();
-    let list = enemyWeapons();
-    if (q) list = list.filter(w => (T.weaponName(w.name) + ' ' + w.name).toLowerCase().includes(q));
+    const qEl = $('#pietanQuery');
     box.innerHTML = '';
-    const CAP = 120;
-    for (const w of list.slice(0, CAP)) {
+
+    if (!pietanMs) {                              // ── 적 기체 고르기 ──
+      qEl.hidden = false;
+      const q = (qEl.value || '').trim().toLowerCase();
+      let rows = [...msByBase.entries()].map(([base, arr]) => ({ base, rep: arr[arr.length - 1] }));
+      if (q) rows = rows.filter(r => (T.msName(r.rep.MS名) + ' ' + r.rep.MS名).toLowerCase().includes(q));
+      const CAP = 140;
+      for (const r of rows.slice(0, CAP)) {
+        const row = el('div', 'pietan-row');
+        row.append(img(msImg(r.rep.MS名), 'ms', r.base));
+        row.append(el('span', 'pietan-wn', T.msName(r.rep.MS名).replace(/\s*LV\d+$/, '')));
+        row.onclick = () => selectPietanMs(r.base);
+        box.append(row);
+      }
+      if (!rows.length) box.append(el('div', 'empty-state', '검색 결과가 없습니다.'));
+      else if (rows.length > CAP) box.append(el('div', 'pietan-more', `+${rows.length - CAP}기 — 검색으로 좁히세요`));
+      return;
+    }
+
+    // ── 고른 기체: 뒤로 + LV + 그 기체의 무장 ──
+    qEl.hidden = true;
+    const hd = el('div', 'pietan-mshead');
+    const back = el('button', 'pietan-back', '‹ 다른 기체');
+    back.onclick = () => { pietanMs = null; pietanPick = null; renderPietanLeft(); renderPietanResult(); };
+    hd.append(back);
+    hd.append(el('b', 'pietan-msnm', T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')));
+    box.append(hd);
+
+    const arr = msByBase.get(pietanMsBase) || [pietanMs];
+    if (arr.length > 1) {
+      const seg = el('div', 'seg pietan-lvseg');
+      for (const m of arr) {
+        const lv = msLevel(m);
+        const b = el('button', 'seg-btn' + (m === pietanMs ? ' on' : ''), 'LV' + lv);
+        b.onclick = () => { pietanMs = m; pietanMsLv = lv; pietanPick = null; renderPietanLeft(); renderPietanResult(); };
+        seg.append(b);
+      }
+      box.append(seg);
+    }
+
+    const wl = enemyWeaponsOfMs(pietanMs, pietanMsLv);
+    for (const w of wl) {
       const row = el('div', 'pietan-row' + (pietanPick && pietanPick.name === w.name ? ' on' : ''));
       row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
       row.append(el('span', 'pietan-wn', T.weaponName(w.name)));
-      row.append(el('span', 'pietan-wp', w.power ? w.power.toLocaleString() : w.charged.toLocaleString()));
-      row.onclick = () => { pietanPick = w; renderPietanList(); renderPietanResult(); };
+      row.append(el('span', 'pietan-wp', (w.power || w.charged).toLocaleString()));
+      row.onclick = () => { pietanPick = w; pietanAutoCorr(); renderPietanLeft(); renderPietanResult(); };
       box.append(row);
     }
-    if (!list.length) box.append(el('div', 'empty-state', '검색 결과가 없습니다.'));
-    else if (list.length > CAP) box.append(el('div', 'pietan-more', `+${list.length - CAP}종 — 검색으로 좁히세요`));
+    if (!wl.length) box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
   }
 
   function renderPietanResult() {
@@ -1886,6 +1955,8 @@
     hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
     hd.append(el('b', 'pietan-rnm', T.weaponName(w.name)));
     box.append(hd);
+    if (pietanMs) box.append(el('div', 'pietan-msctx',
+      `${T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')} · 기체 LV${pietanMsLv} · 공격보정 ${pietanCorr}`));
     box.append(el('div', 'pietan-sub',
       `위력 ${(w.power || w.charged).toLocaleString()}${chgDmg ? ` · 집속 ${w.charged.toLocaleString()}` : ''}`
       + ` · 누적 ${w.stagger ? w.stagger + '%' : '—'}${w.pellets > 1 ? ` ×${w.pellets}` : ''}`));
@@ -1915,10 +1986,9 @@
     if (b) b.hidden = !open;
     if (open) {
       $('#pietanMsName').textContent = T.msName(state.ms.MS名);
-      $('#pietanQuery').value = '';
       $('#pietanCorr').value = pietanCorr;
       [...$('#pietanAttr').children].forEach(c => c.classList.toggle('on', c.dataset.a === pietanAttr));
-      renderPietanDura(); renderPietanList(); renderPietanResult();
+      renderPietanDura(); renderPietanLeft(); renderPietanResult();
     }
   }
 
@@ -2540,7 +2610,7 @@
     $('#pietanBtn').onclick = () => openPietan(true);
     $('#pietanClose').onclick = () => openPietan(false);
     $('#pietanBack').onclick = () => openPietan(false);
-    $('#pietanQuery').oninput = () => renderPietanList();
+    $('#pietanQuery').oninput = () => renderPietanLeft();
     $('#pietanCorr').oninput = () => { pietanCorr = Math.max(0, Number($('#pietanCorr').value) || 0); renderPietanResult(); };
     $('#pietanAttr').onclick = ev => {
       const b = ev.target.closest('[data-a]'); if (!b) return;
