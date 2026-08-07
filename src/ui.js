@@ -1796,15 +1796,18 @@
   //   격파까지 = 실효HP[속성] ÷ 무장 위력,  다운까지 = 100 ÷ よろけ値
   // 를 보여 준다. (1히트 근사 — 적 공격보정·국부보정·다운 감쇠는 미반영)
   const PIETAN_ARMOR = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee', shield: 'armorMelee' };
-  let pietanPick = null;      // 선택한 적 무장
+  let pietanPick = null;         // 선택한 적 무장
+  let pietanCorr = 0;            // 적 공격보정 (사격/격투)
+  let pietanAttr = 'same';       // 적의 속성 상성 (same|advantage|disadvantage)
   let _enemyCache = null;
 
-  /** 무장의 누적치(よろけ値) %를 숫자로. mods.stagger 우선, 없으면 備考에서 읽는다. */
-  function parseStaggerPct(w) {
-    const s = (w.mods && w.mods.stagger) || '';
-    let m = String(s).match(/(\d+(?:\.\d+)?)\s*%/);
-    if (!m) { const note = (w.info && w.info['備考']) || ''; m = note.match(/よろけ値[：:]\s*(\d+(?:\.\d+)?)/); }
-    return m ? Number(m[1]) : 0;
+  /** 무장의 누적치(よろけ値) — 히트당 %와 1트리거 다발수(x7 등)를 읽는다. */
+  function parseStagger(w) {
+    let s = (w.mods && w.mods.stagger) || '';
+    if (!s) { const note = (w.info && w.info['備考']) || ''; s = (note.match(/よろけ値[：:]\s*([^/]+)/) || [])[1] || ''; }
+    const pm = String(s).match(/(\d+(?:\.\d+)?)\s*%/);
+    const xm = String(s).match(/[x×]\s*(\d+)/);
+    return { pct: pm ? Number(pm[1]) : 0, pellets: xm ? Number(xm[1]) : 1 };
   }
 
   /** 전 기체 무장을 이름으로 합쳐(같은 이름은 최강 위력본) 적 무장 후보 목록을 만든다. */
@@ -1817,7 +1820,8 @@
       const power = Math.max(0, ...lv.map(l => Number(l.power) || 0));
       const charged = Math.max(0, ...lv.map(l => Number(l.powerCharged) || 0));
       if (!power && !charged) continue;
-      const cur = { name: w.name, attr: weaponAttr(w), power, charged, stagger: parseStaggerPct(w) };
+      const st = parseStagger(w);
+      const cur = { name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets };
       const prev = map.get(w.name);
       if (!prev || cur.power > prev.power || (cur.power === prev.power && cur.charged > prev.charged)) map.set(w.name, cur);
     }
@@ -1864,10 +1868,18 @@
     if (!pietanPick) { box.append(el('div', 'pietan-empty', '왼쪽에서 적 무장을 선택하세요.')); return; }
     const w = pietanPick, r = stats();
     const key = PIETAN_ARMOR[w.attr] || 'armorRange';
-    const eff = durabilityOf(r.total, key);
-    const dmg = w.power || w.charged;
+    const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
+    // 1히트 피해 = 실식의 공격 항 [Wp・{Att・ETCa}・Pr] (방어는 실효 HP 가 담당하므로 Def=1).
+    // 격투 판정 무장은 격투 피해식으로, 그 외는 사격 피해식으로 계산한다.
+    const perHit = base => base > 0
+      ? (w.attr === 'melee'
+        ? D.meleeDamage(base, pietanCorr, { attr: pietanAttr })
+        : D.shootingDamage(base, pietanCorr, { attr: pietanAttr }))
+      : 0;
+    const dmg = perHit(w.power || w.charged);
     const hits = dmg > 0 ? Math.ceil(eff / dmg) : null;
-    const chgHits = (w.charged && w.charged !== w.power) ? Math.ceil(eff / w.charged) : null;
+    const chgDmg = (w.charged && w.charged !== w.power) ? perHit(w.charged) : 0;
+    const chgHits = chgDmg > 0 ? Math.ceil(eff / chgDmg) : null;
     const down = w.stagger > 0 ? Math.ceil(100 / w.stagger) : null;
 
     const hd = el('div', 'pietan-rhd');
@@ -1875,7 +1887,8 @@
     hd.append(el('b', 'pietan-rnm', T.weaponName(w.name)));
     box.append(hd);
     box.append(el('div', 'pietan-sub',
-      `위력 ${dmg.toLocaleString()}${chgHits != null ? ` · 집속 ${w.charged.toLocaleString()}` : ''} · 누적 ${w.stagger ? w.stagger + '%' : '—'}`));
+      `위력 ${(w.power || w.charged).toLocaleString()}${chgDmg ? ` · 집속 ${w.charged.toLocaleString()}` : ''}`
+      + ` · 누적 ${w.stagger ? w.stagger + '%' : '—'}${w.pellets > 1 ? ` ×${w.pellets}` : ''}`));
 
     const metric = (lb, val, note, cls) => {
       const m = el('div', 'pietan-metric' + (cls ? ' ' + cls : ''));
@@ -1885,11 +1898,14 @@
       return m;
     };
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
-      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ ${dmg.toLocaleString()}`));
-    if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${w.charged.toLocaleString()}`, 'sub'));
-    box.append(metric('다운까지', down != null ? down + '발' : '—',
-      down != null ? `100 ÷ ${w.stagger}%` : '누적치 정보 없음'));
-    box.append(el('div', 'pietan-foot', '※ 1히트 근사 — 적 공격보정·국부보정·다운 감쇠는 미반영'));
+      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}`));
+    if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
+    const downNote = down != null
+      ? `100 ÷ ${w.stagger}%` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(down / w.pellets)}발` : '')
+      : '누적치 정보 없음';
+    box.append(metric('다운까지', down != null ? down + '히트' : '—', downNote));
+    box.append(el('div', 'pietan-foot',
+      '※ 위 공격 항은 실피해식[Wp·Att·Pr] 적용. 방어는 내구 지표(Def)로 반영. 국부보정·다운값 시간 감쇠는 미반영.'));
   }
 
   function openPietan(open) {
@@ -1900,6 +1916,8 @@
     if (open) {
       $('#pietanMsName').textContent = T.msName(state.ms.MS名);
       $('#pietanQuery').value = '';
+      $('#pietanCorr').value = pietanCorr;
+      [...$('#pietanAttr').children].forEach(c => c.classList.toggle('on', c.dataset.a === pietanAttr));
       renderPietanDura(); renderPietanList(); renderPietanResult();
     }
   }
@@ -2523,6 +2541,13 @@
     $('#pietanClose').onclick = () => openPietan(false);
     $('#pietanBack').onclick = () => openPietan(false);
     $('#pietanQuery').oninput = () => renderPietanList();
+    $('#pietanCorr').oninput = () => { pietanCorr = Math.max(0, Number($('#pietanCorr').value) || 0); renderPietanResult(); };
+    $('#pietanAttr').onclick = ev => {
+      const b = ev.target.closest('[data-a]'); if (!b) return;
+      pietanAttr = b.dataset.a;
+      [...$('#pietanAttr').children].forEach(c => c.classList.toggle('on', c === b));
+      renderPietanResult();
+    };
 
     // 기본 파츠 설정 — 기본 제외 파츠 관리 (영구 저장, 우클릭과 동일 세트)
     $('#ownedBtn').onclick = () => openOwnedModal(true);
