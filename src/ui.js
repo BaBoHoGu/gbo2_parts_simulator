@@ -638,20 +638,31 @@
   // 전탄(전히트) 명중 시 총 피해를 함께 보여 준다. (격투는 방향/연격으로 따로 표기)
   const CJK_NUM = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
   const cjkNum = s => (CJK_NUM[s] ?? Number(s));
+  // 동시발사(산탄) 배수를 모드별로 읽는다. 「非集束時N…」은 논차지만, 「集束時N…」은 풀차지만,
+  // 접두가 없으면 두 모드 공통. (非集束時 이 集束時 를 부분포함하므로 非 를 먼저 가른다.)
   function fireMult(w) {
-    if (!w || w.type === 'melee') return null;
+    const empty = { nc: null, ch: null };
+    if (!w || w.type === 'melee') return empty;
     const note = (w.info && w.info['備考']) || '';
-    let m = note.match(/最大\s*(\d+)\s*ヒット/);            // 조사: 최대 N 히트
-    if (m && Number(m[1]) > 1) return { n: Number(m[1]), label: '최대 ' + m[1] + '히트' };
-    m = note.match(/([一二三四五六七八九十]|\d+)発?同時発射/);  // 동시발사(산탄 포함) — 바르길은 「7同時発射」로 発 이 빠져 있다
-    if (m) {
+    // 조사(照射): 최대 N 히트 — 지속 조사라 두 칸 공통
+    const mh = note.match(/最大\s*(\d+)\s*ヒット/);
+    if (mh && Number(mh[1]) > 1) { const x = { n: Number(mh[1]), label: '최대 ' + mh[1] + '히트' }; return { nc: x, ch: x }; }
+    let nc = null, ch = null, both = null;
+    for (const b of note.split(' / ')) {
+      const m = b.match(/([一二三四五六七八九十]|\d+)発?同時発射/);  // 바르길은 「7同時発射」로 発 이 빠져 있다
+      if (!m) continue;
       const proj = cjkNum(m[1]);
-      const rep = note.match(/[x×]\s*(\d+)\s*(?:回攻撃|射)/);   // 「x3回攻撃」「x3射」 연사
+      const rep = b.match(/[x×]\s*(\d+)\s*(?:回攻撃|射)/);           // 같은 불릿 안의 「x3回攻撃」「x3射」 연사만
       const r = rep ? Number(rep[1]) : 1;
       const n = proj * r;
-      if (n > 1) return { n, label: rep ? proj + '발 ×' + r + '연사' : proj + '발 동시' };
+      if (n <= 1) continue;
+      const cell = { n, label: rep ? proj + '발 ×' + r + '연사' : proj + '발 동시' };
+      if (/非集束時/.test(b)) nc = cell;
+      else if (/集束時/.test(b)) ch = cell;
+      else both = cell;
     }
-    return null;
+    if (both) { nc = nc || both; ch = ch || both; }   // 접두 없는 표기는 두 모드에 공통 적용
+    return { nc, ch };
   }
 
   function renderWeapons() {
@@ -719,11 +730,13 @@
           : w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
 
       // ② 이름 (격투/사격 점으로 구분)
-      const mult = fireMult(w);              // 조사·산탄·동시발사 배수
+      const mult = fireMult(w);              // 조사·산탄·동시발사 배수 (모드별)
       const nm = el('span', 'w-nm');
       nm.append(el('i', 'w-dot ' + w.type));
       nm.append(document.createTextNode(T.weaponName(w.name)));
-      if (mult) { const b = el('span', 'w-mult', mult.label); nm.append(b); }
+      // 이름 옆 칩: 두 모드가 같으면 하나, 다르면 있는 쪽 (각 칸의 '전탄'이 정확히 보여 준다)
+      const chip = (mult.nc && mult.ch && mult.nc.n === mult.ch.n) ? mult.nc : (mult.nc || mult.ch);
+      if (chip) nm.append(el('span', 'w-mult', chip.label));
       nm.title = w.name;
       row.append(nm);
 
@@ -731,8 +744,8 @@
       const at = weaponAttr(w);
       row.append(el('span', 'w-type type-' + at, ATTR_LABEL[at]));
 
-      /** 위력 한 칸 — 기본값 · 파츠 보정분(초록) · 스킬 발동분(보라) */
-      const dmgCell = (base) => {
+      /** 위력 한 칸 — 기본값 · 파츠 보정분(초록) · 스킬 발동분(보라). m: 이 칸(논차지/풀차지)의 동시발사 배수 */
+      const dmgCell = (base, m) => {
         const cell = el('span', 'w-dmg');
         if (base == null) { cell.textContent = '—'; cell.classList.add('w-none'); return cell; }
         // 실드(태클 등)의 피해는 고정피해 — 격투·사격 보정을 받지 않는다
@@ -762,8 +775,8 @@
           ' (' + (skillGain > 0 ? '+' : '') + skillGain.toLocaleString() + ')'));
         // 조사·산탄·동시발사: 전탄(전히트) 명중 시 총 피해 = 1발 피해 × 배수.
         // 1발 칸과 같은 방식으로 — 기본×배수 · 파츠분(초록) · 스킬분(보라) 을 각각 표기한다.
-        if (mult) {
-          const n = mult.n;
+        if (m) {
+          const n = m.n;
           const sub = el('span', 'w-sub');
           sub.append(document.createTextNode('전탄 ' + (base * n).toLocaleString() + ' (×' + n + ')'));
           if (gain) sub.append(el('span', gain > 0 ? 'w-gain' : 'w-loss',
@@ -775,9 +788,9 @@
         return cell;
       };
 
-      // ③ 논차지 · ④ 풀차지 (집속이 없으면 논차지 칸만 채운다)
-      row.append(dmgCell(d.power));
-      const full = dmgCell(d.powerCharged);
+      // ③ 논차지 · ④ 풀차지 (집속이 없으면 논차지 칸만 채운다) — 칸별 배수를 따로 준다
+      row.append(dmgCell(d.power, mult.nc));
+      const full = dmgCell(d.powerCharged, mult.ch);
       if (d.powerCharged != null && chargeSec) {
         full.append(el('span', 'w-sub', (mustCharge ? '필수 ' : '') + chargeSec
           + (chargeCut ? ' (-' + chargeCut + '%)' : '')));
