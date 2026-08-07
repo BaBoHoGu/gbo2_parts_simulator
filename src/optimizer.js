@@ -73,7 +73,7 @@ function isValidSet(ms, set, stage, fullstDefs) {
 /* ---------- 평가 ---------- */
 
 function makeScorer(ms, opts, partsByCat, fullstDefs) {
-  const { stage, expansion, expLevel, weights, minimums, maximums, skill } = opts;
+  const { stage, expansion, expLevel, weights = {}, minimums, maximums, skill } = opts;
   // 스킬을 켠 채로 자동 구성하면 그 보정까지 감안해 최적화한다 (상한에 걸려 파츠 선택이 달라진다)
   const base = calcStats(ms, [], stage, expansion, partsByCat, fullstDefs, expLevel, null, skill).total;
 
