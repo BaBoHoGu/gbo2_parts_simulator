@@ -23,6 +23,7 @@
     <li class="arrow">›</li>
     <li data-step="build"><i>2</i> 파츠 적용</li>
   </ol>
+  <button id="pietanBtn" class="btn-ghost step-only" title="현재 구성이 적 무장에 몇 발 버티는지 · 몇 발에 다운되는지">🛡 피탄 시뮬</button>
 
   <span class="spacer"></span>
   <button id="openAuto" class="btn-primary step-only">⚡ 자동 구성</button>
@@ -249,6 +250,24 @@
   <div class="owned-hint"><b>기본적으로 제외</b>할 파츠를 체크하세요. 체크한 파츠는 자동 구성과 직접 장착에서 자동 제외됩니다. (모든 기체 공통 · 브라우저에 저장 · 파츠 적용 화면에서 <b>우클릭</b>으로도 토글)</div>
   <input type="search" id="ownedQuery" placeholder="파츠명 검색 (강화프레임 / 스러스터…)">
   <div class="owned-list" id="ownedList"></div>
+</div>
+
+<!-- ========== 피탄 시뮬레이터 (받는 피해 / 다운 저항) ========== -->
+<div class="auto-modal-back" id="pietanBack" hidden></div>
+<div class="auto-modal pietan-modal" id="pietanModal" hidden role="dialog" aria-label="피탄 시뮬레이터">
+  <div class="am-head">
+    <b>🛡 피탄 시뮬레이터</b>
+    <span class="am-note" id="pietanMsName"></span>
+    <span class="grow"></span>
+    <button id="pietanClose" class="btn-ghost">닫기</button>
+  </div>
+  <div class="pietan-dura" id="pietanDura"></div>
+  <div class="pietan-hint">받는 쪽(적) 무장을 고르면 <b>격파까지</b>와 <b>다운까지</b> 필요한 피격 수를 계산합니다.</div>
+  <input type="search" id="pietanQuery" placeholder="적 무장 검색 (자쿠 머신건 / ビーム / バズ…)">
+  <div class="pietan-cols">
+    <div class="pietan-list" id="pietanList"></div>
+    <div class="pietan-result" id="pietanResult"></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
