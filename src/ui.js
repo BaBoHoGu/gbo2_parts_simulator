@@ -94,7 +94,8 @@
     ms: null,
     equipped: [],
     locked: new Set(),
-    banned: new Set(),
+    banned: new Set(),      // 세션 한정 제외 (우클릭 토글)
+    unowned: new Set(),     // 미보유 파츠 — 영구 저장, 모든 기체에서 자동 배제
     stage: 6,
     expansion: C.EXPANSION_NONE,
     expLevel: C.MAX_EXPANSION_LEVEL,   // 확장 스킬 레벨 (LV1~LV5)
@@ -150,6 +151,19 @@
   }
 
   const SAVE_KEY = 'gbo2-offline-build';
+  const OWNED_KEY = 'gbo2-offline-unowned';    // 미보유 파츠 목록 (영구 저장)
+
+  /** 미보유 파츠 목록을 불러온다 — 사전에 없는(구버전) 이름은 조용히 버린다. */
+  function loadUnowned() {
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(OWNED_KEY)) || []; } catch { arr = []; }
+    state.unowned = new Set(arr.filter(n => partByName.has(n)));
+  }
+  function saveUnowned() {
+    try { localStorage.setItem(OWNED_KEY, JSON.stringify([...state.unowned])); } catch { /* 저장 실패는 무시 */ }
+  }
+  /** 세션 제외(banned)든 미보유(unowned)든 장착·자동구성에서 빠지는 파츠. */
+  const isExcluded = name => state.banned.has(name) || state.unowned.has(name);
 
   const $ = sel => document.querySelector(sel);
   const el = (tag, cls, text) => {
@@ -181,6 +195,7 @@
     category: attr => `${T.attrName(attr)} 전용`,
     kind: kind => `${T.kindName(kind)} 계열 중복`,
     banned: () => '제외한 파츠',
+    unowned: () => '미보유 파츠',
     effect: name => `${T.partName(name)} 효과 중복`,
     movement: () => '스피드/선회 중복',
     slotClose: () => '근접 슬롯 부족',
@@ -416,6 +431,11 @@
   /* ---------- 장착 ---------- */
 
   function equip(part) {
+    // 미보유로 설정한 파츠는 장착 불가 (기본 파츠 설정에서만 변경)
+    if (state.unowned.has(part.name)) {
+      toast('미보유 파츠입니다 — 기본 파츠 설정에서 변경하세요');
+      return;
+    }
     // 우클릭으로 제외한 파츠는 자동 구성뿐 아니라 직접 장착도 막는다
     if (state.banned.has(part.name)) {
       toast('제외한 파츠입니다 — 우클릭으로 해제하세요');
@@ -429,6 +449,10 @@
 
   /** 제외 토글. 이미 장착 중인 파츠를 제외하면 함께 해제해 상태를 어긋나지 않게 한다. */
   function toggleBan(part) {
+    if (state.unowned.has(part.name)) {
+      toast('미보유 파츠입니다 — 기본 파츠 설정에서 변경하세요');
+      return;
+    }
     if (state.banned.has(part.name)) {
       state.banned.delete(part.name);
     } else {
@@ -1238,9 +1262,11 @@
     const s = slots();
     const rows = list.map(p => {
       const isEquipped = state.equipped.some(e => e.name === p.name);
-      const banned = state.banned.has(p.name);
-      // 제외한 파츠는 장착 불가로 취급한다 (사유도 그렇게 보여 준다)
-      const chk = banned ? { ok: false, code: 'banned', param: null }
+      const unowned = state.unowned.has(p.name);
+      const banned = state.banned.has(p.name) || unowned;   // 회색 처리는 둘 다 동일
+      // 제외/미보유 파츠는 장착 불가로 취급한다 (사유는 출처에 맞게 보여 준다)
+      const chk = state.banned.has(p.name) ? { ok: false, code: 'banned', param: null }
+        : unowned ? { ok: false, code: 'unowned', param: null }
         : state.ms ? C.checkEquip(p, state.ms, state.equipped, s) : { ok: false, code: null };
       return { p, isEquipped, chk, banned, blocked: !isEquipped && !chk.ok };
     });
@@ -1422,7 +1448,7 @@
       minimums: state.minimums,
       maximums: state.maximums,
       locked: [...state.locked],
-      banned: [...state.banned],
+      banned: [...new Set([...state.banned, ...state.unowned])],   // 미보유도 자동 구성에서 배제
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       restarts: 1
     };
@@ -1715,6 +1741,67 @@
     if (m) m.hidden = !open;
     if (b) b.hidden = !open;
     if (open) renderSavedBuilds();
+  }
+
+  /* ---------- 기본 파츠 설정 (미보유 배제) ---------- */
+  const PART_CAT_KO = { '防御': '방어', '攻撃': '공격', '移動': '이동', '補助': '보조', '特殊': '특수' };
+
+  function updateOwnedUi() {
+    const n = state.unowned.size;
+    const note = $('#ownedNote');
+    if (note) note.textContent = n ? `미보유 ${n}개 배제 중` : '전부 보유 (배제 없음)';
+    const btn = $('#ownedBtn');
+    if (btn) btn.textContent = '기본 파츠 설정' + (n ? ` (${n})` : '');
+  }
+
+  /** 미보유 체크 토글 — 미보유로 바꾸면 장착·잠금에서도 즉시 뺀다. */
+  function toggleUnowned(name, on) {
+    if (on) {
+      state.unowned.add(name);
+      state.equipped = state.equipped.filter(e => e.name !== name);
+      state.locked.delete(name);
+    } else {
+      state.unowned.delete(name);
+    }
+    saveUnowned();
+    updateOwnedUi();
+  }
+
+  function renderOwnedList() {
+    const box = $('#ownedList');
+    if (!box) return;
+    const q = ($('#ownedQuery').value || '').trim().toLowerCase();
+    box.innerHTML = '';
+    for (const cat of C.CATEGORIES) {
+      let list = partsByCat[cat] || [];
+      if (q) list = list.filter(p => partSearchText.get(p).includes(q));
+      if (!list.length) continue;
+      box.append(el('div', 'owned-cat', PART_CAT_KO[cat] || cat));
+      const grid = el('div', 'owned-grid');
+      for (const p of list) {
+        const off = state.unowned.has(p.name);
+        const row = el('label', 'owned-row' + (off ? ' off' : ''));
+        row.title = T.partName(p.name);
+        const cb = el('input');
+        cb.type = 'checkbox';
+        cb.checked = off;
+        cb.onchange = () => { toggleUnowned(p.name, cb.checked); row.classList.toggle('off', cb.checked); };
+        row.append(cb);
+        row.append(img(partImg(p.name), 'parts', p.name));
+        row.append(el('span', 'owned-nm', T.partName(p.name)));
+        grid.append(row);
+      }
+      box.append(grid);
+    }
+    if (!box.children.length) box.append(el('div', 'empty-state', '검색 결과가 없습니다.'));
+  }
+
+  function openOwnedModal(open) {
+    const m = $('#ownedModal'), b = $('#ownedModalBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (open) { $('#ownedQuery').value = ''; renderOwnedList(); updateOwnedUi(); }
+    else renderAll();   // 닫을 때 빌드 화면(회색·자동구성 후보)에 반영
   }
 
   /* ---------- 기체 스킬 목록 (무장 헤더 '스킬' 버튼) ---------- */
@@ -2330,6 +2417,19 @@
       toast(r.ok ? loadedMsg(r, '구성을 불러왔습니다') : '알 수 없는 기체입니다');
     };
 
+    // 기본 파츠 설정 — 미보유 파츠 배제 (영구 저장)
+    $('#ownedBtn').onclick = () => openOwnedModal(true);
+    $('#ownedModalClose').onclick = () => openOwnedModal(false);
+    $('#ownedModalBack').onclick = () => openOwnedModal(false);
+    $('#ownedQuery').oninput = () => renderOwnedList();
+    $('#ownedClear').onclick = () => {
+      if (!state.unowned.size) return;
+      state.unowned.clear();
+      saveUnowned();
+      renderOwnedList();
+      updateOwnedUi();
+    };
+
     // 창 크기가 바뀌면 예산(vh)이 달라지므로 줄 맞춤을 다시 한다
     let resizeTimer = null;
     window.addEventListener('resize', () => {
@@ -2340,6 +2440,7 @@
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
+      if (!$('#ownedModal').hidden) { openOwnedModal(false); return; }
       if (!$('#savedModal').hidden) { openSavedModal(false); return; }
       if (!$('#autoResultPanel').hidden) { openResultModal(false); return; }
       if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return; }
@@ -2358,6 +2459,8 @@
 
   buildControls();
   renderAutoGrid();
+  loadUnowned();          // 저장된 미보유 파츠 복원
+  updateOwnedUi();        // 버튼 배지·모달 노트 초기화
   // 빌드 화면이 곧바로 채워지도록 기본 기체를 잡아두되, 시작 화면은 ① 기체 선택.
   state.ms = msData.find(m => T.msName(m.MS名).startsWith('건담 ')) || msData[0];
   renderAll();

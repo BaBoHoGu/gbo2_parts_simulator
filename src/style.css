@@ -838,6 +838,29 @@ body.view-build  #screenSelect { display: none; }
 .am-foot[hidden] { display: none; }
 .am-foot button { width: 100%; }
 
+/* 기본 파츠 설정 (미보유 배제) */
+.owned-hint { padding: 10px 16px 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.owned-hint b { color: var(--text); }
+.owned-modal #ownedQuery { margin: 8px 16px 4px; width: calc(100% - 32px); }
+.owned-list { padding: 6px 16px 14px; overflow-y: auto; }
+.owned-cat {
+  position: sticky; top: 0; z-index: 1; margin: 8px 0 5px;
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  background: var(--panel); padding: 3px 0; border-bottom: 1px solid var(--line);
+}
+.owned-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px 10px; }
+.owned-row {
+  display: flex; align-items: center; gap: 7px; padding: 3px 6px;
+  border-radius: 6px; cursor: pointer; font-size: 12.5px; user-select: none;
+}
+.owned-row:hover { background: var(--panel-2); }
+.owned-row input { cursor: pointer; flex: none; }
+.owned-row img { width: 24px; height: 24px; object-fit: contain; flex: none; border-radius: 4px; }
+.owned-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 체크(미보유)된 행은 흐리게 — 배제됨을 한눈에 */
+.owned-row.off { opacity: .5; }
+.owned-row.off .owned-nm { text-decoration: line-through; }
+
 /* 기체 스킬 목록 (무장 칸 안 인라인 패널) */
 .mskill-inline {
   margin: 0 10px 8px; border: 1px solid var(--line); border-radius: 9px;
