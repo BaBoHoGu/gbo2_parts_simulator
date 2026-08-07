@@ -1791,6 +1791,119 @@
     else renderAll();   // 닫을 때 빌드 화면(회색·자동구성 후보)에 반영
   }
 
+  /* ---------- 피탄 시뮬레이터 (받는 피해 / 다운 저항) ---------- */
+  // 내구 지표(실효 HP)를 실전 감각으로 확장 — 적 무장 하나를 골라
+  //   격파까지 = 실효HP[속성] ÷ 무장 위력,  다운까지 = 100 ÷ よろけ値
+  // 를 보여 준다. (1히트 근사 — 적 공격보정·국부보정·다운 감쇠는 미반영)
+  const PIETAN_ARMOR = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee', shield: 'armorMelee' };
+  let pietanPick = null;      // 선택한 적 무장
+  let _enemyCache = null;
+
+  /** 무장의 누적치(よろけ値) %를 숫자로. mods.stagger 우선, 없으면 備考에서 읽는다. */
+  function parseStaggerPct(w) {
+    const s = (w.mods && w.mods.stagger) || '';
+    let m = String(s).match(/(\d+(?:\.\d+)?)\s*%/);
+    if (!m) { const note = (w.info && w.info['備考']) || ''; m = note.match(/よろけ値[：:]\s*(\d+(?:\.\d+)?)/); }
+    return m ? Number(m[1]) : 0;
+  }
+
+  /** 전 기체 무장을 이름으로 합쳐(같은 이름은 최강 위력본) 적 무장 후보 목록을 만든다. */
+  function enemyWeapons() {
+    if (_enemyCache) return _enemyCache;
+    const map = new Map();
+    for (const id in weaponData) for (const w of (weaponData[id].weapons || [])) {
+      if (w.type === 'shield') continue;                 // 실드는 피해원이 아니라 제외
+      const lv = Object.values(w.levels || {});
+      const power = Math.max(0, ...lv.map(l => Number(l.power) || 0));
+      const charged = Math.max(0, ...lv.map(l => Number(l.powerCharged) || 0));
+      if (!power && !charged) continue;
+      const cur = { name: w.name, attr: weaponAttr(w), power, charged, stagger: parseStaggerPct(w) };
+      const prev = map.get(w.name);
+      if (!prev || cur.power > prev.power || (cur.power === prev.power && cur.charged > prev.charged)) map.set(w.name, cur);
+    }
+    _enemyCache = [...map.values()].sort((a, b) => b.power - a.power);
+    return _enemyCache;
+  }
+
+  function renderPietanDura() {
+    const box = $('#pietanDura'); if (!box) return;
+    const r = stats();
+    box.innerHTML = '';
+    box.append(el('span', 'pietan-dura-lb', '내구 지표 (실효 HP)'));
+    for (const [lb, key] of [['실탄', 'armorRange'], ['빔', 'armorBeam'], ['격투', 'armorMelee']]) {
+      const cell = el('span', 'pietan-dura-cell');
+      cell.append(el('i', 'pietan-dot ' + key));
+      cell.append(el('span', 'pietan-dura-t', lb));
+      cell.append(el('span', 'pietan-dura-v', durabilityOf(r.total, key).toLocaleString()));
+      box.append(cell);
+    }
+  }
+
+  function renderPietanList() {
+    const box = $('#pietanList'); if (!box) return;
+    const q = ($('#pietanQuery').value || '').trim().toLowerCase();
+    let list = enemyWeapons();
+    if (q) list = list.filter(w => (T.weaponName(w.name) + ' ' + w.name).toLowerCase().includes(q));
+    box.innerHTML = '';
+    const CAP = 120;
+    for (const w of list.slice(0, CAP)) {
+      const row = el('div', 'pietan-row' + (pietanPick && pietanPick.name === w.name ? ' on' : ''));
+      row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
+      row.append(el('span', 'pietan-wn', T.weaponName(w.name)));
+      row.append(el('span', 'pietan-wp', w.power ? w.power.toLocaleString() : w.charged.toLocaleString()));
+      row.onclick = () => { pietanPick = w; renderPietanList(); renderPietanResult(); };
+      box.append(row);
+    }
+    if (!list.length) box.append(el('div', 'empty-state', '검색 결과가 없습니다.'));
+    else if (list.length > CAP) box.append(el('div', 'pietan-more', `+${list.length - CAP}종 — 검색으로 좁히세요`));
+  }
+
+  function renderPietanResult() {
+    const box = $('#pietanResult'); if (!box) return;
+    box.innerHTML = '';
+    if (!pietanPick) { box.append(el('div', 'pietan-empty', '왼쪽에서 적 무장을 선택하세요.')); return; }
+    const w = pietanPick, r = stats();
+    const key = PIETAN_ARMOR[w.attr] || 'armorRange';
+    const eff = durabilityOf(r.total, key);
+    const dmg = w.power || w.charged;
+    const hits = dmg > 0 ? Math.ceil(eff / dmg) : null;
+    const chgHits = (w.charged && w.charged !== w.power) ? Math.ceil(eff / w.charged) : null;
+    const down = w.stagger > 0 ? Math.ceil(100 / w.stagger) : null;
+
+    const hd = el('div', 'pietan-rhd');
+    hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
+    hd.append(el('b', 'pietan-rnm', T.weaponName(w.name)));
+    box.append(hd);
+    box.append(el('div', 'pietan-sub',
+      `위력 ${dmg.toLocaleString()}${chgHits != null ? ` · 집속 ${w.charged.toLocaleString()}` : ''} · 누적 ${w.stagger ? w.stagger + '%' : '—'}`));
+
+    const metric = (lb, val, note, cls) => {
+      const m = el('div', 'pietan-metric' + (cls ? ' ' + cls : ''));
+      m.append(el('span', 'pietan-mlb', lb));
+      m.append(el('span', 'pietan-mv', val));
+      m.append(el('span', 'pietan-mnote', note));
+      return m;
+    };
+    box.append(metric('격파까지', hits != null ? hits + '발' : '—',
+      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ ${dmg.toLocaleString()}`));
+    if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${w.charged.toLocaleString()}`, 'sub'));
+    box.append(metric('다운까지', down != null ? down + '발' : '—',
+      down != null ? `100 ÷ ${w.stagger}%` : '누적치 정보 없음'));
+    box.append(el('div', 'pietan-foot', '※ 1히트 근사 — 적 공격보정·국부보정·다운 감쇠는 미반영'));
+  }
+
+  function openPietan(open) {
+    if (open && !state.ms) { toast('먼저 기체를 선택하세요'); return; }
+    const m = $('#pietanModal'), b = $('#pietanBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (open) {
+      $('#pietanMsName').textContent = T.msName(state.ms.MS名);
+      $('#pietanQuery').value = '';
+      renderPietanDura(); renderPietanList(); renderPietanResult();
+    }
+  }
+
   /* ---------- 기체 스킬 목록 (무장 헤더 '스킬' 버튼) ---------- */
   const SKILL_MODE_KO = { '通常時': '통상', '変形時': '변형', '変身時': '변신', 'システム発動中': '시스템 발동중', '飛行時': '비행', '': '통상' };
   const SKILL_CAT_KO = { '足回り': '기동', '攻撃': '공격', '防御': '방어', 'その他': '기타', '移動': '이동', '格闘': '격투', '射撃': '사격', '': '기타' };
@@ -2405,6 +2518,12 @@
       toast(r.ok ? loadedMsg(r, '구성을 불러왔습니다') : '알 수 없는 기체입니다');
     };
 
+    // 피탄 시뮬레이터 — 적 무장에 몇 발 버티는지 / 몇 발에 다운되는지
+    $('#pietanBtn').onclick = () => openPietan(true);
+    $('#pietanClose').onclick = () => openPietan(false);
+    $('#pietanBack').onclick = () => openPietan(false);
+    $('#pietanQuery').oninput = () => renderPietanList();
+
     // 기본 파츠 설정 — 기본 제외 파츠 관리 (영구 저장, 우클릭과 동일 세트)
     $('#ownedBtn').onclick = () => openOwnedModal(true);
     $('#ownedModalClose').onclick = () => openOwnedModal(false);
@@ -2428,6 +2547,7 @@
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
+      if (!$('#pietanModal').hidden) { openPietan(false); return; }
       if (!$('#ownedModal').hidden) { openOwnedModal(false); return; }
       if (!$('#savedModal').hidden) { openSavedModal(false); return; }
       if (!$('#autoResultPanel').hidden) { openResultModal(false); return; }

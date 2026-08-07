@@ -838,7 +838,53 @@ body.view-build  #screenSelect { display: none; }
 .am-foot[hidden] { display: none; }
 .am-foot button { width: 100%; }
 
-/* 기본 파츠 설정 (미보유 배제) */
+/* 피탄 시뮬레이터 */
+.pietan-modal { width: min(760px, 94vw); }
+.pietan-dura { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 12px 16px 4px; }
+.pietan-dura-lb { font-size: 12px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+.pietan-dura-cell { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; }
+.pietan-dura-t { color: var(--muted); }
+.pietan-dura-v { font-weight: 700; font-variant-numeric: tabular-nums; }
+.pietan-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.pietan-dot.armorRange { background: #e0a03a; }
+.pietan-dot.armorBeam { background: #4aa3ff; }
+.pietan-dot.armorMelee { background: #e6604a; }
+.pietan-hint { padding: 2px 16px 0; color: var(--muted); font-size: 12px; }
+.pietan-hint b { color: var(--text); }
+.pietan-modal #pietanQuery { margin: 8px 16px 4px; width: calc(100% - 32px); }
+.pietan-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 6px 16px 16px; min-height: 0; }
+.pietan-list { overflow-y: auto; max-height: 46vh; border: 1px solid var(--line); border-radius: 9px; }
+.pietan-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 9px; cursor: pointer;
+  font-size: 12.5px; border-bottom: 1px solid var(--line);
+}
+.pietan-row:last-child { border-bottom: 0; }
+.pietan-row:hover { background: var(--panel-2); }
+.pietan-row.on { background: rgba(255, 201, 60, .18); }
+.pietan-wn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pietan-wp { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 700; }
+.pietan-result {
+  border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: var(--panel-2);
+  display: flex; flex-direction: column; gap: 9px; align-self: start;
+}
+.pietan-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 30px 8px; }
+.pietan-rhd { display: flex; align-items: center; gap: 7px; }
+.pietan-rnm { font-size: 14px; }
+.pietan-sub { color: var(--muted); font-size: 12px; margin-top: -3px; }
+.pietan-metric {
+  display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 8px;
+  padding: 7px 0; border-top: 1px solid var(--line);
+}
+.pietan-metric.sub { padding: 2px 0; border-top: 0; opacity: .85; }
+.pietan-mlb { font-weight: 700; font-size: 13px; }
+.pietan-mv { font-size: 20px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.pietan-metric.sub .pietan-mv { font-size: 15px; }
+.pietan-mnote { font-size: 11px; color: var(--muted); text-align: right; }
+.pietan-foot { font-size: 10.5px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+.pietan-more { padding: 8px; text-align: center; color: var(--muted); font-size: 11.5px; }
+@media (max-width: 620px) { .pietan-cols { grid-template-columns: 1fr; } }
+
+/* 기본 파츠 설정 (기본 제외 파츠) */
 .owned-hint { padding: 10px 16px 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .owned-hint b { color: var(--text); }
 .owned-modal #ownedQuery { margin: 8px 16px 4px; width: calc(100% - 32px); }
