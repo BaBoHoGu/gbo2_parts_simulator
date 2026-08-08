@@ -81,11 +81,18 @@
   //   「よろけ値を N%かつ小数点以下切り捨て で計算」 → 받는 누적치 ×(N/100) (감소)
   //   「蓄積よろけまでの値が N% になる」           → 다운 임계 100→N% (상승)
   // 더불어 피해 경감(被ダメージ －N%)도 속성별로 읽어 격파 계산에 쓴다.
+  // 일부 기체는 유명 스킬의 desc(수치)가 비어 있다(예: 메사 F01 의 마뉴버아머). 이름으로 기본값 보정.
+  const STAGGER_FALLBACK = {
+    'マニューバーアーマー': { mult: 0.8, cuts: [{ scope: 'all', pct: 10 }] },
+    'ハイ・マニューバーアーマー': { mult: 0.5, cuts: [{ scope: 'all', pct: 40 }] }
+  };
+
   function parseStaggerSkill(sk) {
     const blob = (sk.eff || '') + ' / ' + (sk.desc || '');
     const mm = blob.match(/よろけ値を\s*(\d+)\s*%?かつ小数点以下切り捨て/);
     const tm = blob.match(/蓄積よろけまでの値が\s*(\d+)\s*%/);
-    if (!mm && !tm) return null;                       // 누적치에 영향 없으면 제외
+    const fb = STAGGER_FALLBACK[sk.name];
+    if (!mm && !tm && !fb) return null;                // 누적치에 영향 없으면 제외
     const cuts = [];
     const push = (re, scope) => { const m = blob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
     push(/(?:射撃属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'shoot');
@@ -94,22 +101,26 @@
     push(/(?:格闘属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'melee');
     push(/(?:^|[・\/\s])被ダメージ\s*[－-]\s*(\d+)\s*%/, 'all');
     push(/ダメージを\s*(\d+)\s*%軽減/, 'all');
-    return { mult: mm ? Number(mm[1]) / 100 : 1, threshold: tm ? Number(tm[1]) : null, cuts };
+    // desc 에서 아무 수치도 못 읽었고 알려진 스킬이면 기본값 사용
+    if (!mm && fb) { if (!cuts.length && fb.cuts) cuts.push(...fb.cuts); }
+    return { mult: mm ? Number(mm[1]) / 100 : (fb ? fb.mult : 1), threshold: tm ? Number(tm[1]) : null, cuts };
   }
 
-  /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록 (이름 중복 제거). */
+  /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록.
+   *  같은 이름이 LV 구간별로 여러 개면(예: 데미지컨트롤 LV1=130·LV2~=160) 현재 LV 에 맞는 최상위를 쓴다. */
   function staggerSkillsOf(ms, lv) {
     if (!ms) return [];
     const modes = msSkillsData[baseName(ms.MS名)] || [];
-    const out = [], seen = new Set();
+    const byName = new Map();
     for (const mode of modes) for (const sk of (mode.skills || [])) {
-      if (!msLvHit(sk.msLv, lv) || seen.has(sk.name)) continue;
+      if (!msLvHit(sk.msLv, lv)) continue;
       const p = parseStaggerSkill(sk);
       if (!p) continue;
-      seen.add(sk.name);
-      out.push({ name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts });
+      const from = Number((String(sk.msLv || '').match(/LV\s*(\d+)/i) || [])[1]) || 1;
+      const prev = byName.get(sk.name);
+      if (!prev || from > prev.from) byName.set(sk.name, { name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts, from });
     }
-    return out;
+    return [...byName.values()];
   }
 
   /** 켜 둔 스킬만 적용한 누적치 상태 — mult(받는 누적 배수) · threshold(임계) · cuts(피해 경감). */
