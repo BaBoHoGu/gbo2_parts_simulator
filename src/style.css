@@ -854,7 +854,21 @@ body.view-build  #screenSelect { display: none; }
 .pietan-corr input { width: 62px; padding: 3px 6px; }
 .pietan-ctrl-lb { font-size: 12px; color: var(--muted); margin-left: 2px; }
 .pietan-ctrl .seg { display: inline-flex; }
+.pietan-stagger { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .pietan-hint { padding: 2px 16px 0; color: var(--muted); font-size: 12px; }
+/* 누적치 스킬 체크박스 (내구 지표 하단·피탄 시뮬 공통) */
+.stagger-row .dura-v { color: #e6b04a; }
+.stagger-detail { font-size: 11px; color: var(--muted); margin-left: 8px; }
+.stagger-skills { display: flex; flex-wrap: wrap; gap: 4px 8px; padding: 4px 0 2px; }
+.stg-chk {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;
+  font-size: 11.5px; padding: 2px 7px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2);
+}
+.stg-chk:hover { border-color: var(--accent); }
+.stg-chk.on { border-color: var(--accent); background: rgba(255, 201, 60, .14); }
+.stg-chk input { margin: 0; cursor: pointer; }
+.stg-tag { color: var(--muted); font-variant-numeric: tabular-nums; }
+.dura-row.stagger-row { flex-wrap: wrap; }
 .pietan-hint b { color: var(--text); }
 .pietan-modal #pietanQuery { margin: 8px 16px 4px; width: calc(100% - 32px); }
 .pietan-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 6px 16px 16px; min-height: 0; }

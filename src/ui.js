@@ -76,6 +76,79 @@
   const durabilityOf = (total, armorKey) =>
     Math.round((total.hp || 0) / (1 - Math.min(total[armorKey] || 0, 99) / 100));
 
+  /* ---------- 누적치(스태거) 스킬 ---------- */
+  // 방어측 스킬의 누적치 영향을 파싱한다. 두 패턴이 핵심:
+  //   「よろけ値を N%かつ小数点以下切り捨て で計算」 → 받는 누적치 ×(N/100) (감소)
+  //   「蓄積よろけまでの値が N% になる」           → 다운 임계 100→N% (상승)
+  // 더불어 피해 경감(被ダメージ －N%)도 속성별로 읽어 격파 계산에 쓴다.
+  function parseStaggerSkill(sk) {
+    const blob = (sk.eff || '') + ' / ' + (sk.desc || '');
+    const mm = blob.match(/よろけ値を\s*(\d+)\s*%?かつ小数点以下切り捨て/);
+    const tm = blob.match(/蓄積よろけまでの値が\s*(\d+)\s*%/);
+    if (!mm && !tm) return null;                       // 누적치에 영향 없으면 제외
+    const cuts = [];
+    const push = (re, scope) => { const m = blob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
+    push(/(?:射撃属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'shoot');
+    push(/(?:ビーム属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'beam');
+    push(/(?:実弾属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'solid');
+    push(/(?:格闘属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'melee');
+    push(/(?:^|[・\/\s])被ダメージ\s*[－-]\s*(\d+)\s*%/, 'all');
+    push(/ダメージを\s*(\d+)\s*%軽減/, 'all');
+    return { mult: mm ? Number(mm[1]) / 100 : 1, threshold: tm ? Number(tm[1]) : null, cuts };
+  }
+
+  /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록 (이름 중복 제거). */
+  function staggerSkillsOf(ms, lv) {
+    if (!ms) return [];
+    const modes = msSkillsData[baseName(ms.MS名)] || [];
+    const out = [], seen = new Set();
+    for (const mode of modes) for (const sk of (mode.skills || [])) {
+      if (!msLvHit(sk.msLv, lv) || seen.has(sk.name)) continue;
+      const p = parseStaggerSkill(sk);
+      if (!p) continue;
+      seen.add(sk.name);
+      out.push({ name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts });
+    }
+    return out;
+  }
+
+  /** 켜 둔 스킬만 적용한 누적치 상태 — mult(받는 누적 배수) · threshold(임계) · cuts(피해 경감). */
+  function activeStaggerMods(ms, lv) {
+    const skills = staggerSkillsOf(ms, lv);
+    let mult = 1, threshold = 100; const cuts = [];
+    for (const s of skills) {
+      if (!state.staggerOn.has(s.name)) continue;
+      if (s.mult < 1) mult *= s.mult;                  // 감소만 곱한다
+      if (s.threshold != null) threshold = Math.max(threshold, s.threshold);
+      cuts.push(...s.cuts);
+    }
+    return { skills, mult, threshold, cuts };
+  }
+
+  /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. */
+  function staggerDmgFactor(cuts, attr) {
+    const kind = attr === 'melee' ? 'melee' : 'shoot';
+    let f = 1;
+    for (const c of cuts) if (c.scope === 'all' || c.scope === kind || c.scope === attr) f *= (1 - c.pct / 100);
+    return f;
+  }
+
+  /** 누적치 스킬 체크박스 묶음 (내구 지표·피탄 시뮬 공통). onChange 는 상태 반영 후 콜백. */
+  function staggerCheckList(ms, lv, onChange) {
+    const wrap = el('div', 'stagger-skills');
+    const skills = staggerSkillsOf(ms, lv);
+    for (const s of skills) {
+      const lab = el('label', 'stg-chk' + (state.staggerOn.has(s.name) ? ' on' : ''));
+      const box = el('input'); box.type = 'checkbox'; box.checked = state.staggerOn.has(s.name);
+      box.onchange = () => { box.checked ? state.staggerOn.add(s.name) : state.staggerOn.delete(s.name); onChange(); };
+      lab.append(box);
+      lab.append(el('span', 'stg-nm', s.ko));
+      lab.append(el('span', 'stg-tag', s.threshold != null ? `임계 ${s.threshold}%` : `×${+s.mult.toFixed(3)}`));
+      wrap.append(lab);
+    }
+    return { wrap, count: skills.length };
+  }
+
   // 요약 카드(자동 구성 결과·저장 목록)에 공통으로 보여 주는 핵심 스탯 — 선회는 지상만
   const SUMMARY_STAT_KEYS = ['hp', 'armorRange', 'armorBeam', 'armorMelee', 'shoot',
     'meleeCorrection', 'speed', 'highSpeedMovement', 'thruster', 'turnPerformanceGround'];
@@ -95,6 +168,7 @@
     equipped: [],
     locked: new Set(),
     banned: new Set(),      // 기본 제외한 파츠 — 영구 저장, 우클릭·모달로 토글, 모든 기체 공통
+    staggerOn: new Set(),   // 켜 둔 누적치(스태거) 스킬 이름 — 내구 지표·피탄 시뮬 공통
     stage: 6,
     expansion: C.EXPANSION_NONE,
     expLevel: C.MAX_EXPANSION_LEVEL,   // 확장 스킬 레벨 (LV1~LV5)
@@ -1234,6 +1308,23 @@
       du.append(cell);
     }
     body.append(du);
+
+    // 누적치(스태거) — 임계·감소 스킬을 반영한 실효 내성. 무장별 다운은 '피탄 시뮬'에서.
+    if (state.ms) {
+      const lv = msLevel(state.ms);
+      const stg = activeStaggerMods(state.ms, lv);
+      const sr = el('div', 'dura-row stagger-row');
+      sr.append(el('span', 'dura-lb', '누적치'));
+      const cell = el('span', 'dura-cell');
+      cell.append(el('span', 'dura-k', '내성'));
+      cell.append(el('span', 'dura-v', Math.round(stg.threshold / stg.mult) + '%'));
+      sr.append(cell);
+      sr.append(el('span', 'stagger-detail',
+        `임계 ${stg.threshold}%` + (stg.mult < 1 ? ` · 받는 누적 ×${+stg.mult.toFixed(3)}` : '')));
+      body.append(sr);
+      const cl = staggerCheckList(state.ms, lv, () => renderAll());
+      if (cl.count) body.append(cl.wrap);
+    }
   }
 
   /* ---------- 파츠 목록 ---------- */
@@ -1931,6 +2022,14 @@
     if (!wl.length) box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
   }
 
+  function renderPietanChecks() {
+    const box = $('#pietanStagger'); if (!box) return;
+    box.innerHTML = '';
+    if (!state.ms) return;
+    const cl = staggerCheckList(state.ms, msLevel(state.ms), () => { renderPietanChecks(); renderPietanResult(); });
+    if (cl.count) { box.append(el('span', 'pietan-ctrl-lb', '누적치 스킬')); box.append(cl.wrap); }
+  }
+
   function renderPietanResult() {
     const box = $('#pietanResult'); if (!box) return;
     box.innerHTML = '';
@@ -1938,18 +2037,21 @@
     const w = pietanPick, r = stats();
     const key = PIETAN_ARMOR[w.attr] || 'armorRange';
     const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
-    // 1히트 피해 = 실식의 공격 항 [Wp・{Att・ETCa}・Pr] (방어는 실효 HP 가 담당하므로 Def=1).
-    // 격투 판정 무장은 격투 피해식으로, 그 외는 사격 피해식으로 계산한다.
+    const stg = activeStaggerMods(state.ms, state.ms ? msLevel(state.ms) : 1);   // 내 누적치 스킬
+    const dmgFactor = staggerDmgFactor(stg.cuts, w.attr);          // 방어 스킬의 피해 경감
+    // 1히트 피해 = 실식의 공격 항 [Wp・{Att・ETCa}・Pr] × 방어 스킬 피해 경감 (방어보정은 실효 HP).
     const perHit = base => base > 0
-      ? (w.attr === 'melee'
+      ? Math.floor((w.attr === 'melee'
         ? D.meleeDamage(base, pietanCorr, { attr: pietanAttr })
-        : D.shootingDamage(base, pietanCorr, { attr: pietanAttr }))
+        : D.shootingDamage(base, pietanCorr, { attr: pietanAttr })) * dmgFactor)
       : 0;
     const dmg = perHit(w.power || w.charged);
     const hits = dmg > 0 ? Math.ceil(eff / dmg) : null;
     const chgDmg = (w.charged && w.charged !== w.power) ? perHit(w.charged) : 0;
     const chgHits = chgDmg > 0 ? Math.ceil(eff / chgDmg) : null;
-    const down = w.stagger > 0 ? Math.ceil(100 / w.stagger) : null;
+    // 다운 = 임계 ÷ (히트당 누적치 × 감소배수, 소수 버림). 누적치 스킬을 반영.
+    const perHitStagger = w.stagger > 0 ? Math.floor(w.stagger * stg.mult) : 0;
+    const down = perHitStagger > 0 ? Math.ceil(stg.threshold / perHitStagger) : null;
 
     const hd = el('div', 'pietan-rhd');
     hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
@@ -1968,15 +2070,17 @@
       m.append(el('span', 'pietan-mnote', note));
       return m;
     };
+    const cutTxt = dmgFactor < 1 ? ` · 스킬 경감 ×${+dmgFactor.toFixed(3)}` : '';
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
-      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}`));
+      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}${cutTxt}`));
     if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
+    const multTxt = stg.mult < 1 ? ` × ${+stg.mult.toFixed(3)} = ${perHitStagger}%` : '';
     const downNote = down != null
-      ? `100 ÷ ${w.stagger}%` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(down / w.pellets)}발` : '')
+      ? `임계 ${stg.threshold}% ÷ (${w.stagger}%${multTxt})` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(down / w.pellets)}발` : '')
       : '누적치 정보 없음';
     box.append(metric('다운까지', down != null ? down + '히트' : '—', downNote));
     box.append(el('div', 'pietan-foot',
-      '※ 위 공격 항은 실피해식[Wp·Att·Pr] 적용. 방어는 내구 지표(Def)로 반영. 국부보정·다운값 시간 감쇠는 미반영.'));
+      '※ 공격 항 실피해식[Wp·Att·Pr] + 방어 스킬 경감 적용. 방어보정은 내구 지표(Def). 국부보정·다운값 시간 감쇠는 미반영.'));
   }
 
   function openPietan(open) {
@@ -1988,7 +2092,7 @@
       $('#pietanMsName').textContent = T.msName(state.ms.MS名);
       $('#pietanCorr').value = pietanCorr;
       [...$('#pietanAttr').children].forEach(c => c.classList.toggle('on', c.dataset.a === pietanAttr));
-      renderPietanDura(); renderPietanLeft(); renderPietanResult();
+      renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
     }
   }
 
