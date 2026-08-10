@@ -17,15 +17,9 @@ const DELAY_MS = 1200;          // 요청 간 간격
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
   + '(KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 
-const msData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
 // gbo2.jp 가 wiki_url 을 비워 보낸 기체(ゴトラタン 등)를 override 로 보정 — 그래야 페이지를 받는다.
-{
-  const ovPath = path.join(ROOT, 'data', 'msData.override.json');
-  if (fs.existsSync(ovPath)) {
-    const ov = JSON.parse(fs.readFileSync(ovPath, 'utf8'));
-    for (const m of msData) { const o = ov[m.MS名]; if (o && o.wiki_url) m.wiki_url = o.wiki_url; }
-  }
-}
+const msData = require('./lib/msdata.js').applyWikiOverride(
+  JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')), ROOT);
 
 // --pages=ID,ID : 이 페이지들만 받는다 (배포본 증분 업데이트 — 캐시 전체를 받지 않음)
 const pagesArg = process.argv.find(a => a.startsWith('--pages='));
