@@ -788,6 +788,54 @@
     return { nc, ch };
   }
 
+  /* ---------- DPS(지속 화력) ---------- */
+  // 위력 칸 아래에 초당 피해를 보여 준다. 기본 위력 기준(파츠·스킬 미반영)의 무장 비교용.
+  //   순간 DPS = 1트리거 피해 ÷ 발사간격,  지속 DPS = 탄창분 피해 ÷ (탄창 소진 + 리로드/OH복귀)
+
+  /** 발사간격(초/발). 「N秒」 또는 「N発/分」(RPM), 없으면 쿨타임. 못 읽으면 0. */
+  function shotInterval(w, d) {
+    const info = w.info || {}, raw = (d && d.raw) || {};
+    const src = raw['発射間隔'] || info['発射間隔'] || info['発射 間隔'] || info['発射速度'] || info['クールタイム'] || '';
+    const rpm = String(src).match(/([\d.]+)\s*発\s*[\/／]\s*分/);
+    if (rpm && Number(rpm[1])) return 60 / Number(rpm[1]);
+    const sec = String(src).match(/([\d.]+)\s*秒/);
+    return sec ? Number(sec[1]) : 0;
+  }
+  /** 탄창(연속 발사 가능 수) — 실탄 弾数, 없으면 E팩/OH 의 「N発OH」. */
+  function magazineOf(w, d) {
+    const a = (d && d.raw && d.raw['弾数']) || (w.info && w.info['弾数']);
+    let m = a && String(a).match(/(\d+)/);
+    if (m) return Number(m[1]);
+    const oh = w.info && w.info['OHまでの弾数'];
+    m = oh && String(oh).match(/(\d+)\s*発/);
+    return m ? Number(m[1]) : 0;
+  }
+  /** 리로드/OH복귀 초. */
+  function reloadSecOf(w, d) {
+    const r = (d && d.raw && d.raw['リロード時間'])
+      || (w.info && (w.info['リロード時間'] || w.info['OH復帰時間'] || w.info['OH復帰速度']));
+    const m = r && String(r).match(/([\d.]+)\s*秒/);
+    return m ? Number(m[1]) : 0;
+  }
+  /** 위력 칸에 DPS 서브라인을 붙인다. 사격 무장만(격투 연격·실드·조사는 제외). */
+  function appendDps(cell, w, d, m) {
+    if (!d || d.power == null) return;
+    if (w.type === 'shield' || w.type === 'melee' || w.attr === 'melee') return;
+    if (/最大\s*\d+\s*ヒット|照射/.test((w.info && w.info['備考']) || '')) return;   // 조사류 제외
+    const t = shotInterval(w, d);
+    if (!t) return;
+    const hits = m ? m.n : 1;
+    const per = d.power * hits;                 // 1트리거(전탄) 피해
+    const burst = per / t;
+    const mag = magazineOf(w, d), reload = reloadSecOf(w, d);
+    const sustained = (mag && reload) ? (per * mag) / (mag * t + reload) : burst;
+    const sub = el('span', 'w-sub w-dps', '⚡DPS ' + Math.round(sustained).toLocaleString());
+    sub.title = `순간 ${Math.round(burst).toLocaleString()} · 지속 ${Math.round(sustained).toLocaleString()}`
+      + (mag && reload ? ` (탄창 ${mag}발 · ${+t.toFixed(2)}초/발 · 리로드 ${reload}초)` : ` (${+t.toFixed(2)}초/발)`)
+      + ' · 기본 위력 기준(파츠·스킬 미반영)';
+    cell.append(sub);
+  }
+
   function renderWeapons() {
     const box = $('#weaponList');
     box.innerHTML = '';
@@ -912,7 +960,9 @@
       };
 
       // ③ 논차지 · ④ 풀차지 (집속이 없으면 논차지 칸만 채운다) — 칸별 배수를 따로 준다
-      row.append(dmgCell(d.power, mult.nc));
+      const ncCell = dmgCell(d.power, mult.nc);
+      appendDps(ncCell, w, d, mult.nc);          // 논차지 위력 아래 DPS 서브라인
+      row.append(ncCell);
       const full = dmgCell(d.powerCharged, mult.ch);
       if (d.powerCharged != null && chargeSec) {
         full.append(el('span', 'w-sub', (mustCharge ? '필수 ' : '') + chargeSec

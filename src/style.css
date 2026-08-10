@@ -878,6 +878,7 @@ body.view-build  #screenSelect { display: none; }
 .stg-tag { color: var(--muted); font-variant-numeric: tabular-nums; }
 .stg-hint { flex-basis: 100%; font-size: 10.5px; color: var(--muted); margin-bottom: 1px; }
 .stg-cond { font-size: 9.5px; color: var(--accent); background: rgba(255,201,60,.13); border-radius: 4px; padding: 0 4px; margin-left: 1px; }
+.w-dps { color: #ffcf5a; font-weight: 700; }
 .dura-row.stagger-row { flex-wrap: wrap; }
 .pietan-hint b { color: var(--text); }
 .pietan-modal #pietanQuery { margin: 8px 16px 4px; width: calc(100% - 32px); }
