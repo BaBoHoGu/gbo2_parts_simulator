@@ -819,7 +819,7 @@
   }
   /** 위력 칸에 DPS 서브라인을 붙인다. 사격 무장만(격투 연격·실드·조사는 제외). */
   function appendDps(cell, w, d, m) {
-    if (!d || d.power == null) return;
+    if (!d || !d.power) return;                 // 위력 0(센서·연막 등 유틸)은 DPS 없음
     if (w.type === 'shield' || w.type === 'melee' || w.attr === 'melee') return;
     if (/最大\s*\d+\s*ヒット|照射/.test((w.info && w.info['備考']) || '')) return;   // 조사류 제외
     const t = shotInterval(w, d);
