@@ -302,6 +302,15 @@ if (!files.length) {
 }
 
 const msData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
+// gbo2.jp 미러가 wiki_url 을 비워 보낸 신기체(예: ゴトラタン)를 override 로 보정 —
+// 그래야 페이지↔기체 매핑이 서서 무장이 추출된다.
+{
+  const ovPath = path.join(ROOT, 'data', 'msData.override.json');
+  if (fs.existsSync(ovPath)) {
+    const ov = JSON.parse(fs.readFileSync(ovPath, 'utf8'));
+    for (const m of msData) { const o = ov[m.MS名]; if (o && o.wiki_url) m.wiki_url = o.wiki_url; }
+  }
+}
 const namesByPage = new Map();
 for (const m of msData) {
   const id = (String(m.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
