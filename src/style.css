@@ -928,18 +928,18 @@ body.view-build  #screenSelect { display: none; }
   font-size: 12px; font-weight: 700; color: var(--muted);
   background: var(--panel); padding: 3px 0; border-bottom: 1px solid var(--line);
 }
-.owned-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px 10px; }
-.owned-row {
-  display: flex; align-items: center; gap: 7px; padding: 3px 6px;
-  border-radius: 6px; cursor: pointer; font-size: 12.5px; user-select: none;
+/* 파츠 적용 화면과 같은 타일 격자 (part-tile 재사용) */
+.owned-tiles {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 5px; margin-bottom: 4px;
 }
-.owned-row:hover { background: var(--panel-2); }
-.owned-row input { cursor: pointer; flex: none; }
-.owned-row img { width: 24px; height: 24px; object-fit: contain; flex: none; border-radius: 4px; }
-.owned-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* 체크(미보유)된 행은 흐리게 — 배제됨을 한눈에 */
-.owned-row.off { opacity: .5; }
-.owned-row.off .owned-nm { text-decoration: line-through; }
+.owned-tile { position: relative; cursor: pointer; }
+/* 제외된 타일 위 '제외됨' 배지 */
+.owned-mark {
+  height: 14px; margin-top: 1px; font-size: 10px; font-weight: 800; text-align: center;
+  color: #ff8a8a; letter-spacing: .2px;
+}
+.owned-tile.banned .owned-mark { color: #ff6b6b; }
 
 /* 기체 스킬 목록 (무장 칸 안 인라인 패널) */
 .mskill-inline {
