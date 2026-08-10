@@ -217,6 +217,9 @@ function getBaseStats(ms, form) {
   for (const [key, field] of Object.entries(TRANSFORM_FIELD)) {
     if (ms[field] != null) base[key] = Number(ms[field]);
   }
+  // 変形 스탯이 없는 「시스템 발동(트랜잠) 등」 모드 — override 로 넣은 절대값으로 갈아끼운다.
+  const alt = ms._altMode;
+  if (alt) for (const k of STAT_KEYS) if (typeof alt[k] === 'number') base[k] = alt[k];
   return base;
 }
 
