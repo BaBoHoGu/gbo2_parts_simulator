@@ -2,6 +2,20 @@
  "ゴトラタン_LV1": {
   "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/7794.html"
  },
+ "ダブルオーライザー_LV1": {
+  "_altMode": {
+   "mode": "システム発動中", "label": "시스템 발동중",
+   "shoot": 55, "meleeCorrection": 60, "speed": 145,
+   "highSpeedMovement": 240, "turnPerformanceGround": 87, "turnPerformanceSpace": 96
+  }
+ },
+ "スサノオ_LV1": {
+  "_altMode": {
+   "mode": "システム発動中", "label": "시스템 발동중",
+   "shoot": 55, "meleeCorrection": 60, "speed": 150,
+   "highSpeedMovement": 245, "turnPerformanceGround": 90, "turnPerformanceSpace": 99
+  }
+ },
  "ガッシャ_LV2": {
   "高速移動": 200,
   "スラスター": 70

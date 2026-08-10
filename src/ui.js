@@ -515,6 +515,7 @@
 
   function selectMs(m) {
     state.ms = m;
+    state.form = 'normal';      // 새 기체는 통상 모드부터
     state.equipped = [];
     state.locked.clear();
     state.detailPart = null;
@@ -836,10 +837,20 @@
     cell.append(sub);
   }
 
+  /* ---------- 모드(변형·시스템발동 등) ---------- */
+  // 変形(msData 변형 스탯)뿐 아니라, 変形 스탯이 없는 트랜잠(システム発動中) 기체도
+  // override 의 _altMode(그 모드 스탯 절대값)로 통상/그 모드를 전환한다. 무장은 나누지 않는다.
+  function altModeOf(ms) {
+    if (!ms) return null;
+    if (C.hasTransform(ms)) return { key: '変形時', label: '변형' };
+    if (ms._altMode) return { key: ms._altMode.mode, label: ms._altMode.label };
+    return null;
+  }
+
   function renderWeapons() {
     const box = $('#weaponList');
     box.innerHTML = '';
-    const list = msWeapons();
+    const list = msWeapons();       // 무장은 모드로 나누지 않고 전부 보여 준다(보기 편하게)
     $('#weaponCount').textContent = list.length ? `${list.length}종` : '';
 
     if (!list.length) {
@@ -2517,13 +2528,14 @@
   function renderFormSeg() {
     const seg = $('#formSeg');
     seg.innerHTML = '';
-    if (!C.hasTransform(state.ms)) {
+    const alt = altModeOf(state.ms);
+    if (!alt) {
       seg.hidden = true;
-      state.form = 'normal';        // 일반 기체로 옮겨가면 통상으로 되돌린다
+      state.form = 'normal';        // 모드 없는 기체로 옮겨가면 통상으로 되돌린다
       return;
     }
     seg.hidden = false;
-    for (const [v, label] of [['normal', '통상'], ['transform', '변형']]) {
+    for (const [v, label] of [['normal', '통상'], ['transform', alt.label]]) {
       const b = el('button', 'seg-btn' + (state.form === v ? ' on' : ''), label);
       b.onclick = () => {
         state.form = v;
