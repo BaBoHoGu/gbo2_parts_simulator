@@ -81,20 +81,15 @@
   //   「よろけ値を N%かつ小数点以下切り捨て で計算」 → 받는 누적치 ×(N/100) (감소)
   //   「蓄積よろけまでの値が N% になる」           → 다운 임계 100→N% (상승)
   // 더불어 피해 경감(被ダメージ －N%)도 속성별로 읽어 격파 계산에 쓴다.
-  // 일부 기체는 유명 스킬의 desc(수치)가 비어 있다(예: 메사 F01 의 마뉴버아머). 이름으로 기본값 보정.
-  const STAGGER_FALLBACK = {
-    'マニューバーアーマー': { mult: 0.8, cuts: [{ scope: 'all', pct: 10 }] },
-    'ハイ・マニューバーアーマー': { mult: 0.5, cuts: [{ scope: 'all', pct: 40 }] }
-  };
-
   function parseStaggerSkill(sk) {
     const blob = (sk.eff || '') + ' / ' + (sk.desc || '');
     // 한 스킬에 단계별로 여러 값이 있을 수 있다(예: 헤비어택改 動作開始 35% / 判定発生 70%).
     // 상시 가정하는 값이 아니므로, 감소가 가장 약한(값이 큰) 쪽을 보수적으로 쓴다.
     const mults = [...blob.matchAll(/よろけ値を\s*(\d+)\s*%?かつ小数点以下切り捨て/g)].map(m => Number(m[1]));
     const tm = blob.match(/蓄積よろけまでの値が\s*(\d+)\s*%/);
-    const fb = STAGGER_FALLBACK[sk.name];
-    if (!mults.length && !tm && !fb) return null;      // 누적치에 영향 없으면 제외
+    // 수치(감소 배수 또는 임계)가 있는 스킬만 누적치 스킬로 본다. 「リアクションを軽減」만 있는
+    // 기본 마뉴버아머(desc 비어있음)처럼 배수 없는 것은 누적치에 영향 없으므로 제외한다.
+    if (!mults.length && !tm) return null;
     const cuts = [];
     const push = (re, scope) => { const m = blob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
     push(/(?:射撃属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'shoot');
@@ -103,9 +98,7 @@
     push(/(?:格闘属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'melee');
     push(/(?:^|[・\/\s])被ダメージ\s*[－-]\s*(\d+)\s*%/, 'all');
     push(/ダメージを\s*(\d+)\s*%軽減/, 'all');
-    // desc 에서 아무 수치도 못 읽었고 알려진 스킬이면 기본값 사용
-    if (!mults.length && fb && !cuts.length && fb.cuts) cuts.push(...fb.cuts);
-    const mult = mults.length ? Math.max(...mults) / 100 : (fb ? fb.mult : 1);
+    const mult = mults.length ? Math.max(...mults) / 100 : 1;
     return { mult, threshold: tm ? Number(tm[1]) : null, cuts };
   }
 
