@@ -7,6 +7,18 @@ const read = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
 const readJson = (...p) => JSON.parse(read(...p));
 
 const msData = readJson('data', 'msData.json');
+// 공식 미러(gbo2.jp)에 아직 없는 기체(예: 갓 추가된 LV — 위키엔 있으나 미러 반영 전)를 보탠다.
+// 이미 같은 MS名 이 있으면 건너뛴다 → 나중에 공식에 반영되면 이 추가분은 자동 무시된다.
+{
+  const addPath = path.join(ROOT, 'data', 'msData.additions.json');
+  if (fs.existsSync(addPath)) {
+    const adds = JSON.parse(fs.readFileSync(addPath, 'utf8'));
+    const have = new Set(msData.map(m => m.MS名));
+    let n = 0;
+    for (const m of adds) if (!have.has(m.MS名)) { msData.push(m); n++; }
+    if (n) console.log(`추가 기체 병합: ${n}기 (msData.additions.json)`);
+  }
+}
 // gbo2.jp 가 아직 반영 못 한 스탯·슬롯은 위키 값으로 교정한다 (extract_ms_wiki.js 가 만든 목록).
 const overridePath = path.join(ROOT, 'data', 'msData.override.json');
 if (fs.existsSync(overridePath)) {
