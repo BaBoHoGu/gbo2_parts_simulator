@@ -876,6 +876,7 @@ body.view-build  #screenSelect { display: none; }
 .stg-chk.on { border-color: var(--accent); background: rgba(255, 201, 60, .14); }
 .stg-chk input { margin: 0; cursor: pointer; }
 .stg-tag { color: var(--muted); font-variant-numeric: tabular-nums; }
+.stg-sep { align-self: center; font-size: 10.5px; color: var(--muted); margin: 0 2px 0 4px; white-space: nowrap; }
 .dura-row.stagger-row { flex-wrap: wrap; }
 .pietan-hint b { color: var(--text); }
 .pietan-modal #pietanQuery { margin: 8px 16px 4px; width: calc(100% - 32px); }
