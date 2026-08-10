@@ -119,15 +119,19 @@
     return [...byName.values()];
   }
 
-  /** 켜 둔 스킬만 적용한 누적치 상태 — mult(받는 누적 배수) · threshold(임계) · cuts(피해 경감). */
+  /** 켜 둔 스킬만 적용한 누적치 상태 — mult(받는 누적 배수) · threshold(임계) · cuts(피해 경감).
+   *  누적치 감소(마뉴버·정지사격·헤비어택·활공 등)는 발동 상황이 배타적이라 동시에 못 쓴다
+   *  → 하나만 적용(여럿 켜졌으면 감소가 가장 약한=값이 큰 쪽 보수적). 임계형(데미지컨트롤)은 상시. */
   function activeStaggerMods(ms, lv) {
     const skills = staggerSkillsOf(ms, lv);
-    let mult = 1, threshold = 100; const cuts = [];
-    for (const s of skills) {
-      if (!state.staggerOn.has(s.name)) continue;
-      if (s.mult < 1) mult *= s.mult;                  // 감소만 곱한다
+    const on = skills.filter(s => state.staggerOn.has(s.name));
+    const cond = on.filter(s => s.mult < 1);
+    const pick = cond.length ? cond.reduce((a, b) => (b.mult > a.mult ? b : a)) : null;
+    const mult = pick ? pick.mult : 1;
+    let threshold = 100; const cuts = [];
+    for (const s of on) {
       if (s.threshold != null) threshold = Math.max(threshold, s.threshold);
-      cuts.push(...s.cuts);
+      if (s === pick || s.mult >= 1) cuts.push(...s.cuts);   // 택한 상황부 + 상시 스킬의 피해경감만
     }
     return { skills, mult, threshold, cuts };
   }
@@ -140,18 +144,31 @@
     return f;
   }
 
-  /** 누적치 스킬 체크박스 묶음 (내구 지표·피탄 시뮬 공통). onChange 는 상태 반영 후 콜백. */
+  /** 누적치 스킬 체크박스 묶음 (내구 지표·피탄 시뮬 공통). onChange 는 상태 반영 후 콜백.
+   *  상황부 감소 스킬은 배타(택1) — 하나 켜면 다른 상황부는 자동 해제. 임계형은 독립. */
   function staggerCheckList(ms, lv, onChange) {
     const wrap = el('div', 'stagger-skills');
     const skills = staggerSkillsOf(ms, lv);
-    for (const s of skills) {
+    const cond = skills.filter(s => s.mult < 1);    // 상황별 누적치 감소 — 택1
+    const pass = skills.filter(s => s.mult >= 1);   // 상시(임계 등)
+    const mk = (s, exclusive) => {
       const lab = el('label', 'stg-chk' + (state.staggerOn.has(s.name) ? ' on' : ''));
       const box = el('input'); box.type = 'checkbox'; box.checked = state.staggerOn.has(s.name);
-      box.onchange = () => { box.checked ? state.staggerOn.add(s.name) : state.staggerOn.delete(s.name); onChange(); };
-      lab.append(box);
-      lab.append(el('span', 'stg-nm', s.ko));
-      lab.append(el('span', 'stg-tag', s.threshold != null ? `임계 ${s.threshold}%` : `×${+s.mult.toFixed(3)}`));
-      wrap.append(lab);
+      box.onchange = () => {
+        if (box.checked) {
+          if (exclusive) for (const o of cond) if (o.name !== s.name) state.staggerOn.delete(o.name);  // 배타
+          state.staggerOn.add(s.name);
+        } else state.staggerOn.delete(s.name);
+        onChange();
+      };
+      lab.append(box, el('span', 'stg-nm', s.ko),
+        el('span', 'stg-tag', s.threshold != null ? `임계 ${s.threshold}%` : `×${+s.mult.toFixed(3)}`));
+      return lab;
+    };
+    for (const s of pass) wrap.append(mk(s, false));
+    if (cond.length) {
+      if (pass.length) wrap.append(el('span', 'stg-sep', '상황별(택1)'));
+      for (const s of cond) wrap.append(mk(s, true));
     }
     return { wrap, count: skills.length };
   }
