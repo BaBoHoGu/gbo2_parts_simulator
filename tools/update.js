@@ -176,18 +176,31 @@ async function detectPatch(msList) {
   const weapNow = (() => { try { return rdJson('data', 'weapons.json'); } catch { return {}; } })();
   const sklNow = (() => { try { return rdJson('data', 'ms_skills.json'); } catch { return {}; } })();
   const urlOf = m => (ovNow[m.MS名] && ovNow[m.MS名].wiki_url) || m.wiki_url || '';
-  const emptyUrlMechs = remote.filter(m => !String(urlOf(m)).trim());
+  // M1: 받아봤지만 위키가 여전히 빈 페이지는 24시간 재시도 안 함 → 미완성 기체가 있어도
+  //     매 실행 전체 재빌드로 폭주하지 않게 한다(run.ps1 을 실제로 "가볍게" 유지).
+  const RETRY_MS = 24 * 3600 * 1000;
+  let attempts = {}; try { attempts = rdJson('data', 'wiki_attempts.json'); } catch { /* 없어도 됨 */ }
+  const triedRecently = key => attempts[key] && (Date.now() - attempts[key] < RETRY_MS);
+
+  const emptyUrlAll = remote.filter(m => !String(urlOf(m)).trim());
+  const emptyUrlMechs = emptyUrlAll.filter(m => !triedRecently('n:' + m.MS名));   // 이번에 조회할 것
   const seenBase = new Set();
-  const staleMechs = remote.filter(m => {
+  const staleAll = remote.filter(m => {
     const b = baseName(m.MS名); if (seenBase.has(b)) return false; seenBase.add(b);
-    const id = pageId(urlOf(m)); if (!id) return false;      // 빈 url 은 emptyUrlMechs 가 담당
+    const id = pageId(urlOf(m)); if (!id) return false;      // 빈 url 은 emptyUrl 이 담당
     return !weapNow[id] || !(weapNow[id].weapons || []).length || !sklNow[b];
   });
-  if (emptyUrlMechs.length) {
-    console.log(`  ⚠ wiki_url 없음  ${emptyUrlMechs.length}기 (무장·스킬 누락) — 위키에서 페이지 자동 조회 시도`);
-    emptyUrlMechs.slice(0, 8).forEach(m => console.log(`     ! ${m.MS名}  (${m.属性} 코스트${m.コスト})`));
+  const staleMechs = staleAll.filter(m => !triedRecently('p:' + pageId(urlOf(m))));
+  const skipped = (emptyUrlAll.length - emptyUrlMechs.length) + (staleAll.length - staleMechs.length);
+
+  if (emptyUrlAll.length) {
+    console.log(`  ⚠ wiki_url 없음  ${emptyUrlAll.length}기 (무장·스킬 누락)`
+      + (emptyUrlMechs.length ? ' — 위키에서 페이지 자동 조회 시도' : ''));
+    emptyUrlAll.slice(0, 8).forEach(m => console.log(`     ! ${m.MS名}  (${m.属性} 코스트${m.コスト})`));
   }
-  if (staleMechs.length) console.log(`  ⚠ 무장/스킬 누락  ${staleMechs.length}기 — 재수신 대상에 포함`);
+  if (staleAll.length) console.log(`  ⚠ 무장/스킬 누락  ${staleAll.length}기`
+    + (staleMechs.length ? ` — ${staleMechs.length}기 재수신` : ''));
+  if (skipped) console.log(`  (최근 24h 시도했으나 위키가 여전히 빈 ${skipped}건은 건너뜀 — data/wiki_attempts.json)`);
 
   const nothing = !added.length && !changed.length && !removed.length && !partsChanged && !patchNew
     && !emptyUrlMechs.length && !staleMechs.length;
@@ -250,6 +263,19 @@ async function detectPatch(msList) {
     run('build_weapon_i18n.js');
     // 위키 스탯·슬롯이 gbo2.jp 와 다르면(gbo2 가 아직 패치 미반영) 위키 값으로 교정한다.
     if (targetIds.length) run('extract_ms_wiki.js', ['--pages=' + targetIds.join(',')]);
+
+    // M1: 받아봤는데도 무장/스킬이 여전히 빈 페이지는 시도 시각을 남겨 24h 재시도 방지.
+    //     채워진 것은 기록을 지운다(다음에 또 바뀌면 즉시 재시도되도록).
+    const weapAfter = (() => { try { return rdJson('data', 'weapons.json'); } catch { return {}; } })();
+    const sklAfter = (() => { try { return rdJson('data', 'ms_skills.json'); } catch { return {}; } })();
+    const now = Date.now();
+    for (const m of [...staleMechs, ...emptyUrlMechs]) {
+      const id = pageId(urlOf(m)), b = baseName(m.MS名);
+      const empty = !id || !weapAfter[id] || !(weapAfter[id].weapons || []).length || !sklAfter[b];
+      if (empty) attempts[id ? 'p:' + id : 'n:' + m.MS名] = now;
+      else { if (id) delete attempts['p:' + id]; delete attempts['n:' + m.MS名]; }
+    }
+    fs.writeFileSync(path.join(ROOT, 'data', 'wiki_attempts.json'), JSON.stringify(attempts) + '\n');
   }
 
   // (d) 이미지 — 새 기체뿐 아니라 새 파츠도 받아야 하므로 둘 중 하나만 바뀌어도 실행한다.

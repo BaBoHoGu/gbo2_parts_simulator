@@ -2086,10 +2086,12 @@
       `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}${cutTxt}`));
     if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
     const multTxt = stg.mult < 1 ? ` × ${+stg.mult.toFixed(3)} = ${perHitStagger}%` : '';
+    // down==null 은 "정보 없음"이 아니라 다운이 안 되는 경우다 — 무장 누적치 0% 이거나 스킬 감소로 0.
+    const downVal = down != null ? down + '히트' : (w.stagger > 0 ? '다운 안 됨' : '—');
     const downNote = down != null
       ? `임계 ${stg.threshold}% ÷ (${w.stagger}%${multTxt})` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(down / w.pellets)}발` : '')
-      : '누적치 정보 없음';
-    box.append(metric('다운까지', down != null ? down + '히트' : '—', downNote));
+      : (w.stagger > 0 ? `누적치 ${w.stagger}% × ${+stg.mult.toFixed(3)} < 1 — 이 무장으론 다운 안 됨` : '누적치 0% (다운값 없음)');
+    box.append(metric('다운까지', downVal, downNote));
     box.append(el('div', 'pietan-foot',
       '※ 공격 항 실피해식[Wp·Att·Pr] + 방어 스킬 경감 적용. 방어보정은 내구 지표(Def). 국부보정·다운값 시간 감쇠는 미반영.'));
   }
