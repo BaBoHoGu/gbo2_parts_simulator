@@ -57,6 +57,14 @@ function parseSkills(seg) {
 
 // page id → 기체 base 이름들
 const msData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
+// wiki_url 이 빈 신기체(ゴトラタン 등)를 override 로 보정 — 페이지↔기체 매핑에 필요.
+{
+  const ovPath = path.join(ROOT, 'data', 'msData.override.json');
+  if (fs.existsSync(ovPath)) {
+    const ov = JSON.parse(fs.readFileSync(ovPath, 'utf8'));
+    for (const m of msData) { const o = ov[m.MS名]; if (o && o.wiki_url) m.wiki_url = o.wiki_url; }
+  }
+}
 const byPage = new Map();
 for (const m of msData) {
   const id = (String(m.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];

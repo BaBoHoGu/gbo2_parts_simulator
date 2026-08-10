@@ -143,6 +143,18 @@ async function detectPatch(msList) {
   console.log(`  기체  현재 ${local.length} / 원격 ${remote.length}`);
   console.log(`  신규  ${added.length}`);
   added.forEach(m => console.log(`     + ${m.MS名}  (${m.属性} 코스트${m.コスト})  ${m.wiki_url}`));
+
+  // wiki_url 이 빈 기체는 무장·스킬을 못 받아온다(gbo2.jp 가 링크 없이 넣는 신기체 — 예: ゴトラタン).
+  // override 에 wiki_url 을 넣으면 extract 가 매핑하므로, 안 넣은 것만 경고한다.
+  {
+    let ov = {}; try { ov = rdJson('data', 'msData.override.json'); } catch { /* 없어도 됨 */ }
+    const noUrl = remote.filter(m => !String(m.wiki_url || '').trim() && !(ov[m.MS名] && ov[m.MS名].wiki_url));
+    if (noUrl.length) {
+      console.log(`  ⚠ wiki_url 없음 ${noUrl.length}기 — 이대로면 무장·스킬이 누락됩니다.`);
+      console.log(`     위키에서 페이지 ID 를 찾아 data/msData.override.json 에 "wiki_url" 을 넣으세요:`);
+      noUrl.slice(0, 10).forEach(m => console.log(`     ! ${m.MS名}  (${m.属性} 코스트${m.コスト})`));
+    }
+  }
   console.log(`  스탯 변경  ${changed.length}`);
   changed.slice(0, 20).forEach(c => {
     const o = localByName.get(c.ms.MS名);
