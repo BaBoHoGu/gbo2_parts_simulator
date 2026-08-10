@@ -2537,9 +2537,26 @@
     renderStats();
     renderPartList();
     renderBannedCount();
+    renderIncompleteNotice();
     renderDetail(state.detailPart);
     renderWeapons();
     if (!document.getElementById('mskillInline').hidden) { mskillMode = 0; renderMskill(); }
+  }
+
+  /** 무장·스킬 데이터가 아직 없는 기체(예: gbo2.jp 선패치·위키 미반영)면 상단에 붉은 경고를 띄운다. */
+  function renderIncompleteNotice() {
+    const box = $('#incompleteNotice');
+    if (!box) return;
+    if (!state.ms) { box.hidden = true; return; }
+    const noWeapons = msWeapons().length === 0;
+    const noSkills = !((msSkillsData[baseName(state.ms.MS名)] || []).some(m => (m.skills || []).length));
+    if (noWeapons || noSkills) {
+      const miss = [noWeapons && '무장', noSkills && '스킬'].filter(Boolean).join('·');
+      box.textContent = `⚠ 이 기체는 ${miss} 정보가 아직 없습니다 — 추후 업데이트에서 반영될 예정입니다.`;
+      box.hidden = false;
+    } else {
+      box.hidden = true;
+    }
   }
 
   /* ---------- 초기화 ---------- */
