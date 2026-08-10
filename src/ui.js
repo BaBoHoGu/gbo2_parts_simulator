@@ -81,6 +81,19 @@
   //   「よろけ値を N%かつ小数点以下切り捨て で計算」 → 받는 누적치 ×(N/100) (감소)
   //   「蓄積よろけまでの値が N% になる」           → 다운 임계 100→N% (상승)
   // 더불어 피해 경감(被ダメージ －N%)도 속성별로 읽어 격파 계산에 쓴다.
+  // 발동 조건을 짧은 라벨로 — 동시 발동 가능 여부는 기체마다 복잡(정지+활공 가능, 이동+정지 불가 등)해
+  // 자동 배타 대신 라벨만 보여 주고 사용자가 양립 가능한 것만 고르게 한다.
+  function staggerCond(blob) {
+    if (/動作開始|判定発生|格闘攻撃中/.test(blob)) return '격투중';   // 헤비어택 등 — 「空中で使用可」 언급보다 우선
+    if (/静止|停止/.test(blob)) return '정지중';
+    if (/空中|落下|滑空|ジャンプ/.test(blob)) return '공중';
+    if (/高速移動中|ブースト移動中/.test(blob)) return '이동중';
+    if (/変形|フライトモード/.test(blob)) return '변형중';
+    if (/機体HP|HP\s*\d+\s*%|HP\d+/.test(blob)) return 'HP조건';
+    if (/発動中|使用中|モード中|効果中|ハイパーモード/.test(blob)) return '발동중';
+    return '상시';
+  }
+
   function parseStaggerSkill(sk) {
     const blob = (sk.eff || '') + ' / ' + (sk.desc || '');
     // 한 스킬에 단계별로 여러 값이 있을 수 있다(예: 헤비어택改 動作開始 35% / 判定発生 70%).
@@ -99,7 +112,7 @@
     push(/(?:^|[・\/\s])被ダメージ\s*[－-]\s*(\d+)\s*%/, 'all');
     push(/ダメージを\s*(\d+)\s*%軽減/, 'all');
     const mult = mults.length ? Math.max(...mults) / 100 : 1;
-    return { mult, threshold: tm ? Number(tm[1]) : null, cuts };
+    return { mult, threshold: tm ? Number(tm[1]) : null, cuts, cond: staggerCond(blob) };
   }
 
   /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록.
@@ -114,7 +127,18 @@
       if (!p) continue;
       const from = Number((String(sk.msLv || '').match(/LV\s*(\d+)/i) || [])[1]) || 1;
       const prev = byName.get(sk.name);
-      if (!prev || from > prev.from) byName.set(sk.name, { name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts, from });
+      if (!prev || from > prev.from) byName.set(sk.name, { name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts, cond: p.cond, from });
+    }
+    // 부여 스킬 — 하이퍼모드 등이 「ハイ・マニューバーアーマー LVn」을 付与하는데 직접 항목이 없어 놓친다.
+    // 하이마뉴버는 값이 일정(×0.5·피해−40%)하므로 부여를 감지해 별도 항목으로 넣는다.
+    if (!byName.has('ハイ・マニューバーアーマー')) {
+      let granted = false;
+      for (const mode of modes) for (const sk of (mode.skills || [])) {
+        if (!msLvHit(sk.msLv, lv) || sk.name === 'ハイ・マニューバーアーマー') continue;
+        if (/ハイ[・･]?マニューバーアーマー\s*LV\d/.test((sk.eff || '') + ' ' + (sk.desc || ''))) { granted = true; break; }
+      }
+      if (granted) byName.set('ハイ・マニューバーアーマー(부여)',
+        { name: 'ハイ・マニューバーアーマー(부여)', ko: '하이 마뉴버아머(부여)', mult: 0.5, threshold: null, cuts: [{ scope: 'all', pct: 40 }], cond: '이동중', from: 1 });
     }
     return [...byName.values()];
   }
@@ -122,16 +146,15 @@
   /** 켜 둔 스킬만 적용한 누적치 상태 — mult(받는 누적 배수) · threshold(임계) · cuts(피해 경감).
    *  누적치 감소(마뉴버·정지사격·헤비어택·활공 등)는 발동 상황이 배타적이라 동시에 못 쓴다
    *  → 하나만 적용(여럿 켜졌으면 감소가 가장 약한=값이 큰 쪽 보수적). 임계형(데미지컨트롤)은 상시. */
+  // 체크한 스킬만 적용. 동시 발동 가능 여부는 사용자가 조건 라벨을 보고 판단(양립 불가한 건 안 켬).
   function activeStaggerMods(ms, lv) {
     const skills = staggerSkillsOf(ms, lv);
-    const on = skills.filter(s => state.staggerOn.has(s.name));
-    const cond = on.filter(s => s.mult < 1);
-    const pick = cond.length ? cond.reduce((a, b) => (b.mult > a.mult ? b : a)) : null;
-    const mult = pick ? pick.mult : 1;
-    let threshold = 100; const cuts = [];
-    for (const s of on) {
+    let mult = 1, threshold = 100; const cuts = [];
+    for (const s of skills) {
+      if (!state.staggerOn.has(s.name)) continue;
+      if (s.mult < 1) mult *= s.mult;                    // 감소 배수는 곱
       if (s.threshold != null) threshold = Math.max(threshold, s.threshold);
-      if (s === pick || s.mult >= 1) cuts.push(...s.cuts);   // 택한 상황부 + 상시 스킬의 피해경감만
+      cuts.push(...s.cuts);
     }
     return { skills, mult, threshold, cuts };
   }
@@ -145,30 +168,20 @@
   }
 
   /** 누적치 스킬 체크박스 묶음 (내구 지표·피탄 시뮬 공통). onChange 는 상태 반영 후 콜백.
-   *  상황부 감소 스킬은 배타(택1) — 하나 켜면 다른 상황부는 자동 해제. 임계형은 독립. */
+   *  각 스킬의 발동 조건을 라벨로 보여 주고, 동시 발동 가능한 것만 사용자가 자유롭게 체크한다. */
   function staggerCheckList(ms, lv, onChange) {
     const wrap = el('div', 'stagger-skills');
     const skills = staggerSkillsOf(ms, lv);
-    const cond = skills.filter(s => s.mult < 1);    // 상황별 누적치 감소 — 택1
-    const pass = skills.filter(s => s.mult >= 1);   // 상시(임계 등)
-    const mk = (s, exclusive) => {
+    if (skills.length > 1) wrap.append(el('span', 'stg-hint', '※ 동시에 발동 가능한 조건만 체크하세요'));
+    for (const s of skills) {
       const lab = el('label', 'stg-chk' + (state.staggerOn.has(s.name) ? ' on' : ''));
+      lab.title = s.cond + ' 발동';
       const box = el('input'); box.type = 'checkbox'; box.checked = state.staggerOn.has(s.name);
-      box.onchange = () => {
-        if (box.checked) {
-          if (exclusive) for (const o of cond) if (o.name !== s.name) state.staggerOn.delete(o.name);  // 배타
-          state.staggerOn.add(s.name);
-        } else state.staggerOn.delete(s.name);
-        onChange();
-      };
+      box.onchange = () => { box.checked ? state.staggerOn.add(s.name) : state.staggerOn.delete(s.name); onChange(); };
       lab.append(box, el('span', 'stg-nm', s.ko),
-        el('span', 'stg-tag', s.threshold != null ? `임계 ${s.threshold}%` : `×${+s.mult.toFixed(3)}`));
-      return lab;
-    };
-    for (const s of pass) wrap.append(mk(s, false));
-    if (cond.length) {
-      if (pass.length) wrap.append(el('span', 'stg-sep', '상황별(택1)'));
-      for (const s of cond) wrap.append(mk(s, true));
+        el('span', 'stg-tag', s.threshold != null ? `임계 ${s.threshold}%` : `×${+s.mult.toFixed(3)}`),
+        el('span', 'stg-cond', s.cond));
+      wrap.append(lab);
     }
     return { wrap, count: skills.length };
   }
