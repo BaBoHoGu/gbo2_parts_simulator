@@ -89,10 +89,12 @@
 
   function parseStaggerSkill(sk) {
     const blob = (sk.eff || '') + ' / ' + (sk.desc || '');
-    const mm = blob.match(/よろけ値を\s*(\d+)\s*%?かつ小数点以下切り捨て/);
+    // 한 스킬에 단계별로 여러 값이 있을 수 있다(예: 헤비어택改 動作開始 35% / 判定発生 70%).
+    // 상시 가정하는 값이 아니므로, 감소가 가장 약한(값이 큰) 쪽을 보수적으로 쓴다.
+    const mults = [...blob.matchAll(/よろけ値を\s*(\d+)\s*%?かつ小数点以下切り捨て/g)].map(m => Number(m[1]));
     const tm = blob.match(/蓄積よろけまでの値が\s*(\d+)\s*%/);
     const fb = STAGGER_FALLBACK[sk.name];
-    if (!mm && !tm && !fb) return null;                // 누적치에 영향 없으면 제외
+    if (!mults.length && !tm && !fb) return null;      // 누적치에 영향 없으면 제외
     const cuts = [];
     const push = (re, scope) => { const m = blob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
     push(/(?:射撃属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'shoot');
@@ -102,8 +104,9 @@
     push(/(?:^|[・\/\s])被ダメージ\s*[－-]\s*(\d+)\s*%/, 'all');
     push(/ダメージを\s*(\d+)\s*%軽減/, 'all');
     // desc 에서 아무 수치도 못 읽었고 알려진 스킬이면 기본값 사용
-    if (!mm && fb) { if (!cuts.length && fb.cuts) cuts.push(...fb.cuts); }
-    return { mult: mm ? Number(mm[1]) / 100 : (fb ? fb.mult : 1), threshold: tm ? Number(tm[1]) : null, cuts };
+    if (!mults.length && fb && !cuts.length && fb.cuts) cuts.push(...fb.cuts);
+    const mult = mults.length ? Math.max(...mults) / 100 : (fb ? fb.mult : 1);
+    return { mult, threshold: tm ? Number(tm[1]) : null, cuts };
   }
 
   /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록.
