@@ -55,6 +55,28 @@ copyFile(p('package.json'), path.join(STAGE, 'package.json'));
 copyDir(p('tools'), path.join(STAGE, 'tools'), (s, e) => !(e.isFile() && e.name.startsWith('_')));
 copyDir(p('src'), path.join(STAGE, 'src'));
 
+// 3.5) 위키 자동복구용 puppeteer-core (+의존성 트리) — 릴리스 사용자도 Cloudflare 를 통과해
+//      신기체 무장·스킬을 자동 수신한다. 브라우저 자체는 안 담고 시스템 Edge/Chrome 을 구동한다.
+{
+  const seen = new Set();
+  const collect = name => {
+    if (seen.has(name)) return;
+    const pj = p('node_modules', name, 'package.json');
+    if (!fs.existsSync(pj)) return;
+    seen.add(name);
+    const pkg = JSON.parse(fs.readFileSync(pj, 'utf8'));
+    for (const d of Object.keys(pkg.dependencies || {})) collect(d);
+  };
+  collect('puppeteer-core');
+  let n = 0;
+  for (const name of seen) {
+    const src = p('node_modules', name);
+    if (fs.existsSync(src)) { copyDir(src, path.join(STAGE, 'node_modules', name)); n++; }
+  }
+  if (n) console.log(`  puppeteer-core 동봉: ${n}개 패키지 (위키 자동복구용)`);
+  else console.log('  ⚠ puppeteer-core 미설치 — 릴리스에 위키 자동복구가 빠집니다 (npm install --no-save puppeteer-core)');
+}
+
 // 4) 데이터 (진단용 buff_skills.json 은 뺀다)
 copyDir(p('data'), path.join(STAGE, 'data'), s => !s.endsWith('buff_skills.json'));
 
