@@ -1866,23 +1866,33 @@
       if (q) list = list.filter(p => partSearchText.get(p).includes(q));
       if (!list.length) continue;
       box.append(el('div', 'owned-cat', PART_CAT_KO[cat] || cat));
-      const grid = el('div', 'owned-grid');
-      for (const p of list) {
-        const off = state.banned.has(p.name);
-        const row = el('label', 'owned-row' + (off ? ' off' : ''));
-        row.title = T.partName(p.name);
-        const cb = el('input');
-        cb.type = 'checkbox';
-        cb.checked = off;
-        cb.onchange = () => { toggleExcluded(p.name, cb.checked); row.classList.toggle('off', cb.checked); };
-        row.append(cb);
-        row.append(img(partImg(p.name), 'parts', p.name));
-        row.append(el('span', 'owned-nm', T.partName(p.name)));
-        grid.append(row);
-      }
+      const grid = el('div', 'owned-tiles');
+      for (const p of list) grid.append(ownedTile(p));
       box.append(grid);
     }
     if (!box.children.length) box.append(el('div', 'empty-state', '검색 결과가 없습니다.'));
+  }
+
+  /** 기본 파츠 설정용 파츠 타일 — 파츠 적용 화면과 같은 모양. 클릭으로 제외 토글. */
+  function ownedTile(p) {
+    const v = partView(p);
+    const off = state.banned.has(p.name);
+    const tile = el('div', 'part-tile owned-tile' + (off ? ' banned' : ''));
+    tile.title = `${v.fullNm}\n${v.cat} · ${v.slotTxt}\n\n${v.desc}`;
+    const thumb = el('div', 'pt-thumb');
+    thumb.append(img(partImg(p.name), 'parts', p.name));
+    if (v.lv) thumb.append(el('span', 'pt-lv', 'LV' + v.lv));
+    tile.append(thumb);
+    tile.append(el('div', 'pt-nm', v.shortNm));
+    const mark = el('div', 'owned-mark', off ? '제외됨' : '');
+    tile.append(mark);
+    tile.onclick = () => {
+      const now = !state.banned.has(p.name);
+      toggleExcluded(p.name, now);            // 세트 갱신·장착해제·저장·배지
+      tile.classList.toggle('banned', now);
+      mark.textContent = now ? '제외됨' : '';
+    };
+    return tile;
   }
 
   function openOwnedModal(open) {
