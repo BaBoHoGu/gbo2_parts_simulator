@@ -65,8 +65,9 @@ if (process.platform !== 'win32' || process.arch !== 'x64') {
 }
 copyFile(process.execPath, path.join(STAGE, 'node', 'node.exe'));
 
-// 5) 사용법
+// 5) 사용법 + 패치노트(변경사항 안내)
 fs.copyFileSync(p('release', '사용법.txt'), path.join(STAGE, '사용법.txt'));
+if (fs.existsSync(p('패치노트.md'))) fs.copyFileSync(p('패치노트.md'), path.join(STAGE, '패치노트.md'));
 
 // 6) 압축 (Windows 기본 PowerShell Compress-Archive)
 const zip = STAGE + '.zip';
