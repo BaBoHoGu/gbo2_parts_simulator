@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { resolvePageIds } = require('./lib/wiki_fetch.js');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
@@ -168,7 +169,28 @@ async function detectPatch(msList) {
   console.log(`  밸런스 패치  ${patch.date || '(확인 실패)'}`
     + (patchNew ? `  ← 새 패치 (조정 기체 ${patch.ids.length}개 무장 갱신)` : ' (이미 반영)'));
 
-  const nothing = !added.length && !changed.length && !removed.length && !partsChanged && !patchNew;
+  // 무장·스킬이 비어 있거나 wiki_url 이 없는 기체를 매 실행 재점검한다(A·진단).
+  // → gbo2.jp 가 먼저 패치되고 위키가 늦어도, 위키가 채워지는 다음 실행에서 자동 완성된다.
+  const baseName = n => String(n).replace(/_LV\d+$/, '');
+  let ovNow = {}; try { ovNow = rdJson('data', 'msData.override.json'); } catch { /* 없어도 됨 */ }
+  const weapNow = (() => { try { return rdJson('data', 'weapons.json'); } catch { return {}; } })();
+  const sklNow = (() => { try { return rdJson('data', 'ms_skills.json'); } catch { return {}; } })();
+  const urlOf = m => (ovNow[m.MS名] && ovNow[m.MS名].wiki_url) || m.wiki_url || '';
+  const emptyUrlMechs = remote.filter(m => !String(urlOf(m)).trim());
+  const seenBase = new Set();
+  const staleMechs = remote.filter(m => {
+    const b = baseName(m.MS名); if (seenBase.has(b)) return false; seenBase.add(b);
+    const id = pageId(urlOf(m)); if (!id) return false;      // 빈 url 은 emptyUrlMechs 가 담당
+    return !weapNow[id] || !(weapNow[id].weapons || []).length || !sklNow[b];
+  });
+  if (emptyUrlMechs.length) {
+    console.log(`  ⚠ wiki_url 없음  ${emptyUrlMechs.length}기 (무장·스킬 누락) — 위키에서 페이지 자동 조회 시도`);
+    emptyUrlMechs.slice(0, 8).forEach(m => console.log(`     ! ${m.MS名}  (${m.属性} 코스트${m.コスト})`));
+  }
+  if (staleMechs.length) console.log(`  ⚠ 무장/스킬 누락  ${staleMechs.length}기 — 재수신 대상에 포함`);
+
+  const nothing = !added.length && !changed.length && !removed.length && !partsChanged && !patchNew
+    && !emptyUrlMechs.length && !staleMechs.length;
   if (nothing) { console.log('\n✔ 이미 최신 상태입니다.'); return; }
   if (CHECK_ONLY) { console.log('\n(--check: 감지만 하고 반영하지 않았습니다. 반영하려면 --check 없이 실행하세요.)'); return; }
 
@@ -187,12 +209,35 @@ async function detectPatch(msList) {
   // (b) 기체 스탯이 바뀐 경우에만 msData 교체
   if (msChanged) fs.copyFileSync(path.join(REMOTE, 'msData.json'), path.join(ROOT, 'data', 'msData.json'));
 
-  // (c) 위키·무장·스킬 — 신규/변경 기체 + 새 패치로 조정된 기체 페이지를 다시 받아 병합
-  if (msChanged || patchNew) {
+  // (b2) 빈 wiki_url 자동 해소 (B) — 위키 機体一覧 에서 기체명 → 페이지ID 를 찾아 override 에 기록.
+  //      gbo2.jp 가 링크 없이 넣은 기체(ゴトラタン 등)를 사람 손 없이 연결한다.
+  if (emptyUrlMechs.length) {
+    try {
+      const map = await resolvePageIds();
+      let n = 0;
+      for (const m of emptyUrlMechs) {
+        const id = map.get(baseName(m.MS名)) || map.get(m.MS名);
+        if (!id) continue;
+        ovNow[m.MS名] = { ...(ovNow[m.MS名] || {}), wiki_url: `https://w.atwiki.jp/battle-operation2/pages/${id}.html` };
+        console.log(`     ↳ wiki_url 자동 연결: ${m.MS名} → pages/${id}`);
+        n++;
+      }
+      if (n) fs.writeFileSync(path.join(ROOT, 'data', 'msData.override.json'), JSON.stringify(ovNow, null, 1) + '\n');
+      const still = emptyUrlMechs.filter(m => !(ovNow[m.MS名] && ovNow[m.MS名].wiki_url));
+      if (still.length) console.log(`     (위키에서 못 찾음 ${still.length}기 — 수동 override 필요: ${still.slice(0, 5).map(m => m.MS名).join(', ')})`);
+    } catch (e) {
+      console.log('  wiki_url 자동 조회 실패:', e.message, '— 수동으로 data/msData.override.json 에 wiki_url 을 넣으세요.');
+    }
+  }
+
+  // (c) 위키·무장·스킬 — 신규/변경 기체 + 새 패치로 조정된 기체 + 무장/스킬 누락 기체(A) 를 받아 병합
+  if (msChanged || patchNew || staleMechs.length || emptyUrlMechs.length) {
     const ids = new Set();
-    for (const m of added) { const id = pageId(m.wiki_url); if (id) ids.add(id); }
-    for (const c of changed) { const id = pageId(c.ms.wiki_url); if (id) ids.add(id); }
+    for (const m of added) { const id = pageId(urlOf(m)); if (id) ids.add(id); }
+    for (const c of changed) { const id = pageId(urlOf(c.ms)); if (id) ids.add(id); }
     if (patchNew) for (const id of patch.ids) ids.add(id);   // 밸런스 패치로 무장이 바뀐 기체
+    for (const m of staleMechs) { const id = pageId(urlOf(m)); if (id) ids.add(id); }   // A: 누락 기체
+    for (const m of emptyUrlMechs) { const id = pageId(urlOf(m)); if (id) ids.add(id); } // B: 방금 연결된 기체
     const targetIds = [...ids];
     console.log(`  갱신 대상 위키 페이지 ${targetIds.length}개`);
 

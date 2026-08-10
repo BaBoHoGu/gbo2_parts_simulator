@@ -1,4 +1,5 @@
-# 의존성 — 검증 도구용으로만 --no-save 설치한다
+# 의존성 — 검증(jsdom)·위키 수신(puppeteer-core) 도구용. package.json 만 커밋하고
+# `npm install` 로 복구한다 (node_modules·lock 은 커밋 안 함).
 node_modules/
 package-lock.json
 

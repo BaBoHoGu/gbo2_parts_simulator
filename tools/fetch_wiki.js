@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { fetchWikiHtml } = require('./lib/wiki_fetch.js');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'raw', 'wiki');
@@ -17,6 +18,14 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
   + '(KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 
 const msData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
+// gbo2.jp 가 wiki_url 을 비워 보낸 기체(ゴトラタン 등)를 override 로 보정 — 그래야 페이지를 받는다.
+{
+  const ovPath = path.join(ROOT, 'data', 'msData.override.json');
+  if (fs.existsSync(ovPath)) {
+    const ov = JSON.parse(fs.readFileSync(ovPath, 'utf8'));
+    for (const m of msData) { const o = ov[m.MS名]; if (o && o.wiki_url) m.wiki_url = o.wiki_url; }
+  }
+}
 
 // --pages=ID,ID : 이 페이지들만 받는다 (배포본 증분 업데이트 — 캐시 전체를 받지 않음)
 const pagesArg = process.argv.find(a => a.startsWith('--pages='));
@@ -63,23 +72,43 @@ function get(url, redirects = 0) {
   let done = 0, skip = 0, fail = 0;
   const failed = [];
 
+  const needHeadless = [];        // plain https 로 못 받은 것 (대개 Cloudflare) → 헤드리스로 재시도
+  const nameById = new Map();
   for (const p of list) {
     const dest = path.join(OUT, p.id + '.html');
     if (!FORCE && fs.existsSync(dest) && fs.statSync(dest).size > 10000) { skip++; continue; }
+    nameById.set(p.id, p.names[0]);
     try {
       const buf = await get(p.url);
       fs.writeFileSync(dest, buf);
       done++;
     } catch (e) {
-      fail++;
-      failed.push(p.id + ' ' + p.names[0] + ' — ' + e.message);
+      needHeadless.push(p.id);     // 실패는 헤드리스로 넘긴다 (아직 fail 로 세지 않는다)
     }
-    if ((done + fail) % 25 === 0) {
-      process.stdout.write(`\r받는 중 ${done + fail + skip}/${list.length} (신규 ${done} · 건너뜀 ${skip} · 실패 ${fail})`);
+    if ((done + needHeadless.length) % 25 === 0) {
+      process.stdout.write(`\r받는 중 ${done + needHeadless.length + skip}/${list.length} (신규 ${done} · 건너뜀 ${skip} · 헤드리스대기 ${needHeadless.length})`);
     }
     await sleep(DELAY_MS);
   }
   process.stdout.write('\r');
+
+  // Cloudflare 등으로 막힌 것을 헤드리스 Chrome 으로 통과해 받는다 (브라우저 1개 재사용).
+  if (needHeadless.length) {
+    console.log(`plain 수신 실패 ${needHeadless.length}건 → 헤드리스 Chrome 으로 재시도…`);
+    try {
+      const r = await fetchWikiHtml(needHeadless, (id, html) => {
+        fs.writeFileSync(path.join(OUT, id + '.html'), html);
+      });
+      done += r.ok.length;
+      fail += r.fail.length;
+      r.fail.forEach(id => failed.push(id + ' ' + (nameById.get(id) || '') + ' — 헤드리스도 실패'));
+    } catch (e) {
+      fail += needHeadless.length;
+      console.log('헤드리스 수신 불가:', e.message);
+      needHeadless.forEach(id => failed.push(id + ' ' + (nameById.get(id) || '') + ' — ' + e.message));
+    }
+  }
+
   console.log(`완료 — 전체 ${list.length} · 신규 ${done} · 건너뜀 ${skip} · 실패 ${fail}`);
   if (failed.length) console.log('실패 목록:\n  ' + failed.join('\n  '));
 })();

@@ -1,0 +1,9 @@
+{
+  "name": "gbo2-parts-sim",
+  "private": true,
+  "description": "GBO2 커스텀 파츠 시뮬레이터 — 소스는 순수 브라우저 JS. 이 의존성은 검증(jsdom)·위키 수신(puppeteer-core, Cloudflare 우회)용 도구에만 쓰인다. 배포본(dist)에는 포함되지 않는다. `npm install` 로 복구.",
+  "devDependencies": {
+    "jsdom": "*",
+    "puppeteer-core": "*"
+  }
+}
