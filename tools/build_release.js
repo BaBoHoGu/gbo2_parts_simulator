@@ -49,6 +49,8 @@ copyDir(p('assets', 'images'), path.join(STAGE, 'assets', 'images'));
 // 3) 업데이트 파이프라인 (검증 전용 스크립트 _*.js 는 뺀다)
 copyFile(p('update.ps1'), path.join(STAGE, 'update.ps1'));
 copyFile(p('run.ps1'), path.join(STAGE, 'run.ps1'));   // 업데이트 확인 후 자동 실행 런처
+copyFile(p('run.bat'), path.join(STAGE, 'run.bat'));       // 더블클릭 실행 (run.ps1 래퍼)
+copyFile(p('update.bat'), path.join(STAGE, 'update.bat')); // 더블클릭 업데이트 (update.ps1 래퍼)
 copyFile(p('package.json'), path.join(STAGE, 'package.json'));
 copyDir(p('tools'), path.join(STAGE, 'tools'), (s, e) => !(e.isFile() && e.name.startsWith('_')));
 copyDir(p('src'), path.join(STAGE, 'src'));
