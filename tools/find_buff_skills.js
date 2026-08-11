@@ -99,7 +99,20 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       const dmgPct = dmgAny || dmgShoot || dmgMelee;
       const powerPct = flat(0, /威力\s*[＋+]\s*(\d+)\s*[%％]/)
         || flat(0, /威力が\s*(\d+)\s*[%％]\s*(?:増加|上昇)/);
-      if (!shoot && !melee && !shootPct && !meleePct && !crouchPct && !dmgPct && !powerPct) continue;
+      // 방어·기동·HP 발동 버프 (능력UP「바이오센서」 등) — 스탯 패널에 반영한다.
+      // 「各耐性 ＋15」은 3속성 모두에 얹고, 개별 「耐実弾補正 ＋N」이 있으면 더한다.
+      // ＋ 를 요구해 조건 표기(「機体HPが N%以下」·AMBAC 「旋回性能が N増加」)는 걸러진다.
+      const armorAll = flat(0, /各耐性\s*[＋+]\s*(\d+)/);
+      const armorRange = armorAll + flat(0, /耐実弾補正\s*[＋+]\s*(\d+)/);
+      const armorBeam = armorAll + flat(0, /耐ビーム補正\s*[＋+]\s*(\d+)/);
+      const armorMelee = armorAll + flat(0, /耐格闘補正\s*[＋+]\s*(\d+)/);
+      const speed = flat(0, /スピード\s*[＋+]\s*(\d+)/);
+      const hispeed = flat(0, /高速移動\s*[＋+]\s*(\d+)/);
+      const thruster = flat(0, /スラスター\s*[＋+]\s*(\d+)(?!\s*%)/);   // 「スラスター消費 －N%」는 －·% 라 안 걸림
+      const turn = flat(0, /旋回(?:性能)?\s*[＋+]\s*(\d+)/);
+      const hpUp = flat(0, /(?:機体HP|最大HP)\s*[＋+]\s*(\d+)/);
+      const hasMob = armorRange || armorBeam || armorMelee || speed || hispeed || thruster || turn || hpUp;
+      if (!shoot && !melee && !shootPct && !meleePct && !crouchPct && !dmgPct && !powerPct && !hasMob) continue;
 
       // 표는 [스킬명, 스킬LV, 필요 기체LV, 설명, 효과] 순이다.
       // 필요 기체LV 는 「LV1～」「Lv4～」「Lv1～3」 처럼 적혀 있다.
@@ -111,6 +124,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         // 스킬명 = LV 표기가 아닌 첫 칸
         skill: row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)',
         shoot, melee, shootPct, meleePct, crouchPct, limitUp, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
+        armorRange, armorBeam, armorMelee, speed, hispeed, thruster, turn, hpUp,
         forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
         secs: Number((line.match(/効果時間は?[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
         hp: Number((line.match(/機体HPが?\s*(\d+)\s*[%％]以下/) || [])[1]) || null,
@@ -125,7 +139,9 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
 // (부모의 발동 조건으로) 그 기체에 얹는다. 표준 추출 이력이 아예 없는 스킬만 경고로 남긴다.
 {
   const wOf = e => (e.shoot || 0) + (e.melee || 0) + (e.shootPct || 0) + (e.meleePct || 0)
-    + (e.crouchPct || 0) + (e.dmgAny || 0) + (e.dmgShoot || 0) + (e.dmgMelee || 0);
+    + (e.crouchPct || 0) + (e.dmgAny || 0) + (e.dmgShoot || 0) + (e.dmgMelee || 0)
+    + (e.armorRange || 0) + (e.armorBeam || 0) + (e.armorMelee || 0)
+    + (e.speed || 0) + (e.hispeed || 0) + (e.thruster || 0) + (e.turn || 0) + (e.hpUp || 0);
   // 이름 → 표준 추출 수치(가장 높은 것). 이번 실행분(found) + 기존 skills.json(증분 실행 대비).
   const buffByName = new Map();
   const consider = (name, e, extra) => {
@@ -167,6 +183,9 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       shoot: src.shoot || 0, melee: src.melee || 0, shootPct: src.shootPct || 0, meleePct: src.meleePct || 0,
       crouchPct: src.crouchPct || 0, limitUp: src.limitUp || 0, dmgPct: src.dmgPct || 0,
       dmgShoot: src.dmgShoot || 0, dmgMelee: src.dmgMelee || 0, dmgAny: src.dmgAny || 0, powerPct: 0,
+      armorRange: src.armorRange || 0, armorBeam: src.armorBeam || 0, armorMelee: src.armorMelee || 0,
+      speed: src.speed || 0, hispeed: src.hispeed || 0, thruster: src.thruster || 0,
+      turn: src.turn || 0, hpUp: src.hpUp || 0,
       // 발동 조건은 부모(부여한 스킬)의 것을 따른다
       forever: g.forever, secs: g.secs, hp: g.hp, manual: g.manual
     });
@@ -214,7 +233,8 @@ if (process.argv.includes('--ui')) {
   // 시뮬레이터가 쓰는 형태 — 기체마다 고를 수 있는 버프 스킬 목록.
   // 태클·특정 무장의 위력만 올리는 스킬은 성능표·무장표에 얹을 자리가 없어 뺀다.
   const usable = found.filter(r =>
-    r.shoot || r.melee || r.shootPct || r.meleePct || r.crouchPct || r.dmgPct);
+    r.shoot || r.melee || r.shootPct || r.meleePct || r.crouchPct || r.dmgPct
+    || r.armorRange || r.armorBeam || r.armorMelee || r.speed || r.hispeed || r.thruster || r.turn || r.hpUp);
   const byMs = new Map();
   for (const r of usable) {
     if (!byMs.has(r.ms)) byMs.set(r.ms, []);
@@ -236,7 +256,10 @@ if (process.argv.includes('--ui')) {
           crouchPct: r.crouchPct,   // 고정밀 포격 — 앉기·정지에서만 사격 피해 +N%
           limitUp: r.limitUp,       // ZERO 시스템 — 사격·격투 상한 상승
           // 피해 % 는 걸리는 대상이 갈린다 — any 는 사격·격투 모두에 얹는다
-          dmgAny: r.dmgAny, dmgShoot: r.dmgShoot, dmgMelee: r.dmgMelee
+          dmgAny: r.dmgAny, dmgShoot: r.dmgShoot, dmgMelee: r.dmgMelee,
+          // 방어·기동·HP 발동 버프 — 성능표 스탯에 반영
+          armorRange: r.armorRange, armorBeam: r.armorBeam, armorMelee: r.armorMelee,
+          speed: r.speed, hispeed: r.hispeed, thruster: r.thruster, turn: r.turn, hpUp: r.hpUp
         }))
         // 같은 구간·같은 수치가 표에 두 번 적힌 경우가 있어 하나만 남긴다
         .filter(l => { const k = JSON.stringify(l); if (seen.has(k)) return false; seen.add(k); return true; });
@@ -249,7 +272,9 @@ if (process.argv.includes('--ui')) {
     }
     // 효과가 큰 것부터 — 드롭다운에서 위에 오게 한다
     const lvWeight = l => l.shoot + l.melee + l.shootPct + l.meleePct + l.crouchPct
-      + l.dmgAny + l.dmgShoot + l.dmgMelee;
+      + l.dmgAny + l.dmgShoot + l.dmgMelee
+      + (l.armorRange || 0) + (l.armorBeam || 0) + (l.armorMelee || 0)
+      + (l.speed || 0) + (l.hispeed || 0) + (l.thruster || 0) + (l.turn || 0) + (l.hpUp || 0);
     skills.sort((a, b) => Math.max(...b.levels.map(lvWeight)) - Math.max(...a.levels.map(lvWeight)));
     out[ms] = skills;
   }

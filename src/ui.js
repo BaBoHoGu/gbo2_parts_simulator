@@ -365,7 +365,9 @@
     const list = activeSkills();
     if (!list.length) return null;
     const sum = { shoot: 0, melee: 0, shootPct: 0, meleePct: 0, crouchPct: 0, limitUp: 0,
-      dmgAny: 0, dmgShoot: 0, dmgMelee: 0, count: list.length };
+      dmgAny: 0, dmgShoot: 0, dmgMelee: 0,
+      armorRange: 0, armorBeam: 0, armorMelee: 0, speed: 0, hispeed: 0, thruster: 0, turn: 0, hpUp: 0,
+      count: list.length };
     for (const sk of list) {
       const e = skillLevel(sk);
       if (!e) continue;
@@ -378,6 +380,14 @@
       sum.dmgAny += e.dmgAny;
       sum.dmgShoot += e.dmgShoot;
       sum.dmgMelee += e.dmgMelee;
+      sum.armorRange += e.armorRange || 0;
+      sum.armorBeam += e.armorBeam || 0;
+      sum.armorMelee += e.armorMelee || 0;
+      sum.speed += e.speed || 0;
+      sum.hispeed += e.hispeed || 0;
+      sum.thruster += e.thruster || 0;
+      sum.turn += e.turn || 0;
+      sum.hpUp += e.hpUp || 0;
     }
     return sum;
   }
@@ -407,8 +417,19 @@
       shoot += Math.round(bare.shoot * e.shootPct / 100);
       melee += Math.round(bare.meleeCorrection * e.meleePct / 100);
     }
-    if (!shoot && !melee) return null;
-    const out = { shoot, meleeCorrection: melee };
+    // 방어·기동·HP 발동 버프 (바이오센서 등) — 해당 스탯에 그대로 더한다(상한은 calcStats 가 적용).
+    const out = {};
+    if (shoot) out.shoot = shoot;
+    if (melee) out.meleeCorrection = melee;
+    if (e.armorRange) out.armorRange = e.armorRange;
+    if (e.armorBeam) out.armorBeam = e.armorBeam;
+    if (e.armorMelee) out.armorMelee = e.armorMelee;
+    if (e.speed) out.speed = e.speed;
+    if (e.hispeed) out.highSpeedMovement = e.hispeed;
+    if (e.thruster) out.thruster = e.thruster;
+    if (e.turn) { out.turnPerformanceGround = e.turn; out.turnPerformanceSpace = e.turn; }
+    if (e.hpUp) out.hp = e.hpUp;
+    if (!Object.keys(out).length) return null;
     // ZERO 시스템은 발동 중 사격·격투 상한도 올린다 (파츠로 상한 근처까지 올린 구성에서 차이가 난다)
     if (e.limitUp) out.limit = { shoot: e.limitUp, meleeCorrection: e.limitUp };
     return out;
@@ -2562,6 +2583,17 @@
     if (e.dmgShoot) num.push('사격 피해 +' + e.dmgShoot + '%');
     if (e.dmgMelee) num.push('격투 피해 +' + e.dmgMelee + '%');
     if (e.crouchPct) num.push('앉기·정지 사격 +' + e.crouchPct + '%');
+    if (e.armorRange && e.armorRange === e.armorBeam && e.armorBeam === e.armorMelee) num.push('내성 +' + e.armorRange);
+    else {
+      if (e.armorRange) num.push('내실탄 +' + e.armorRange);
+      if (e.armorBeam) num.push('내빔 +' + e.armorBeam);
+      if (e.armorMelee) num.push('내격투 +' + e.armorMelee);
+    }
+    if (e.speed) num.push('스피드 +' + e.speed);
+    if (e.hispeed) num.push('고속이동 +' + e.hispeed);
+    if (e.thruster) num.push('스러스터 +' + e.thruster);
+    if (e.turn) num.push('선회 +' + e.turn);
+    if (e.hpUp) num.push('HP +' + e.hpUp);
     const how = [skillDur(sk), sk.hp ? 'HP ' + sk.hp + '% 이하' : null, sk.manual ? '수동' : null]
       .filter(Boolean).join(' · ');
     return { num: num.join(' · ') || '—', how };
