@@ -2583,17 +2583,18 @@
     if (e.dmgShoot) num.push('사격 피해 +' + e.dmgShoot + '%');
     if (e.dmgMelee) num.push('격투 피해 +' + e.dmgMelee + '%');
     if (e.crouchPct) num.push('앉기·정지 사격 +' + e.crouchPct + '%');
-    if (e.armorRange && e.armorRange === e.armorBeam && e.armorBeam === e.armorMelee) num.push('내성 +' + e.armorRange);
+    const sg = n => (n > 0 ? '+' : '') + n;   // 음수(HADES 내성-5 등)는 부호 그대로
+    if (e.armorRange && e.armorRange === e.armorBeam && e.armorBeam === e.armorMelee) num.push('내성 ' + sg(e.armorRange));
     else {
-      if (e.armorRange) num.push('내실탄 +' + e.armorRange);
-      if (e.armorBeam) num.push('내빔 +' + e.armorBeam);
-      if (e.armorMelee) num.push('내격투 +' + e.armorMelee);
+      if (e.armorRange) num.push('내실탄 ' + sg(e.armorRange));
+      if (e.armorBeam) num.push('내빔 ' + sg(e.armorBeam));
+      if (e.armorMelee) num.push('내격투 ' + sg(e.armorMelee));
     }
-    if (e.speed) num.push('스피드 +' + e.speed);
-    if (e.hispeed) num.push('고속이동 +' + e.hispeed);
-    if (e.thruster) num.push('스러스터 +' + e.thruster);
-    if (e.turn) num.push('선회 +' + e.turn);
-    if (e.hpUp) num.push('HP +' + e.hpUp);
+    if (e.speed) num.push('스피드 ' + sg(e.speed));
+    if (e.hispeed) num.push('고속이동 ' + sg(e.hispeed));
+    if (e.thruster) num.push('스러스터 ' + sg(e.thruster));
+    if (e.turn) num.push('선회 ' + sg(e.turn));
+    if (e.hpUp) num.push('HP ' + sg(e.hpUp));
     const how = [skillDur(sk), sk.hp ? 'HP ' + sk.hp + '% 이하' : null, sk.manual ? '수동' : null]
       .filter(Boolean).join(' · ');
     return { num: num.join(' · ') || '—', how };

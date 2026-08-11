@@ -117,9 +117,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -5,
+     "armorBeam": -5,
+     "armorMelee": -5,
      "speed": 10,
      "hispeed": 10,
      "thruster": 0,
@@ -297,7 +297,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -560,9 +560,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -5,
+     "armorBeam": -5,
+     "armorMelee": -5,
      "speed": 10,
      "hispeed": 10,
      "thruster": 0,
@@ -659,9 +659,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -5,
+     "armorBeam": -5,
+     "armorMelee": -5,
      "speed": 10,
      "hispeed": 10,
      "thruster": 0,
@@ -869,7 +869,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 15,
    "hp": null,
    "manual": true,
    "levels": [
@@ -1051,7 +1051,7 @@
  "グフ・フライトタイプ": [
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -1113,7 +1113,7 @@
   },
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -1209,37 +1209,6 @@
    ]
   },
   {
-   "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 100,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
    "name": "追撃格闘補助プログラム",
    "nameKo": "추격 격투 보조 프로그램",
    "forever": false,
@@ -1287,6 +1256,37 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -1447,37 +1447,6 @@
  ],
  "ハンブラビ": [
   {
-   "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 100,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
    "name": "追撃格闘補助プログラム",
    "nameKo": "추격 격투 보조 프로그램",
    "forever": false,
@@ -1525,6 +1494,37 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -1997,7 +1997,7 @@
  "ディジェSE-R": [
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -2199,9 +2199,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -5,
+     "armorBeam": -5,
+     "armorMelee": -5,
      "speed": 10,
      "hispeed": 10,
      "thruster": 0,
@@ -2534,9 +2534,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -5,
+     "armorBeam": -5,
+     "armorMelee": -5,
      "speed": 10,
      "hispeed": 10,
      "thruster": 0,
@@ -3357,9 +3357,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -5,
+     "armorBeam": -5,
+     "armorMelee": -5,
      "speed": 5,
      "hispeed": 5,
      "thruster": 0,
@@ -3378,9 +3378,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -5,
+     "armorBeam": -5,
+     "armorMelee": -5,
      "speed": 15,
      "hispeed": 15,
      "thruster": 0,
@@ -3411,9 +3411,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -8,
+     "armorBeam": -8,
+     "armorMelee": -8,
      "speed": 5,
      "hispeed": 5,
      "thruster": 0,
@@ -3432,9 +3432,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -8,
+     "armorBeam": -8,
+     "armorMelee": -8,
      "speed": 10,
      "hispeed": 10,
      "thruster": 0,
@@ -3695,7 +3695,7 @@
   },
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -3780,7 +3780,7 @@
   },
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -3815,7 +3815,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -4061,7 +4061,7 @@
  "ギラ・ズール（EH）": [
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -4222,7 +4222,7 @@
   },
   {
    "name": "アクティブパージ",
-   "nameKo": "アクティブパージ",
+   "nameKo": "활성 퍼지",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -4720,7 +4720,7 @@
   },
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -4753,7 +4753,7 @@
  "RX-93ff νガンダム": [
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -5028,7 +5028,7 @@
   },
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -5061,7 +5061,7 @@
  "ナイチンゲール": [
   {
    "name": "サイコフレーム共振（C）",
-   "nameKo": "サイコフレーム共振（C）",
+   "nameKo": "사이코 프레임 공진(C)",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -5764,7 +5764,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 20,
    "hp": null,
    "manual": true,
    "levels": [
@@ -6059,37 +6059,6 @@
  ],
  "Ζガンダム3号機A型": [
   {
-   "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 100,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
    "name": "能力UP「バイオセンサー」",
    "nameKo": "능력UP「바이오센서」",
    "forever": true,
@@ -6150,6 +6119,37 @@
      "hpUp": 0
     }
    ]
+  },
+  {
+   "name": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 10,
+     "hpUp": 0
+    }
+   ]
   }
  ],
  "ギラ・ドーガ［サイコミュ試験型］": [
@@ -6188,7 +6188,7 @@
  "νガンダム［HWS装備］": [
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -6308,7 +6308,7 @@
    "name": "レイド・ブースター",
    "nameKo": "레이드 부스터",
    "forever": false,
-   "secs": 5,
+   "secs": 20,
    "hp": null,
    "manual": true,
    "levels": [
@@ -6382,7 +6382,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 0,
+     "hispeed": -5,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -6573,7 +6573,7 @@
   },
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -6959,7 +6959,7 @@
   },
   {
    "name": "フライト・フォーム（Ξ）",
-   "nameKo": "フライト・フォーム（Ξ）",
+   "nameKo": "비행 양식 (Ξ)",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -7118,7 +7118,7 @@
   },
   {
    "name": "フライト・フォーム（P）",
-   "nameKo": "フライト・フォーム（P）",
+   "nameKo": "비행 양식 (P)",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -7288,7 +7288,7 @@
   },
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -7319,7 +7319,7 @@
   },
   {
    "name": "シールド・ブースター制御機構",
-   "nameKo": "シールド・ブースター制御機構",
+   "nameKo": "실드 부스터 제어 메커니즘",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -7374,7 +7374,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 0,
+     "hispeed": -5,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -7416,7 +7416,7 @@
   },
   {
    "name": "D・Vスタビレータ制御機構",
-   "nameKo": "D・Vスタビレータ制御機構",
+   "nameKo": "D・V 스태빌레이터 제어 기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -7664,7 +7664,7 @@
   },
   {
    "name": "シールド・ブースター適正化",
-   "nameKo": "シールド・ブースター適正化",
+   "nameKo": "실드 부스터 적정화",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -7784,7 +7784,7 @@
  "クシャトリヤ・リペアード": [
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -7881,7 +7881,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -7990,7 +7990,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 100,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -8339,37 +8339,6 @@
  ],
  "Ζガンダム3号機P2型": [
   {
-   "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 100,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
    "name": "サイコ・ニュートライザー",
    "nameKo": "사이코 뉴트럴라이저",
    "forever": true,
@@ -8441,6 +8410,37 @@
      "hpUp": 0
     }
    ]
+  },
+  {
+   "name": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 10,
+     "hpUp": 0
+    }
+   ]
   }
  ],
  "RFズゴック": [
@@ -8508,7 +8508,7 @@
   },
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -8563,7 +8563,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 0,
+     "hispeed": -5,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -8673,7 +8673,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 20,
    "hp": null,
    "manual": true,
    "levels": [
@@ -9026,7 +9026,7 @@
  "ガブスレイβ": [
   {
    "name": "マルチ・シールド制御機構",
-   "nameKo": "マルチ・シールド制御機構",
+   "nameKo": "멀티 실드 제어 메커니즘",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -9344,7 +9344,7 @@
   },
   {
    "name": "フィン・ノズル制御機構?",
-   "nameKo": "フィン・ノズル制御機構?",
+   "nameKo": "핀 노즐 제어 메커니즘?",
    "forever": false,
    "secs": 25,
    "hp": null,
@@ -9410,9 +9410,9 @@
  "トールギスⅢ": [
   {
    "name": "シューティングブースト",
-   "nameKo": "シューティングブースト",
+   "nameKo": "슈팅 부스트",
    "forever": false,
-   "secs": 10,
+   "secs": 30,
    "hp": null,
    "manual": false,
    "levels": [
@@ -9505,7 +9505,7 @@
   },
   {
    "name": "G-バード高速機動制御機構?",
-   "nameKo": "G-バード高速機動制御機構?",
+   "nameKo": "G-버드 고속 기동 제어 기구?",
    "forever": false,
    "secs": 30,
    "hp": null,
@@ -9765,7 +9765,7 @@
    "name": "MACSSオフ?",
    "nameKo": "MACSS 오프",
    "forever": false,
-   "secs": 10,
+   "secs": 30,
    "hp": null,
    "manual": true,
    "levels": [
@@ -9911,9 +9911,9 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
+     "armorRange": -5,
+     "armorBeam": -5,
+     "armorMelee": -5,
      "speed": 10,
      "hispeed": 10,
      "thruster": 0,
@@ -9928,7 +9928,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 20,
    "hp": null,
    "manual": true,
    "levels": [
@@ -10109,7 +10109,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 100,
+     "turn": 10,
      "hpUp": 0
     },
     {
@@ -10130,7 +10130,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 100,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -10352,7 +10352,7 @@
   },
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -10416,7 +10416,7 @@
   },
   {
    "name": "ロングレンジ・アダプター",
-   "nameKo": "ロングレンジ・アダプター",
+   "nameKo": "롱 레인지 어댑터",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -10697,7 +10697,7 @@
    "name": "B・E・ユニット制御機構",
    "nameKo": "B·E 유닛 제어기구",
    "forever": false,
-   "secs": 5,
+   "secs": 35,
    "hp": null,
    "manual": true,
    "levels": [
@@ -10759,7 +10759,7 @@
   },
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -10823,37 +10823,6 @@
   }
  ],
  "Ζガンダム［IFC＆IFB装備］": [
-  {
-   "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 100,
-     "hpUp": 0
-    }
-   ]
-  },
   {
    "name": "能力UP「バイオセンサーK」",
    "nameKo": "능력UP「바이오센서 K」",
@@ -10933,6 +10902,37 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -11125,7 +11125,7 @@
   },
   {
    "name": "ロングレンジ・アダプター",
-   "nameKo": "ロングレンジ・アダプター",
+   "nameKo": "롱 레인지 어댑터",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11352,7 +11352,7 @@
   },
   {
    "name": "能力UP「NT-D：共鳴」?",
-   "nameKo": "能力UP「NT-D：共鳴」?",
+   "nameKo": "능력 UP 「NT-D：공명」?",
    "forever": false,
    "secs": 60,
    "hp": 50,
@@ -11385,7 +11385,7 @@
  "高機動型ザク": [
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11418,7 +11418,7 @@
  "アクト・ザク［指揮官仕様］": [
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11451,7 +11451,7 @@
  "ヅダ": [
   {
    "name": "土星エンジン最大出力?",
-   "nameKo": "土星エンジン最大出力?",
+   "nameKo": "토성 엔진 최대 출력?",
    "forever": false,
    "secs": 60,
    "hp": 30,
@@ -11526,7 +11526,7 @@
  "グフ飛行試験型": [
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11559,7 +11559,7 @@
  "ギャプラン": [
   {
    "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11583,7 +11583,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 100,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -11594,7 +11594,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -11646,7 +11646,7 @@
  "Ex-Sガンダム": [
   {
    "name": "能力UP「ALICE」",
-   "nameKo": "能力UP「ALICE」",
+   "nameKo": "능력 UP 「ALICE」",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -11679,7 +11679,7 @@
  "ガンダムMk-Ⅴ": [
   {
    "name": "シールド・ブースター適正化",
-   "nameKo": "シールド・ブースター適正化",
+   "nameKo": "실드 부스터 적정화",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11712,7 +11712,7 @@
  "バイアラン": [
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11745,7 +11745,7 @@
  "レッドライダー": [
   {
    "name": "能力UP「AREUS」",
-   "nameKo": "能力UP「AREUS」",
+   "nameKo": "능력 UP 「AREUS」",
    "forever": false,
    "secs": 50,
    "hp": null,
@@ -11778,7 +11778,7 @@
  "零式弐型（AR）": [
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11811,7 +11811,7 @@
  "サザビー": [
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 30,
@@ -11865,7 +11865,7 @@
  "バイアラン・カスタム": [
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11900,7 +11900,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -11931,7 +11931,7 @@
  "ヘイズル改": [
   {
    "name": "シールド・ブースター制御機構",
-   "nameKo": "シールド・ブースター制御機構",
+   "nameKo": "실드 부스터 제어 메커니즘",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -11966,7 +11966,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -12018,7 +12018,7 @@
  "ヘイズル2号機": [
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12053,7 +12053,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -12084,7 +12084,7 @@
  "ゼー・ズール": [
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12119,7 +12119,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 15,
    "hp": null,
    "manual": true,
    "levels": [
@@ -12150,7 +12150,7 @@
  "シナンジュ": [
   {
    "name": "サイコフレーム共振（F）",
-   "nameKo": "サイコフレーム共振（F）",
+   "nameKo": "사이코 프레임 공진(F)",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -12183,7 +12183,7 @@
  "ヘイズル改［高機動仕様］": [
   {
    "name": "シールド・ブースター制御機構改",
-   "nameKo": "シールド・ブースター制御機構改",
+   "nameKo": "실드 부스터 제어기구 개",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12216,7 +12216,7 @@
  "ガンダムデルタカイ": [
   {
    "name": "能力UP「n_i_t_r_o」",
-   "nameKo": "能力UP「n_i_t_r_o」",
+   "nameKo": "능력 UP 'n_i_t_r_o'",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -12249,7 +12249,7 @@
  "ハイブースト・ジム": [
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12284,7 +12284,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 15,
    "hp": null,
    "manual": true,
    "levels": [
@@ -12336,7 +12336,7 @@
  "フェネクス【NT】": [
   {
    "name": "サイコフレームアタック",
-   "nameKo": "サイコフレームアタック",
+   "nameKo": "사이코 프레임 공격",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12369,7 +12369,7 @@
  "アドバンスド・ヘイズル": [
   {
    "name": "シールド・ブースター制御機構改",
-   "nameKo": "シールド・ブースター制御機構改",
+   "nameKo": "실드 부스터 제어기구 개",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12402,7 +12402,7 @@
  "Sガンダム": [
   {
    "name": "能力UP「ALICE」",
-   "nameKo": "能力UP「ALICE」",
+   "nameKo": "능력 UP 「ALICE」",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -12435,7 +12435,7 @@
  "グフ［Fユニット装備］【TB】": [
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12468,7 +12468,7 @@
  "アトラスガンダム【TB】": [
   {
    "name": "サブレッグ制御機構",
-   "nameKo": "サブレッグ制御機構",
+   "nameKo": "서브 레그 제어 메커니즘",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12501,7 +12501,7 @@
  "ヘイズル・アウスラ": [
   {
    "name": "シールド・ブースター制御機構",
-   "nameKo": "シールド・ブースター制御機構",
+   "nameKo": "실드 부스터 제어 메커니즘",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12536,7 +12536,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 15,
    "hp": null,
    "manual": true,
    "levels": [
@@ -12567,7 +12567,7 @@
  "ギャプランTR-5": [
   {
    "name": "シールド・ブースター制御機構改",
-   "nameKo": "シールド・ブースター制御機構改",
+   "nameKo": "실드 부스터 제어기구 개",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12600,7 +12600,7 @@
  "アンクシャ": [
   {
    "name": "ムーバブル・シールド・バインダー",
-   "nameKo": "ムーバブル・シールド・バインダー",
+   "nameKo": "이동식 쉴드 바인더",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12633,7 +12633,7 @@
  "エンゲージゼロ": [
   {
    "name": "補助スラスター制御装置",
-   "nameKo": "補助スラスター制御装置",
+   "nameKo": "보조 스러스터 제어 장치",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12666,7 +12666,7 @@
  "エンゲージゼロ［追加BST装備型］": [
   {
    "name": "補助スラスター制御装置",
-   "nameKo": "補助スラスター制御装置",
+   "nameKo": "보조 스러스터 제어 장치",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12701,7 +12701,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 15,
    "hp": null,
    "manual": true,
    "levels": [
@@ -12732,9 +12732,9 @@
  "フリーダムガンダム": [
   {
    "name": "ハイマットモード",
-   "nameKo": "ハイマットモード",
+   "nameKo": "하이 매트 모드",
    "forever": false,
-   "secs": 10,
+   "secs": 50,
    "hp": null,
    "manual": false,
    "levels": [
@@ -12765,7 +12765,7 @@
  "ギャプラン（I0）": [
   {
    "name": "ムーバブル・シールド・バインダー",
-   "nameKo": "ムーバブル・シールド・バインダー",
+   "nameKo": "이동식 쉴드 바인더",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12798,7 +12798,7 @@
  "量産型νガンダム": [
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 30,
@@ -12831,7 +12831,7 @@
  "ロズウェル・ジェガン": [
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 30,
@@ -12864,7 +12864,7 @@
  "サザビー初期試験型": [
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 30,
@@ -12897,7 +12897,7 @@
  "マ・クベ専用グフ": [
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12930,7 +12930,7 @@
  "フライルー・ラーⅡ": [
   {
    "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12954,7 +12954,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 100,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -12963,7 +12963,7 @@
  "量産型νガンダム［F・F装備］": [
   {
    "name": "サイコフレーム共振",
-   "nameKo": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
    "forever": true,
    "secs": null,
    "hp": 30,
@@ -12996,7 +12996,7 @@
  "ディマーテル": [
   {
    "name": "グリモア（赤）",
-   "nameKo": "グリモア（赤）",
+   "nameKo": "그리모어(빨강)",
    "forever": false,
    "secs": 60,
    "hp": 50,
@@ -13022,6 +13022,27 @@
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": -5,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
     }
    ]
   }
@@ -13031,7 +13052,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -13062,7 +13083,7 @@
  "ガンダムデルタカイ［陸戦仕様］": [
   {
    "name": "能力UP「n_i_t_r_o（G）」",
-   "nameKo": "能力UP「n_i_t_r_o（G）」",
+   "nameKo": "능력 UP 'n_i_t_r_o(G)'",
    "forever": true,
    "secs": null,
    "hp": 50,
@@ -13095,7 +13116,7 @@
  "ΖプラスA2型": [
   {
    "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13119,7 +13140,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 100,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -13128,7 +13149,7 @@
  "バイアラン・カスタム2号機": [
   {
    "name": "フライトシステム",
-   "nameKo": "フライトシステム",
+   "nameKo": "비행 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13159,7 +13180,7 @@
   },
   {
    "name": "エアロ・アーマー",
-   "nameKo": "エアロ・アーマー",
+   "nameKo": "에어로 아머",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13192,9 +13213,9 @@
  "ガンダムデルタアンス": [
   {
    "name": "シューティングブースト",
-   "nameKo": "シューティングブースト",
+   "nameKo": "슈팅 부스트",
    "forever": false,
-   "secs": 10,
+   "secs": 30,
    "hp": null,
    "manual": false,
    "levels": [
@@ -13258,7 +13279,7 @@
  "ゲルググL": [
   {
    "name": "突撃体勢",
-   "nameKo": "突撃体勢",
+   "nameKo": "돌격 자세",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13293,7 +13314,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 15,
    "hp": null,
    "manual": true,
    "levels": [
@@ -13324,7 +13345,7 @@
  "F90［MZ仕様］": [
   {
    "name": "OS「TYPE C.A-Ⅲ」?",
-   "nameKo": "OS「TYPE C.A-Ⅲ」?",
+   "nameKo": "OS 「TYPE C.A-Ⅲ」?",
    "forever": false,
    "secs": 80,
    "hp": 80,
@@ -13378,7 +13399,7 @@
  "ロゼット［強化陸戦形態］": [
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13411,7 +13432,7 @@
  "F90Ⅱ［Iタイプ］": [
   {
    "name": "フライト・シールド・アタック",
-   "nameKo": "フライト・シールド・アタック",
+   "nameKo": "비행 실드 공격",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13446,7 +13467,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 15,
    "hp": null,
    "manual": true,
    "levels": [
@@ -13475,7 +13496,7 @@
   },
   {
    "name": "S・Bリミッター解除システム",
-   "nameKo": "S・Bリミッター解除システム",
+   "nameKo": "S·B 리미터 해제 시스템",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13510,7 +13531,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -13543,7 +13564,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 15,
    "hp": null,
    "manual": true,
    "levels": [
@@ -13574,7 +13595,7 @@
  "フェイルノート": [
   {
    "name": "試作型フィン・ノズル制御機構",
-   "nameKo": "試作型フィン・ノズル制御機構",
+   "nameKo": "프로토 타입 핀 노즐 제어기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13607,7 +13628,7 @@
  "ベルガ・ギロス［B・V仕様］": [
   {
    "name": "シェルフ・ノズル制御機構",
-   "nameKo": "シェルフ・ノズル制御機構",
+   "nameKo": "선반 노즐 제어 메커니즘",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13663,7 +13684,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -13694,7 +13715,7 @@
  "高機動型ザクⅡ［06R-3S］": [
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13725,7 +13746,7 @@
   },
   {
    "name": "白兵戦プログラム",
-   "nameKo": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13758,7 +13779,7 @@
  "キハールⅡ": [
   {
    "name": "オーバーブースト",
-   "nameKo": "オーバーブースト",
+   "nameKo": "오버 부스트",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13791,9 +13812,9 @@
  "ウーンドウォート・ラーⅡ": [
   {
    "name": "シューティングブースト",
-   "nameKo": "シューティングブースト",
+   "nameKo": "슈팅 부스트",
    "forever": false,
-   "secs": 10,
+   "secs": 30,
    "hp": null,
    "manual": false,
    "levels": [
@@ -13824,7 +13845,7 @@
  "ビギナ・ギナⅡ［木星決戦仕様］": [
   {
    "name": "フレキシブルウイングノズル制御機構?",
-   "nameKo": "フレキシブルウイングノズル制御機構?",
+   "nameKo": "유연한 날개 노즐 제어 메커니즘?",
    "forever": false,
    "secs": 75,
    "hp": null,
@@ -13857,7 +13878,7 @@
  "F90Iタイプ［木星決戦仕様］": [
   {
    "name": "フライト・シールド・アタック",
-   "nameKo": "フライト・シールド・アタック",
+   "nameKo": "비행 실드 공격",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13890,7 +13911,7 @@
  "ガンブラスター": [
   {
    "name": "ツインテール制御機構",
-   "nameKo": "ツインテール制御機構",
+   "nameKo": "트윈 테일 제어 메커니즘",
    "forever": false,
    "secs": 40,
    "hp": null,
@@ -13923,7 +13944,7 @@
  "アビゴル": [
   {
    "name": "変形解除最適化制御",
-   "nameKo": "変形解除最適化制御",
+   "nameKo": "변형 해제 최적화 제어",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13947,7 +13968,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 100,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -13958,7 +13979,7 @@
    "name": "EXブースト",
    "nameKo": "EX 부스트",
    "forever": false,
-   "secs": 5,
+   "secs": 6,
    "hp": null,
    "manual": true,
    "levels": [
@@ -14002,6 +14023,39 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ローゼン・ズール": [
+  {
+   "name": "サイコ・ジャマー制御装置",
+   "nameKo": "사이코 재머 제어 장치",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": -5,
+     "hispeed": -5,
+     "thruster": 0,
+     "turn": 0,
      "hpUp": 0
     }
    ]
