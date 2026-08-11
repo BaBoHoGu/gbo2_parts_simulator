@@ -39,9 +39,8 @@ const copyDir = (src, dst, filter) => {
 // 개발 저장소와 같은 레이아웃으로 담는다 → update.ps1 이 도구 수정 없이 그대로 동작한다.
 // 사용자는 dist\gbo2-simulator.html 을 연다.
 
-// 1) 시뮬레이터 본체 (사용자가 여는 파일)
+// 1) 시뮬레이터 본체 (사용자가 여는 파일) — 이미지는 HTML 에 data URI 로 인라인돼 있어 별도 폴더 불필요.
 copyFile(p('dist', 'gbo2-simulator.html'), path.join(STAGE, 'dist', 'gbo2-simulator.html'));
-copyDir(p('dist', 'images'), path.join(STAGE, 'dist', 'images'));
 
 // 2) 재빌드용 이미지 원본 (build.js 가 assets/images → dist/images 로 복사)
 copyDir(p('assets', 'images'), path.join(STAGE, 'assets', 'images'));

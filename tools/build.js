@@ -71,9 +71,30 @@ const i18n = {
 const inline = (name, value) =>
   `window.${name}=` + JSON.stringify(value).replace(/<\/script/gi, '<\\/script') + ';';
 
+// 이미지를 data URI 로 인라인 — 진짜 단일 파일이 되고, file:// 에서도 캔버스 오염 없이
+// PNG 카드에 기체·파츠 이미지를 그릴 수 있다. 키는 '<dir>/<NFC파일명>.webp'.
+const IMG_SRC = path.join(ROOT, 'assets', 'images');
+const images = {};
+let imgCount = 0, imgBytes = 0;
+if (fs.existsSync(IMG_SRC)) {
+  for (const dir of fs.readdirSync(IMG_SRC)) {
+    const dp = path.join(IMG_SRC, dir);
+    if (!fs.statSync(dp).isDirectory()) continue;
+    for (const f of fs.readdirSync(dp)) {
+      if (!/\.webp$/i.test(f)) continue;
+      const buf = fs.readFileSync(path.join(dp, f));
+      images[dir + '/' + f.normalize('NFC')] = 'data:image/webp;base64,' + buf.toString('base64');
+      imgCount++; imgBytes += buf.length;
+    }
+  }
+} else {
+  console.warn('경고: assets/images 가 없습니다. `node tools/fetch_images.js` 를 먼저 실행하세요.');
+}
+
 const html = read('src', 'index.html')
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills }))
+  .replace('/*__IMAGES__*/', () => inline('GBO2_IMAGES', images))
   .replace('/*__WEAPONS__*/', () => inline('GBO2_WEAPONS', weapons))
   .replace('/*__SKILLS__*/', () => inline('GBO2_SKILLS', skills))
   .replace('/*__I18N_DATA__*/', () => inline('GBO2_I18N', i18n))
@@ -83,28 +104,16 @@ const html = read('src', 'index.html')
   .replace('/*__DAMAGE__*/', () => read('src', 'damage.js'))
   .replace('/*__UI__*/', () => read('src', 'ui.js'));
 
-for (const marker of ['__CSS__', '__DATA__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__UI__']) {
+for (const marker of ['__CSS__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__UI__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 
 const DIST = path.join(ROOT, 'dist');
 fs.mkdirSync(DIST, { recursive: true });
 
-// 이미지는 용량이 커서 인라인하지 않고 HTML 옆 폴더로 복사한다 (file:// 에서도 로드됨).
-const IMG_SRC = path.join(ROOT, 'assets', 'images');
-let imgCount = 0, imgBytes = 0;
-if (fs.existsSync(IMG_SRC)) {
-  fs.rmSync(path.join(DIST, 'images'), { recursive: true, force: true });
-  fs.cpSync(IMG_SRC, path.join(DIST, 'images'), { recursive: true });
-  for (const dir of fs.readdirSync(path.join(DIST, 'images'))) {
-    for (const f of fs.readdirSync(path.join(DIST, 'images', dir))) {
-      imgCount++;
-      imgBytes += fs.statSync(path.join(DIST, 'images', dir, f)).size;
-    }
-  }
-} else {
-  console.warn('경고: assets/images 가 없습니다. `node tools/fetch_images.js` 를 먼저 실행하세요.');
-}
+// 이미지는 이제 HTML 에 data URI 로 인라인된다 → dist/images 폴더는 더 이상 필요 없다(진짜 단일 파일).
+// 이전 빌드가 남긴 폴더가 있으면 지워 배포 크기를 줄인다.
+fs.rmSync(path.join(DIST, 'images'), { recursive: true, force: true });
 
 const out = path.join(DIST, 'gbo2-simulator.html');
 fs.writeFileSync(out, html);

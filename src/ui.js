@@ -21,10 +21,14 @@
   /* ---------- 이미지 ---------- */
 
   const baseName = C.partBase;
-  // 파일명은 NFC로 통일돼 있다. 원본 데이터에 결합문자(バ=ハ+゛)로 된 NFD 이름이 섞여 있어
-  // 정규화하지 않으면 압축·해제 환경에 따라 이미지 경로가 어긋난다.
-  const msImg = name => `images/ms/${encodeURIComponent(baseName(name).normalize('NFC'))}.webp`;
-  const partImg = name => `images/parts/${encodeURIComponent(name.normalize('NFC'))}.webp`;
+  // 이미지는 빌드 때 data URI 로 HTML 에 인라인된다(window.GBO2_IMAGES). 키는 '<dir>/<NFC이름>.webp'.
+  // data URI 라 file:// 에서도 캔버스 오염 없이 PNG 카드에 그릴 수 있다. 없으면 _default 로 폴백.
+  // 파일명은 NFC로 통일돼 있다(원본에 결합문자 NFD 이름이 섞여 있어 정규화 필요).
+  const IMG_MAP = window.GBO2_IMAGES || {};
+  const imgUrl = key => IMG_MAP[key] || IMG_MAP[key.replace(/\/[^/]+$/, '/_default.webp')] || '';
+  const msImg = name => imgUrl(`ms/${baseName(name).normalize('NFC')}.webp`);
+  const partImg = name => imgUrl(`parts/${name.normalize('NFC')}.webp`);
+  const defaultImg = dir => imgUrl(`${dir}/_default.webp`);
 
   /** 이미지가 없으면 기본 이미지로 한 번만 대체한다. */
   function img(src, fallbackDir, alt) {
@@ -34,7 +38,7 @@
     node.src = src;
     node.onerror = () => {
       node.onerror = null;
-      node.src = `images/${fallbackDir}/_default.webp`;
+      node.src = defaultImg(fallbackDir);
     };
     return node;
   }
@@ -1447,9 +1451,9 @@
   }
 
   /* ---------- PNG 이미지 배출 (현재 성능·구성 카드) ---------- */
-  // 앱은 file:// 로 열려 기체 이미지(webp)를 캔버스에 그리면 오염(taint)돼 toBlob 이 막힌다.
-  // 그래서 이미지 없이 텍스트·막대만 캔버스에 직접 그린다 — 완전 오프라인 동작, 오염 없음.
-  function exportPng() {
+  // 이미지는 data URI 로 인라인돼 있어(GBO2_IMAGES) file:// 에서도 캔버스 오염 없이 그릴 수 있다.
+  // 좌: 기체 이미지 + 장착 파츠(썸네일) / 우: 성능표·내구·누적치·발동 스킬.
+  async function exportPng() {
     if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
     const m = state.ms, lv = msLevel(m);
     const r = stats();
@@ -1463,16 +1467,20 @@
       skill2: cv('--skill2') || '#2ee6d6', bad: cv('--bad') || '#ff6b6b', accent: cv('--accent') || '#ffc93c'
     };
     const F = "'Malgun Gothic', 'Segoe UI', system-ui, sans-serif";
-    const W = 720, PAD = 28, DPR = 2;
+    const W = 864, PAD = 28, DPR = 2;
+    const LW = 248, colX = PAD, rx = PAD + LW + 30, rEdge = W - PAD;   // 좌측 폭·우측 시작·오른쪽 끝
     const skillCol = state.skillPicks.size > 1 ? CO.skill2 : CO.skill;
 
+    // 이미지 미리 로드 (data URI → onload 은 즉시지만 비동기라 await)
+    const load = src => new Promise(res => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+    const heroImg = await load(msImg(m.MS名));
+    const partItems = await Promise.all(state.equipped.map(async p => ({ im: await load(partImg(p.name)), name: T.partName(p.name) })));
+
     const skills = activeSkills().map(s => s.nameKo);
-    const parts = state.equipped.map(p => T.partName(p.name));
     const alt = altModeOf(m);
     const sub = [T.attrName(m.属性), '코스트 ' + m.コスト,
       '★'.repeat(msRarity(m)) || null, STAGE_LABEL[state.stage],
       (state.form !== 'normal' && alt) ? alt.label : null].filter(Boolean).join('  ·  ');
-
     const stg = activeStaggerMods(m, lv);
     const dura = [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']]
       .map(([k, lb]) => lb + ' ' + durabilityOf(r.total, k).toLocaleString()).join('   ');
@@ -1487,26 +1495,55 @@
       if (line) out.push(line);
       return out.length ? out : [''];
     };
+    const clip = (ctx, t, maxW, font) => { ctx.font = font; if (ctx.measureText(t).width <= maxW) return t; let s = t; while (s && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1); return s + '…'; };
 
     // 측정·그리기 공용. draw=false 면 높이만 잰다.
     function paint(ctx, draw) {
-      const rt = (t, xR, y, font, color) => { if (!draw) return; ctx.font = font; ctx.fillStyle = color; ctx.textAlign = 'right'; ctx.fillText(t, xR, y); ctx.textAlign = 'left'; };
-      const lt = (t, x, y, font, color) => { if (!draw) return; ctx.font = font; ctx.fillStyle = color; ctx.fillText(t, x, y); };
-      const rule = y => { if (draw) { ctx.strokeStyle = CO.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(PAD, y + 0.5); ctx.lineTo(W - PAD, y + 0.5); ctx.stroke(); } };
-      let y = PAD;
+      const lt = (t, x, y, font, color, align) => { if (draw) { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || 'left'; ctx.fillText(t, x, y); ctx.textAlign = 'left'; } };
+      const rt = (t, xR, y, font, color) => lt(t, xR, y, font, color, 'right');
+      const rule = (y, x0, x1) => { if (draw) { ctx.strokeStyle = CO.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, y + 0.5); ctx.lineTo(x1, y + 0.5); ctx.stroke(); } };
 
-      // 헤더
+      let y = PAD;
+      // ── 헤더 (전체 폭)
       y += 26; lt(T.msName(m.MS名), PAD, y, '700 24px ' + F, CO.text);   // msName 이 이미 LV 포함
       y += 22; lt(sub, PAD, y, '13px ' + F, CO.muted);
-      y += 14; rule(y); y += 8;
+      y += 14; rule(y, PAD, rEdge); y += 8;
+      const bodyTop = y;
 
-      // 스탯 표 헤더
-      const xTotalR = 210, xDeltaR = 300, barX = 316, barR = W - PAD - 46, barW = barR - barX, xCapR = W - PAD;
-      lt('항목', PAD, y + 10, '11px ' + F, CO.dim);
-      rt('합계', xTotalR, y + 10, '11px ' + F, CO.dim);
-      rt('증가', xDeltaR, y + 10, '11px ' + F, CO.dim);
-      rt('상한', xCapR, y + 10, '11px ' + F, CO.dim);
-      y += 18;
+      // ── 좌측: 기체 이미지 + 장착 파츠
+      let ly = bodyTop + 4;
+      const boxH = 172;
+      if (draw) { ctx.fillStyle = CO.panel; ctx.fillRect(colX, ly, LW, boxH); }
+      if (heroImg && draw) {
+        const s = Math.min(LW / heroImg.width, boxH / heroImg.height);
+        const iw = heroImg.width * s, ih = heroImg.height * s;
+        ctx.drawImage(heroImg, colX + (LW - iw) / 2, ly + (boxH - ih) / 2, iw, ih);
+      }
+      if (draw) { ctx.strokeStyle = CO.line; ctx.lineWidth = 1; ctx.strokeRect(colX + 0.5, ly + 0.5, LW, boxH); }
+      ly += boxH + 16;
+
+      lt('장착 파츠 ' + partItems.length, colX, ly, '700 12px ' + F, CO.muted);
+      ly += 18;
+      const th = 36;
+      for (const it of partItems) {
+        if (draw) {
+          ctx.fillStyle = CO.panel2; ctx.fillRect(colX, ly, th, th);
+          if (it.im) ctx.drawImage(it.im, colX, ly, th, th);
+          ctx.strokeStyle = CO.line; ctx.strokeRect(colX + 0.5, ly + 0.5, th, th);
+        }
+        lt(clip(ctx, it.name, LW - th - 12, '12px ' + F), colX + th + 12, ly + 23, '12px ' + F, CO.text);
+        ly += th + 8;
+      }
+      if (!partItems.length) { lt('없음', colX, ly + 4, '12px ' + F, CO.dim); ly += 20; }
+
+      // ── 우측: 성능표
+      let ry = bodyTop;
+      const xTotalR = rx + 178, xDeltaR = rx + 258, barX = rx + 272, barR = rEdge - 42, barW = barR - barX, xCapR = rEdge;
+      lt('항목', rx, ry + 10, '11px ' + F, CO.dim);
+      rt('합계', xTotalR, ry + 10, '11px ' + F, CO.dim);
+      rt('증가', xDeltaR, ry + 10, '11px ' + F, CO.dim);
+      rt('상한', xCapR, ry + 10, '11px ' + F, CO.dim);
+      ry += 18;
 
       for (const k of C.STAT_KEYS) {
         const limit = r.currentLimits[k], raw = r.rawTotal[k], tot = r.total[k], soche = r.base[k];
@@ -1519,11 +1556,10 @@
         const baseW = pct(Math.min(soche, tot));
         const gainW = Math.min(1 - baseW, pct(Math.max(base, 0)));
         const skillW = Math.min(1 - baseW - gainW, pct(Math.max(skillGain, 0)));
-        const rowY = y + 15;
+        const rowY = ry + 15;
 
-        lt(C.STAT_LABEL[k], PAD, rowY, '13px ' + F, CO.muted);
+        lt(C.STAT_LABEL[k], rx, rowY, '13px ' + F, CO.muted);
         rt(tot.toLocaleString(), xTotalR, rowY, '700 14px ' + F, atCap ? CO.accent : CO.text);
-        // 증가분: 파츠(초록)+스킬(보라)
         if (draw) {
           ctx.textAlign = 'right';
           let dx = xDeltaR;
@@ -1531,10 +1567,7 @@
           if (base !== 0) { ctx.font = '12px ' + F; ctx.fillStyle = base > 0 ? CO.ok : CO.bad; ctx.fillText((base > 0 ? '+' : '') + base, dx, rowY); }
           else if (!skillGain) { ctx.font = '12px ' + F; ctx.fillStyle = CO.dim; ctx.fillText('·', dx, rowY); }
           ctx.textAlign = 'left';
-        }
-        // 막대
-        if (draw) {
-          const by = y + 10, bh = 9;
+          const by = ry + 10, bh = 9;
           ctx.fillStyle = CO.panel2; ctx.fillRect(barX, by, barW, bh);
           let bx = barX;
           ctx.fillStyle = CO.dim; ctx.fillRect(bx, by, barW * baseW, bh); bx += barW * baseW;
@@ -1543,48 +1576,36 @@
         }
         rt(over ? tot.toLocaleString() + ' +' + over : (limit === Infinity ? '—' : limit.toLocaleString()),
           xCapR, rowY, '12px ' + F, over ? CO.bad : CO.dim);
-        y += 27;
+        ry += 27;
       }
 
-      y += 4; rule(y); y += 8;
-      // 내구 지표 · 누적치
-      lt('내구 지표', PAD, y + 13, '700 12px ' + F, CO.muted);
-      lt(dura, PAD + 78, y + 13, '13px ' + F, CO.text);
-      y += 24;
-      lt('누적치', PAD, y + 13, '700 12px ' + F, CO.muted);
+      ry += 4; rule(ry, rx, rEdge); ry += 8;
+      lt('내구 지표', rx, ry + 13, '700 12px ' + F, CO.muted);
+      lt(dura, rx + 78, ry + 13, '13px ' + F, CO.text);
+      ry += 24;
+      lt('누적치', rx, ry + 13, '700 12px ' + F, CO.muted);
       lt('내성 ' + Math.round(stg.threshold / stg.mult) + '%   (임계 ' + stg.threshold + '%'
-        + (stg.mult < 1 ? ' · 받는 누적 ×' + (+stg.mult.toFixed(3)) : '') + ')', PAD + 78, y + 13, '13px ' + F, CO.text);
-      y += 26;
-
-      // 발동 스킬
+        + (stg.mult < 1 ? ' · 받는 누적 ×' + (+stg.mult.toFixed(3)) : '') + ')', rx + 78, ry + 13, '13px ' + F, CO.text);
+      ry += 26;
       if (skills.length) {
-        rule(y); y += 8;
-        lt('발동 스킬', PAD, y + 13, '700 12px ' + F, skillCol);
-        const lines = wrapLines(ctx, skills.join('  ·  '), '13px ' + F, W - PAD - (PAD + 78));
-        lines.forEach((ln, i) => lt(ln, PAD + 78, y + 13 + i * 19, '13px ' + F, CO.text));
-        y += Math.max(20, lines.length * 19) + 6;
-      }
-      // 장착 파츠
-      if (parts.length) {
-        rule(y); y += 8;
-        lt('장착 파츠 ' + parts.length, PAD, y + 13, '700 12px ' + F, CO.muted);
-        const lines = wrapLines(ctx, parts.join('  ·  '), '13px ' + F, W - PAD - (PAD + 90));
-        lines.forEach((ln, i) => lt(ln, PAD + 90, y + 13 + i * 19, '13px ' + F, CO.text));
-        y += Math.max(20, lines.length * 19) + 6;
+        rule(ry, rx, rEdge); ry += 8;
+        lt('발동 스킬', rx, ry + 13, '700 12px ' + F, skillCol);
+        const lines = wrapLines(ctx, skills.join('  ·  '), '13px ' + F, rEdge - (rx + 78));
+        lines.forEach((ln, i) => lt(ln, rx + 78, ry + 13 + i * 19, '13px ' + F, CO.text));
+        ry += Math.max(20, lines.length * 19) + 6;
       }
 
-      // 푸터
-      y += 6; rule(y); y += 20;
-      lt('GBO2 커스텀 파츠 시뮬레이터', PAD, y, '11px ' + F, CO.dim);
-      rt(new Date().toISOString().slice(0, 10), W - PAD, y, '11px ' + F, CO.dim);
-      y += PAD - 8;
-      return y;
+      // ── 푸터 (전체 폭, 좌·우 열 중 더 긴 쪽 아래)
+      let y2 = Math.max(ly, ry) + 8;
+      rule(y2, PAD, rEdge); y2 += 20;
+      lt('GBO2 커스텀 파츠 시뮬레이터', PAD, y2, '11px ' + F, CO.dim);
+      rt(new Date().toISOString().slice(0, 10), rEdge, y2, '11px ' + F, CO.dim);
+      return y2 + PAD - 8;
     }
 
-    // 1패스: 높이 측정
+    // 1패스: 높이 측정 → 2패스: 실제 렌더 (레티나 2배)
     const measure = document.createElement('canvas').getContext('2d');
     const H = Math.ceil(paint(measure, false));
-    // 2패스: 실제 렌더 (레티나 2배)
     const cvs = document.createElement('canvas');
     cvs.width = W * DPR; cvs.height = H * DPR;
     const ctx = cvs.getContext('2d');
@@ -2648,7 +2669,7 @@
     const m = state.ms;
     const hero = $('#heroImg');
     if (m) {
-      hero.onerror = () => { hero.onerror = null; hero.src = 'images/ms/_default.webp'; };
+      hero.onerror = () => { hero.onerror = null; hero.src = defaultImg('ms'); };
       hero.src = msImg(m.MS名);
       hero.style.visibility = '';
     } else {
@@ -2854,7 +2875,7 @@
   /* ---------- 초기화 ---------- */
 
   function buildControls() {
-    $('#brandImg').src = 'images/ms/_default.webp';
+    $('#brandImg').src = defaultImg('ms');
 
     // 강화리스트 — 세그먼트 버튼 (미강화 / 4단계 / 풀강)
     const seg = $('#stageSeg');
