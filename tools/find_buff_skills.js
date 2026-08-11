@@ -17,8 +17,18 @@ const parseTable = html => parseGrid(html, clean);
 const MS = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
 const I18N = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'ms.json'), 'utf8'));
 const SKILL = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'skills.json'), 'utf8'));
+// 수동 사전에 없는 스킬명은 MT 캐시(skill_text.json, MS 스킬 패널용)로 폴백한다.
+// 방어·기동 버프 스킬처럼 이전엔 안 뽑히던 스킬도 대개 여기 이미 번역돼 있다.
+let SKILL_MT = {};
+try { SKILL_MT = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'skill_text.json'), 'utf8')); } catch { /* 없어도 됨 */ }
+const hasJa = s => /[ぁ-ゖァ-ヺ一-鿿㐀-䶿]/.test(s);   // ・ ー 등 문장부호는 제외
 const koName = n => I18N[n.normalize('NFC')] || n;
-const koSkill = n => SKILL[n.normalize('NFC')] || n;
+const koSkill = n => {
+  const k = n.normalize('NFC');
+  if (SKILL[k]) return SKILL[k];                       // 수동 사전 우선(신뢰)
+  if (SKILL_MT[k] && !hasJa(SKILL_MT[k])) return SKILL_MT[k];   // MT 캐시 폴백
+  return n;
+};
 
 const byPage = new Map();
 for (const m of MS) {
@@ -59,7 +69,8 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         grants.push({
           ms: ms[0].MS名.replace(/_LV\d+$/, ''), name: gname,
           forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
-          secs: Number((line.match(/効果時間は?[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
+          // 「は」를 필수로 — 「効果時間5秒消費」(행동 시 감소 페널티)를 실제 지속시간으로 오인하지 않게.
+        secs: Number((line.match(/効果時間は[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
           hp: Number((line.match(/機体HPが?\s*(\d+)\s*[%％]以下/) || [])[1]) || null,
           manual: /タッチパッドを押す/.test(line)
         });
@@ -102,15 +113,18 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       // 방어·기동·HP 발동 버프 (능력UP「바이오센서」 등) — 스탯 패널에 반영한다.
       // 「各耐性 ＋15」은 3속성 모두에 얹고, 개별 「耐実弾補正 ＋N」이 있으면 더한다.
       // ＋ 를 요구해 조건 표기(「機体HPが N%以下」·AMBAC 「旋回性能が N増加」)는 걸러진다.
-      const armorAll = flat(0, /各耐性\s*[＋+]\s*(\d+)/);
-      const armorRange = armorAll + flat(0, /耐実弾補正\s*[＋+]\s*(\d+)/);
-      const armorBeam = armorAll + flat(0, /耐ビーム補正\s*[＋+]\s*(\d+)/);
-      const armorMelee = armorAll + flat(0, /耐格闘補正\s*[＋+]\s*(\d+)/);
-      const speed = flat(0, /スピード\s*[＋+]\s*(\d+)/);
-      const hispeed = flat(0, /高速移動\s*[＋+]\s*(\d+)/);
-      const thruster = flat(0, /スラスター\s*[＋+]\s*(\d+)(?!\s*%)/);   // 「スラスター消費 －N%」는 －·% 라 안 걸림
-      const turn = flat(0, /旋回(?:性能)?\s*[＋+]\s*(\d+)/);
-      const hpUp = flat(0, /(?:機体HP|最大HP)\s*[＋+]\s*(\d+)/);
+      // ＋ 뿐 아니라 － 도 잡는다 — HADES(各耐性－5)·액티브퍼지(高速移動－10) 같은 트레이드오프 반영.
+      // % 가 붙은 것(「スラスター消費 －50%」)은 소비율이라 제외.
+      const sgn = re => { const m = line.match(re); return m ? (/[－-]/.test(m[1]) ? -1 : 1) * Number(m[2]) : 0; };
+      const armorAll = sgn(/各耐性\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
+      const armorRange = armorAll + sgn(/耐実弾補正\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
+      const armorBeam = armorAll + sgn(/耐ビーム補正\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
+      const armorMelee = armorAll + sgn(/耐格闘補正\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
+      const speed = sgn(/スピード\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
+      const hispeed = sgn(/高速移動\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
+      const thruster = sgn(/スラスター\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);   // 消費 는 スラスター 뒤에 － 가 아니라 消費 가 와서 안 걸림
+      const turn = sgn(/旋回(?:性能)?\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
+      const hpUp = sgn(/(?:機体HP|最大HP)\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
       const hasMob = armorRange || armorBeam || armorMelee || speed || hispeed || thruster || turn || hpUp;
       if (!shoot && !melee && !shootPct && !meleePct && !crouchPct && !dmgPct && !powerPct && !hasMob) continue;
 
@@ -126,7 +140,8 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         shoot, melee, shootPct, meleePct, crouchPct, limitUp, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
         armorRange, armorBeam, armorMelee, speed, hispeed, thruster, turn, hpUp,
         forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
-        secs: Number((line.match(/効果時間は?[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
+        // 「は」를 필수로 — 「効果時間5秒消費」(행동 시 감소 페널티)를 실제 지속시간으로 오인하지 않게.
+        secs: Number((line.match(/効果時間は[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
         hp: Number((line.match(/機体HPが?\s*(\d+)\s*[%％]以下/) || [])[1]) || null,
         manual: /タッチパッドを押す/.test(line)
       });
