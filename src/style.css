@@ -322,6 +322,20 @@ body.view-build  #screenSelect { display: none; }
 .skill-item .v b { color: var(--skill); font-weight: 700; }
 .skill-menu .none { padding: 6px 8px; color: var(--dim); font-size: 11.5px; }
 
+/* PNG 배출 — 요약/상세 선택 메뉴 */
+.png-menu {
+  position: fixed; z-index: 60; min-width: 200px;
+  padding: 5px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--panel-2); box-shadow: 0 10px 26px #0009;
+}
+.png-menu-item {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  padding: 7px 10px; border: 0; border-radius: 6px; background: none; color: var(--text);
+}
+.png-menu-item:hover { background: var(--panel-3); }
+.png-menu-item .pm-t { display: block; font-size: 13px; font-weight: 600; }
+.png-menu-item .pm-s { display: block; font-size: 11px; color: var(--dim); margin-top: 1px; }
+
 .s-gain { color: var(--skill); font-weight: 700; }        /* 스킬 1개 */
 .s-gain.multi { color: var(--skill2); }                   /* 2개 이상을 겹쳐 발동 */
 

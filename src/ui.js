@@ -1450,10 +1450,52 @@
     }
   }
 
+  /** 상세 PNG용 무장 피해 목록 — renderWeapons 의 dmgCell 최종값(파츠·스킬·자세 반영)과 동일 계산. */
+  function weaponDamageList() {
+    const list = msWeapons();
+    if (!list.length) return [];
+    const r = stats();
+    const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
+    const dmgKey = w => (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shooting';
+    const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性);
+    const sk = skillEffect();
+    const postureEtc = w => {
+      if (dmgKey(w) === 'melee') return 0;
+      let e = 0;
+      if (state.posture === 'crouch') e += D.ETC_ATTACK.crouch;
+      else if (state.posture === 'prone') e += D.ETC_ATTACK.prone;
+      if (state.scope) e += D.ETC_ATTACK.scope;
+      return e;
+    };
+    const skEtc = w => (dmgKey(w) === 'shooting' && sk && sk.crouchPct && state.posture === 'crouch') ? sk.crouchPct / 100 : 0;
+    const out = [];
+    for (const w of list) {
+      const lv = weaponLevel(w), d = lv ? w.levels[lv] : null;
+      if (!d) continue;
+      const mult = fireMult(w);
+      const fin = (base, m) => {
+        if (base == null) return null;
+        const n = m ? m.n : 1;
+        if (w.attr === 'shield' || w.type === 'shield') return { one: base, n, total: base * n };
+        const kind = dmgKey(w) === 'melee' ? 'melee' : 'shoot';
+        const raw = w.type === 'melee'
+          ? D.meleeDamage(base, corr[dmgKey(w)] || 0, { etcA: postureEtc(w) + skEtc(w) })
+          : D.shootingDamage(base, corr[dmgKey(w)] || 0, { etcA: postureEtc(w) + skEtc(w) });
+        const one = D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]);
+        return { one, n, total: one * n };
+      };
+      out.push({
+        name: T.weaponName(w.name), type: w.type,
+        nc: fin(d.power, mult.nc), ch: fin(d.powerCharged, mult.ch)
+      });
+    }
+    return out;
+  }
+
   /* ---------- PNG 이미지 배출 (현재 성능·구성 카드) ---------- */
   // 이미지는 data URI 로 인라인돼 있어(GBO2_IMAGES) file:// 에서도 캔버스 오염 없이 그릴 수 있다.
   // 좌: 기체 이미지 + 장착 파츠(썸네일) / 우: 성능표·내구·누적치·발동 스킬.
-  async function exportPng() {
+  async function exportPng(mode) {
     if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
     const m = state.ms, lv = msLevel(m);
     const r = stats();
@@ -1465,7 +1507,8 @@
       line: cv('--line') || '#2e323d', text: cv('--text') || '#e8eaef', muted: cv('--muted') || '#8a91a0',
       dim: cv('--dim') || '#5a6070', ok: cv('--ok') || '#4ec97f', skill: cv('--skill') || '#c08bff',
       skill2: cv('--skill2') || '#2ee6d6', bad: cv('--bad') || '#ff6b6b', accent: cv('--accent') || '#ffc93c',
-      info: cv('--info') || '#4aa3ff', close: cv('--close') || '#ff8a5b'
+      info: cv('--info') || '#4aa3ff', close: cv('--close') || '#ff8a5b',
+      mid: cv('--mid') || '#5bc0ff', long: cv('--long') || '#b78bff'
     };
     // 막대·수치 색은 현재 앱 성능표와 동일하게 — 소체=회색, 파츠증가=초록, 스킬=보라/청록, 초과=빨강, 상한근접=노랑
     const track = CO.panel2, slotOn = CO.info || '#4aa3ff';
@@ -1648,11 +1691,20 @@
       rightBottom = ry;
     }
 
+    // 상세 모드: 무장 피해 패널 (전체 폭, 두 패널 아래)
+    const detail = mode === 'detail';
+    const weapons = detail ? weaponDamageList() : [];
+    const showW = detail && weapons.length > 0;
+    if (detail && !weapons.length) toast('무장 정보가 없어 요약으로 저장합니다');
+
     // 1패스: 내용 높이 측정
     const measure = document.createElement('canvas').getContext('2d');
     content(measure, false);
     const panelH = Math.max(leftBottom, rightBottom) - panelTop + IP;
-    const footerY = panelTop + panelH + 22;
+    const wpTop = panelTop + panelH + GAP;
+    const wpRowH = 25, wpH = showW ? IP + 26 + 22 + weapons.length * wpRowH + IP - 8 : 0;
+    const contentBottom = showW ? wpTop + wpH : panelTop + panelH;
+    const footerY = contentBottom + 22;
     const H = Math.ceil(footerY + PAD - 6);
 
     // 2패스: 실제 렌더 (레티나 2배)
@@ -1663,20 +1715,51 @@
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = CO.bg; ctx.fillRect(0, 0, W, H);
     // 패널 배경(둥근 모서리) 먼저
-    for (const [px, pw] of [[leftX, leftW], [rightX, rightW]]) {
+    const panelBg = (px, py, pw, ph) => {
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(px, panelTop, pw, panelH, 14); else ctx.rect(px, panelTop, pw, panelH);
+      if (ctx.roundRect) ctx.roundRect(px, py, pw, ph, 14); else ctx.rect(px, py, pw, ph);
       ctx.fillStyle = CO.panel; ctx.fill();
       ctx.strokeStyle = CO.line; ctx.lineWidth = 1; ctx.stroke();
-    }
+    };
+    panelBg(leftX, panelTop, leftW, panelH);
+    panelBg(rightX, panelTop, rightW, panelH);
+    if (showW) panelBg(PAD, wpTop, W - 2 * PAD, wpH);
     content(ctx, true);
+
+    // 무장 피해 표
+    if (showW) {
+      const dtext = (t, x, y, font, color, align) => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || 'left'; ctx.fillText(t, x, y); ctx.textAlign = 'left'; };
+      const dclip = (t, maxW, font) => { ctx.font = font; if (ctx.measureText(t).width <= maxW) return t; let s = t; while (s && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1); return s + '…'; };
+      const wx0 = PAD + IP, wR = W - PAD - IP;
+      const cNC = wx0 + 560, cCH = wx0 + 730, cTOT = wR;
+      let wy = wpTop + IP + 4;
+      dtext('무장 피해', wx0, wy + 8, '700 13px ' + F, CO.text);
+      dtext('(파츠·스킬·자세 반영)', wx0 + 78, wy + 8, '11px ' + F, CO.dim);
+      wy += 24;
+      dtext('무장', wx0, wy + 8, '11px ' + F, CO.dim);
+      dtext('논차지 위력', cNC, wy + 8, '11px ' + F, CO.dim, 'right');
+      dtext('풀차지 위력', cCH, wy + 8, '11px ' + F, CO.dim, 'right');
+      dtext('전탄 총피해', cTOT, wy + 8, '11px ' + F, CO.dim, 'right');
+      wy += 8; ctx.strokeStyle = CO.line; ctx.beginPath(); ctx.moveTo(wx0, wy + 0.5); ctx.lineTo(wR, wy + 0.5); ctx.stroke();
+      wy += 4;
+      weapons.forEach((wp, i) => {
+        const ry = wy + 16 + i * wpRowH;
+        ctx.fillStyle = wp.type === 'melee' ? CO.close : wp.type === 'shield' ? CO.long : CO.mid;
+        ctx.beginPath(); ctx.arc(wx0 + 4, ry - 4, 3.5, 0, 7); ctx.fill();
+        dtext(dclip(wp.name, cNC - 110 - (wx0 + 16), '13px ' + F), wx0 + 16, ry, '13px ' + F, CO.text);
+        dtext(wp.nc ? wp.nc.one.toLocaleString() : '—', cNC, ry, '700 13px ' + F, wp.nc ? CO.text : CO.dim, 'right');
+        dtext(wp.ch ? wp.ch.one.toLocaleString() : '—', cCH, ry, '13px ' + F, wp.ch ? CO.text : CO.dim, 'right');
+        dtext(wp.nc && wp.nc.n > 1 ? wp.nc.total.toLocaleString() + ' (×' + wp.nc.n + ')' : '—', cTOT, ry, '12px ' + F, wp.nc && wp.nc.n > 1 ? CO.muted : CO.dim, 'right');
+      });
+    }
+
     // 푸터
     ctx.fillStyle = CO.dim; ctx.font = '11px ' + F;
     ctx.textAlign = 'left'; ctx.fillText('GBO2 커스텀 파츠 시뮬레이터', PAD, footerY);
     ctx.textAlign = 'right'; ctx.fillText(new Date().toISOString().slice(0, 10), W - PAD, footerY);
     ctx.textAlign = 'left';
 
-    const safe = T.msName(m.MS名).replace(/[\\/:*?"<>|]/g, '') + '_LV' + lv;
+    const safe = T.msName(m.MS名).replace(/[\\/:*?"<>|]/g, '') + '_LV' + lv + (showW ? '_상세' : '');
     cvs.toBlob(blob => {
       if (!blob) { toast('이미지 생성에 실패했습니다'); return; }
       const url = URL.createObjectURL(blob);
@@ -3113,8 +3196,28 @@
       toast(r.ok ? loadedMsg(r, '구성을 불러왔습니다') : '알 수 없는 기체입니다');
     };
 
-    // PNG 이미지 배출 — 현재 성능·구성을 공유용 카드 이미지로 저장
-    $('#pngBtn').onclick = exportPng;
+    // PNG 이미지 배출 — 요약/상세 중 선택 (요약: 성능만 · 상세: 무장 피해까지)
+    $('#pngBtn').onclick = ev => {
+      ev.stopPropagation();
+      const old = document.querySelector('.png-menu'); if (old) { old.remove(); return; }
+      const menu = el('div', 'png-menu');
+      const mk = (t, s, mode) => {
+        const b = el('button', 'png-menu-item');
+        b.append(el('span', 'pm-t', t));
+        b.append(el('span', 'pm-s', s));
+        b.onclick = () => { menu.remove(); exportPng(mode); };
+        return b;
+      };
+      menu.append(mk('요약 카드', '기체 · 파츠 · 성능', 'summary'));
+      menu.append(mk('상세 카드', '+ 무장 피해량', 'detail'));
+      document.body.append(menu);
+      const rc = ev.currentTarget.getBoundingClientRect();
+      menu.style.top = (rc.bottom + 4) + 'px';
+      menu.style.left = Math.max(6, Math.min(rc.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+      setTimeout(() => document.addEventListener('click', function h(e) {
+        if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); }
+      }), 0);
+    };
 
     // 피탄 시뮬레이터 — 적 무장에 몇 발 버티는지 / 몇 발에 다운되는지
     $('#pietanBtn').onclick = () => openPietan(true);
