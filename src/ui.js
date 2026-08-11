@@ -1464,26 +1464,35 @@
       bg: cv('--bg') || '#0f1013', panel: cv('--panel') || '#17191f', panel2: cv('--panel-2') || '#1e2129',
       line: cv('--line') || '#2e323d', text: cv('--text') || '#e8eaef', muted: cv('--muted') || '#8a91a0',
       dim: cv('--dim') || '#5a6070', ok: cv('--ok') || '#4ec97f', skill: cv('--skill') || '#c08bff',
-      skill2: cv('--skill2') || '#2ee6d6', bad: cv('--bad') || '#ff6b6b', accent: cv('--accent') || '#ffc93c'
+      skill2: cv('--skill2') || '#2ee6d6', bad: cv('--bad') || '#ff6b6b', accent: cv('--accent') || '#ffc93c',
+      info: cv('--info') || '#4aa3ff', close: cv('--close') || '#ff8a5b'
     };
+    // 막대·수치 색은 현재 앱 성능표와 동일하게 — 소체=회색, 파츠증가=초록, 스킬=보라/청록, 초과=빨강, 상한근접=노랑
+    const track = CO.panel2, slotOn = CO.info || '#4aa3ff';
+    const ATTR_C = { '汎用': '#4aa3ff', '強襲': '#ff7a7a', '支援': '#6bd98a' };
+    const attrC = ATTR_C[m.属性] || CO.muted;
     const F = "'Malgun Gothic', 'Segoe UI', system-ui, sans-serif";
-    const W = 864, PAD = 28, DPR = 2;
-    const LW = 248, colX = PAD, rx = PAD + LW + 30, rEdge = W - PAD;   // 좌측 폭·우측 시작·오른쪽 끝
     const skillCol = state.skillPicks.size > 1 ? CO.skill2 : CO.skill;
 
-    // 이미지 미리 로드 (data URI → onload 은 즉시지만 비동기라 await)
+    const W = 1040, PAD = 24, IP = 20, GAP = 20, DPR = 2;
+    const leftX = PAD, leftW = 396, rightX = PAD + leftW + GAP, rightW = W - PAD - rightX, panelTop = PAD;
+
+    // 이미지 미리 로드 (data URI → onload 즉시지만 비동기라 await)
     const load = src => new Promise(res => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
     const heroImg = await load(msImg(m.MS名));
-    const partItems = await Promise.all(state.equipped.map(async p => ({ im: await load(partImg(p.name)), name: T.partName(p.name) })));
+    const partItems = await Promise.all(state.equipped.map(async p => ({
+      im: await load(partImg(p.name)), name: T.partName(p.name),
+      lv: (String(p.name).match(/LV\s*(\d+)/i) || [])[1] || ''
+    })));
 
     const skills = activeSkills().map(s => s.nameKo);
     const alt = altModeOf(m);
-    const sub = [T.attrName(m.属性), '코스트 ' + m.コスト,
-      '★'.repeat(msRarity(m)) || null, STAGE_LABEL[state.stage],
-      (state.form !== 'normal' && alt) ? alt.label : null].filter(Boolean).join('  ·  ');
     const stg = activeStaggerMods(m, lv);
-    const dura = [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']]
-      .map(([k, lb]) => lb + ' ' + durabilityOf(r.total, k).toLocaleString()).join('   ');
+    const sl = slots();
+    const slotRows = [['근', sl.close, sl.maxClose], ['중', sl.mid, sl.maxMid], ['원', sl.long, sl.maxLong]];
+    const expLabel = state.expansion === C.EXPANSION_NONE ? '없음'
+      : (C.EXPANSION_LABEL[state.expansion] || state.expansion) + ' LV' + state.expLevel;
+    const formLabel = (state.form !== 'normal' && alt) ? alt.label : null;
 
     const wrapLines = (ctx, text, font, maxW) => {
       ctx.font = font;
@@ -1497,122 +1506,175 @@
     };
     const clip = (ctx, t, maxW, font) => { ctx.font = font; if (ctx.measureText(t).width <= maxW) return t; let s = t; while (s && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1); return s + '…'; };
 
-    // 측정·그리기 공용. draw=false 면 높이만 잰다.
-    function paint(ctx, draw) {
+    let leftBottom = 0, rightBottom = 0;
+
+    // 좌·우 패널 '내용'만 그린다(패널 배경은 오케스트레이터가 먼저 그림). draw=false 면 높이만 잰다.
+    function content(ctx, draw) {
       const lt = (t, x, y, font, color, align) => { if (draw) { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || 'left'; ctx.fillText(t, x, y); ctx.textAlign = 'left'; } };
       const rt = (t, xR, y, font, color) => lt(t, xR, y, font, color, 'right');
       const rule = (y, x0, x1) => { if (draw) { ctx.strokeStyle = CO.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, y + 0.5); ctx.lineTo(x1, y + 0.5); ctx.stroke(); } };
+      const rrect = (x, y, w, h, rad) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, rad); else ctx.rect(x, y, w, h); };
+      const box = (x, y, w, h, rad) => { if (draw) { ctx.fillStyle = CO.panel2; rrect(x, y, w, h, rad); ctx.fill(); ctx.strokeStyle = CO.line; ctx.lineWidth = 1; rrect(x + 0.5, y + 0.5, w, h, rad); ctx.stroke(); } };
+      const fit = (im, x, y, w, h) => { if (!im || !draw) return; const s = Math.min(w / im.width, h / im.height); ctx.drawImage(im, x + (w - im.width * s) / 2, y + (h - im.height * s) / 2, im.width * s, im.height * s); };
 
-      let y = PAD;
-      // ── 헤더 (전체 폭)
-      y += 26; lt(T.msName(m.MS名), PAD, y, '700 24px ' + F, CO.text);   // msName 이 이미 LV 포함
-      y += 22; lt(sub, PAD, y, '13px ' + F, CO.muted);
-      y += 14; rule(y, PAD, rEdge); y += 8;
-      const bodyTop = y;
-
-      // ── 좌측: 기체 이미지 + 장착 파츠
-      let ly = bodyTop + 4;
-      const boxH = 172;
-      if (draw) { ctx.fillStyle = CO.panel; ctx.fillRect(colX, ly, LW, boxH); }
-      if (heroImg && draw) {
-        const s = Math.min(LW / heroImg.width, boxH / heroImg.height);
-        const iw = heroImg.width * s, ih = heroImg.height * s;
-        ctx.drawImage(heroImg, colX + (LW - iw) / 2, ly + (boxH - ih) / 2, iw, ih);
+      /* ═══ 좌측 패널 ═══ */
+      const lx = leftX + IP, lR = leftX + leftW - IP;
+      let ly = panelTop + IP;
+      // 헤더: 썸네일 + 이름 + ★ + 코스트 뱃지
+      const TH = 60;
+      box(lx, ly, TH, TH, 8);
+      fit(heroImg, lx + 2, ly + 2, TH - 4, TH - 4);
+      const nx = lx + TH + 14;
+      lt(clip(ctx, T.msName(m.MS名), lR - nx, '700 17px ' + F), nx, ly + 21, '700 17px ' + F, CO.text);
+      lt('★'.repeat(msRarity(m)) || '', nx, ly + 44, '13px ' + F, CO.accent);
+      if (draw) {
+        ctx.font = '13px ' + F; const sw = ctx.measureText('★'.repeat(msRarity(m)) || '').width;
+        const bt = T.attrName(m.属性) + ' ' + m.コスト;
+        ctx.font = '700 12px ' + F; const bw = ctx.measureText(bt).width + 18;
+        const bx = nx + sw + (sw ? 10 : 0), byy = ly + 33;
+        ctx.fillStyle = attrC; rrect(bx, byy, bw, 20, 10); ctx.fill();
+        ctx.fillStyle = '#10151c'; ctx.textAlign = 'left'; ctx.fillText(bt, bx + 9, byy + 14);
       }
-      if (draw) { ctx.strokeStyle = CO.line; ctx.lineWidth = 1; ctx.strokeRect(colX + 0.5, ly + 0.5, LW, boxH); }
-      ly += boxH + 16;
+      ly += TH + 14;
+      lt('강화 ' + STAGE_LABEL[state.stage] + '    확장 ' + expLabel + (formLabel ? '    ' + formLabel : ''),
+        lx, ly + 4, '12px ' + F, CO.muted);
+      ly += 16; rule(ly, lx, lR); ly += 14;
 
-      lt('장착 파츠 ' + partItems.length, colX, ly, '700 12px ' + F, CO.muted);
-      ly += 18;
-      const th = 36;
-      for (const it of partItems) {
-        if (draw) {
-          ctx.fillStyle = CO.panel2; ctx.fillRect(colX, ly, th, th);
-          if (it.im) ctx.drawImage(it.im, colX, ly, th, th);
-          ctx.strokeStyle = CO.line; ctx.strokeRect(colX + 0.5, ly + 0.5, th, th);
+      // 파츠 슬롯 게이지 (근/중/원)
+      lt('파츠 슬롯', lx, ly + 2, '700 12px ' + F, CO.muted); ly += 16;
+      for (const [lb, used, max] of slotRows) {
+        const rowY = ly;
+        lt(lb, lx, rowY + 13, '13px ' + F, CO.text);
+        lt(used + ' / ' + max, lx + 26, rowY + 13, '13px ' + F, used > max ? CO.bad : CO.muted);
+        const bX = lx + 92, bW = lR - bX, bh = 12, bY = rowY + 2;
+        const cells = Math.min(Math.max(max, used, 1), 20);
+        const scale = cells / Math.max(max, used, 1);
+        const filled = Math.round(used * scale), over = used > max;
+        const cg = 2, cw = (bW - (cells - 1) * cg) / cells;
+        if (draw) for (let i = 0; i < cells; i++) {
+          ctx.fillStyle = i < filled ? (over ? CO.bad : slotOn) : track;
+          ctx.fillRect(bX + i * (cw + cg), bY, cw, bh);
         }
-        lt(clip(ctx, it.name, LW - th - 12, '12px ' + F), colX + th + 12, ly + 23, '12px ' + F, CO.text);
-        ly += th + 8;
+        ly += 26;
       }
-      if (!partItems.length) { lt('없음', colX, ly + 4, '12px ' + F, CO.dim); ly += 20; }
+      ly += 4; rule(ly, lx, lR); ly += 12;
 
-      // ── 우측: 성능표
-      let ry = bodyTop;
-      const xTotalR = rx + 178, xDeltaR = rx + 258, barX = rx + 272, barR = rEdge - 42, barW = barR - barX, xCapR = rEdge;
-      lt('항목', rx, ry + 10, '11px ' + F, CO.dim);
-      rt('합계', xTotalR, ry + 10, '11px ' + F, CO.dim);
-      rt('증가', xDeltaR, ry + 10, '11px ' + F, CO.dim);
-      rt('상한', xCapR, ry + 10, '11px ' + F, CO.dim);
-      ry += 18;
+      // 장착 파츠 썸네일 그리드 (4열, LV 뱃지)
+      lt('장착 파츠 ' + partItems.length, lx, ly + 2, '700 12px ' + F, CO.muted); ly += 16;
+      if (!partItems.length) { lt('없음', lx, ly + 6, '13px ' + F, CO.dim); ly += 22; }
+      else {
+        const cols = 4, cg = 8, cw = (lR - lx - (cols - 1) * cg) / cols;
+        const rows = Math.ceil(partItems.length / cols);
+        partItems.forEach((it, i) => {
+          const cx = lx + (i % cols) * (cw + cg), cy = ly + Math.floor(i / cols) * (cw + cg);
+          box(cx, cy, cw, cw, 7);
+          fit(it.im, cx + 3, cy + 3, cw - 6, cw - 6);
+          if (it.lv && draw) {   // LV 뱃지 (우하단)
+            ctx.font = '700 10px ' + F; const t = 'LV' + it.lv, w2 = ctx.measureText(t).width + 8;
+            ctx.fillStyle = 'rgba(6,9,14,.82)'; rrect(cx + cw - w2 - 3, cy + cw - 17, w2, 14, 4); ctx.fill();
+            ctx.fillStyle = CO.text; ctx.textAlign = 'left'; ctx.fillText(t, cx + cw - w2 + 1, cy + cw - 6);
+          }
+        });
+        ly += rows * (cw + cg) - cg + 4;
+      }
+      leftBottom = ly;
+
+      /* ═══ 우측 패널: 성능표 ═══ */
+      const rxi = rightX + IP, rR = rightX + rightW - IP;
+      let ry = panelTop + IP;
+      const xTotalR = rxi + 150, xGainR = rxi + 236, barX = rxi + 250, barR = rR - 46, barW = barR - barX, xCapR = rR;
+      lt('항목', rxi, ry + 11, '11px ' + F, CO.dim);
+      rt('합계', xTotalR, ry + 11, '11px ' + F, CO.dim);
+      rt('보정', xGainR, ry + 11, '11px ' + F, CO.dim);
+      lt('그래프', barX, ry + 11, '11px ' + F, CO.dim);
+      rt('상한', xCapR, ry + 11, '11px ' + F, CO.dim);
+      ry += 18; rule(ry, rxi, rR); ry += 2;
 
       for (const k of C.STAT_KEYS) {
         const limit = r.currentLimits[k], raw = r.rawTotal[k], tot = r.total[k], soche = r.base[k];
         const skillGain = bare ? tot - bare.total[k] : 0;
         const gain = tot - soche, base = gain - skillGain;
         const over = limit !== Infinity && raw > limit ? raw - limit : 0;
-        const atCap = limit !== Infinity && tot >= limit;
         const scale = limit === Infinity ? Math.max(tot, soche, 1) * 1.15 : limit;
         const pct = v => Math.max(0, Math.min(1, v / scale));
         const baseW = pct(Math.min(soche, tot));
         const gainW = Math.min(1 - baseW, pct(Math.max(base, 0)));
         const skillW = Math.min(1 - baseW - gainW, pct(Math.max(skillGain, 0)));
-        const rowY = ry + 15;
+        const atCap = limit !== Infinity && tot >= limit;
+        const rowY = ry + 19;
 
-        lt(C.STAT_LABEL[k], rx, rowY, '13px ' + F, CO.muted);
-        rt(tot.toLocaleString(), xTotalR, rowY, '700 14px ' + F, atCap ? CO.accent : CO.text);
-        if (draw) {
-          ctx.textAlign = 'right';
-          let dx = xDeltaR;
-          if (skillGain) { ctx.font = '12px ' + F; ctx.fillStyle = skillCol; ctx.fillText('+' + skillGain, dx, rowY); dx -= ctx.measureText('+' + skillGain).width + 4; }
-          if (base !== 0) { ctx.font = '12px ' + F; ctx.fillStyle = base > 0 ? CO.ok : CO.bad; ctx.fillText((base > 0 ? '+' : '') + base, dx, rowY); }
-          else if (!skillGain) { ctx.font = '12px ' + F; ctx.fillStyle = CO.dim; ctx.fillText('·', dx, rowY); }
+        lt(C.STAT_LABEL[k], rxi, rowY, '13px ' + F, CO.text);
+        rt((over ? '⚠ ' : '') + tot.toLocaleString(), xTotalR, rowY, '700 15px ' + F,
+          over ? CO.close : atCap ? CO.accent : CO.text);
+        if (draw) {   // 보정: 파츠(초록)+스킬(보라)
+          ctx.textAlign = 'right'; let dx = xGainR;
+          if (skillGain) { ctx.font = '700 13px ' + F; ctx.fillStyle = skillCol; ctx.fillText('+' + skillGain, dx, rowY); dx -= ctx.measureText('+' + skillGain).width + 5; }
+          if (base !== 0) { ctx.font = '700 13px ' + F; ctx.fillStyle = base > 0 ? CO.ok : CO.bad; ctx.fillText((base > 0 ? '+' : '') + base.toLocaleString(), dx, rowY); }
+          else if (!skillGain) { ctx.font = '13px ' + F; ctx.fillStyle = CO.dim; ctx.fillText('·', dx, rowY); }
           ctx.textAlign = 'left';
-          const by = ry + 10, bh = 9;
-          ctx.fillStyle = CO.panel2; ctx.fillRect(barX, by, barW, bh);
-          let bx = barX;
-          ctx.fillStyle = CO.dim; ctx.fillRect(bx, by, barW * baseW, bh); bx += barW * baseW;
-          ctx.fillStyle = over ? CO.bad : CO.ok; ctx.fillRect(bx, by, barW * gainW, bh); bx += barW * gainW;
-          if (skillW > 0) { ctx.fillStyle = skillCol; ctx.fillRect(bx, by, barW * skillW, bh); }
+          // 막대: 회색 소체 + 초록 증가 + 보라 스킬, 트랙 위 (앱 성능표와 동일)
+          const by = ry + 11, bh = 11;
+          ctx.fillStyle = track; rrect(barX, by, barW, bh, 3); ctx.fill();
+          let bx = barX; const seg = (w, c) => { if (w > 0.0005) { ctx.fillStyle = c; ctx.fillRect(bx, by, barW * w, bh); bx += barW * w; } };
+          ctx.save(); rrect(barX, by, barW, bh, 3); ctx.clip();
+          seg(baseW, CO.dim); seg(gainW, over ? CO.close : atCap ? CO.accent : CO.ok); seg(skillW, skillCol);
+          ctx.restore();
+          if (over) { ctx.font = '700 10px ' + F; ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText('OVER', barR - 4, by + 9); ctx.textAlign = 'left'; }
         }
-        rt(over ? tot.toLocaleString() + ' +' + over : (limit === Infinity ? '—' : limit.toLocaleString()),
-          xCapR, rowY, '12px ' + F, over ? CO.bad : CO.dim);
-        ry += 27;
+        rt(limit === Infinity ? '—' : limit.toLocaleString(), xCapR, rowY, '13px ' + F, CO.dim);
+        ry += 30;
       }
 
-      ry += 4; rule(ry, rx, rEdge); ry += 8;
-      lt('내구 지표', rx, ry + 13, '700 12px ' + F, CO.muted);
-      lt(dura, rx + 78, ry + 13, '13px ' + F, CO.text);
+      ry += 2; rule(ry, rxi, rR); ry += 10;
+      lt('내구 지표', rxi, ry + 4, '700 12px ' + F, CO.muted);
+      let dx = rxi + 78;
+      for (const [k, lb] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']]) {
+        lt(lb, dx, ry + 4, '12px ' + F, CO.muted); dx += ctx.measureText(lb).width + 6;
+        const v = durabilityOf(r.total, k).toLocaleString();
+        lt(v, dx, ry + 4, '700 13px ' + F, CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 18;
+      }
       ry += 24;
-      lt('누적치', rx, ry + 13, '700 12px ' + F, CO.muted);
-      lt('내성 ' + Math.round(stg.threshold / stg.mult) + '%   (임계 ' + stg.threshold + '%'
-        + (stg.mult < 1 ? ' · 받는 누적 ×' + (+stg.mult.toFixed(3)) : '') + ')', rx + 78, ry + 13, '13px ' + F, CO.text);
-      ry += 26;
+      lt('누적치', rxi, ry + 4, '700 12px ' + F, CO.muted);
+      lt('내성 ' + Math.round(stg.threshold / stg.mult) + '%    임계 ' + stg.threshold + '%'
+        + (stg.mult < 1 ? '    받는 누적 ×' + (+stg.mult.toFixed(3)) : ''), rxi + 78, ry + 4, '13px ' + F, CO.text);
+      ry += 20;
       if (skills.length) {
-        rule(ry, rx, rEdge); ry += 8;
-        lt('발동 스킬', rx, ry + 13, '700 12px ' + F, skillCol);
-        const lines = wrapLines(ctx, skills.join('  ·  '), '13px ' + F, rEdge - (rx + 78));
-        lines.forEach((ln, i) => lt(ln, rx + 78, ry + 13 + i * 19, '13px ' + F, CO.text));
-        ry += Math.max(20, lines.length * 19) + 6;
+        ry += 8; rule(ry, rxi, rR); ry += 12;
+        lt('발동 스킬', rxi, ry + 4, '700 12px ' + F, skillCol);
+        const lines = wrapLines(ctx, skills.join('  ·  '), '13px ' + F, rR - (rxi + 78));
+        lines.forEach((ln, i) => lt(ln, rxi + 78, ry + 4 + i * 19, '13px ' + F, CO.text));
+        ry += Math.max(16, lines.length * 19);
       }
-
-      // ── 푸터 (전체 폭, 좌·우 열 중 더 긴 쪽 아래)
-      let y2 = Math.max(ly, ry) + 8;
-      rule(y2, PAD, rEdge); y2 += 20;
-      lt('GBO2 커스텀 파츠 시뮬레이터', PAD, y2, '11px ' + F, CO.dim);
-      rt(new Date().toISOString().slice(0, 10), rEdge, y2, '11px ' + F, CO.dim);
-      return y2 + PAD - 8;
+      rightBottom = ry;
     }
 
-    // 1패스: 높이 측정 → 2패스: 실제 렌더 (레티나 2배)
+    // 1패스: 내용 높이 측정
     const measure = document.createElement('canvas').getContext('2d');
-    const H = Math.ceil(paint(measure, false));
+    content(measure, false);
+    const panelH = Math.max(leftBottom, rightBottom) - panelTop + IP;
+    const footerY = panelTop + panelH + 22;
+    const H = Math.ceil(footerY + PAD - 6);
+
+    // 2패스: 실제 렌더 (레티나 2배)
     const cvs = document.createElement('canvas');
     cvs.width = W * DPR; cvs.height = H * DPR;
     const ctx = cvs.getContext('2d');
     ctx.scale(DPR, DPR);
-    ctx.fillStyle = CO.bg; ctx.fillRect(0, 0, W, H);
     ctx.textBaseline = 'alphabetic';
-    paint(ctx, true);
+    ctx.fillStyle = CO.bg; ctx.fillRect(0, 0, W, H);
+    // 패널 배경(둥근 모서리) 먼저
+    for (const [px, pw] of [[leftX, leftW], [rightX, rightW]]) {
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(px, panelTop, pw, panelH, 14); else ctx.rect(px, panelTop, pw, panelH);
+      ctx.fillStyle = CO.panel; ctx.fill();
+      ctx.strokeStyle = CO.line; ctx.lineWidth = 1; ctx.stroke();
+    }
+    content(ctx, true);
+    // 푸터
+    ctx.fillStyle = CO.dim; ctx.font = '11px ' + F;
+    ctx.textAlign = 'left'; ctx.fillText('GBO2 커스텀 파츠 시뮬레이터', PAD, footerY);
+    ctx.textAlign = 'right'; ctx.fillText(new Date().toISOString().slice(0, 10), W - PAD, footerY);
+    ctx.textAlign = 'left';
 
     const safe = T.msName(m.MS名).replace(/[\\/:*?"<>|]/g, '') + '_LV' + lv;
     cvs.toBlob(blob => {
