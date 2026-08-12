@@ -93,7 +93,9 @@
     if (/空中|落下|滑空|ジャンプ/.test(blob)) return '공중';
     if (/高速移動中|ブースト移動中/.test(blob)) return '이동중';
     if (/変形|フライトモード/.test(blob)) return '변형중';
-    if (/機体HP|HP\s*\d+\s*%|HP\d+/.test(blob)) return 'HP조건';
+    // 실제 HP 조건은 「HP…以下」(예: 機体HPが 50%以下). 「機体HPへのダメージ」「HP回復」 같은
+    // 단순 HP 언급을 HP조건으로 오판하지 않도록 「以下」를 요구한다 (다목적 대형 바인더 등).
+    if (/HP[^。]{0,10}以下/.test(blob)) return 'HP조건';
     if (/発動中|使用中|モード中|効果中|ハイパーモード/.test(blob)) return '발동중';
     return '상시';
   }
@@ -104,17 +106,25 @@
     // 상시 가정하는 값이 아니므로, 감소가 가장 약한(값이 큰) 쪽을 보수적으로 쓴다.
     const mults = [...blob.matchAll(/よろけ値を\s*(\d+)\s*%?かつ小数点以下切り捨て/g)].map(m => Number(m[1]));
     const tm = blob.match(/蓄積よろけまでの値が\s*(\d+)\s*%/);
-    // 수치(감소 배수 또는 임계)가 있는 스킬만 누적치 스킬로 본다. 「リアクションを軽減」만 있는
-    // 기본 마뉴버아머(desc 비어있음)처럼 배수 없는 것은 누적치에 영향 없으므로 제외한다.
-    if (!mults.length && !tm) return null;
+    // 피해 경감(被ダメージ －N%) — 속성별. 내구 지표 상승·격파 계산에 쓴다.
     const cuts = [];
     const push = (re, scope) => { const m = blob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
     push(/(?:射撃属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'shoot');
     push(/(?:ビーム属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'beam');
     push(/(?:実弾属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'solid');
     push(/(?:格闘属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'melee');
-    push(/(?:^|[・\/\s])被ダメージ\s*[－-]\s*(\d+)\s*%/, 'all');
-    push(/ダメージを\s*(\d+)\s*%軽減/, 'all');
+    // 속성 표기 없는 일반 被ダメージ － 「받는 공격 종류」 조건(射撃/格闘攻撃を受け)으로 범위를 좁힌다.
+    // (예: 다목적 대형 바인더는 '射撃攻撃を受けた際' → 사격 한정, 내격투엔 반영 안 함)
+    if (!cuts.length) {
+      const gm = blob.match(/(?:^|[・\/\s])被ダメージ\s*[－-]\s*(\d+)\s*%/) || blob.match(/ダメージを\s*(\d+)\s*[%％]\s*軽減/);
+      if (gm) {
+        const rcvShoot = /(?:射撃|実弾|ビーム)攻撃を受け/.test(blob), rcvMelee = /格闘攻撃を受け/.test(blob);
+        cuts.push({ scope: rcvShoot && !rcvMelee ? 'shoot' : rcvMelee && !rcvShoot ? 'melee' : 'all', pct: Number(gm[1]) });
+      }
+    }
+    // 누적치 감소·임계 또는 피해 경감 중 하나라도 있으면 방어 스킬로 본다.
+    // (「リアクションを軽減」만 있는 기본 마뉴버아머처럼 수치 없는 것은 제외.)
+    if (!mults.length && !tm && !cuts.length) return null;
     const mult = mults.length ? Math.max(...mults) / 100 : 1;
     return { mult, threshold: tm ? Number(tm[1]) : null, cuts, cond: staggerCond(blob) };
   }
@@ -190,8 +200,12 @@
       lab.title = s.cond + ' 발동';
       const box = el('input'); box.type = 'checkbox'; box.checked = state.staggerOn.has(s.name);
       box.onchange = () => { box.checked ? state.staggerOn.add(s.name) : state.staggerOn.delete(s.name); onChange(); };
+      const tags = [];
+      if (s.threshold != null) tags.push(`임계 ${s.threshold}%`);
+      if (s.mult < 1) tags.push(`누적 ×${+s.mult.toFixed(3)}`);
+      if (s.cuts.length) tags.push(`피해 -${Math.max(...s.cuts.map(c => c.pct))}%`);
       lab.append(box, el('span', 'stg-nm', s.ko),
-        el('span', 'stg-tag', s.threshold != null ? `임계 ${s.threshold}%` : `×${+s.mult.toFixed(3)}`),
+        el('span', 'stg-tag', tags.join(' · ')),
         el('span', 'stg-cond', s.cond));
       wrap.append(lab);
     }
@@ -1429,32 +1443,44 @@
       body.append(row);
     }
 
-    // 내구 지표 — 스탯 행들과 같은 흐름(마지막 행)에 두어 사이가 벌어지지 않게 한다
+    // 내구 지표 — 스탯 행들과 같은 흐름(마지막 행). 체크한 방어 스킬(피해경감)만큼 실효 HP 가 오른다.
+    const lv = msLevel(state.ms);
+    const stg = activeStaggerMods(state.ms, lv);
     const du = el('div', 'dura-row');
     du.append(el('span', 'dura-lb', '내구 지표'));
-    for (const [k, label] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']]) {
+    for (const [k, label, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
+      const base = durabilityOf(r.total, k), f = staggerDmgFactor(stg.cuts, dattr);
       const cell = el('span', 'dura-cell');
       cell.append(el('span', 'dura-k', label));
-      cell.append(el('span', 'dura-v', durabilityOf(r.total, k).toLocaleString()));
+      if (f < 1) {
+        cell.append(el('span', 'dura-v', Math.round(base / f).toLocaleString()));
+        cell.append(el('span', 'dura-up', '+' + Math.round((1 / f - 1) * 100) + '%'));
+      } else {
+        cell.append(el('span', 'dura-v', base.toLocaleString()));
+      }
       du.append(cell);
     }
     body.append(du);
 
     // 누적치(스태거) — 임계·감소 스킬을 반영한 실효 내성. 무장별 다운은 '피탄 시뮬'에서.
-    if (state.ms) {
-      const lv = msLevel(state.ms);
-      const stg = activeStaggerMods(state.ms, lv);
-      const sr = el('div', 'dura-row stagger-row');
-      sr.append(el('span', 'dura-lb', '누적치'));
-      const cell = el('span', 'dura-cell');
-      cell.append(el('span', 'dura-k', '내성'));
-      cell.append(el('span', 'dura-v', Math.round(stg.threshold / stg.mult) + '%'));
-      sr.append(cell);
-      sr.append(el('span', 'stagger-detail',
-        `임계 ${stg.threshold}%` + (stg.mult < 1 ? ` · 받는 누적 ×${+stg.mult.toFixed(3)}` : '')));
-      body.append(sr);
-      const cl = staggerCheckList(state.ms, lv, () => renderAll());
-      if (cl.count) body.append(cl.wrap);
+    const sr = el('div', 'dura-row stagger-row');
+    sr.append(el('span', 'dura-lb', '누적치'));
+    const scell = el('span', 'dura-cell');
+    scell.append(el('span', 'dura-k', '내성'));
+    scell.append(el('span', 'dura-v', Math.round(stg.threshold / stg.mult) + '%'));
+    sr.append(scell);
+    sr.append(el('span', 'stagger-detail',
+      `임계 ${stg.threshold}%` + (stg.mult < 1 ? ` · 받는 누적 ×${+stg.mult.toFixed(3)}` : '')));
+    body.append(sr);
+
+    // 방어 스킬 체크박스 — 체크 시 위 내구 지표·누적치에 반영된다.
+    const cl = staggerCheckList(state.ms, lv, () => renderAll());
+    if (cl.count) {
+      const head = el('div', 'dura-row stg-head');
+      head.append(el('span', 'dura-lb', '방어 스킬'));
+      head.append(el('span', 'stagger-detail', '체크 시 내구·누적치 반영'));
+      body.append(head);
+      body.append(cl.wrap);
     }
   }
 
@@ -2548,7 +2574,7 @@
     box.innerHTML = '';
     if (!state.ms) return;
     const cl = staggerCheckList(state.ms, msLevel(state.ms), () => { renderPietanChecks(); renderPietanResult(); });
-    if (cl.count) { box.append(el('span', 'pietan-ctrl-lb', '누적치 스킬')); box.append(cl.wrap); }
+    if (cl.count) { box.append(el('span', 'pietan-ctrl-lb', '방어 스킬')); box.append(cl.wrap); }
   }
 
   function renderPietanResult() {
