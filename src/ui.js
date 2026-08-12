@@ -2382,17 +2382,20 @@
     else renderAll();   // 닫을 때 빌드 화면(회색·자동구성 후보)에 반영
   }
 
-  /* ---------- 피탄 시뮬레이터 (받는 피해 / 다운 저항) ---------- */
+  /* ---------- 피탄 시뮬레이터 (받는 피해 / 경직 저항) ---------- */
   // 내구 지표(실효 HP)를 실전 감각으로 확장 — 적 무장 하나를 골라
-  //   격파까지 = 실효HP[속성] ÷ 무장 위력,  다운까지 = 100 ÷ よろけ値
-  // 를 보여 준다. (1히트 근사 — 적 공격보정·국부보정·다운 감쇠는 미반영)
+  //   격파까지 = 실효HP[속성] ÷ 무장 위력,  경직까지 = 임계 ÷ よろけ値
+  // 를 보여 준다. (1히트 근사 — 국부보정·경직값 시간 감쇠는 미반영)
   const PIETAN_ARMOR = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee', shield: 'armorMelee' };
   let pietanMs = null;           // 선택한 적 기체 (LV 엔트리)
   let pietanMsBase = '';         // 그 기체의 base 이름
   let pietanMsLv = 1;            // 선택한 적 기체 LV
   let pietanPick = null;         // 선택한 적 무장 (그 LV 기준 위력)
   let pietanCorr = 0;            // 적 공격보정 (기체에서 자동, 수정 가능)
+  let pietanCorrTouched = false; // 사용자가 공격보정을 직접 만졌는가 — 그러면 무장 바꿔도 고정
   let pietanAttr = 'same';       // 적의 속성 상성 (same|advantage|disadvantage)
+  let pietanVariant = 0;         // 선택한 격투 변형 인덱스 (기본/헤비어택…)
+  let pietanDir = 0;             // 선택한 격투 방향 인덱스 (N격/횡격/하격…)
 
   /** 무장의 누적치(よろけ値) — 히트당 %와 1트리거 다발수(x7 등)를 읽는다. */
   function parseStagger(w) {
@@ -2426,7 +2429,14 @@
       const charged = Number(dd && dd.powerCharged) || 0;
       if (!power && !charged) continue;
       const st = parseStagger(w);
-      out.push({ name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets });
+      const note = (w.info && w.info['備考']) || '';
+      const sTxt = String((w.mods && w.mods.stagger) || '') + ' ' + note;
+      // 강경직 = 大よろけ / 強よろけ 유발 무장 (위키 표기). 일반 경직은 よろけ.
+      const react = /大よろけ|強よろけ/.test(sTxt) ? '강경직'
+        : /よろけ有|ひるみ有|転倒|ダウン/.test(sTxt) ? '경직' : null;
+      // 격투 변형(기본/헤비어택 등)·방향별 배율(N격/횡격/하격…) — meleeDamage 의 ccd 로 적용
+      const variants = (w.melee && w.melee.variants && w.melee.variants.length) ? w.melee.variants : null;
+      out.push({ name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets, react, variants });
     }
     return out;
   }
@@ -2438,6 +2448,7 @@
   }
   function pietanAutoCorr() {
     if (!pietanMs || !pietanPick) return;
+    if (pietanCorrTouched) return;    // 사용자가 값을 만졌으면 무장 바꿔도 고정
     const c = enemyBaseCorr(pietanMs);
     pietanCorr = pietanPick.attr === 'melee' ? c.melee : c.shoot;
     const inp = $('#pietanCorr'); if (inp) inp.value = pietanCorr;
@@ -2463,6 +2474,8 @@
     pietanMs = arr[arr.length - 1] || null;      // 기본은 최고 LV
     pietanMsLv = pietanMs ? msLevel(pietanMs) : 1;
     pietanPick = null;
+    pietanCorrTouched = false;                    // 새 기체는 공격보정 다시 자동
+    pietanVariant = 0; pietanDir = 0;
     renderPietanLeft(); renderPietanResult();
   }
 
@@ -2516,7 +2529,7 @@
       row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
       row.append(el('span', 'pietan-wn', T.weaponName(w.name)));
       row.append(el('span', 'pietan-wp', (w.power || w.charged).toLocaleString()));
-      row.onclick = () => { pietanPick = w; pietanAutoCorr(); renderPietanLeft(); renderPietanResult(); };
+      row.onclick = () => { pietanPick = w; pietanVariant = 0; pietanDir = 0; pietanAutoCorr(); renderPietanLeft(); renderPietanResult(); };
       box.append(row);
     }
     if (!wl.length) box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
@@ -2539,29 +2552,61 @@
     const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
     const stg = activeStaggerMods(state.ms, state.ms ? msLevel(state.ms) : 1);   // 내 누적치 스킬
     const dmgFactor = staggerDmgFactor(stg.cuts, w.attr);          // 방어 스킬의 피해 경감
-    // 1히트 피해 = 실식의 공격 항 [Wp・{Att・ETCa}・Pr] × 방어 스킬 피해 경감 (방어보정은 실효 HP).
-    const perHit = base => base > 0
-      ? Math.floor((w.attr === 'melee'
-        ? D.meleeDamage(base, pietanCorr, { attr: pietanAttr })
+    const isMelee = w.attr === 'melee';
+    // 격투 변형(기본/헤비어택)·방향(N격/횡격/하격) — 무장 데이터의 방향별 배율(ccd)을 적용한다.
+    const variants = isMelee && w.variants && w.variants.length ? w.variants : null;
+    if (variants && pietanVariant >= variants.length) pietanVariant = 0;
+    const dirs = variants ? variants[pietanVariant].direction : null;
+    if (dirs && pietanDir >= dirs.length) pietanDir = 0;
+    const meleeCcd = dirs && dirs[pietanDir] ? dirs[pietanDir].hits : [1];
+    // 1히트 피해 = 공격 항 [Wp・{Att・ETCa}・(CCd)・Pr] × 방어 스킬 피해 경감 (방어보정은 실효 HP).
+    const perHit = (base, ccd) => base > 0
+      ? Math.floor((isMelee
+        ? D.meleeDamage(base, pietanCorr, { attr: pietanAttr, ccd: ccd || [1] })
         : D.shootingDamage(base, pietanCorr, { attr: pietanAttr })) * dmgFactor)
       : 0;
-    const dmg = perHit(w.power || w.charged);
+    const dmg = perHit(w.power || w.charged, meleeCcd);
     const hits = dmg > 0 ? Math.ceil(eff / dmg) : null;
-    const chgDmg = (w.charged && w.charged !== w.power) ? perHit(w.charged) : 0;
+    // 사격의 powerCharged = 집속 (멜리 헤비어택은 위 변형으로 처리)
+    const chgDmg = (!isMelee && w.charged && w.charged !== w.power) ? perHit(w.charged, [1]) : 0;
     const chgHits = chgDmg > 0 ? Math.ceil(eff / chgDmg) : null;
-    // 다운 = 임계 ÷ (히트당 누적치 × 감소배수, 소수 버림). 누적치 스킬을 반영.
+    // 경직 = 임계 ÷ (히트당 누적치 × 감소배수, 소수 버림). 蓄積よろけ 는 항상 (일반) 경직이다.
     const perHitStagger = w.stagger > 0 ? Math.floor(w.stagger * stg.mult) : 0;
-    const down = perHitStagger > 0 ? Math.ceil(stg.threshold / perHitStagger) : null;
+    const stagN = perHitStagger > 0 ? Math.ceil(stg.threshold / perHitStagger) : null;
 
     const hd = el('div', 'pietan-rhd');
     hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
     hd.append(el('b', 'pietan-rnm', T.weaponName(w.name)));
+    if (w.react) hd.append(el('span', 'pietan-react' + (w.react === '강경직' ? ' strong' : ''), w.react));
     box.append(hd);
     if (pietanMs) box.append(el('div', 'pietan-msctx',
       `${T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')} · 기체 LV${pietanMsLv} · 공격보정 ${pietanCorr}`));
     box.append(el('div', 'pietan-sub',
       `위력 ${(w.power || w.charged).toLocaleString()}${chgDmg ? ` · 집속 ${w.charged.toLocaleString()}` : ''}`
       + ` · 누적 ${w.stagger ? w.stagger + '%' : '—'}${w.pellets > 1 ? ` ×${w.pellets}` : ''}`));
+
+    // 격투 변형(기본/헤비어택) · 방향(N격/횡격/하격) 선택 (멜리 무장)
+    const segCtrl = (label, items, cur, onPick) => {
+      const wrap = el('div', 'pietan-dir');
+      wrap.append(el('span', 'pietan-ctrl-lb', label));
+      const seg = el('div', 'seg pietan-dirseg');
+      items.forEach((it, i) => {
+        const b = el('button', 'seg-btn' + (i === cur ? ' on' : ''), it.text);
+        if (it.title) b.title = it.title;
+        b.onclick = () => onPick(i);
+        seg.append(b);
+      });
+      wrap.append(seg);
+      box.append(wrap);
+    };
+    if (variants && variants.length > 1) {
+      segCtrl('격투 종류', variants.map(v => ({ text: v.label })), pietanVariant,
+        i => { pietanVariant = i; pietanDir = 0; renderPietanResult(); });
+    }
+    if (dirs && dirs.length > 1) {
+      segCtrl('격투 방향', dirs.map(d => ({ text: mLabel(d.label), title: '방향 배율 ' + d.raw })), pietanDir,
+        i => { pietanDir = i; renderPietanResult(); });
+    }
 
     const metric = (lb, val, note, cls) => {
       const m = el('div', 'pietan-metric' + (cls ? ' ' + cls : ''));
@@ -2571,18 +2616,21 @@
       return m;
     };
     const cutTxt = dmgFactor < 1 ? ` · 스킬 경감 ×${+dmgFactor.toFixed(3)}` : '';
+    const varTxt = variants && variants.length > 1 ? `${variants[pietanVariant].label} ` : '';
+    const dirTxt = dirs ? ` · ${varTxt}${mLabel(dirs[pietanDir].label)} ${dirs[pietanDir].raw}` : '';
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
-      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}${cutTxt}`));
+      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}${dirTxt}${cutTxt}`));
     if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
     const multTxt = stg.mult < 1 ? ` × ${+stg.mult.toFixed(3)} = ${perHitStagger}%` : '';
-    // down==null 은 "정보 없음"이 아니라 다운이 안 되는 경우다 — 무장 누적치 0% 이거나 스킬 감소로 0.
-    const downVal = down != null ? down + '히트' : (w.stagger > 0 ? '다운 안 됨' : '—');
-    const downNote = down != null
-      ? `임계 ${stg.threshold}% ÷ (${w.stagger}%${multTxt})` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(down / w.pellets)}발` : '')
-      : (w.stagger > 0 ? `누적치 ${w.stagger}% × ${+stg.mult.toFixed(3)} < 1 — 이 무장으론 다운 안 됨` : '누적치 0% (다운값 없음)');
-    box.append(metric('다운까지', downVal, downNote));
+    // stagN==null 은 "정보 없음"이 아니라 경직이 안 되는 경우다 — 무장 누적치 0% 이거나 스킬 감소로 0.
+    const stagVal = stagN != null ? stagN + '히트' : (w.stagger > 0 ? '경직 안 됨' : '—');
+    const stagNote = stagN != null
+      ? `임계 ${stg.threshold}% ÷ (${w.stagger}%${multTxt})` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(stagN / w.pellets)}발` : '')
+      : (w.stagger > 0 ? `누적치 ${w.stagger}% × ${+stg.mult.toFixed(3)} < 1 — 이 무장으론 경직 안 됨` : '누적치 0% (경직값 없음)');
+    box.append(metric('경직까지', stagVal, stagNote));
     box.append(el('div', 'pietan-foot',
-      '※ 공격 항 실피해식[Wp·Att·Pr] + 방어 스킬 경감 적용. 방어보정은 내구 지표(Def). 국부보정·다운값 시간 감쇠는 미반영.'));
+      '※ 공격 항 실피해식[Wp·Att·(방향)·Pr] + 방어 스킬 경감. 방어보정은 내구 지표(Def). 蓄積 경직은 일반 경직 기준(국부·시간 감쇠 미반영).'
+      + (w.react === '강경직' ? ' 이 무장은 직격 시 강경직(大よろけ).' : '')));
   }
 
   function openPietan(open) {
@@ -3270,7 +3318,7 @@
     $('#pietanClose').onclick = () => openPietan(false);
     $('#pietanBack').onclick = () => openPietan(false);
     $('#pietanQuery').oninput = () => renderPietanLeft();
-    $('#pietanCorr').oninput = () => { pietanCorr = Math.max(0, Number($('#pietanCorr').value) || 0); renderPietanResult(); };
+    $('#pietanCorr').oninput = () => { pietanCorr = Math.max(0, Number($('#pietanCorr').value) || 0); pietanCorrTouched = true; renderPietanResult(); };
     $('#pietanAttr').onclick = ev => {
       const b = ev.target.closest('[data-a]'); if (!b) return;
       pietanAttr = b.dataset.a;
