@@ -153,14 +153,22 @@
   // 체크한 스킬만 적용. 동시 발동 가능 여부는 사용자가 조건 라벨을 보고 판단(양립 불가한 건 안 켬).
   function activeStaggerMods(ms, lv) {
     const skills = staggerSkillsOf(ms, lv);
-    let mult = 1, threshold = 100; const cuts = [];
+    let mult = 1, threshold = 100; const cuts = [], mults = [];
     for (const s of skills) {
       if (!state.staggerOn.has(s.name)) continue;
-      if (s.mult < 1) mult *= s.mult;                    // 감소 배수는 곱
+      if (s.mult < 1) { mult *= s.mult; mults.push(s.mult); }   // 감소 배수
       if (s.threshold != null) threshold = Math.max(threshold, s.threshold);
       cuts.push(...s.cuts);
     }
-    return { skills, mult, threshold, cuts };
+    mults.sort((a, b) => a - b);   // 감소가 큰(배수가 작은) 스킬부터 순서대로 적용
+    return { skills, mult, mults, threshold, cuts };
+  }
+
+  /** 받는 누적치(よろけ値) — 스킬 배수를 감소 큰 순으로 하나씩 곱하고 매번 소수점 이하 내림. */
+  function staggerPerHit(base, mults) {
+    let v = base;
+    for (const m of mults) v = Math.floor(v * m);
+    return v;
   }
 
   /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. */
@@ -2570,8 +2578,8 @@
     // 사격의 powerCharged = 집속 (멜리 헤비어택은 위 변형으로 처리)
     const chgDmg = (!isMelee && w.charged && w.charged !== w.power) ? perHit(w.charged, [1]) : 0;
     const chgHits = chgDmg > 0 ? Math.ceil(eff / chgDmg) : null;
-    // 경직 = 임계 ÷ (히트당 누적치 × 감소배수, 소수 버림). 蓄積よろけ 는 항상 (일반) 경직이다.
-    const perHitStagger = w.stagger > 0 ? Math.floor(w.stagger * stg.mult) : 0;
+    // 경직 = 임계 ÷ 히트당 누적치. 감소 스킬은 감소 큰 순으로 하나씩 곱하고 매번 소수점 이하 내림.
+    const perHitStagger = w.stagger > 0 ? staggerPerHit(w.stagger, stg.mults) : 0;
     const stagN = perHitStagger > 0 ? Math.ceil(stg.threshold / perHitStagger) : null;
 
     const hd = el('div', 'pietan-rhd');
@@ -2621,12 +2629,13 @@
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
       `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}${dirTxt}${cutTxt}`));
     if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
-    const multTxt = stg.mult < 1 ? ` × ${+stg.mult.toFixed(3)} = ${perHitStagger}%` : '';
+    // 감소 스킬을 감소 큰 순으로 하나씩 곱하며 매번 내림한 과정 표기 (6% ×0.8 ×0.5 내림)
+    const stepTxt = stg.mults.length ? ` (${w.stagger}%${stg.mults.map(m => ' ×' + m).join('')} 내림)` : '';
     // stagN==null 은 "정보 없음"이 아니라 경직이 안 되는 경우다 — 무장 누적치 0% 이거나 스킬 감소로 0.
     const stagVal = stagN != null ? stagN + '히트' : (w.stagger > 0 ? '경직 안 됨' : '—');
     const stagNote = stagN != null
-      ? `임계 ${stg.threshold}% ÷ (${w.stagger}%${multTxt})` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(stagN / w.pellets)}발` : '')
-      : (w.stagger > 0 ? `누적치 ${w.stagger}% × ${+stg.mult.toFixed(3)} < 1 — 이 무장으론 경직 안 됨` : '누적치 0% (경직값 없음)');
+      ? `임계 ${stg.threshold}% ÷ 히트당 ${perHitStagger}%${stepTxt}` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(stagN / w.pellets)}발` : '')
+      : (w.stagger > 0 ? `누적치 ${w.stagger}%${stepTxt} → 0 — 이 무장으론 경직 안 됨` : '누적치 0% (경직값 없음)');
     box.append(metric('경직까지', stagVal, stagNote));
     box.append(el('div', 'pietan-foot',
       '※ 공격 항 실피해식[Wp·Att·(방향)·Pr] + 방어 스킬 경감. 방어보정은 내구 지표(Def). 蓄積 경직은 일반 경직 기준(국부·시간 감쇠 미반영).'
