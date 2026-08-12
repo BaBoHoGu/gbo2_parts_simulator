@@ -1472,6 +1472,8 @@
     for (const w of list) {
       const lv = weaponLevel(w), d = lv ? w.levels[lv] : null;
       if (!d) continue;
+      const info = w.info || {}, mods = w.mods || {};
+      const f = (...names) => wField(d, info, ...names);
       const mult = fireMult(w);
       const fin = (base, m) => {
         if (base == null) return null;
@@ -1484,9 +1486,36 @@
         const one = D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]);
         return { one, n, total: one * n };
       };
+      // ⑤ 쿨타임 / 발사간격
+      const cool = f('クールタイム') || f('発射間隔', '発射速度', '発射間', '照射時間');
+      // ⑥ 탄 / 히트율 (renderWeapons 와 동일 규칙)
+      const ammo = f('弾数'), heat = f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン'), ohShots = f('OHまでの弾数');
+      const isEpack = D.isEpackMag(w), shieldHp = f('シールドHP', 'HP'), shieldSize = f('サイズ');
+      let ammoStr;
+      if (shieldHp || shieldSize) {
+        const base = Number(shieldHp) || 0, bonus = shieldHp ? (wm.shieldHp || 0) : 0;
+        ammoStr = shieldHp ? 'HP ' + (base + bonus).toLocaleString() : (shieldSize ? '크기 ' + shieldSize : '—');
+      } else if (ammo) ammoStr = jaUnits(ammo);
+      else if (isEpack && ohShots) { const mag = String(ohShots).match(/(\d+)\s*発/); ammoStr = mag ? mag[1] + '발' : jaUnits(ohShots); }
+      else if (heat) ammoStr = heat;
+      else ammoStr = '—';
+      // ⑧ 리로드 / OH복귀
+      const reload = f('リロード時間'), ohBack = f('OH復帰時間', 'OH復帰速度');
+      let reloadStr;
+      if (reload) reloadStr = jaUnits(D.shortenTimeText(reload, D.timeCutFor(wm, 'reloadTime', w)));
+      else if (ohBack) reloadStr = jaUnits(D.shortenTimeText(ohBack, D.timeCutFor(wm, isEpack ? 'reloadTime' : 'weaponOH', w))) + (isEpack ? ' 리로드' : ' OH');
+      else reloadStr = '—';
+
       out.push({
         name: T.weaponName(w.name), type: w.type,
-        nc: fin(d.power, mult.nc), ch: fin(d.powerCharged, mult.ch)
+        sec: w.type === 'shield' ? '실드' : w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타',
+        kind: w.type === 'shield' ? '실드' : w.type === 'melee' ? '격투' : '사격',
+        nc: fin(d.power, mult.nc), ch: fin(d.powerCharged, mult.ch),
+        cool: cool ? jaUnits(cool) : '—',
+        ammo: ammoStr,
+        stagger: mods.stagger ? jaUnits(mods.stagger) : '—',
+        range: f('射程') || '—',
+        reload: reloadStr
       });
     }
     return out;
@@ -1517,7 +1546,14 @@
     const F = "'Malgun Gothic', 'Segoe UI', system-ui, sans-serif";
     const skillCol = state.skillPicks.size > 1 ? CO.skill2 : CO.skill;
 
-    const W = 1040, PAD = 24, IP = 20, GAP = 20, DPR = 2;
+    // 상세 모드: 무장 피해 표. 컬럼이 많아 카드 폭을 넓힌다.
+    const detail = mode === 'detail';
+    const weapons = detail ? weaponDamageList() : [];
+    const showW = detail && weapons.length > 0;
+    if (detail && !weapons.length) toast('무장 정보가 없어 요약으로 저장합니다');
+
+    const PAD = 24, IP = 20, GAP = 20, DPR = 2;
+    const W = showW ? 1200 : 1040;
     const leftX = PAD, leftW = 396, rightX = PAD + leftW + GAP, rightW = W - PAD - rightX, panelTop = PAD;
 
     // 이미지 미리 로드 (data URI → onload 즉시지만 비동기라 await)
@@ -1691,13 +1727,7 @@
       rightBottom = ry;
     }
 
-    // 상세 모드: 무장 피해 패널 (전체 폭, 두 패널 아래)
-    const detail = mode === 'detail';
-    const weapons = detail ? weaponDamageList() : [];
-    const showW = detail && weapons.length > 0;
-    if (detail && !weapons.length) toast('무장 정보가 없어 요약으로 저장합니다');
-
-    // 1패스: 내용 높이 측정
+    // 1패스: 내용 높이 측정 (무장 패널은 전체 폭, 두 패널 아래)
     const measure = document.createElement('canvas').getContext('2d');
     content(measure, false);
     const panelH = Math.max(leftBottom, rightBottom) - panelTop + IP;
@@ -1726,30 +1756,46 @@
     if (showW) panelBg(PAD, wpTop, W - 2 * PAD, wpH);
     content(ctx, true);
 
-    // 무장 피해 표
+    // 무장 피해 표 — 파츠 적용 무장표의 전체 컬럼
     if (showW) {
       const dtext = (t, x, y, font, color, align) => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || 'left'; ctx.fillText(t, x, y); ctx.textAlign = 'left'; };
       const dclip = (t, maxW, font) => { ctx.font = font; if (ctx.measureText(t).width <= maxW) return t; let s = t; while (s && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1); return s + '…'; };
       const wx0 = PAD + IP, wR = W - PAD - IP;
-      const cNC = wx0 + 560, cCH = wx0 + 730, cTOT = wR;
+      // 컬럼 x (좌측정렬: 구분·이름·유형 / 우측정렬: 나머지)
+      const cSec = wx0, dotX = wx0 + 52, cName = wx0 + 62, cType = wx0 + 300;
+      const cNC = wx0 + 430, cCH = wx0 + 520, cCool = wx0 + 660, cAmmo = wx0 + 790, cStg = wx0 + 872, cRange = wx0 + 972, cRel = wR;
       let wy = wpTop + IP + 4;
-      dtext('무장 피해', wx0, wy + 8, '700 13px ' + F, CO.text);
-      dtext('(파츠·스킬·자세 반영)', wx0 + 78, wy + 8, '11px ' + F, CO.dim);
+      dtext('무장 내역', wx0, wy + 8, '700 13px ' + F, CO.text);
+      dtext('(피해량은 파츠·스킬·자세 반영)', wx0 + 82, wy + 8, '11px ' + F, CO.dim);
       wy += 24;
-      dtext('무장', wx0, wy + 8, '11px ' + F, CO.dim);
-      dtext('논차지 위력', cNC, wy + 8, '11px ' + F, CO.dim, 'right');
-      dtext('풀차지 위력', cCH, wy + 8, '11px ' + F, CO.dim, 'right');
-      dtext('전탄 총피해', cTOT, wy + 8, '11px ' + F, CO.dim, 'right');
+      const hf = '11px ' + F;
+      dtext('구분', cSec, wy + 8, hf, CO.dim);
+      dtext('이름', cName, wy + 8, hf, CO.dim);
+      dtext('유형', cType, wy + 8, hf, CO.dim);
+      dtext('논차지', cNC, wy + 8, hf, CO.dim, 'right');
+      dtext('풀차지', cCH, wy + 8, hf, CO.dim, 'right');
+      dtext('쿨/발사', cCool, wy + 8, hf, CO.dim, 'right');
+      dtext('탄/히트', cAmmo, wy + 8, hf, CO.dim, 'right');
+      dtext('누적치', cStg, wy + 8, hf, CO.dim, 'right');
+      dtext('사거리', cRange, wy + 8, hf, CO.dim, 'right');
+      dtext('리로드/OH', cRel, wy + 8, hf, CO.dim, 'right');
       wy += 8; ctx.strokeStyle = CO.line; ctx.beginPath(); ctx.moveTo(wx0, wy + 0.5); ctx.lineTo(wR, wy + 0.5); ctx.stroke();
       wy += 4;
+      const vf = '12px ' + F, vfb = '700 12px ' + F;
       weapons.forEach((wp, i) => {
         const ry = wy + 16 + i * wpRowH;
-        ctx.fillStyle = wp.type === 'melee' ? CO.close : wp.type === 'shield' ? CO.long : CO.mid;
-        ctx.beginPath(); ctx.arc(wx0 + 4, ry - 4, 3.5, 0, 7); ctx.fill();
-        dtext(dclip(wp.name, cNC - 110 - (wx0 + 16), '13px ' + F), wx0 + 16, ry, '13px ' + F, CO.text);
-        dtext(wp.nc ? wp.nc.one.toLocaleString() : '—', cNC, ry, '700 13px ' + F, wp.nc ? CO.text : CO.dim, 'right');
-        dtext(wp.ch ? wp.ch.one.toLocaleString() : '—', cCH, ry, '13px ' + F, wp.ch ? CO.text : CO.dim, 'right');
-        dtext(wp.nc && wp.nc.n > 1 ? wp.nc.total.toLocaleString() + ' (×' + wp.nc.n + ')' : '—', cTOT, ry, '12px ' + F, wp.nc && wp.nc.n > 1 ? CO.muted : CO.dim, 'right');
+        const tc = wp.type === 'melee' ? CO.close : wp.type === 'shield' ? CO.long : CO.mid;
+        dtext(wp.sec, cSec, ry, '11px ' + F, CO.muted);
+        ctx.fillStyle = tc; ctx.beginPath(); ctx.arc(dotX, ry - 4, 3.5, 0, 7); ctx.fill();
+        dtext(dclip(wp.name, cType - cName - 10, vf), cName, ry, vf, CO.text);
+        dtext(wp.kind, cType, ry, vf, tc);
+        dtext(wp.nc ? wp.nc.one.toLocaleString() : '—', cNC, ry, vfb, wp.nc ? CO.text : CO.dim, 'right');
+        dtext(wp.ch ? wp.ch.one.toLocaleString() : '—', cCH, ry, vf, wp.ch ? CO.text : CO.dim, 'right');
+        dtext(wp.cool, cCool, ry, vf, wp.cool === '—' ? CO.dim : CO.muted, 'right');
+        dtext(wp.ammo, cAmmo, ry, vf, wp.ammo === '—' ? CO.dim : CO.muted, 'right');
+        dtext(wp.stagger, cStg, ry, vf, wp.stagger === '—' ? CO.dim : CO.muted, 'right');
+        dtext(wp.range, cRange, ry, vf, wp.range === '—' ? CO.dim : CO.muted, 'right');
+        dtext(wp.reload, cRel, ry, vf, wp.reload === '—' ? CO.dim : CO.muted, 'right');
       });
     }
 
