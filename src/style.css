@@ -921,6 +921,13 @@ body.view-build  #screenSelect { display: none; }
 .pietan-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 30px 8px; }
 .pietan-rhd { display: flex; align-items: center; gap: 7px; }
 .pietan-rnm { font-size: 14px; }
+/* 강경직(大よろけ)/경직 리액션 칩 */
+.pietan-react { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+  background: var(--panel-3); color: var(--muted); }
+.pietan-react.strong { background: #4a2530; color: var(--close); }
+/* 격투 방향 선택 */
+.pietan-dir { display: flex; align-items: center; gap: 8px; margin: 6px 0 2px; }
+.pietan-dirseg { flex-wrap: wrap; }
 .pietan-sub { color: var(--muted); font-size: 12px; margin-top: -3px; }
 .pietan-metric {
   display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 8px;
