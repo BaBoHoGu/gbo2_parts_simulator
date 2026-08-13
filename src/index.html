@@ -29,6 +29,7 @@
   <button id="openAuto" class="btn-primary step-only">⚡ 자동 구성</button>
   <button id="save" class="btn-ghost step-only" title="현재 구성을 이름을 지정해 저장">저장</button>
   <button id="load" class="btn-ghost" title="저장한 구성 목록 (요약 보기 · 불러오기 · 삭제)">저장 목록</button>
+  <button id="compareBtn" class="btn-ghost step-only" title="두 구성의 스탯·내구를 나란히 비교">⚖ 비교</button>
   <button id="share" class="btn-ghost step-only" title="구성 JSON을 클립보드로 복사">공유</button>
   <button id="pngBtn" class="btn-ghost step-only" title="현재 성능·구성을 PNG 이미지로 저장 (공유용)">🖼 이미지</button>
   <button id="importBtn" class="btn-ghost" title="구성 JSON 붙여넣기">가져오기</button>
@@ -239,6 +240,22 @@
     <button id="savedModalClose" class="btn-ghost">닫기</button>
   </div>
   <div class="auto-results" id="savedResults"></div>
+</div>
+
+<!-- ========== 빌드 A/B 비교 ========== -->
+<div class="auto-modal-back" id="compareModalBack" hidden></div>
+<div class="auto-modal compare-modal" id="compareModal" hidden role="dialog" aria-label="빌드 비교">
+  <div class="am-head">
+    <b>⚖ 빌드 비교</b>
+    <span class="am-note">두 구성의 스탯·내구를 나란히</span>
+    <span class="grow"></span>
+    <button id="compareModalClose" class="btn-ghost">닫기</button>
+  </div>
+  <div class="compare-pick">
+    <label>A <select id="cmpA"></select></label>
+    <label>B <select id="cmpB"></select></label>
+  </div>
+  <div class="compare-body" id="compareBody"></div>
 </div>
 
 <!-- ========== 기본 파츠 설정 (기본 제외 파츠) ========== -->
