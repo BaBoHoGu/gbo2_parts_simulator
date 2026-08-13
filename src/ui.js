@@ -795,12 +795,12 @@
     infoOf(lvl && lvl.raw, ...names) || infoOf(info, ...names);
 
   /** 현재 기체의 무장 목록 (위키 페이지 ID 로 찾는다). */
-  function msWeapons() {
-    if (!state.ms) return [];
-    const id = (String(state.ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
+  const weaponsOfMs = ms => {
+    const id = ms && (String(ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
     const page = id && weaponData[id];
     return page ? page.weapons : [];
-  }
+  };
+  function msWeapons() { return state.ms ? weaponsOfMs(state.ms) : []; }
 
   /**
    * 무장 레벨은 기체 레벨을 따라간다.
@@ -2395,6 +2395,32 @@
     return { ms, equipped, stage, expansion, expLevel, r };
   }
 
+  /** 빌드의 무장별 1히트 위력(논차지, 파츠·자세·스킬 미반영 — 사격/격투 보정과 파츠 피해%만). */
+  function buildWeaponDamage(bs) {
+    if (!bs) return [];
+    const msLv = C.msLevel(bs.ms.MS名);
+    const corr = { shooting: bs.r.total.shoot, melee: bs.r.total.meleeCorrection };
+    const wm = D.weaponModsOf(bs.equipped, msLv, bs.ms.属性);
+    const out = [];
+    for (const w of weaponsOfMs(bs.ms)) {
+      if (w.type === 'shield') continue;
+      const lvs = Object.keys(w.levels || {}).map(Number).sort((a, b) => a - b);
+      const fit = lvs.filter(l => l <= msLv);
+      const d = w.levels[String(fit.length ? fit[fit.length - 1] : (lvs[0] || ''))];
+      const base = d && (d.power != null ? d.power : d.powerCharged);
+      if (base == null) continue;
+      const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
+      let dmg;
+      if (w.attr === 'shield') dmg = base;
+      else {
+        const raw = w.type === 'melee' ? D.meleeDamage(base, corr.melee, {}) : D.shootingDamage(base, corr.shooting, {});
+        dmg = D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind)]);
+      }
+      out.push({ name: w.name, ko: T.weaponName(w.name), attr: weaponAttr(w), dmg });
+    }
+    return out;
+  }
+
   let compareOpts = [];   // [{id, label, bld}]
   const compareOptions = () => {
     const opts = [];
@@ -2428,17 +2454,30 @@
     const mkRow = (label, av, bv) => {
       const row = el('div', 'cmp-row');
       row.append(el('span', 'cmp-lb', label));
-      row.append(el('span', 'cmp-a', av.toLocaleString()));
-      row.append(el('span', 'cmp-b', bv.toLocaleString()));
-      const d = bv - av;
+      const fmt = v => v == null ? '—' : v.toLocaleString();
+      row.append(el('span', 'cmp-a', fmt(av)));
+      row.append(el('span', 'cmp-b', fmt(bv)));
+      const d = (av != null && bv != null) ? bv - av : null;
       row.append(el('span', 'cmp-d' + (d > 0 ? ' up' : d < 0 ? ' down' : ''),
-        d === 0 ? '·' : (d > 0 ? '+' : '') + d.toLocaleString()));
+        d == null ? '' : d === 0 ? '·' : (d > 0 ? '+' : '') + d.toLocaleString()));
       table.append(row);
     };
     for (const k of C.STAT_KEYS) mkRow(C.STAT_LABEL[k], A.r.total[k], B.r.total[k]);
     table.append(el('div', 'cmp-sec', '내구 지표'));
     for (const [k, lb] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']])
       mkRow(lb, durabilityOf(A.r.total, k), durabilityOf(B.r.total, k));
+
+    // 무장 위력 (1히트, 파츠·사격/격투 보정 반영). 이름으로 맞춰 비교(다른 기체면 대부분 —).
+    const wA = buildWeaponDamage(A), wB = buildWeaponDamage(B);
+    if (wA.length || wB.length) {
+      table.append(el('div', 'cmp-sec', '무장 위력 (1히트 · 파츠 반영)'));
+      const mapA = new Map(wA.map(x => [x.name, x])), mapB = new Map(wB.map(x => [x.name, x]));
+      const names = [...wA.map(x => x.name), ...wB.filter(x => !mapA.has(x.name)).map(x => x.name)];
+      for (const nm of names) {
+        const a = mapA.get(nm), b = mapB.get(nm);
+        mkRow((a || b).ko, a ? a.dmg : null, b ? b.dmg : null);
+      }
+    }
     box.append(table);
   }
 
