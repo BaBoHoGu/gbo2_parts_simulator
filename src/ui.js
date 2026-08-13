@@ -2669,7 +2669,13 @@
   function renderPietanResult() {
     const box = $('#pietanResult'); if (!box) return;
     box.innerHTML = '';
-    if (!pietanPick) { box.append(el('div', 'pietan-empty', '왼쪽에서 적 무장을 선택하세요.')); return; }
+    if (pietanPick) renderPietanIncoming(box);                       // 상대 무장 → 나
+    else box.append(el('div', 'pietan-empty', pietanMs ? '왼쪽에서 적 무장을 선택하세요.' : '왼쪽에서 적 기체를 선택하세요.'));
+    if (pietanMs && state.ms) renderPietanOutgoing(box);             // 내 무장 → 상대 (TTK 역방향)
+  }
+
+  /** 상대 무장 → 나 (받는 피해·격파·경직). */
+  function renderPietanIncoming(box) {
     const w = pietanPick, r = stats();
     const key = PIETAN_ARMOR[w.attr] || 'armorRange';
     const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
@@ -2755,6 +2761,48 @@
     box.append(el('div', 'pietan-foot',
       '※ 공격 항 실피해식[Wp·Att·(방향)·Pr] + 방어 스킬 경감. 방어보정은 내구 지표(Def). 蓄積 경직은 일반 경직 기준(국부·시간 감쇠 미반영).'
       + (w.react === '강경직' ? ' 이 무장은 직격 시 강경직(大よろけ).' : '')));
+  }
+
+  /** 적 기체의 기본(파츠 없음·강화6) 총 스탯 — 역방향 내구 계산용. */
+  const enemyTotalOf = ms => C.calcStats(ms, [], 6, C.EXPANSION_NONE, partsByCat, fullst, C.MAX_EXPANSION_LEVEL, null, null).total;
+
+  /** 내 무장 → 상대 격파까지 발수 (TTK 역방향). 상대는 기본 내구, 내 위력은 파츠·스킬 반영. */
+  function renderPietanOutgoing(box) {
+    const enemyTot = enemyTotalOf(pietanMs);
+    const r = stats();
+    const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
+    const wm = D.weaponModsOf(state.equipped, msLevel(state.ms), state.ms.属性);
+    const rows = [];
+    for (const w of msWeapons()) {
+      if (w.type === 'shield') continue;
+      const lv = weaponLevel(w), d = lv ? w.levels[lv] : null;
+      if (!d || !d.power) continue;
+      const attr = weaponAttr(w);
+      const enemyEff = durabilityOf(enemyTot, PIETAN_ARMOR[attr] || 'armorRange');
+      const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
+      const a = kind === 'melee' ? corr.melee : corr.shooting;
+      const raw = w.type === 'melee' ? D.meleeDamage(d.power, a, {}) : D.shootingDamage(d.power, a, {});
+      const dmg = D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]);
+      const mult = fireMult(w);
+      const n = (mult.nc && mult.nc.n) || 1;
+      const per = dmg * n;                          // 전탄(동시발사) 1트리거 피해
+      rows.push({ name: T.weaponName(w.name), attr, per, n, hits: per > 0 ? Math.ceil(enemyEff / per) : null });
+    }
+    if (!rows.length) return;
+    rows.sort((x, y) => (x.hits || 1e9) - (y.hits || 1e9));
+
+    box.append(el('div', 'pietan-out-lb', '내 무장 → ' + T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '') + ' 격파'));
+    const tbl = el('div', 'pietan-out');
+    for (const w of rows) {
+      const row = el('div', 'pietan-out-row');
+      row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
+      row.append(el('span', 'pietan-out-nm', w.name));
+      row.append(el('span', 'pietan-out-dmg', w.per.toLocaleString() + (w.n > 1 ? ' (×' + w.n + ')' : '')));
+      row.append(el('span', 'pietan-out-hits', w.hits != null ? w.hits + '발' : '—'));
+      tbl.append(row);
+    }
+    box.append(tbl);
+    box.append(el('div', 'pietan-foot', '※ 상대는 기본(파츠 없음·강화6) 내구 기준. 내 위력은 파츠·스킬 반영, 상성·국부보정 미반영. 전탄 명중 가정.'));
   }
 
   function openPietan(open) {
