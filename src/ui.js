@@ -256,6 +256,7 @@
     skillPicks: new Set(), // 발동시킨 기체 스킬의 인덱스 (여러 개를 겹칠 수 있다)
     posture: 'stand',      // 사격 자세 'stand'|'crouch'|'prone' — 무장 피해에 자세 보정을 얹는다
     scope: false,          // 스코프 조준 (자세와 별개로 얹힌다)
+    weaponSort: 'default', // 무장 정렬 'default'|'power'|'dps'|'stagger'
     partTab: C.CATEGORY_ALL,
     partQuery: '',
     weights: { ...O.PRESETS['밸런스'] },
@@ -893,6 +894,26 @@
     cell.append(sub);
   }
 
+  /** 무장 정렬 키 — 위력(전탄)·지속DPS·누적치. 값이 클수록 앞에 온다. (기본 위력·기본 계산 기준) */
+  function weaponSortKey(w, metric) {
+    const lv = weaponLevel(w), d = lv ? w.levels[lv] : null;
+    if (!d) return -1;
+    const mult = fireMult(w);
+    const pellets = (mult.nc && mult.nc.n) || (mult.ch && mult.ch.n) || 1;
+    if (metric === 'stagger') { const s = parseStagger(w); return (s.pct || 0) * (s.pellets || 1); }
+    const power = Math.max(d.power || 0, d.powerCharged || 0) * pellets;
+    if (metric === 'power') return power;
+    if (metric === 'dps') {
+      if (w.type === 'shield' || w.type === 'melee' || w.attr === 'melee') return 0;
+      const t = shotInterval(w, d);
+      if (!t) return 0;
+      const per = (d.power || 0) * pellets;
+      const mag = magazineOf(w, d), reload = reloadSecOf(w, d);
+      return (mag && reload) ? (per * mag) / (mag * t + reload) : per / t;
+    }
+    return 0;
+  }
+
   /* ---------- 모드(변형·시스템발동 등) ---------- */
   // 変形(msData 변형 스탯)뿐 아니라, 変形 스탯이 없는 트랜잠(システム発動中) 기체도
   // override 의 _altMode(그 모드 스탯 절대값)로 통상/그 모드를 전환한다. 무장은 나누지 않는다.
@@ -906,7 +927,9 @@
   function renderWeapons() {
     const box = $('#weaponList');
     box.innerHTML = '';
-    const list = msWeapons();       // 무장은 모드로 나누지 않고 전부 보여 준다(보기 편하게)
+    let list = msWeapons();       // 무장은 모드로 나누지 않고 전부 보여 준다(보기 편하게)
+    if (state.weaponSort && state.weaponSort !== 'default')   // 선택한 기준으로 내림차순 랭킹
+      list = [...list].sort((a, b) => weaponSortKey(b, state.weaponSort) - weaponSortKey(a, state.weaponSort));
     $('#weaponCount').textContent = list.length ? `${list.length}종` : '';
 
     if (!list.length) {
@@ -3380,6 +3403,17 @@
     document.addEventListener('click', () => { $('#skillMenu').hidden = true; });
 
     // 사격 자세 — 선 자세 / 앉기·정지 / 엎드리기 중 하나. 스코프는 자세와 별개 토글.
+    const sortSeg = $('#weaponSort');
+    if (sortSeg) for (const [v, label] of [['default', '기본순'], ['power', '위력'], ['dps', 'DPS'], ['stagger', '누적치']]) {
+      const b = el('button', 'seg-btn' + (state.weaponSort === v ? ' on' : ''), label);
+      b.onclick = () => {
+        state.weaponSort = v;
+        [...sortSeg.children].forEach(c => c.classList.remove('on'));
+        b.classList.add('on');
+        renderWeapons();
+      };
+      sortSeg.append(b);
+    }
     const postureSeg = $('#postureSeg');
     for (const [v, label] of [['stand', '선 자세'], ['crouch', '앉기·정지'], ['prone', '엎드리기']]) {
       const b = el('button', 'seg-btn' + (state.posture === v ? ' on' : ''), label);
