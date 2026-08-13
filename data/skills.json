@@ -14065,7 +14065,6 @@
   {
    "name": "白兵戦プログラム",
    "nameKo": "백병전 프로그램",
-   "_참고": "위키 페이지에 스킬 효과 표가 없어(find_buff_skills 0건) 수동 보강. 값은 동일 스킬 보유 기체와 일치.",
    "forever": false,
    "secs": null,
    "hp": null,

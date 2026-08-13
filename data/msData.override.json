@@ -4,16 +4,26 @@
  },
  "ダブルオーライザー_LV1": {
   "_altMode": {
-   "mode": "システム発動中", "label": "시스템 발동중",
-   "shoot": 55, "meleeCorrection": 60, "speed": 145,
-   "highSpeedMovement": 240, "turnPerformanceGround": 87, "turnPerformanceSpace": 96
+   "mode": "システム発動中",
+   "label": "시스템 발동중",
+   "shoot": 55,
+   "meleeCorrection": 60,
+   "speed": 145,
+   "highSpeedMovement": 240,
+   "turnPerformanceGround": 87,
+   "turnPerformanceSpace": 96
   }
  },
  "スサノオ_LV1": {
   "_altMode": {
-   "mode": "システム発動中", "label": "시스템 발동중",
-   "shoot": 55, "meleeCorrection": 60, "speed": 150,
-   "highSpeedMovement": 245, "turnPerformanceGround": 90, "turnPerformanceSpace": 99
+   "mode": "システム発動中",
+   "label": "시스템 발동중",
+   "shoot": 55,
+   "meleeCorrection": 60,
+   "speed": 150,
+   "highSpeedMovement": 245,
+   "turnPerformanceGround": 90,
+   "turnPerformanceSpace": 99
   }
  },
  "ガッシャ_LV2": {
@@ -164,5 +174,19 @@
  "アッガイ【TB】_LV3": {
   "スピード": 135,
   "高速移動": 200
+ },
+ "イフリート・イェーガー_LV2": {
+  "スピード": 135,
+  "高速移動": 195
+ },
+ "イフリート・イェーガー_LV3": {
+  "高速移動": 200
+ },
+ "アルス・ジャジャ_LV2": {
+  "スピード": 135,
+  "スラスター": 70
+ },
+ "アルス・ジャジャ_LV3": {
+  "スラスター": 75
  }
 }

@@ -846,18 +846,18 @@ body.view-build  #screenSelect { display: none; }
 .am-head b { font-size: 15px; }
 
 /* 빌드 A/B 비교 */
-.compare-modal { width: min(720px, 94vw); }
+.compare-modal { width: min(880px, 96vw); }
 .compare-pick { display: flex; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .compare-pick label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); flex: 1 1 260px; }
 .compare-pick select { flex: 1; min-width: 0; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; font-size: 12.5px; }
 .compare-body { overflow-y: auto; padding: 10px 16px 16px; }
-.cmp-head, .cmp-row { display: grid; grid-template-columns: 96px 1fr 1fr 92px; align-items: baseline; gap: 8px; }
+.cmp-head, .cmp-row { display: grid; grid-template-columns: minmax(120px, 1.7fr) 1fr 1fr 96px; align-items: baseline; gap: 8px; }
 .cmp-head { padding: 6px 0 10px; border-bottom: 1px solid var(--line); }
 .cmp-id b { font-size: 13.5px; }
 .cmp-id.a b { color: var(--info); } .cmp-id.b b { color: var(--accent); }
 .cmp-sub { display: block; font-size: 10.5px; color: var(--dim); margin-top: 1px; }
 .cmp-row { padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
-.cmp-lb { font-size: 12.5px; color: var(--muted); }
+.cmp-lb { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-a, .cmp-b { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
 .cmp-b { color: var(--text); } .cmp-a { color: var(--text); }
 .cmp-d { font-size: 12px; font-weight: 700; text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
