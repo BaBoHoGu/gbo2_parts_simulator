@@ -960,6 +960,12 @@ body.view-build  #screenSelect { display: none; }
 .pietan-metric.sub .pietan-mv { font-size: 15px; }
 .pietan-mnote { font-size: 11px; color: var(--muted); text-align: right; }
 .pietan-foot { font-size: 10.5px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+/* 내 무장 → 상대 격파 (TTK 역방향) */
+.pietan-out-lb { font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; padding-top: 8px; border-top: 1px solid var(--line); display: block; }
+.pietan-out-row { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; padding: 3px 0; }
+.pietan-out-nm { font-size: 12.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pietan-out-dmg { font-size: 11.5px; color: var(--dim); font-variant-numeric: tabular-nums; text-align: right; }
+.pietan-out-hits { font-size: 13px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; min-width: 40px; }
 .pietan-more { padding: 8px; text-align: center; color: var(--muted); font-size: 11.5px; }
 @media (max-width: 620px) { .pietan-cols { grid-template-columns: 1fr; } }
 
