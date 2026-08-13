@@ -278,6 +278,11 @@ if (process.argv.includes('--ui')) {
         }))
         // 같은 구간·같은 수치가 표에 두 번 적힌 경우가 있어 하나만 남긴다
         .filter(l => { const k = JSON.stringify(l); if (seen.has(k)) return false; seen.add(k); return true; });
+      // 버프는 LV 로 감소하지 않는다. 위키 미공개(「射撃補正 ＋？」→0) 등으로 상위 LV 값이 0 이 되면
+      // 하위 LV 값으로 올려 0/0 표시를 막는다(0→하위값). 음수 트레이드오프는 건드리지 않는다.
+      const LVF = ['shoot', 'melee', 'shootPct', 'meleePct', 'crouchPct', 'limitUp', 'dmgAny', 'dmgShoot', 'dmgMelee', 'armorRange', 'armorBeam', 'armorMelee', 'speed', 'hispeed', 'thruster', 'turn', 'hpUp'];
+      for (let i = 1; i < levels.length; i++) for (const f of LVF)
+        if (levels[i][f] === 0 && (levels[i - 1][f] || 0) > 0) levels[i][f] = levels[i - 1][f];
       const top = mine.reduce((a, b) => (weight(b) > weight(a) ? b : a));
       skills.push({
         name, nameKo: koSkill(name),
