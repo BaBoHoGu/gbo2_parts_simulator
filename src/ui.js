@@ -104,22 +104,31 @@
     const blob = (sk.eff || '') + ' / ' + (sk.desc || '');
     // 한 스킬에 단계별로 여러 값이 있을 수 있다(예: 헤비어택改 動作開始 35% / 判定発生 70%).
     // 상시 가정하는 값이 아니므로, 감소가 가장 약한(값이 큰) 쪽을 보수적으로 쓴다.
-    const mults = [...blob.matchAll(/よろけ値を\s*(\d+)\s*%?かつ小数点以下切り捨て/g)].map(m => Number(m[1]));
+    // 「%?かつ」 처럼 % 뒤 물음표(원본 OCR 잡음)도 허용해 누적치 배수를 놓치지 않는다.
+    const mults = [...blob.matchAll(/よろけ値を\s*(\d+)\s*[%％]?[?？\s]*かつ小数点以下切り捨て/g)].map(m => Number(m[1]));
     const tm = blob.match(/蓄積よろけまでの値が\s*(\d+)\s*%/);
     // 피해 경감(被ダメージ －N%) — 속성별. 내구 지표 상승·격파 계산에 쓴다.
+    // 표기 변형 허용: 実弾属性/実弾射撃/実弾攻撃 등. 「射撃」은 실탄+빔 공통(shoot).
     const cuts = [];
-    const push = (re, scope) => { const m = blob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
-    push(/(?:射撃属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'shoot');
-    push(/(?:ビーム属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'beam');
-    push(/(?:実弾属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'solid');
-    push(/(?:格闘属性)(?:攻撃)?被ダメージ\s*[－-]\s*(\d+)\s*%/, 'melee');
-    // 속성 표기 없는 일반 被ダメージ － 「받는 공격 종류」 조건(射撃/格闘攻撃を受け)으로 범위를 좁힌다.
-    // (예: 다목적 대형 바인더는 '射撃攻撃を受けた際' → 사격 한정, 내격투엔 반영 안 함)
+    const cut = (re, scope) => { const m = blob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
+    cut(/実弾(?:属性|射撃|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'solid');
+    cut(/ビーム(?:属性|射撃|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'beam');
+    cut(/格闘(?:属性|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'melee');
+    cut(/(?<![実弾ビーム弾ム])射撃(?:属性|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'shoot');
+    // 속성 표기 없는 일반 被ダメージ / ダメージが N%軽減 — 받는 공격의 속성·종류로 범위를 좁힌다.
+    // (예: 다목적 대형 바인더 '射撃攻撃を受けた際' → 사격 한정 / 빔 교란 실드 'ビーム属性' → 빔 한정)
     if (!cuts.length) {
-      const gm = blob.match(/(?:^|[・\/\s])被ダメージ\s*[－-]\s*(\d+)\s*%/) || blob.match(/ダメージを\s*(\d+)\s*[%％]\s*軽減/);
+      const gm = blob.match(/被ダメージ\s*[－-]\s*(\d+)\s*[%％]/) || blob.match(/ダメージ[がを]\s*(\d+)\s*[%％]\s*軽減/);
       if (gm) {
-        const rcvShoot = /(?:射撃|実弾|ビーム)攻撃を受け/.test(blob), rcvMelee = /格闘攻撃を受け/.test(blob);
-        cuts.push({ scope: rcvShoot && !rcvMelee ? 'shoot' : rcvMelee && !rcvShoot ? 'melee' : 'all', pct: Number(gm[1]) });
+        let scope = 'all';
+        const beam = /ビーム属性/.test(blob), solid = /実弾属性/.test(blob);
+        if (beam && !solid) scope = 'beam';
+        else if (solid && !beam) scope = 'solid';
+        else {
+          const rs = /(?:射撃|実弾|ビーム)[^。]{0,4}攻撃を受け|射撃属性/.test(blob), rm = /格闘[^。]{0,4}攻撃を受け/.test(blob);
+          if (rs && !rm) scope = 'shoot'; else if (rm && !rs) scope = 'melee';
+        }
+        cuts.push({ scope, pct: Number(gm[1]) });
       }
     }
     // 누적치 감소·임계 또는 피해 경감 중 하나라도 있으면 방어 스킬로 본다.
