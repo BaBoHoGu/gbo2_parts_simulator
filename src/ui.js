@@ -2354,6 +2354,86 @@
     if (open) renderSavedBuilds();
   }
 
+  /* ---------- 빌드 A/B 비교 ---------- */
+  // 저장한 구성(또는 현재 구성)의 스탯을 상태를 건드리지 않고 계산한다.
+  function statsForBuild(bld) {
+    if (!bld || !bld.ms) return null;
+    const ms = msData.find(m => m.MS名 === bld.ms);
+    if (!ms) return null;
+    const stage = [0, 4, 6].includes(Number(bld.stage)) ? Number(bld.stage) : 6;
+    const equipped = [];
+    for (const n of (bld.parts || [])) {           // deserialize 와 같은 규칙으로 실제 장착분만
+      const p = partByName.get(n);
+      if (p && C.checkEquip(p, ms, equipped, C.calcSlots(ms, equipped, stage, fullst)).ok) equipped.push(p);
+    }
+    const expansion = C.EXPANSION_SKILLS.includes(bld.expansion) ? bld.expansion : C.EXPANSION_NONE;
+    const expLevel = Number(bld.expLevel) || C.MAX_EXPANSION_LEVEL;
+    const r = C.calcStats(ms, equipped, stage, expansion, partsByCat, fullst, expLevel, null, null);
+    return { ms, equipped, stage, expansion, expLevel, r };
+  }
+
+  let compareOpts = [];   // [{id, label, bld}]
+  const compareOptions = () => {
+    const opts = [];
+    if (state.ms) opts.push({ id: '__current__', label: '● 현재 구성 — ' + T.msName(state.ms.MS名), bld: serialize() });
+    for (const b of loadBuilds()) opts.push({ id: b.id, label: b.name + ' — ' + T.msName(b.ms), bld: b });
+    return opts;
+  };
+
+  function renderCompare() {
+    const box = $('#compareBody'); if (!box) return;
+    box.innerHTML = '';
+    const bldOf = id => (compareOpts.find(o => o.id === id) || {}).bld;
+    const A = statsForBuild(bldOf($('#cmpA').value)), B = statsForBuild(bldOf($('#cmpB').value));
+    if (!A || !B) { box.append(el('div', 'pietan-empty', '비교할 두 구성을 선택하세요.')); return; }
+
+    // 헤더 — 각 빌드의 기체·코스트·강화·확장
+    const idcell = (s, cls) => {
+      const c = el('div', 'cmp-id ' + cls);
+      c.append(el('b', '', T.msName(s.ms.MS名)));
+      c.append(el('span', 'cmp-sub', `${T.attrName(s.ms.属性)} · 코스트 ${s.ms.コスト} · ${STAGE_LABEL[s.stage]}`
+        + (s.expansion !== C.EXPANSION_NONE ? ' · ' + expShort(s.expansion) + ' LV' + s.expLevel : '')
+        + ` · 파츠 ${s.equipped.length}`));
+      return c;
+    };
+    const head = el('div', 'cmp-head');
+    head.append(el('span', 'cmp-lb', ''));
+    head.append(idcell(A, 'a')); head.append(idcell(B, 'b')); head.append(el('span', 'cmp-d', 'Δ(B−A)'));
+    box.append(head);
+
+    const table = el('div', 'cmp-table');
+    const mkRow = (label, av, bv) => {
+      const row = el('div', 'cmp-row');
+      row.append(el('span', 'cmp-lb', label));
+      row.append(el('span', 'cmp-a', av.toLocaleString()));
+      row.append(el('span', 'cmp-b', bv.toLocaleString()));
+      const d = bv - av;
+      row.append(el('span', 'cmp-d' + (d > 0 ? ' up' : d < 0 ? ' down' : ''),
+        d === 0 ? '·' : (d > 0 ? '+' : '') + d.toLocaleString()));
+      table.append(row);
+    };
+    for (const k of C.STAT_KEYS) mkRow(C.STAT_LABEL[k], A.r.total[k], B.r.total[k]);
+    table.append(el('div', 'cmp-sec', '내구 지표'));
+    for (const [k, lb] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']])
+      mkRow(lb, durabilityOf(A.r.total, k), durabilityOf(B.r.total, k));
+    box.append(table);
+  }
+
+  function openCompareModal(open) {
+    const m = $('#compareModal'), b = $('#compareModalBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (!open) return;
+    compareOpts = compareOptions();
+    const fill = sel => { sel.innerHTML = ''; for (const o of compareOpts) { const op = el('option', '', o.label); op.value = o.id; sel.append(op); } };
+    fill($('#cmpA')); fill($('#cmpB'));
+    if (compareOpts.length) {
+      $('#cmpA').value = compareOpts[0].id;
+      $('#cmpB').value = (compareOpts[1] || compareOpts[0]).id;
+    }
+    renderCompare();
+  }
+
   /* ---------- 기본 파츠 설정 (기본 제외 파츠 관리) ---------- */
   const PART_CAT_KO = { '防御': '방어', '攻撃': '공격', '移動': '이동', '補助': '보조', '特殊': '특수' };
 
@@ -3301,6 +3381,12 @@
     $('#load').onclick = () => openSavedModal(true);
     $('#savedModalClose').onclick = () => openSavedModal(false);
     $('#savedModalBack').onclick = () => openSavedModal(false);
+    // 빌드 A/B 비교
+    $('#compareBtn').onclick = () => { if (!state.ms && !loadBuilds().length) { toast('먼저 기체를 고르거나 구성을 저장하세요'); return; } openCompareModal(true); };
+    $('#compareModalClose').onclick = () => openCompareModal(false);
+    $('#compareModalBack').onclick = () => openCompareModal(false);
+    $('#cmpA').onchange = renderCompare;
+    $('#cmpB').onchange = renderCompare;
 
     // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명 (무장 칸 안에서 토글)
     $('#skillListBtn').onclick = () => {
@@ -3394,6 +3480,7 @@
       if (ev.key !== 'Escape') return;
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
       if (!$('#pietanModal').hidden) { openPietan(false); return; }
+      if (!$('#compareModal').hidden) { openCompareModal(false); return; }
       if (!$('#ownedModal').hidden) { openOwnedModal(false); return; }
       if (!$('#savedModal').hidden) { openSavedModal(false); return; }
       if (!$('#autoResultPanel').hidden) { openResultModal(false); return; }
