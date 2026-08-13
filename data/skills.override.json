@@ -4,20 +4,24 @@
   {
    "name": "サイコフレーム展開",
    "nameKo": "사이코 프레임 전개",
-   "forever": false, "secs": 10, "hp": null, "manual": true,
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": true,
    "levels": [
-    { "from": 1, "to": null, "shoot": 15, "melee": 15, "shootPct": 0, "meleePct": 0, "crouchPct": 0, "limitUp": 0, "dmgAny": 0, "dmgShoot": 0, "dmgMelee": 0 }
-   ]
-  }
- ],
- "ゴトラタン": [
-  {
-   "name": "白兵戦プログラム",
-   "nameKo": "백병전 프로그램",
-   "_참고": "위키 페이지에 스킬 효과 표가 없어(find_buff_skills 0건) 수동 보강. 값은 동일 스킬 보유 기체와 일치.",
-   "forever": false, "secs": null, "hp": null, "manual": false,
-   "levels": [
-    { "from": 1, "to": null, "shoot": 0, "melee": 0, "shootPct": 0, "meleePct": 0, "crouchPct": 0, "limitUp": 0, "dmgAny": 0, "dmgShoot": 0, "dmgMelee": 0, "armorRange": 0, "armorBeam": 0, "armorMelee": 0, "speed": 5, "hispeed": 10, "thruster": 0, "turn": 5, "hpUp": 0 }
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 15,
+     "melee": 15,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0
+    }
    ]
   }
  ]
