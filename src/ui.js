@@ -2541,7 +2541,7 @@
     // opt.fmt: 값 포맷, opt.lowerBetter: 낮을수록 개선(리로드 등)
     const mkRow = (label, av, bv, opt = {}) => {
       const fmt = opt.fmt || (v => v.toLocaleString());
-      const row = el('div', 'cmp-row');
+      const row = el('div', 'cmp-row' + (opt.cls ? ' ' + opt.cls : ''));
       row.append(el('span', 'cmp-lb', label));
       const show = v => v == null ? '—' : fmt(v);
       row.append(el('span', 'cmp-a', show(av)));
@@ -2577,12 +2577,12 @@
       const sec = v => v == null ? '—' : v + '초';
       for (const nm of names) {
         const a = mapA.get(nm), b = mapB.get(nm), w = a || b;
-        mkRow(w.ko, a ? a.nc : null, b ? b.nc : null);                              // 논차지
+        mkRow(w.ko, a ? a.nc : null, b ? b.nc : null, { cls: 'cmp-wstart' });        // 논차지 (무장 시작)
         if ((a && a.ch != null) || (b && b.ch != null))
-          mkRow('└ 집속', a ? a.ch : null, b ? b.ch : null);
+          mkRow('└ 집속', a ? a.ch : null, b ? b.ch : null, { cls: 'cmp-wsub' });
         if ((a && a.reload != null) || (b && b.reload != null))
           mkRow('└ ' + ((a && a.reloadKind) || (b && b.reloadKind) || '리로드'),
-            a ? a.reload : null, b ? b.reload : null, { fmt: sec, lowerBetter: true });
+            a ? a.reload : null, b ? b.reload : null, { fmt: sec, lowerBetter: true, cls: 'cmp-wsub' });
       }
     }
     box.append(table);
