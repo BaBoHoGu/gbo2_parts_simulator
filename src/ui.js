@@ -1523,7 +1523,9 @@
 
     const lv = msLevel(state.ms);
 
-    // 공격 지표 — 사격·격투 보정 + 与ダメージ%(파츠·발동 스킬). 실제 피해 증가율을 한눈에.
+    // 공격 지표 — 내구가 HP에 내성을 접듯, 피해%(파츠·발동 스킬)를 보정에 접은 '실효 보정'.
+    //   피해 = 무장위력 × (1+보정/100) × (1+피해%)  →  실효보정 = ((1+보정/100)(1+피해%/100) − 1)×100
+    // 보정 상한(100)을 넘는 피해% 파츠의 실제 가치까지 드러난다.
     const atkBonus = partAttackBonus(state.equipped, lv);
     const totalDmgPct = (partPct, kind) => {   // 파츠(합산) × 스킬(곱연산) 최종 피해 증가율
       const skills = skillDmgPctList(kind);
@@ -1534,12 +1536,13 @@
     atk.append(el('span', 'dura-lb', '공격 지표'));
     for (const [key, label, corr] of [['shoot', '사격', r.total.shoot], ['melee', '격투', r.total.meleeCorrection]]) {
       const pct = totalDmgPct(atkBonus[key], key);
+      const eff = Math.round(((1 + corr / 100) * (1 + pct / 100) - 1) * 100);
       const cell = el('span', 'dura-cell');
       cell.append(el('span', 'dura-k', label));
-      cell.append(el('span', 'dura-v', corr.toLocaleString()));
+      cell.append(el('span', 'dura-v', eff.toLocaleString()));
       if (pct !== 0) {
         const tag = el('span', 'dura-up' + (pct < 0 ? ' down' : ''), '피해 ' + (pct > 0 ? '+' : '') + pct + '%');
-        tag.title = '무장 위력에 곱해지는 피해 증가율 (오버튠·특화 파츠·발동 스킬)';
+        tag.title = `보정 ${corr} + 피해 ${pct >= 0 ? '+' : ''}${pct}% → 실효 보정 ${eff}`;
         cell.append(tag);
       }
       atk.append(cell);
