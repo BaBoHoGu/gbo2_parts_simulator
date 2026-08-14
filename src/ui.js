@@ -205,9 +205,11 @@
         if (per && max) pct = Math.min(pct + (Math.max(1, msLv) - 1) * Number(per[1]), Number(max[1]));
         if (pct > 0) cuts.push({ scope, pct });
       }
-      // 조건 없는 전체 경감 (교육형 컴퓨터[특방] 「敵から受けるダメージを10%軽減」, 신형완충재 등)
+      // 조건 없는 전체 경감 (교육형 컴퓨터[특방]·신형완충재·사이코프레임 등)
+      // 「機体HP[の/に]受けるダメージを N%軽減」·「敵から受けるダメージを N%軽減」.
+      // (부위장갑 「機体HPへのダメージを」는 「受ける」가 없어 안 걸림 — 국부라 제외가 맞음)
       const all = d.match(/敵から受けるダメージを\s*(\d+)\s*[%％]\s*軽減/)
-        || d.match(/機体HPに受けるダメージを\s*(\d+)\s*[%％]\s*軽減/);
+        || d.match(/機体HP[のに]受けるダメージを\s*(\d+)\s*[%％]\s*軽減/);
       if (all) cuts.push({ scope: 'all', pct: Number(all[1]) });
     }
     return cuts;
@@ -1509,8 +1511,12 @@
       const cell = el('span', 'dura-cell');
       cell.append(el('span', 'dura-k', label));
       if (f < 1) {
-        cell.append(el('span', 'dura-v', Math.round(base / f).toLocaleString()));
-        cell.append(el('span', 'dura-up', '+' + Math.round((1 / f - 1) * 100) + '%'));
+        const cellV = el('span', 'dura-v', Math.round(base / f).toLocaleString());
+        cell.append(cellV);
+        // 태그는 실효HP 상승률이 아니라 '피해 감소율'(파츠·스킬의 실제 경감)을 보여 준다.
+        const cut = el('span', 'dura-up', '피해 -' + Math.round((1 - f) * 100) + '%');
+        cut.title = `실효 HP ×${(1 / f).toFixed(3)} (피해 ${Math.round((1 - f) * 100)}% 경감)`;
+        cell.append(cut);
       } else {
         cell.append(el('span', 'dura-v', base.toLocaleString()));
       }
