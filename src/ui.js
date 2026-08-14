@@ -2473,7 +2473,7 @@
     return { ms, equipped, stage, expansion, expLevel, r };
   }
 
-  /** 빌드의 무장별 1히트 위력(논차지, 파츠·자세·스킬 미반영 — 사격/격투 보정과 파츠 피해%만). */
+  /** 빌드의 무장별 1히트 위력(논차지·집속)·리로드. 파츠·사격/격투 보정·피해% 반영(자세·스킬 미반영). */
   function buildWeaponDamage(bs) {
     if (!bs) return [];
     const msLv = C.msLevel(bs.ms.MS名);
@@ -2485,16 +2485,25 @@
       const lvs = Object.keys(w.levels || {}).map(Number).sort((a, b) => a - b);
       const fit = lvs.filter(l => l <= msLv);
       const d = w.levels[String(fit.length ? fit[fit.length - 1] : (lvs[0] || ''))];
-      const base = d && (d.power != null ? d.power : d.powerCharged);
-      if (base == null) continue;
+      if (!d) continue;
+      const info = w.info || {};
       const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
-      let dmg;
-      if (w.attr === 'shield') dmg = base;
-      else {
+      const fin = base => {
+        if (base == null) return null;
+        if (w.attr === 'shield') return base;
         const raw = w.type === 'melee' ? D.meleeDamage(base, corr.melee, {}) : D.shootingDamage(base, corr.shooting, {});
-        dmg = D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind)]);
-      }
-      out.push({ name: w.name, ko: T.weaponName(w.name), attr: weaponAttr(w), dmg });
+        return D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind)]);
+      };
+      const nc = fin(d.power);
+      const ch = (d.powerCharged != null && d.powerCharged !== d.power) ? fin(d.powerCharged) : null;
+      if (nc == null && ch == null) continue;
+      // 리로드 / OH복귀 — 파츠 단축 반영(초 단위)
+      const secOf = (raw, key) => { const m = raw && String(raw).match(/([\d.]+)/); return m ? D.shortenTime(Number(m[1]), D.timeCutFor(wm, key, w)) : null; };
+      const reloadRaw = wField(d, info, 'リロード時間'), ohRaw = wField(d, info, 'OH復帰時間', 'OH復帰速度');
+      let reload = null, reloadKind = '';
+      if (reloadRaw) { reload = secOf(reloadRaw, 'reloadTime'); reloadKind = '리로드'; }
+      else if (ohRaw) { const ep = D.isEpackMag(w); reload = secOf(ohRaw, ep ? 'reloadTime' : 'weaponOH'); reloadKind = ep ? '리로드' : 'OH'; }
+      out.push({ name: w.name, ko: T.weaponName(w.name), attr: weaponAttr(w), nc, ch, reload, reloadKind });
     }
     return out;
   }
@@ -2529,31 +2538,51 @@
     box.append(head);
 
     const table = el('div', 'cmp-table');
-    const mkRow = (label, av, bv) => {
+    // opt.fmt: 값 포맷, opt.lowerBetter: 낮을수록 개선(리로드 등)
+    const mkRow = (label, av, bv, opt = {}) => {
+      const fmt = opt.fmt || (v => v.toLocaleString());
       const row = el('div', 'cmp-row');
       row.append(el('span', 'cmp-lb', label));
-      const fmt = v => v == null ? '—' : v.toLocaleString();
-      row.append(el('span', 'cmp-a', fmt(av)));
-      row.append(el('span', 'cmp-b', fmt(bv)));
-      const d = (av != null && bv != null) ? bv - av : null;
-      row.append(el('span', 'cmp-d' + (d > 0 ? ' up' : d < 0 ? ' down' : ''),
-        d == null ? '' : d === 0 ? '·' : (d > 0 ? '+' : '') + d.toLocaleString()));
+      const show = v => v == null ? '—' : fmt(v);
+      row.append(el('span', 'cmp-a', show(av)));
+      row.append(el('span', 'cmp-b', show(bv)));
+      const d = (av != null && bv != null) ? Math.round((bv - av) * 100) / 100 : null;
+      const good = d == null ? 0 : (opt.lowerBetter ? -d : d);
+      row.append(el('span', 'cmp-d' + (good > 0 ? ' up' : good < 0 ? ' down' : ''),
+        d == null ? '' : d === 0 ? '·' : (d > 0 ? '+' : '') + fmt(d)));
       table.append(row);
     };
     for (const k of C.STAT_KEYS) mkRow(C.STAT_LABEL[k], A.r.total[k], B.r.total[k]);
+
+    // 공격 지표 (실효 보정 = 보정에 피해% 접음)
+    table.append(el('div', 'cmp-sec', '공격 지표 (실효 보정)'));
+    const effCorr = (s, key) => {
+      const corr = key === 'shoot' ? s.r.total.shoot : s.r.total.meleeCorrection;
+      const pct = partAttackBonus(s.equipped, C.msLevel(s.ms.MS名))[key];   // 빌드엔 스킬 없음 → 파츠만
+      return Math.round(((1 + corr / 100) * (1 + pct / 100) - 1) * 100);
+    };
+    mkRow('사격', effCorr(A, 'shoot'), effCorr(B, 'shoot'));
+    mkRow('격투', effCorr(A, 'melee'), effCorr(B, 'melee'));
+
     table.append(el('div', 'cmp-sec', '내구 지표'));
     for (const [k, lb] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']])
       mkRow(lb, durabilityOf(A.r.total, k), durabilityOf(B.r.total, k));
 
-    // 무장 위력 (1히트, 파츠·사격/격투 보정 반영). 이름으로 맞춰 비교(다른 기체면 대부분 —).
+    // 무장 (파츠·보정 반영). 이름으로 맞춰 논차지·집속·리로드/OH 비교(다른 기체면 대부분 —).
     const wA = buildWeaponDamage(A), wB = buildWeaponDamage(B);
     if (wA.length || wB.length) {
       table.append(el('div', 'cmp-sec', '무장 위력 (1히트 · 파츠 반영)'));
       const mapA = new Map(wA.map(x => [x.name, x])), mapB = new Map(wB.map(x => [x.name, x]));
       const names = [...wA.map(x => x.name), ...wB.filter(x => !mapA.has(x.name)).map(x => x.name)];
+      const sec = v => v == null ? '—' : v + '초';
       for (const nm of names) {
-        const a = mapA.get(nm), b = mapB.get(nm);
-        mkRow((a || b).ko, a ? a.dmg : null, b ? b.dmg : null);
+        const a = mapA.get(nm), b = mapB.get(nm), w = a || b;
+        mkRow(w.ko, a ? a.nc : null, b ? b.nc : null);                              // 논차지
+        if ((a && a.ch != null) || (b && b.ch != null))
+          mkRow('└ 집속', a ? a.ch : null, b ? b.ch : null);
+        if ((a && a.reload != null) || (b && b.reload != null))
+          mkRow('└ ' + ((a && a.reloadKind) || (b && b.reloadKind) || '리로드'),
+            a ? a.reload : null, b ? b.reload : null, { fmt: sec, lowerBetter: true });
       }
     }
     box.append(table);
