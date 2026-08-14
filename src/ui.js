@@ -215,6 +215,27 @@
     return cuts;
   }
 
+  /** 장착 파츠의 '전 사격/격투' 与ダメージ% (오버튠[사격/격투]·특화 프로그램 등). 오버튠은 LV 스케일.
+   *  속성 한정(빔/실탄 전용 코넥팅 등)은 무장별이라 여기 공격 지표엔 넣지 않는다. */
+  function partAttackBonus(equipped, msLv) {
+    const out = { shoot: 0, melee: 0 };
+    for (const p of equipped) {
+      const d = String(p.description || '');
+      for (const [ja, key] of [['射撃', 'shoot'], ['格闘', 'melee']]) {
+        const m = d.match(new RegExp(ja + '攻撃(?:で|による敵に)?与えるダメージが\\s*(\\d+)\\s*[%％]\\s*(増加|減少)'));
+        if (!m) continue;
+        let pct = Number(m[1]);
+        if (m[2] === '増加') {   // 오버튠 LV 스케일 (감소분엔 스케일 없음)
+          const per = d.match(/機体LVが1上昇するごとに\s*(\d+)\s*[%％]/);
+          const max = d.match(/最大上昇値は\s*(\d+)\s*[%％]/);
+          if (per && max) pct = Math.min(pct + (Math.max(1, msLv) - 1) * Number(per[1]), Number(max[1]));
+          out[key] += pct;
+        } else out[key] -= pct;
+      }
+    }
+    return out;
+  }
+
   /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. */
   function staggerDmgFactor(cuts, attr) {
     const kind = attr === 'melee' ? 'melee' : 'shoot';
@@ -1500,8 +1521,32 @@
       body.append(row);
     }
 
-    // 내구 지표 — 스탯 행들과 같은 흐름(마지막 행). 체크한 방어 스킬(피해경감)만큼 실효 HP 가 오른다.
     const lv = msLevel(state.ms);
+
+    // 공격 지표 — 사격·격투 보정 + 与ダメージ%(파츠·발동 스킬). 실제 피해 증가율을 한눈에.
+    const atkBonus = partAttackBonus(state.equipped, lv);
+    const totalDmgPct = (partPct, kind) => {   // 파츠(합산) × 스킬(곱연산) 최종 피해 증가율
+      const skills = skillDmgPctList(kind);
+      const mult = (1 + partPct / 100) * skills.reduce((m, p) => m * (1 + p / 100), 1);
+      return Math.round((mult - 1) * 100);
+    };
+    const atk = el('div', 'dura-row');
+    atk.append(el('span', 'dura-lb', '공격 지표'));
+    for (const [key, label, corr] of [['shoot', '사격', r.total.shoot], ['melee', '격투', r.total.meleeCorrection]]) {
+      const pct = totalDmgPct(atkBonus[key], key);
+      const cell = el('span', 'dura-cell');
+      cell.append(el('span', 'dura-k', label));
+      cell.append(el('span', 'dura-v', corr.toLocaleString()));
+      if (pct !== 0) {
+        const tag = el('span', 'dura-up' + (pct < 0 ? ' down' : ''), '피해 ' + (pct > 0 ? '+' : '') + pct + '%');
+        tag.title = '무장 위력에 곱해지는 피해 증가율 (오버튠·특화 파츠·발동 스킬)';
+        cell.append(tag);
+      }
+      atk.append(cell);
+    }
+    body.append(atk);
+
+    // 내구 지표 — 스탯 행들과 같은 흐름(마지막 행). 체크한 방어 스킬(피해경감)만큼 실효 HP 가 오른다.
     const stg = activeStaggerMods(state.ms, lv);
     const partCuts = partDamageCuts(state.equipped, lv);   // 장착 파츠의 % 피해경감(항상 적용)
     const du = el('div', 'dura-row');
