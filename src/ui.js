@@ -190,6 +190,29 @@
     return v;
   }
 
+  /** 장착 파츠의 % 피해 경감(被ダメージ軽減) — 내구 지표·피탄에 반영. 오버튠은 LV 스케일·상한 반영. */
+  function partDamageCuts(equipped, msLv) {
+    const cuts = [];
+    const ATTR = { '実弾': 'solid', 'ビーム': 'beam', '格闘': 'melee', '射撃': 'shoot' };
+    for (const p of equipped) {
+      const d = String(p.description || '');
+      for (const [ja, scope] of Object.entries(ATTR)) {
+        const m = d.match(new RegExp(ja + '属性から受けるダメージ[をが]\\s*(\\d+)\\s*[%％]\\s*軽減'));
+        if (!m) continue;
+        let pct = Number(m[1]);
+        const per = d.match(/機体LVが1上昇するごとに(?:さらに)?\s*(\d+)\s*[%％]/);   // 오버튠 LV 스케일
+        const max = d.match(/最大上昇値は\s*(\d+)\s*[%％]/);
+        if (per && max) pct = Math.min(pct + (Math.max(1, msLv) - 1) * Number(per[1]), Number(max[1]));
+        if (pct > 0) cuts.push({ scope, pct });
+      }
+      // 조건 없는 전체 경감 (교육형 컴퓨터[특방] 「敵から受けるダメージを10%軽減」, 신형완충재 등)
+      const all = d.match(/敵から受けるダメージを\s*(\d+)\s*[%％]\s*軽減/)
+        || d.match(/機体HPに受けるダメージを\s*(\d+)\s*[%％]\s*軽減/);
+      if (all) cuts.push({ scope: 'all', pct: Number(all[1]) });
+    }
+    return cuts;
+  }
+
   /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. */
   function staggerDmgFactor(cuts, attr) {
     const kind = attr === 'melee' ? 'melee' : 'shoot';
@@ -1478,10 +1501,11 @@
     // 내구 지표 — 스탯 행들과 같은 흐름(마지막 행). 체크한 방어 스킬(피해경감)만큼 실효 HP 가 오른다.
     const lv = msLevel(state.ms);
     const stg = activeStaggerMods(state.ms, lv);
+    const partCuts = partDamageCuts(state.equipped, lv);   // 장착 파츠의 % 피해경감(항상 적용)
     const du = el('div', 'dura-row');
     du.append(el('span', 'dura-lb', '내구 지표'));
     for (const [k, label, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
-      const base = durabilityOf(r.total, k), f = staggerDmgFactor(stg.cuts, dattr);
+      const base = durabilityOf(r.total, k), f = staggerDmgFactor([...partCuts, ...stg.cuts], dattr);
       const cell = el('span', 'dura-cell');
       cell.append(el('span', 'dura-k', label));
       if (f < 1) {
@@ -2742,7 +2766,7 @@
     const key = PIETAN_ARMOR[w.attr] || 'armorRange';
     const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
     const stg = activeStaggerMods(state.ms, state.ms ? msLevel(state.ms) : 1);   // 내 누적치 스킬
-    const dmgFactor = staggerDmgFactor(stg.cuts, w.attr);          // 방어 스킬의 피해 경감
+    const dmgFactor = staggerDmgFactor([...partDamageCuts(state.equipped, msLevel(state.ms)), ...stg.cuts], w.attr);   // 파츠+방어 스킬 피해 경감
     const isMelee = w.attr === 'melee';
     // 격투 변형(기본/헤비어택)·방향(N격/횡격/하격) — 무장 데이터의 방향별 배율(ccd)을 적용한다.
     const variants = isMelee && w.variants && w.variants.length ? w.variants : null;

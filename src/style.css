@@ -853,12 +853,13 @@ body.view-build  #screenSelect { display: none; }
 .compare-body { overflow-y: auto; padding: 10px 16px 16px; }
 .cmp-head, .cmp-row { display: grid; grid-template-columns: minmax(120px, 1.7fr) 1fr 1fr 96px; align-items: baseline; gap: 8px; }
 .cmp-head { padding: 6px 0 10px; border-bottom: 1px solid var(--line); }
+.cmp-id { text-align: center; }
 .cmp-id b { font-size: 13.5px; }
 .cmp-id.a b { color: var(--info); } .cmp-id.b b { color: var(--accent); }
 .cmp-sub { display: block; font-size: 10.5px; color: var(--dim); margin-top: 1px; }
 .cmp-row { padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
 .cmp-lb { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cmp-a, .cmp-b { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.cmp-a, .cmp-b { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
 .cmp-b { color: var(--text); } .cmp-a { color: var(--text); }
 .cmp-d { font-size: 12px; font-weight: 700; text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
 .cmp-d.up { color: var(--ok); } .cmp-d.down { color: var(--bad); }
