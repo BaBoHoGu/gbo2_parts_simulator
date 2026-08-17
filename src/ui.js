@@ -2687,7 +2687,7 @@
   let pietanCorrTouched = false; // 사용자가 공격보정을 직접 만졌는가 — 그러면 무장 바꿔도 고정
   let pietanAttr = 'same';       // 적의 속성 상성 (same|advantage|disadvantage)
   let pietanAttrTouched = false; // 상성 수동 변경 여부 (그러면 기체 바꿔도 유지)
-  let pietanEnemySkill = false;  // 적 공격 스킬(버프) 반영 토글
+  let pietanEnemySkills = new Set();  // 체크한 적 공격 스킬 이름들 (여러 개 조합 가능)
   let pietanBuild = null;        // 적이 저장 빌드일 때 그 빌드(파츠 포함), 아니면 null
   let pietanVariant = 0;         // 선택한 격투 변형 인덱스 (기본/헤비어택…)
   let pietanDir = 0;             // 선택한 격투 방향 인덱스 (N격/횡격/하격…)
@@ -2761,23 +2761,59 @@
     return { shoot: Math.round(t.shoot || 0), melee: Math.round(t.meleeCorrection || 0) };
   }
 
-  /** 적 기체의 그 무장 종류(사격/격투)에 대한 최강 공격 버프 스킬. {name, corr, dmgPct} 또는 null. */
-  function enemyAttackSkill(kind) {
-    if (!pietanEnemySkill || !pietanMs) return null;
+  /** 적 기체의 공격 버프 스킬 목록 (적 LV 기준, 공격 효과가 있는 것만). */
+  function enemyAttackSkillList() {
+    if (!pietanMs) return [];
     const list = skillData[baseName(pietanMs.MS名)] || [];
-    const base = enemyBaseCorr(), baseC = kind === 'melee' ? base.melee : base.shoot;
-    const flat = kind === 'melee' ? 'melee' : 'shoot', pctKey = kind === 'melee' ? 'meleePct' : 'shootPct';
-    let best = null;
+    const out = [];
     for (const sk of list) {
       const fit = (sk.levels || []).filter(l => pietanMsLv >= l.from && (l.to == null || pietanMsLv <= l.to));
       const e = fit.length ? fit[fit.length - 1] : null;
       if (!e) continue;
-      const corr = (e[flat] || 0) + Math.round(baseC * (e[pctKey] || 0) / 100);
-      const dmgPct = (e.dmgAny || 0) + (kind === 'melee' ? (e.dmgMelee || 0) : (e.dmgShoot || 0));
-      const weight = corr + dmgPct * 2;
-      if (weight > 0 && (!best || weight > best.weight)) best = { name: sk.nameKo, corr, dmgPct };
+      if (e.shoot || e.melee || e.shootPct || e.meleePct || e.dmgAny || e.dmgShoot || e.dmgMelee)
+        out.push({ name: sk.name, nameKo: sk.nameKo, e });
     }
-    return best;
+    return out;
+  }
+
+  /** 체크한 적 공격 스킬들의 합산 효과 (그 무장 종류). 보정은 합, 피해%는 곱연산. */
+  function enemyAttackEffect(kind) {
+    const base = enemyBaseCorr(), baseC = kind === 'melee' ? base.melee : base.shoot;
+    const flat = kind === 'melee' ? 'melee' : 'shoot', pctKey = kind === 'melee' ? 'meleePct' : 'shootPct';
+    let corr = 0, mul = 1; const names = [];
+    for (const sk of enemyAttackSkillList()) {
+      if (!pietanEnemySkills.has(sk.name)) continue;
+      const e = sk.e;
+      corr += (e[flat] || 0) + Math.round(baseC * (e[pctKey] || 0) / 100);
+      const dp = (e.dmgAny || 0) + (kind === 'melee' ? (e.dmgMelee || 0) : (e.dmgShoot || 0));
+      if (dp) mul *= (1 + dp / 100);
+      names.push(sk.nameKo);
+    }
+    return { corr, mul, names };
+  }
+
+  /** 적 공격 스킬 체크박스 (방어 스킬과 같은 UI). 여러 개 조합 가능. */
+  function renderPietanEnemySkills(box) {
+    const list = enemyAttackSkillList();
+    if (!list.length) return;
+    const wrap = el('div', 'stagger-skills pietan-eskills');
+    wrap.append(el('span', 'pietan-ctrl-lb', '적 공격 스킬'));
+    for (const sk of list) {
+      const e = sk.e, tags = [];
+      if (e.shoot) tags.push('사격+' + e.shoot);
+      if (e.melee) tags.push('격투+' + e.melee);
+      if (e.shootPct) tags.push('사격+' + e.shootPct + '%');
+      if (e.meleePct) tags.push('격투+' + e.meleePct + '%');
+      if (e.dmgAny) tags.push('피해+' + e.dmgAny + '%');
+      else if (e.dmgShoot) tags.push('사격피해+' + e.dmgShoot + '%');
+      else if (e.dmgMelee) tags.push('격투피해+' + e.dmgMelee + '%');
+      const lab = el('label', 'stg-chk' + (pietanEnemySkills.has(sk.name) ? ' on' : ''));
+      const cb = el('input'); cb.type = 'checkbox'; cb.checked = pietanEnemySkills.has(sk.name);
+      cb.onchange = () => { cb.checked ? pietanEnemySkills.add(sk.name) : pietanEnemySkills.delete(sk.name); renderPietanResult(); };
+      lab.append(cb, el('span', 'stg-nm', sk.nameKo), el('span', 'stg-tag', tags.join(' · ')));
+      wrap.append(lab);
+    }
+    box.append(wrap);
   }
   function pietanAutoCorr() {
     if (!pietanMs || !pietanPick) return;
@@ -2810,6 +2846,7 @@
     pietanBuild = null;                           // 기본 기체(파츠 없음)
     pietanCorrTouched = false;                    // 새 기체는 공격보정 다시 자동
     pietanAttrTouched = false; pietanAutoAttr();  // 상성도 다시 자동
+    pietanEnemySkills.clear();
     pietanVariant = 0; pietanDir = 0;
     renderPietanLeft(); renderPietanResult();
   }
@@ -2821,6 +2858,7 @@
     pietanMs = ms; pietanMsBase = baseName(ms.MS名); pietanMsLv = msLevel(ms);
     pietanBuild = bld; pietanPick = null;
     pietanCorrTouched = false; pietanAttrTouched = false; pietanAutoAttr();
+    pietanEnemySkills.clear();
     pietanVariant = 0; pietanDir = 0;
     renderPietanLeft(); renderPietanResult();
   }
@@ -2906,6 +2944,7 @@
   function renderPietanResult() {
     const box = $('#pietanResult'); if (!box) return;
     box.innerHTML = '';
+    if (pietanMs) renderPietanEnemySkills(box);                      // 적 공격 스킬 체크(조합)
     if (pietanPick) renderPietanIncoming(box);                       // 상대 무장 → 나
     else box.append(el('div', 'pietan-empty', pietanMs ? '왼쪽에서 적 무장을 선택하세요.' : '왼쪽에서 적 기체를 선택하세요.'));
     if (pietanMs && state.ms) renderPietanOutgoing(box);             // 내 무장 → 상대 (TTK 역방향)
@@ -2925,10 +2964,10 @@
     const dirs = variants ? variants[pietanVariant].direction : null;
     if (dirs && pietanDir >= dirs.length) pietanDir = 0;
     const meleeCcd = dirs && dirs[pietanDir] ? dirs[pietanDir].hits : [1];
-    // 적 공격 스킬(버프) 반영 — 보정 가산 + 피해% 곱
-    const eatk = enemyAttackSkill(isMelee ? 'melee' : 'shoot');
-    const eCorr = pietanCorr + (eatk ? eatk.corr : 0);
-    const eMul = eatk ? (1 + eatk.dmgPct / 100) : 1;
+    // 체크한 적 공격 스킬 반영 — 보정 합·피해% 곱
+    const eatk = enemyAttackEffect(isMelee ? 'melee' : 'shoot');
+    const eCorr = pietanCorr + eatk.corr;
+    const eMul = eatk.mul;
     // 1히트 피해 = 공격 항 [Wp・{Att・ETCa}・(CCd)・Pr] × 피해% × 방어 스킬 피해 경감 (방어보정은 실효 HP).
     const perHit = (base, ccd) => base > 0
       ? Math.floor((isMelee
@@ -2953,7 +2992,7 @@
       `${T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')} · LV${pietanMsLv}`
       + (pietanBuild ? ' · 내 구성(파츠)' : '')
       + ` · 공격보정 ${eCorr}`
-      + (eatk ? ` (스킬 「${eatk.name}」 +${eatk.corr}${eatk.dmgPct ? `·피해+${eatk.dmgPct}%` : ''})` : '')));
+      + (eatk.names.length ? ` (적 스킬 ${eatk.names.length}개${eatk.mul > 1 ? ` · 피해 ×${+eatk.mul.toFixed(3)}` : ''})` : '')));
     box.append(el('div', 'pietan-sub',
       `위력 ${(w.power || w.charged).toLocaleString()}${chgDmg ? ` · 집속 ${w.charged.toLocaleString()}` : ''}`
       + ` · 누적 ${w.stagger ? w.stagger + '%' : '—'}${w.pellets > 1 ? ` ×${w.pellets}` : ''}`));
@@ -3055,7 +3094,6 @@
     if (open) {
       $('#pietanMsName').textContent = T.msName(state.ms.MS名);
       $('#pietanCorr').value = pietanCorr;
-      $('#pietanEnemySkill').checked = pietanEnemySkill;
       pietanAutoAttr();                 // 내 기체 기준 상성 재계산(수동 변경 전까지)
       syncPietanAttrSeg();
       renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
@@ -3758,7 +3796,6 @@
       [...$('#pietanAttr').children].forEach(c => c.classList.toggle('on', c === b));
       renderPietanResult();
     };
-    $('#pietanEnemySkill').onchange = e => { pietanEnemySkill = e.target.checked; renderPietanResult(); };
 
     // 기본 파츠 설정 — 기본 제외 파츠 관리 (영구 저장, 우클릭과 동일 세트)
     $('#ownedBtn').onclick = () => openOwnedModal(true);
