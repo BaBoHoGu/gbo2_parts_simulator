@@ -905,8 +905,10 @@ body.view-build  #screenSelect { display: none; }
 .pietan-corr { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
 .pietan-corr input { width: 62px; padding: 3px 6px; }
 .pietan-ctrl-lb { font-size: 12px; color: var(--muted); margin-left: 2px; }
-.pietan-eskill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); cursor: pointer; }
-.pietan-eskill input { width: 13px; height: 13px; accent-color: var(--close); }
+/* 적 공격 스킬 체크박스 묶음 (결과 상단, 방어 스킬과 같은 stg-* 스타일 재사용) */
+.pietan-eskills { margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.pietan-eskills .pietan-ctrl-lb { display: block; margin-bottom: 3px; color: var(--close); }
+.pietan-eskills .stg-chk input { accent-color: var(--close); }
 /* 적 선택 목록의 구분 라벨 (내 저장 구성 / 전체 기체) */
 .pietan-sec-lb { font-size: 11px; font-weight: 700; color: var(--info); padding: 8px 4px 3px; border-top: 1px solid var(--line); margin-top: 2px; }
 .pietan-sec-lb:first-child { border-top: 0; margin-top: 0; }
