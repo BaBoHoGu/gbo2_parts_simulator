@@ -802,6 +802,9 @@ body.view-build  #screenSelect { display: none; }
 .auto-grid input { padding: 3px 6px; width: 100%; text-align: right; }
 .auto-grid .lb { color: var(--muted); }
 .auto-grid input.active { border-color: var(--accent-dim); background: #23200f; }
+/* 파생 지표(공격·내구) 목표 구분선·가중치 없음 셀 */
+.auto-grid .auto-sep { grid-column: 1 / -1; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); color: var(--info); font-size: 10.5px; font-weight: 700; }
+.auto-grid .lb.dim { color: var(--dim); text-align: center; }
 
 .progress { height: 6px; background: #262a34; border-radius: 3px; overflow: hidden; margin-top: 10px; }
 .progress > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .12s; }

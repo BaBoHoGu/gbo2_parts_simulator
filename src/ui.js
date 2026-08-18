@@ -2102,6 +2102,26 @@
 
   /* ---------- 자동 구성 ---------- */
 
+  // 파생 지표 목표 — 성능표의 공격 지표(실효 보정)·내구 지표(실효 HP)를 자동 구성 하한/상한으로도 쓴다.
+  const DERIVED_KEYS = ['effShoot', 'effMelee', 'durSolid', 'durBeam', 'durMelee'];
+  const DERIVED_LABEL = { effShoot: '공격 사격', effMelee: '공격 격투', durSolid: '내구 실탄', durBeam: '내구 빔', durMelee: '내구 격투' };
+
+  /** 파츠 집합의 파생 지표(공격 지표·내구 지표) — 성능표와 동일 계산. */
+  function derivedMetrics(equipped, total) {
+    const lv = msLevel(state.ms);
+    const atkB = partAttackBonus(equipped, lv);
+    const eff = (corr, key) => {
+      const mul = (1 + atkB[key] / 100) * skillDmgPctList(key).reduce((m, p) => m * (1 + p / 100), 1);
+      return Math.round(((1 + corr / 100) * mul - 1) * 100);
+    };
+    const cuts = [...partDamageCuts(equipped, lv), ...activeStaggerMods(state.ms, lv).cuts];
+    const dur = (key, dattr) => Math.round(durabilityOf(total, key) / staggerDmgFactor(cuts, dattr));
+    return {
+      effShoot: eff(total.shoot, 'shoot'), effMelee: eff(total.meleeCorrection, 'melee'),
+      durSolid: dur('armorRange', 'solid'), durBeam: dur('armorBeam', 'beam'), durMelee: dur('armorMelee', 'melee')
+    };
+  }
+
   function renderAutoGrid() {
     const box = $('#autoGrid');
     box.innerHTML = '';
@@ -2136,6 +2156,15 @@
       box.append(targetInput(state.minimums, k));
       box.append(targetInput(state.maximums, k));
     }
+
+    // 파생 지표 목표 (가중치 없음, 하한/상한만) — 공격 지표(실효 보정)·내구 지표(실효 HP)
+    box.append(el('div', 'auto-sep', '지표 목표 — 공격 지표(실효 보정) · 내구 지표(실효 HP)'));
+    for (const k of DERIVED_KEYS) {
+      box.append(el('div', 'lb', DERIVED_LABEL[k]));
+      box.append(el('div', 'lb dim', '—'));               // 가중치 없음
+      box.append(targetInput(state.minimums, k));
+      box.append(targetInput(state.maximums, k));
+    }
   }
 
   const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
@@ -2164,6 +2193,9 @@
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       restarts: 1
     };
+    // 파생 지표(공격 지표·내구 지표) 목표가 하나라도 있으면 계산 훅을 넘긴다 (없으면 오버헤드 0).
+    if ([...Object.keys(state.minimums), ...Object.keys(state.maximums)].some(k => DERIVED_KEYS.includes(k)))
+      opts.derived = (set, total) => derivedMetrics(set, total);
 
     // 사용자가 가중치를 안 만졌으면 목표를 임의로 정해 서로 다른 방향의 후보 3개를 낸다.
     // 만졌으면 그 가중치로 서로 다른 상위 3개를 뽑는다.

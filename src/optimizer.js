@@ -13,7 +13,9 @@ const { STAT_KEYS, MAX_PARTS, EXPANSION_NONE, calcSlots, calcStats, conflictsWit
 const UNIT = {
   hp: 250, armorRange: 2.5, armorBeam: 2.5, armorMelee: 2.5,
   shoot: 5, meleeCorrection: 5, speed: 5, highSpeedMovement: 5,
-  thruster: 10, turnPerformanceGround: 5, turnPerformanceSpace: 5
+  thruster: 10, turnPerformanceGround: 5, turnPerformanceSpace: 5,
+  // 파생 지표(공격 지표=실효 보정, 내구 지표=실효 HP) — 하한/상한 목표용 페널티 환산
+  effShoot: 5, effMelee: 5, durSolid: 250, durBeam: 250, durMelee: 250
 };
 
 /** 프리셋: 자주 쓰는 운용 방향별 가중치. */
@@ -73,12 +75,15 @@ function isValidSet(ms, set, stage, fullstDefs) {
 /* ---------- 평가 ---------- */
 
 function makeScorer(ms, opts, partsByCat, fullstDefs) {
-  const { stage, expansion, expLevel, weights = {}, minimums, maximums, skill } = opts;
+  const { stage, expansion, expLevel, weights = {}, minimums, maximums, skill, derived } = opts;
   // 스킬을 켠 채로 자동 구성하면 그 보정까지 감안해 최적화한다 (상한에 걸려 파츠 선택이 달라진다)
   const base = calcStats(ms, [], stage, expansion, partsByCat, fullstDefs, expLevel, null, skill).total;
 
   return function score(set) {
     const res = calcStats(ms, set, stage, expansion, partsByCat, fullstDefs, expLevel, null, skill);
+    // 파생 지표(공격 지표·내구 지표)는 파츠 효과를 UI 에서 계산해 넘겨준다(있을 때만).
+    const dv = derived ? derived(set, res.total) : null;
+    const valOf = k => (dv && k in dv) ? dv[k] : res.total[k];
     let value = 0;
     for (const k of STAT_KEYS) {
       const w = weights[k];
@@ -89,14 +94,14 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
     let penalty = 0;
     for (const [k, target] of Object.entries(minimums || {})) {
       if (!target) continue;
-      const short = target - res.total[k];
-      if (short > 0) penalty += 1000 + 100 * (short / UNIT[k]);
+      const short = target - valOf(k);
+      if (short > 0) penalty += 1000 + 100 * (short / (UNIT[k] || 1));
     }
     // 상한 목표 — 초과하면 하한과 대칭으로 페널티를 준다(그 스탯을 넘기지 않는 구성으로 흐르게).
     for (const [k, target] of Object.entries(maximums || {})) {
       if (target == null || target === '') continue;
-      const over = res.total[k] - target;
-      if (over > 0) penalty += 1000 + 100 * (over / UNIT[k]);
+      const over = valOf(k) - target;
+      if (over > 0) penalty += 1000 + 100 * (over / (UNIT[k] || 1));
     }
     return { value: value - penalty, penalty, feasible: penalty === 0, stats: res };
   };
