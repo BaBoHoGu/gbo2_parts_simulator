@@ -98,7 +98,7 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
       const over = res.total[k] - target;
       if (over > 0) penalty += 1000 + 100 * (over / UNIT[k]);
     }
-    return { value: value - penalty, feasible: penalty === 0, stats: res };
+    return { value: value - penalty, penalty, feasible: penalty === 0, stats: res };
   };
 }
 
@@ -161,13 +161,68 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
 
   const evaluate = set => { evaluations++; return scorer(set); };
 
+  const lockedNames = new Set(locked.map(l => l.name));
+  // inn 을 넣되 슬롯이 부족하면 non-locked 파츠를 (뺐을 때 남는 집합 점수가 가장 높은 순으로) 빼 자리를 만든다.
+  // 큰 파츠 1개를 작은 파츠 여럿 자리에 넣는 '다중 축출'을 가능하게 해 지역 최적을 벗어난다.
+  const insertWithEviction = (cur, inn) => {
+    let s = cur.filter(p => p.name !== inn.name).concat([inn]);
+    if (isValidSetWith(ms, s, cap)) return s;
+    let guard = 0;
+    while (!isValidSetWith(ms, s, cap) && guard++ <= MAX_PARTS + 2) {
+      const removable = s.filter(p => p.name !== inn.name && !lockedNames.has(p.name));
+      if (!removable.length) return null;
+      let pick = null;
+      for (const rm of removable) {
+        const t = s.filter(p => p.name !== rm.name);
+        const v = evaluate(t).value;
+        if (!pick || v > pick.v) pick = { t, v };
+      }
+      s = pick.t;
+    }
+    return isValidSetWith(ms, s, cap) ? s : null;
+  };
+
+  // 하한/상한 목표만 보고 빈 상태에서 쌓아 올려 충족 구성을 직접 만든다.
+  // 지역탐색이 못 가는 '좁은 실현영역'(거의 유일한 조합)을 재구성으로 도달한다.
+  const feasBuild = () => {
+    let cur = locked.slice(), sc = evaluate(cur), guard = 0;
+    while (sc.penalty > 0 && guard++ < 50) {
+      let bestC = null;
+      for (const inn of candidates) {
+        if (cur.some(p => p.name === inn.name)) continue;
+        const cand = insertWithEviction(cur, inn);
+        if (!cand) continue;
+        const s = evaluate(cand);
+        if (!bestC || s.penalty < bestC.s.penalty || (s.penalty === bestC.s.penalty && s.value > bestC.s.value))
+          bestC = { cand, s };
+      }
+      if (!bestC || (bestC.s.penalty >= sc.penalty && bestC.s.value <= sc.value + 1e-9)) break;   // 진전 없음
+      cur = bestC.cand; sc = bestC.s;
+    }
+    return cur;
+  };
+  const hasTargets = Object.values(opts.minimums || {}).some(v => v)
+    || Object.values(opts.maximums || {}).some(v => v != null && v !== '');
+
   for (let r = 0; r < restarts; r++) {
-    // --- 초기해: 무작위 순서로 넣을 수 있는 만큼 채운다 ---
-    let cur = locked.slice();
-    for (const p of shuffled(candidates, rnd)) {
-      if (cur.length >= MAX_PARTS) break;
-      const next = cur.concat([p]);
-      if (isValidSetWith(ms, next, cap)) cur = next;
+    // --- 초기해 ---
+    // 목표(하한/상한)가 있으면 앞쪽 재시작은 '충족 우선 구성'에서 출발해 좁은 실현영역을 잡는다.
+    // 나머지 재시작은 무작위로 채워 다양성을 준다.
+    let cur;
+    if (hasTargets && r < Math.max(2, Math.ceil(restarts / 3))) {
+      cur = feasBuild();
+      for (const p of shuffled(candidates, rnd)) {   // 남는 슬롯을 채워 가치도 확보
+        if (cur.length >= MAX_PARTS) break;
+        const next = cur.concat([p]);
+        if (!cur.some(q => q.name === p.name) && isValidSetWith(ms, next, cap)) cur = next;
+      }
+    } else {
+      cur = locked.slice();
+      for (const p of shuffled(candidates, rnd)) {
+        if (cur.length >= MAX_PARTS) break;
+        const next = cur.concat([p]);
+        if (isValidSetWith(ms, next, cap)) cur = next;
+      }
     }
     let curScore = evaluate(cur);
 
@@ -202,6 +257,20 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
           const s = evaluate(next);
           if (s.value > curScore.value + 1e-9 && (!bestMove || s.value > bestMove.score.value)) {
             bestMove = { set: next, score: s };
+          }
+        }
+      }
+
+      // 축출 삽입 — 큰 파츠를 여러 작은 파츠 자리에 넣어 하한/상한(목표)을 충족한다.
+      // 비용이 크므로 아직 목표를 못 맞춘(infeasible) 상태에서만 시도한다.
+      if (!curScore.feasible) {
+        for (const inn of candidates) {
+          if (cur.some(p => p.name === inn.name)) continue;
+          const cand = insertWithEviction(cur, inn);
+          if (!cand) continue;
+          const s = evaluate(cand);
+          if (s.value > curScore.value + 1e-9 && (!bestMove || s.value > bestMove.score.value)) {
+            bestMove = { set: cand, score: s };
           }
         }
       }
