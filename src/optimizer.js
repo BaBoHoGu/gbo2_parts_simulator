@@ -15,7 +15,7 @@ const UNIT = {
   shoot: 5, meleeCorrection: 5, speed: 5, highSpeedMovement: 5,
   thruster: 10, turnPerformanceGround: 5, turnPerformanceSpace: 5,
   // 파생 지표(공격 지표=실효 보정, 내구 지표=실효 HP) — 하한/상한 목표용 페널티 환산
-  effShoot: 5, effMelee: 5, durSolid: 250, durBeam: 250, durMelee: 250
+  effShoot: 5, effMelee: 5, durSolid: 2, durBeam: 2, durMelee: 2
 };
 
 /** 프리셋: 자주 쓰는 운용 방향별 가중치. */
