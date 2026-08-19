@@ -10,8 +10,10 @@ android {
         applicationId "com.gbo2.sim"
         minSdk 24
         targetSdk 36
-        versionCode 1
-        versionName "1.0"
+        // 버전은 update.ps1 이 데이터 빌드 날짜로 주입한다(-Pvcode=yyyyMMdd -Pvname=yyyy-MM-dd).
+        // 인자가 없으면 기본값. 파일을 고치지 않아 git 변경이 생기지 않는다.
+        versionCode (project.hasProperty('vcode') ? project.property('vcode').toString().toInteger() : 1)
+        versionName (project.hasProperty('vname') ? project.property('vname').toString() : "1.0")
     }
 
     buildTypes {

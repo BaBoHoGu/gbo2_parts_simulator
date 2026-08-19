@@ -22,23 +22,28 @@ android/
       assets/index.html                     ← dist 복사본 (빌드 시 갱신, git 제외)
 ```
 
-## 재빌드 방법
+## 업데이트/재빌드 (자동 — 권장)
 
-1. 웹 앱을 먼저 빌드하고 assets 로 복사:
-   ```
-   node tools/build.js
-   cp dist/gbo2-simulator.html android/app/src/main/assets/index.html
-   ```
-2. APK 빌드 (Gradle 래퍼 사용):
-   ```
-   cd android
-   ./gradlew assembleDebug         # Windows: gradlew.bat assembleDebug
-   ```
-   - 필요 환경: `JAVA_HOME`(Android Studio 내장 JBR 등 JDK 17+), `ANDROID_HOME`(SDK, platform-36).
-3. 결과 APK:
-   ```
-   android/app/build/outputs/apk/debug/app-debug.apk
-   ```
+프로젝트 루트에서 **`.\update.ps1`** 한 번이면 데이터 갱신 → dist 재빌드 → **APK까지 자동 생성**됩니다.
+호스팅이 없어도 "PC 업데이트 = 최신 APK 생성"이 되고, 폰엔 나온 APK만 덮어쓰기 설치하면 됩니다.
+
+- `.\update.ps1` — 데이터 수신 + dist + APK
+- `.\update.ps1 -Rebuild` — 인터넷 없이 dist + APK 만
+- `.\update.ps1 -NoApk` — 웹(dist)만, APK 건너뜀
+- APK 버전은 빌드 날짜로 자동 부여(versionCode=yyyyMMdd, versionName=yyyy-MM-dd).
+- JDK(또는 Android Studio JBR)가 없으면 APK 는 건너뛰고 웹만 갱신됩니다.
+
+결과 APK: `dist/gbo2-simulator-debug.apk` (원본: `android/app/build/outputs/apk/debug/app-debug.apk`)
+
+## 수동 빌드
+
+```
+node tools/build.js
+cp dist/gbo2-simulator.html android/app/src/main/assets/index.html
+cd android
+./gradlew assembleDebug     # Windows: gradlew.bat assembleDebug
+```
+필요 환경: `JAVA_HOME`(JDK 17+), SDK(`android/local.properties` 의 sdk.dir, platform-36).
 
 ## 설치
 
