@@ -2102,7 +2102,7 @@
 
   /* ---------- 자동 구성 ---------- */
 
-  // 파생 지표 목표 — 성능표의 공격 지표(실효 보정)·내구 지표(실효 HP)를 자동 구성 하한/상한으로도 쓴다.
+  // 파생 지표 목표 — 공격=실효 보정, 내구=실효 내성(armor 단위). % 파츠를 반영한 "체감 스탯"을 원시 스탯과 같은 단위로 목표 지정.
   const DERIVED_KEYS = ['effShoot', 'effMelee', 'durSolid', 'durBeam', 'durMelee'];
   const DERIVED_LABEL = { effShoot: '공격 사격', effMelee: '공격 격투', durSolid: '내구 실탄', durBeam: '내구 빔', durMelee: '내구 격투' };
 
@@ -2115,7 +2115,12 @@
       return Math.round(((1 + corr / 100) * mul - 1) * 100);
     };
     const cuts = [...partDamageCuts(equipped, lv), ...activeStaggerMods(state.ms, lv).cuts];
-    const dur = (key, dattr) => Math.round(durabilityOf(total, key) / staggerDmgFactor(cuts, dattr));
+    // 내구 지표 = 실효 내성(armor 단위). 내성값과 피해경감 %를 합쳐 "체감 내성"으로 환산한다.
+    // 예: armor 40 + 피해경감 10% → 100×(1 − 0.6×0.9) = 46. 목표 '50'을 armor처럼 지정.
+    const dur = (key, dattr) => {
+      const a = Math.min(total[key] || 0, 99);
+      return Math.round(100 * (1 - (1 - a / 100) * staggerDmgFactor(cuts, dattr)));
+    };
     return {
       effShoot: eff(total.shoot, 'shoot'), effMelee: eff(total.meleeCorrection, 'melee'),
       durSolid: dur('armorRange', 'solid'), durBeam: dur('armorBeam', 'beam'), durMelee: dur('armorMelee', 'melee')
@@ -2158,7 +2163,7 @@
     }
 
     // 파생 지표 목표 (가중치 없음, 하한/상한만) — 공격 지표(실효 보정)·내구 지표(실효 HP)
-    box.append(el('div', 'auto-sep', '지표 목표 — 공격 지표(실효 보정) · 내구 지표(실효 HP)'));
+    box.append(el('div', 'auto-sep', '실효 지표 목표 — 공격=실효 보정 · 내구=실효 내성 (% 파츠 반영, 스탯과 같은 단위)'));
     for (const k of DERIVED_KEYS) {
       box.append(el('div', 'lb', DERIVED_LABEL[k]));
       box.append(el('div', 'lb dim', '—'));               // 가중치 없음
