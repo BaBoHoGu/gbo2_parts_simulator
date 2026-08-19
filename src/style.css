@@ -1168,7 +1168,9 @@ input[type="search"], input[type="text"] { width: 100%; }
 /* ============ 반응형 ============ */
 
 /* 중간 폭: 정보 · 상세 · 성능을 세로로 쌓고 파츠는 맨 아래 */
-@media (max-width: 1080px) {
+/* 좁은 화면 또는 세로(portrait)에서는 파츠 화면을 단일 컬럼으로 쌓는다.
+   → 태블릿·큰 폰도 세로로 편하게 쓸 수 있음(가로로 눕힐 필요 없음). */
+@media (max-width: 1080px), (orientation: portrait) {
   .screen-build {
     display: block;
     overflow-y: auto;

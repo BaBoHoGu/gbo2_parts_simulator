@@ -25,9 +25,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-
-    // 16MB 단일 HTML(assets)을 압축하지 않으면 APK 로딩이 빠르다.
-    androidResources {
-        noCompress 'html'
-    }
+    // assets/index.html 은 텍스트+base64 라 압축 저장하면 APK 가 ~1/3 로 줄고,
+    // WebView 가 로드 시 자동 해제하므로 체감 로딩 차이는 거의 없다.
 }
