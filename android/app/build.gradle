@@ -1,0 +1,33 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.gbo2.sim'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "com.gbo2.sim"
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // 16MB 단일 HTML(assets)을 압축하지 않으면 APK 로딩이 빠르다.
+    androidResources {
+        noCompress 'html'
+    }
+}

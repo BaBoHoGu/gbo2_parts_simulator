@@ -1,0 +1,4 @@
+# Gradle 래퍼 무결성 — 스크립트는 LF, jar 는 바이너리로 고정
+*.jar binary
+gradlew text eol=lf
+gradlew.bat text eol=crlf

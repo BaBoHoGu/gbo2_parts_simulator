@@ -1212,3 +1212,26 @@ input[type="search"], input[type="text"] { width: 100%; }
   .ms-card .info { width: 100%; }
   .ms-card .meta { justify-content: center; }
 }
+
+/* ── 모바일/APK(WebView) 폴리시 ── */
+@media (max-width: 700px) {
+  /* 툴바: 여러 줄로 쌓이지 않게 가로 스크롤 한 줄로 (버튼이 많아짐) */
+  .topbar { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 8px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .topbar::-webkit-scrollbar { display: none; }
+  .topbar button { flex: 0 0 auto; }
+
+  /* 터치 타깃 확대 */
+  .chip, .seg-btn { min-height: 30px; }
+  .auto-grid input { min-height: 30px; font-size: 13px; }
+  .ms-fav { width: 28px; height: 28px; font-size: 17px; }
+
+  /* '왜 이 파츠?' 기여도 행 — 좁은 폭에서 스탯을 아래로 */
+  .why-row { grid-template-columns: 44px 1fr; }
+  .why-stats { grid-column: 2; text-align: left; }
+
+  /* 결과/저장/비교 모달 꽉 차게 */
+  .auto-modal { width: 96vw; max-height: 92vh; }
+
+  /* 데이터 신선도 배지는 좁으면 줄바꿈 허용 */
+  .data-fresh { display: block; margin: 4px 0 0; }
+}
