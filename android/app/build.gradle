@@ -26,7 +26,13 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        encoding = 'UTF-8'
     }
+}
+
+// 소스의 유니코드 리터럴(예: BOM 비교)이 인코딩과 무관하게 컴파일되도록 UTF-8 고정
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
     // assets/index.html 은 텍스트+base64 라 압축 저장하면 APK 가 ~1/3 로 줄고,
     // WebView 가 로드 시 자동 해제하므로 체감 로딩 차이는 거의 없다.
 }

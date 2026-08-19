@@ -5,12 +5,13 @@
 #   .\update.ps1 -Rebuild   인터넷 없이 dist + APK 만 다시 만든다 (오버라이드 패치 적용용)
 #   .\update.ps1 -NoApk     APK 빌드를 건너뛰고 웹(dist)만 갱신
 #   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
+#   .\update.ps1 -Publish   최신 데이터를 GitHub Release 'data' 에 올려 폰 앱이 자동 갱신(OTA)
 #
 # gbo2.jp 최신 데이터·일본 위키(밸런스 패치 목록 포함)에서 변경분만 가져와
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$Release)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$Release, [switch]$Publish)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -64,12 +65,16 @@ function Build-Apk {
   $env:JAVA_HOME = $jh
   Push-Location $androidDir
   $ok = $false
+  # gradle 은 진행/경고를 stderr 로 내보내는데, $ErrorActionPreference='Stop' 이면 그게 예외로 잡혀
+  # 정상 빌드도 실패로 오인된다. 이 구간만 Continue 로 바꾸고 실제 성공 여부는 $LASTEXITCODE 로 판정.
+  $prevEap = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
   try {
     & $gradlew 'assembleDebug' "-Pvcode=$vcode" "-Pvname=$vname" '--console=plain' '-q'
     $ok = ($LASTEXITCODE -eq 0)
   } catch {
     Write-Host "APK 빌드 중 예외: $_" -ForegroundColor Red
-  } finally { Pop-Location }
+  } finally { $ErrorActionPreference = $prevEap; Pop-Location }
 
   if (-not $ok) { Write-Host 'APK 빌드에 실패했습니다 (위 로그 확인). 웹 업데이트는 정상입니다.' -ForegroundColor Red; return }
 
@@ -79,6 +84,35 @@ function Build-Apk {
     Write-Host "APK 완료: dist\gbo2-simulator-debug.apk (버전 $vname) — 폰에 덮어쓰기 설치하세요." -ForegroundColor Green
   } else {
     Write-Host 'APK 산출물을 찾지 못했습니다.' -ForegroundColor Red
+  }
+}
+
+# 최신 데이터(version.json + gbo2-simulator.html)를 GitHub Release 'data' 에 올려
+# 폰 앱이 자동으로 받아가게 한다(OTA). gh CLI 로그인이 돼 있어야 한다.
+$OtaRepo = 'BaBoHoGu/gbo2_parts_simulator'
+function Publish-Ota {
+  $html = Join-Path $PSScriptRoot 'dist\gbo2-simulator.html'
+  if (-not (Test-Path $html)) { Write-Host 'dist\gbo2-simulator.html 이 없어 OTA 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
+  # gh 경로 결정 (PATH → 표준 설치 경로)
+  $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
+  $gh = if ($ghCmd) { $ghCmd.Source } else { 'C:\Program Files\GitHub CLI\gh.exe' }
+  if (-not (Test-Path $gh)) { Write-Host 'gh CLI 를 찾지 못해 OTA 게시를 건너뜁니다 (winget install GitHub.cli).' -ForegroundColor Yellow; return }
+  & $gh auth status 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) { Write-Host 'gh 로그인이 안 돼 있어 OTA 게시를 건너뜁니다 (gh auth login).' -ForegroundColor Yellow; return }
+
+  # version.json (데이터 날짜) 생성 — 앱의 JSON 파서가 BOM 에 걸리지 않게 BOM 없는 UTF-8 로 쓴다
+  $vj = Join-Path $PSScriptRoot 'dist\version.json'
+  [System.IO.File]::WriteAllText($vj, ('{"date":"' + (Get-Date -Format 'yyyy-MM-dd') + '"}'), (New-Object System.Text.UTF8Encoding($false)))
+
+  Write-Host "`nGitHub OTA 게시 중… ($OtaRepo / data)" -ForegroundColor Cyan
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & $gh release upload data $vj $html --repo $OtaRepo --clobber
+  $up = $LASTEXITCODE
+  $ErrorActionPreference = $prevEap
+  if ($up -eq 0) {
+    Write-Host "OTA 게시 완료 — 폰 앱이 실행 시 자동으로 최신 데이터를 받습니다." -ForegroundColor Green
+  } else {
+    Write-Host "OTA 게시 실패 (위 로그 확인). release 'data' 채널이 있는지 확인하세요." -ForegroundColor Red
   }
 }
 
@@ -129,5 +163,7 @@ if (-not $Check) {
     & $node (Join-Path $PSScriptRoot 'tools\build_release.js')
     if ($LASTEXITCODE -ne 0) { Write-Host '배포 패키지 생성 실패 (위 로그 확인).' -ForegroundColor Red }
   }
+  # -Publish: 폰 자동 갱신용으로 최신 데이터를 GitHub Release 'data' 에 올린다(OTA)
+  if ($Publish) { Publish-Ota }
 }
 Close-Window 0

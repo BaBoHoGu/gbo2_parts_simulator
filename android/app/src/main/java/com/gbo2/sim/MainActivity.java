@@ -1,20 +1,49 @@
 package com.gbo2.sim;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.webkit.ValueCallback;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 /**
- * GBO2 커스텀 파츠 시뮬레이터 — 오프라인 단일 HTML 을 WebView 로 감싼 래퍼.
- * 이미지는 HTML 안에 data URI 로 인라인되어 있어 저장소에 이미지 파일이 생기지 않는다
- * (→ 갤러리/미디어 스캐너에 잡히지 않음). localStorage 는 앱 전용 영역에 저장된다.
+ * GBO2 커스텀 파츠 시뮬레이터 — 오프라인 단일 HTML 을 WebView 로 감싼 래퍼 + 데이터 OTA.
+ *
+ * 앱을 고정 가상주소(APP_URL)로 띄운다 → 번들/OTA 어느 쪽 HTML 을 서빙해도 origin 이 같아
+ * localStorage(저장 구성·즐겨찾기)가 보존된다. 실행 시 백그라운드로 version.json 을 확인해
+ * 더 최신이면 HTML 을 내려받아 다음 실행부터 적용한다(오프라인이면 조용히 넘어간다).
+ * 이미지는 HTML 안에 data URI 로 인라인돼 있어 저장소에 이미지 파일이 생기지 않는다(갤러리 무오염).
  */
 public class MainActivity extends Activity {
+
+    // 앱을 항상 이 가상주소로 로드한다(실제 네트워크 없음 — 아래 인터셉트로 로컬 서빙). origin 고정용.
+    private static final String APP_HOST = "gbo2.local";
+    private static final String APP_URL  = "https://gbo2.local/index.html";
+
+    // 데이터 OTA 채널 (GitHub Release 고정 태그 'data')
+    private static final String OTA_BASE    = "https://github.com/BaBoHoGu/gbo2_parts_simulator/releases/download/data";
+    private static final String OTA_VERSION = OTA_BASE + "/version.json";
+    private static final String OTA_HTML    = OTA_BASE + "/gbo2-simulator.html";
+
+    private static final String PREFS = "gbo2_ota";
+    private static final String KEY_DATE = "data_date";   // 현재 서빙 중인 데이터 날짜(yyyy-MM-dd)
 
     private WebView web;
 
@@ -27,36 +56,144 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);       // localStorage(저장 구성·즐겨찾기·기본 제외) 유지
         s.setDatabaseEnabled(true);
-        s.setAllowFileAccess(true);
-        // 뷰포트: 메타(width=device-width)를 존중해 기기 폭 그대로 렌더.
-        // overviewMode 를 끄면 내용이 조금 넓어도 '전체 축소'로 세로 글자가 작아지지 않는다.
+        s.setLoadWithOverviewMode(false);   // 세로에서 전체 축소 렌더 방지
         s.setUseWideViewPort(true);
-        s.setLoadWithOverviewMode(false);
-        s.setSupportZoom(true);             // 사용자 핀치 확대는 허용(작게 느껴질 때)
+        s.setSupportZoom(true);
         s.setBuiltInZoomControls(true);
         s.setDisplayZoomControls(false);
         s.setTextZoom(100);
-        s.setCacheMode(WebSettings.LOAD_DEFAULT);
 
-        web.setWebViewClient(new WebViewClient());   // 링크를 외부 브라우저로 넘기지 않고 내부에서 처리
-
-        // 상단 짤림(edge-to-edge) 대응은 두 겹으로 처리한다:
-        //  1) 테마 windowOptOutEdgeToEdgeEnforcement=true → 상태바 불투명·내용은 그 아래(주 방어)
-        //  2) 웹의 env(safe-area-inset-*) 패딩 → 그래도 겹치면 회피(보조 방어)
-        // 인셋 영역과 배경을 앱 배경색(#0f1013)으로 맞춘다.
         web.setBackgroundColor(Color.parseColor("#0f1013"));
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                Uri u = request.getUrl();
+                if (u != null && APP_HOST.equals(u.getHost())) {
+                    return serveApp();   // 앱 문서는 번들 또는 OTA 파일에서 로컬 서빙
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+        });
 
         setContentView(web);
+        web.loadUrl(APP_URL);
 
-        web.loadUrl("file:///android_asset/index.html");
+        // 백그라운드로 최신 데이터 확인·수신 (실패/오프라인이면 조용히 무시)
+        new Thread(this::checkOta).start();
     }
 
-    /**
-     * 하드웨어 뒤로가기:
-     *  - 열린 모달/드로어가 있으면 닫고(웹의 Escape 처리 재사용),
-     *  - 파츠 적용(build) 화면이면 기체 선택으로,
-     *  - 그 외에는 앱 종료.
-     */
+    /** 앱 HTML 응답 — OTA 로 받은 내부 파일이 있으면 그걸, 없으면 번들 asset 을 서빙. */
+    private WebResourceResponse serveApp() {
+        try {
+            File ota = otaFile();
+            InputStream in = (ota.exists() && ota.length() > 0)
+                ? new FileInputStream(ota)
+                : getAssets().open("index.html");
+            return new WebResourceResponse("text/html", "utf-8", in);
+        } catch (Exception e) {
+            return null;   // 실패 시 기본 처리
+        }
+    }
+
+    private File otaFile() {
+        return new File(getFilesDir(), "ota_index.html");
+    }
+
+    /** 현재 서빙 데이터 날짜 — 저장된 OTA 날짜, 없으면 번들(=APK versionName=빌드날짜). */
+    private String servedDate() {
+        SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
+        String d = p.getString(KEY_DATE, null);
+        if (d != null) return d;
+        try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+        catch (Exception e) { return ""; }
+    }
+
+    /** version.json 을 확인해 더 최신이면 HTML 을 받아 다음 실행부터 적용한다. */
+    private void checkOta() {
+        try {
+            String vj = httpGet(OTA_VERSION, 6000, 6000);
+            if (vj == null) return;
+            vj = vj.trim();
+            if (vj.length() > 0 && vj.charAt(0) == '﻿') vj = vj.substring(1);   // UTF-8 BOM 방어
+            String remote = new JSONObject(vj).optString("date", "");
+            if (remote.isEmpty()) return;
+            // yyyy-MM-dd 는 사전식 비교가 곧 날짜 비교
+            if (remote.compareTo(servedDate()) <= 0) return;   // 이미 최신
+
+            File tmp = new File(getFilesDir(), "ota_index.tmp");
+            if (!httpDownload(OTA_HTML, tmp, 8000, 60000)) { tmp.delete(); return; }
+            if (tmp.length() < 1024) { tmp.delete(); return; }   // 손상/빈 파일 방어
+
+            File dst = otaFile();
+            dst.delete();
+            if (tmp.renameTo(dst)) {
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_DATE, remote).apply();
+                // 다음 실행부터 적용된다(현재 세션은 건드리지 않아 사용 중 화면이 바뀌지 않음).
+            } else {
+                tmp.delete();
+            }
+        } catch (Exception ignored) {
+            // 오프라인·네트워크 오류 등은 조용히 무시 (앱은 기존 데이터로 정상 동작)
+        }
+    }
+
+    private static String httpGet(String url, int connectMs, int readMs) {
+        HttpURLConnection c = null;
+        try {
+            c = open(url, connectMs, readMs);
+            if (c.getResponseCode() != 200) return null;
+            java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+            copy(c.getInputStream(), bo);
+            return bo.toString("utf-8");
+        } catch (Exception e) {
+            return null;
+        } finally { if (c != null) c.disconnect(); }
+    }
+
+    private static boolean httpDownload(String url, File dst, int connectMs, int readMs) {
+        HttpURLConnection c = null;
+        try {
+            c = open(url, connectMs, readMs);
+            if (c.getResponseCode() != 200) return false;
+            OutputStream out = new FileOutputStream(dst);
+            copy(c.getInputStream(), out);
+            out.close();
+            return true;
+        } catch (Exception e) {
+            return false;
+        } finally { if (c != null) c.disconnect(); }
+    }
+
+    /** GitHub Release 다운로드는 objects.githubusercontent.com 으로 리다이렉트되므로 수동 추적한다. */
+    private static HttpURLConnection open(String url, int connectMs, int readMs) throws Exception {
+        for (int i = 0; i < 5; i++) {
+            HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+            c.setConnectTimeout(connectMs);
+            c.setReadTimeout(readMs);
+            c.setInstanceFollowRedirects(false);
+            c.setRequestProperty("User-Agent", "gbo2-sim-app");
+            int code = c.getResponseCode();
+            if (code >= 300 && code < 400) {
+                String loc = c.getHeaderField("Location");
+                c.disconnect();
+                if (loc == null) throw new Exception("redirect without location");
+                url = loc;
+                continue;
+            }
+            return c;
+        }
+        throw new Exception("too many redirects");
+    }
+
+    private static void copy(InputStream in, OutputStream out) throws Exception {
+        byte[] buf = new byte[16384];
+        int n;
+        while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+        in.close();
+    }
+
+    /** 하드웨어 뒤로가기: 모달 닫기 → 기체 선택 → 종료 (웹의 Escape 처리 재사용). */
+    @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
         if (web == null) { super.onBackPressed(); return; }
@@ -72,21 +209,14 @@ public class MainActivity extends Activity {
         web.evaluateJavascript(js, new ValueCallback<String>() {
             @Override
             public void onReceiveValue(String value) {
-                if (value != null && value.contains("handled")) {
-                    // 웹이 처리함 — 아무것도 안 함
-                } else {
-                    finish();
-                }
+                if (value == null || !value.contains("handled")) finish();
             }
         });
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            onBackPressed();
-            return true;
-        }
+        if (keyCode == KeyEvent.KEYCODE_BACK) { onBackPressed(); return true; }
         return super.onKeyDown(keyCode, event);
     }
 }
