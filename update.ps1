@@ -4,12 +4,13 @@
 #   .\update.ps1 -Check     감지만 하고 무엇이 바뀌는지 리포트 (반영 안 함)
 #   .\update.ps1 -Rebuild   인터넷 없이 dist + APK 만 다시 만든다 (오버라이드 패치 적용용)
 #   .\update.ps1 -NoApk     APK 빌드를 건너뛰고 웹(dist)만 갱신
+#   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
 #
 # gbo2.jp 최신 데이터·일본 위키(밸런스 패치 목록 포함)에서 변경분만 가져와
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$Release)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -122,5 +123,11 @@ if (-not $Check) {
   Write-Host "`n최신 결과물: dist\gbo2-simulator.html (브라우저에서 새로고침 하세요)" -ForegroundColor Green
   # 데이터가 갱신됐으면 APK 도 함께 최신화 (‑NoApk 로 건너뛸 수 있음)
   if (-not $NoApk) { Build-Apk }
+  # -Release: 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
+  if ($Release) {
+    Write-Host "`n배포 패키지 생성 중… (모바일-앱.apk 포함)" -ForegroundColor Cyan
+    & $node (Join-Path $PSScriptRoot 'tools\build_release.js')
+    if ($LASTEXITCODE -ne 0) { Write-Host '배포 패키지 생성 실패 (위 로그 확인).' -ForegroundColor Red }
+  }
 }
 Close-Window 0
