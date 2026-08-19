@@ -91,8 +91,17 @@ if (fs.existsSync(IMG_SRC)) {
   console.warn('경고: assets/images 가 없습니다. `node tools/fetch_images.js` 를 먼저 실행하세요.');
 }
 
+// 데이터 신선도 배지용 — 빌드 시각과 총량을 앱에 주입한다.
+const buildMeta = {
+  date: new Date().toISOString().slice(0, 10),
+  ms: msData.length,
+  parts: Object.values(parts).reduce((a, b) => a + b.length, 0),
+  weapons: Object.values(weapons).reduce((a, p) => a + p.weapons.length, 0)
+};
+
 const html = read('src', 'index.html')
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
+  .replace('/*__BUILD__*/', () => inline('GBO2_BUILD', buildMeta))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills }))
   .replace('/*__IMAGES__*/', () => inline('GBO2_IMAGES', images))
   .replace('/*__WEAPONS__*/', () => inline('GBO2_WEAPONS', weapons))
@@ -104,7 +113,7 @@ const html = read('src', 'index.html')
   .replace('/*__DAMAGE__*/', () => read('src', 'damage.js'))
   .replace('/*__UI__*/', () => read('src', 'ui.js'));
 
-for (const marker of ['__CSS__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__UI__']) {
+for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__UI__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 

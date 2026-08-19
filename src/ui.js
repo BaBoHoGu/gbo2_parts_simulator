@@ -295,6 +295,9 @@
     msCost: 'all',
     msLv: 'all',
     msRarity: 'all',
+    msView: 'all',          // 'all' | 'fav'(즐겨찾기) | 'recent'(최근 사용)
+    favorites: new Set(),   // 즐겨찾기한 기체 MS名 — 영구 저장
+    recent: [],             // 최근 고른 기체 MS名 (최신 우선, 최대 12) — 영구 저장
     msLimit: 80,
     form: 'normal',        // 'normal' | 'transform' — 성능표를 어느 형태로 볼지
     detailPart: null,      // 상세 미리보기에 고정된 파츠
@@ -323,6 +326,8 @@
     state.autoShown = 3;
     const box = document.getElementById('autoResults');
     if (box) box.innerHTML = '';
+    const diag = document.getElementById('autoDiag');
+    if (diag) { diag.hidden = true; diag.innerHTML = ''; }
     const note = document.getElementById('autoNote');
     if (note) note.textContent = '';
     openResultModal(false);
@@ -344,6 +349,28 @@
 
   const SAVE_KEY = 'gbo2-offline-build';
   const OWNED_KEY = 'gbo2-offline-unowned';    // 기본 제외한 파츠 목록 (영구 저장)
+  const FAV_KEY = 'gbo2-offline-fav';          // 즐겨찾기 기체
+  const RECENT_KEY = 'gbo2-offline-recent';    // 최근 고른 기체
+  const RECENT_MAX = 12;
+
+  /** 즐겨찾기·최근 목록을 불러온다 — 사전에 없는(구버전) 기체명은 조용히 버린다. */
+  function loadFavRecent() {
+    const known = n => msData.some(m => m.MS名 === n);
+    try { state.favorites = new Set((JSON.parse(localStorage.getItem(FAV_KEY)) || []).filter(known)); } catch { state.favorites = new Set(); }
+    try { state.recent = (JSON.parse(localStorage.getItem(RECENT_KEY)) || []).filter(known).slice(0, RECENT_MAX); } catch { state.recent = []; }
+  }
+  function saveFav() { try { localStorage.setItem(FAV_KEY, JSON.stringify([...state.favorites])); } catch { /* 무시 */ } }
+  function saveRecent() { try { localStorage.setItem(RECENT_KEY, JSON.stringify(state.recent)); } catch { /* 무시 */ } }
+  /** 기체를 최근 목록 맨 앞으로 올린다(중복 제거·상한 유지). */
+  function pushRecent(name) {
+    if (!name) return;
+    state.recent = [name, ...state.recent.filter(n => n !== name)].slice(0, RECENT_MAX);
+    saveRecent();
+  }
+  function toggleFavorite(name) {
+    if (state.favorites.has(name)) state.favorites.delete(name); else state.favorites.add(name);
+    saveFav();
+  }
 
   /** 기본 제외 목록을 불러온다 — 사전에 없는(구버전) 이름은 조용히 버린다. */
   function loadBanned() {
@@ -530,6 +557,13 @@
     const q = state.msQuery.trim().toLowerCase();
     let list = msData;
 
+    // 보기 모드: 즐겨찾기 / 최근 — 최근은 사용 순서를 그대로 유지하려고 먼저 처리한다.
+    if (state.msView === 'fav') list = list.filter(m => state.favorites.has(m.MS名));
+    else if (state.msView === 'recent') {
+      const order = new Map(state.recent.map((n, i) => [n, i]));
+      list = list.filter(m => order.has(m.MS名)).sort((a, b) => order.get(a.MS名) - order.get(b.MS名));
+    }
+
     if (state.msAttr) list = list.filter(m => m.属性 === state.msAttr);
 
     if (state.msCost === 'low') list = list.filter(m => m.コスト <= 250);
@@ -541,6 +575,9 @@
     if (state.msRarity !== 'all') list = list.filter(m => msRarity(m) === state.msRarity);
 
     if (q) list = list.filter(m => msSearchText.get(m).includes(q));
+
+    // 최근 보기는 사용 순서를 유지한다 (아래 표준 정렬을 건너뛴다)
+    if (state.msView === 'recent') return list;
 
     // 정렬: ① 코스트 높은 순(750→) → ② 속성(강습→범용→지원) → ③ 등급 높은 순
     //       → ④ 레벨 LV1부터 → ⑤ 이름 순
@@ -556,13 +593,46 @@
     });
   }
 
+  /** 보기 칩(전체 / 즐겨찾기 / 최근)을 개수 배지와 함께 그린다. */
+  function renderViewChips() {
+    const box = document.getElementById('viewChips');
+    if (!box) return;
+    box.innerHTML = '';
+    const items = [
+      { v: 'all', label: '전체' },
+      { v: 'fav', label: `★ 즐겨찾기${state.favorites.size ? ' ' + state.favorites.size : ''}` },
+      { v: 'recent', label: `🕐 최근${state.recent.length ? ' ' + state.recent.length : ''}` }
+    ];
+    for (const it of items) {
+      const chip = el('button', 'chip' + (state.msView === it.v ? ' on' : ''), it.label);
+      chip.onclick = () => {
+        state.msView = it.v;
+        state.msLimit = 80;
+        renderViewChips();
+        renderMsList();
+      };
+      box.append(chip);
+    }
+  }
+
+  /** 번들 데이터 신선도 배지 — 빌드일과 총량. */
+  function renderDataFresh() {
+    const box = document.getElementById('dataFresh');
+    const b = (typeof window !== 'undefined' && window.GBO2_BUILD) || null;
+    if (!box || !b) return;
+    box.textContent = `데이터 ${b.date} · 기체 ${b.ms.toLocaleString()} · 파츠 ${b.parts} · 무장 ${b.weapons.toLocaleString()}`;
+  }
+
   function renderMsList() {
     const box = $('#msList');
     box.innerHTML = '';
     const list = filteredMs();
 
     if (!list.length) {
-      box.append(el('div', 'empty-state', '조건에 맞는 기체가 없습니다.'));
+      const msg = state.msView === 'fav' ? '즐겨찾기한 기체가 없습니다. 카드의 ☆를 눌러 추가하세요.'
+        : state.msView === 'recent' ? '최근 고른 기체가 없습니다.'
+        : '조건에 맞는 기체가 없습니다.';
+      box.append(el('div', 'empty-state', msg));
       $('#msCount').textContent = '0기';
       return;
     }
@@ -570,6 +640,18 @@
     for (const m of list.slice(0, state.msLimit)) {
       const card = el('div', 'ms-card' + (state.ms === m ? ' sel' : ''));
       card.append(img(msImg(m.MS名), 'ms', m.MS名));
+
+      // 즐겨찾기 별 — 카드 선택과 별개로 토글한다
+      const fav = state.favorites.has(m.MS名);
+      const star = el('button', 'ms-fav' + (fav ? ' on' : ''), fav ? '★' : '☆');
+      star.title = fav ? '즐겨찾기 해제' : '즐겨찾기 추가';
+      star.onclick = ev => {
+        ev.stopPropagation();
+        toggleFavorite(m.MS名);
+        renderMsList();
+        renderViewChips();   // 개수 배지 갱신
+      };
+      card.append(star);
 
       const info = el('div', 'info');
       const nm = el('div', 'nm', T.msName(m.MS名));
@@ -618,6 +700,7 @@
 
   function selectMs(m) {
     state.ms = m;
+    pushRecent(m.MS名);         // 최근 사용 목록 갱신
     state.form = 'normal';      // 새 기체는 통상 모드부터
     state.equipped = [];
     state.locked.clear();
@@ -2202,10 +2285,11 @@
     if ([...Object.keys(state.minimums), ...Object.keys(state.maximums)].some(k => DERIVED_KEYS.includes(k)))
       opts.derived = (set, total) => derivedMetrics(set, total);
 
-    // 사용자가 가중치를 안 만졌으면 목표를 임의로 정해 서로 다른 방향의 후보 3개를 낸다.
-    // 만졌으면 그 가중치로 서로 다른 상위 3개를 뽑는다.
+    // 후보를 "상충 축"으로 나눠 대표 빌드를 함께 낸다(공격형/내구형/균형).
+    //  - 가중치를 안 만졌으면 프로필 3종(밸런스·공격·방어)을 그대로 목표로.
+    //  - 만졌으면 내 가중치를 1순위 목표로 두되, 공격·방어 축 프로필을 곁들여 트레이드오프 선택지를 보장한다.
     const objectives = state.weightsTouched
-      ? [{ name: null, weights: state.weights }]
+      ? [{ name: '내 가중치', weights: state.weights }, ...autoProfiles(state.ms).filter(p => p.name !== '밸런스')]
       : autoProfiles(state.ms);
     // 확장 스킬을 사용자가 안 정했으면(확장 없음) 확장별로 실제 구성을 만들어 비교해 고른다.
     // (최적화 점수는 "파츠 증가분"만 재서 확장의 고정 보너스를 못 보므로, 절대 가중총점으로 비교한다)
@@ -2227,14 +2311,15 @@
     const perExps = autoExp ? expList.filter(isPer) : [];
     // 최대 10개까지 뽑으려면 후보 풀을 넉넉히 만든다.
     // 지정 목표: 그 가중치로 여러 번 재시작 / 임의 목표: 프로필당 상위 몇 개씩
-    const optRounds = state.weightsTouched ? Math.max(rounds, 10) : Math.max(3, Math.ceil(rounds / 3));
+    const optRounds = Math.max(3, Math.ceil(rounds / 3));
     const total = objectives.length * (1 + perExps.length + optRounds);
     let evals = 0, step = 0;
     const cands = [];
     const opt = (weights, exp, seed, iters) => {
       const r = O.optimize(state.ms, { ...opts, weights, expansion: exp, expLevel, seed, iters }, partsByCat, fullst);
       evals += r.evaluations || 0;
-      if (r.parts.length || r.feasible) { r.expansion = exp; r.expLevel = expLevel; r.abs = absScore(r.stats.total, weights); }
+      // usedWeights: '왜 이 파츠?' 기여도 계산에 그 후보를 만든 가중치를 쓴다.
+      if (r.parts.length || r.feasible) { r.expansion = exp; r.expLevel = expLevel; r.usedWeights = weights; r.abs = absScore(r.stats.total, weights); }
       return r;
     };
     const yieldMaybe = async () => { bar.style.width = (++step / total * 100) + '%'; if (step % 3 === 0) await nextFrame(); };
@@ -2269,14 +2354,10 @@
         if (r.parts.length || r.feasible) results.push(r);
         await yieldMaybe();
       }
-      if (state.weightsTouched) {
-        for (const c of topCandidates(results, 10)) cands.push(c);
-      } else {
-        // 프로필 대표(최고)에 라벨을 달고, 변형 몇 개를 함께 담는다 (더보기용 후보 확보)
-        const top = topCandidates(results, 4);
-        top.forEach((c, idx) => { if (idx === 0) c.label = obj.name; });
-        cands.push(...top);
-      }
+      // 각 목표(축)의 최고 후보에 라벨을 달아 대표 빌드로 보이게 하고, 변형 몇 개를 함께 담는다.
+      const top = topCandidates(results, 4);
+      top.forEach((c, idx) => { if (idx === 0 && obj.name) c.label = obj.name; });
+      cands.push(...top);
     }
 
     // 같은 구성은 하나만. 프로필 대표(라벨)를 앞에, 그다음 변형. 최대 10개.
@@ -2293,6 +2374,7 @@
     note.className = 'note mt';
     note.textContent = `후보 ${picks.length}개를 찾았습니다.`;
     $('#autoModalNote').textContent = `후보 ${picks.length}개 · 평가 ${evals.toLocaleString()}회 — 원하는 구성을 고르세요`;
+    renderAutoDiag(picks);
     renderAutoResults(picks);
     applyCandidate(0);   // 가장 좋은 후보를 우선 적용해 두고, 다른 것도 고를 수 있게 한다
     openDrawer(false);   // 결과는 화면 중앙 모달로 보여 준다
@@ -2342,6 +2424,73 @@
     return picks;
   }
 
+  /** 후보의 목표 지표 값 — 원시 스탯은 total, 파생 지표는 derivedMetrics 로 (후보에 캐시). */
+  function candValue(c, key) {
+    if (DERIVED_KEYS.includes(key)) {
+      if (!c._dv) c._dv = derivedMetrics(c.parts, c.stats.total);
+      return c._dv[key];
+    }
+    return c.stats.total[key] ?? 0;
+  }
+
+  /** 후보의 공격·내구 축 요약값 (트레이드오프를 카드에 보이기 위한 대표 수치). */
+  function axisSummary(c) {
+    const dv = c._dv || (c._dv = derivedMetrics(c.parts, c.stats.total));
+    return {
+      atk: Math.max(dv.effShoot, dv.effMelee),
+      def: Math.round((dv.durSolid + dv.durBeam + dv.durMelee) / 3)
+    };
+  }
+
+  /** 목표 진단 — 어떤 후보로도 못 미치는 목표를 "달성 가능한 최댓값"과 함께 알려 준다. */
+  function renderAutoDiag(picks) {
+    const box = document.getElementById('autoDiag');
+    if (!box) return;
+    const label = k => DERIVED_KEYS.includes(k) ? DERIVED_LABEL[k] : C.STAT_LABEL[k];
+    const targets = [
+      ...Object.entries(state.minimums).filter(([, v]) => v).map(([k, v]) => ({ k, v, kind: 'min' })),
+      ...Object.entries(state.maximums).filter(([, v]) => v != null && v !== '').map(([k, v]) => ({ k, v, kind: 'max' }))
+    ];
+    box.innerHTML = '';
+    if (!targets.length || !picks.length) { box.hidden = true; return; }
+    const rows = [];
+    for (const t of targets) {
+      const vals = picks.map(c => candValue(c, t.k));
+      const ok = t.kind === 'min' ? vals.some(v => v >= t.v) : vals.some(v => v <= t.v);
+      if (ok) continue;
+      rows.push({ t, best: t.kind === 'min' ? Math.max(...vals) : Math.min(...vals) });
+    }
+    box.hidden = false;
+    if (!rows.length) { box.append(el('div', 'diag-ok', '✓ 지정한 목표를 만족하는 후보를 찾았습니다.')); return; }
+    box.append(el('div', 'diag-head', '⚠ 아래 목표는 어떤 구성으로도 달성하지 못했습니다 — 도달 가능한 최댓값:'));
+    for (const { t, best } of rows) {
+      const row = el('div', 'diag-row');
+      row.append(el('span', 'diag-k', label(t.k)));
+      row.append(el('span', 'diag-msg', `목표 ${t.v} ${t.kind === 'min' ? '이상' : '이하'} → 최대 ${best.toLocaleString()} 까지 (가용 파츠·이 기체 상한 한계)`));
+      box.append(row);
+    }
+  }
+
+  /** '왜 이 파츠?' — 각 파츠를 뺐을 때의 가중총점 하락(기여도)과 주요 상승 스탯. */
+  function partContributions(c) {
+    const w = c.usedWeights || state.weights;
+    const exp = c.expansion || state.expansion;
+    const expLv = c.expLevel || state.expLevel;
+    const skill = skillStatBonus();
+    const full = c.stats.total;
+    const wScore = tot => C.STAT_KEYS.reduce((s, k) => s + (w[k] || 0) * (tot[k] || 0) / (O.UNIT[k] || 1), 0);
+    const fullScore = wScore(full);
+    const out = c.parts.map(p => {
+      const without = c.parts.filter(q => q.name !== p.name);
+      const st = C.calcStats(state.ms, without, state.stage, exp, partsByCat, fullst, expLv, null, skill).total;
+      const diffs = C.STAT_KEYS.map(k => ({ k, d: (full[k] || 0) - (st[k] || 0) }))
+        .filter(x => x.d > 0).sort((a, b) => b.d - a.d).slice(0, 3);
+      return { part: p, gain: fullScore - wScore(st), diffs };
+    });
+    out.sort((a, b) => b.gain - a.gain);
+    return out;
+  }
+
   /** 자동 구성 후보 카드를 그린다. 클릭하면 그 구성을 장착한다. (처음 autoShown 개만, 나머지는 더보기) */
   function renderAutoResults(cands) {
     const box = $('#autoResults');
@@ -2378,21 +2527,50 @@
       }
       card.append(stats);
 
+      // 상충 축 요약 — 공격/내구를 나란히 보여 트레이드오프를 한눈에 (Pareto 선택 보조)
+      const ax = axisSummary(c);
+      const axis = el('div', 'ac-axis');
+      axis.append(el('span', 'axb atk', `공격 ${ax.atk}`));
+      axis.append(el('span', 'axb def', `내구 ${ax.def}`));
+      card.append(axis);
+
       // 자동으로 고른 확장 스킬 (사용자가 지정했으면 표시 안 함)
       if (state.autoExpansion && c.expansion && c.expansion !== C.EXPANSION_NONE) {
         const expName = (C.EXPANSION_LABEL[c.expansion] || c.expansion).replace(/\s*\(.*\)$/, '');
         card.append(el('div', 'ac-exp', '확장: ' + expName));
       }
 
-      // 하한 미달 · 상한 초과 표시
+      // 하한 미달 · 상한 초과 표시 (원시 스탯·파생 지표 공통)
+      const tLabel = k => DERIVED_KEYS.includes(k) ? DERIVED_LABEL[k] : C.STAT_LABEL[k];
       const unmet = Object.entries(state.minimums)
-        .filter(([k, v]) => v && c.stats.total[k] < v)
-        .map(([k, v]) => `${C.STAT_LABEL[k]} ${c.stats.total[k]}/${v}`);
+        .filter(([k, v]) => v && candValue(c, k) < v)
+        .map(([k, v]) => `${tLabel(k)} ${candValue(c, k).toLocaleString()}/${v}`);
       if (unmet.length) card.append(el('div', 'ac-warn', '하한 미달: ' + unmet.join(', ')));
       const over = Object.entries(state.maximums)
-        .filter(([k, v]) => v != null && v !== '' && c.stats.total[k] > v)
-        .map(([k, v]) => `${C.STAT_LABEL[k]} ${c.stats.total[k]}/${v}`);
+        .filter(([k, v]) => v != null && v !== '' && candValue(c, k) > v)
+        .map(([k, v]) => `${tLabel(k)} ${candValue(c, k).toLocaleString()}/${v}`);
       if (over.length) card.append(el('div', 'ac-warn', '상한 초과: ' + over.join(', ')));
+
+      // '왜 이 파츠?' — 파츠별 기여도(가중 점수 하락)와 주요 상승 스탯을 펼쳐 본다
+      const why = el('button', 'ac-why', '왜 이 파츠?');
+      const whyBody = el('div', 'ac-why-body'); whyBody.hidden = true;
+      why.onclick = ev => {
+        ev.stopPropagation();
+        if (whyBody.dataset.built !== '1') {
+          whyBody.append(el('div', 'why-cap', '기여도(가중 점수) · 주요 상승 스탯'));
+          for (const { part, gain, diffs } of partContributions(c)) {
+            const row = el('div', 'why-row');
+            row.append(el('span', 'why-gain', (gain >= 0 ? '+' : '') + gain.toFixed(1)));
+            row.append(el('span', 'why-nm', T.partName(part.name)));
+            row.append(el('span', 'why-stats', diffs.map(d => C.STAT_LABEL[d.k] + ' +' + Math.round(d.d)).join(' · ') || '—'));
+            whyBody.append(row);
+          }
+          whyBody.dataset.built = '1';
+        }
+        whyBody.hidden = !whyBody.hidden;
+        why.classList.toggle('on', !whyBody.hidden);
+      };
+      card.append(why, whyBody);
 
       card.title = c.parts.map(p => T.partName(p.name)).join(', ');
       card.onclick = () => applyCandidate(i);
@@ -2447,6 +2625,37 @@
     expansion: state.expansion,
     expLevel: state.expLevel
   });
+
+  /* ---------- 공유 코드 (짧은 문자열로 인코딩) ---------- */
+  // 유니코드(한글·일본어 파츠명) 안전 base64url. 붙여넣기 쉽게 한 줄 토큰으로 만든다.
+  function b64urlEncode(str) {
+    return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64urlDecode(s) {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    return decodeURIComponent(escape(atob(s)));
+  }
+  const SHARE_PREFIX = 'GBO2-';
+  /** 현재(또는 주어진) 구성을 짧은 공유 코드로 만든다. */
+  function encodeShare(obj) {
+    const o = obj || serialize();
+    // 짧은 키로 압축: m=기체, p=파츠, s=강화, e=확장, l=확장레벨
+    const compact = { m: o.ms, p: o.parts, s: o.stage, e: o.expansion, l: o.expLevel };
+    return SHARE_PREFIX + b64urlEncode(JSON.stringify(compact));
+  }
+  /** 공유 코드 또는 예전 JSON을 구성 객체(serialize 형태)로 되돌린다. 실패 시 null. */
+  function decodeShare(text) {
+    const t = (text || '').trim();
+    if (!t) return null;
+    // 예전 JSON 형식도 그대로 받는다 (하위 호환)
+    if (t[0] === '{') { try { return JSON.parse(t); } catch { return null; } }
+    const code = t.startsWith(SHARE_PREFIX) ? t.slice(SHARE_PREFIX.length) : t;
+    try {
+      const c = JSON.parse(b64urlDecode(code));
+      return { ms: c.m, parts: c.p || [], stage: c.s, expansion: c.e, expLevel: c.l };
+    } catch { return null; }
+  }
 
   /* ---------- 저장한 구성(이름 지정·다중) ---------- */
 
@@ -3779,21 +3988,20 @@
       : okText;
     $('#share').onclick = () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
-      const text = JSON.stringify(serialize(), null, 2);
+      const code = encodeShare();
       // 실패 시(파일 열람 등 비보안 컨텍스트) 직접 복사할 수 있도록 프롬프트로 대체
-      const fallback = () => { toast('아래 내용을 복사하세요'); prompt('구성 JSON (Ctrl+C 로 복사)', text); };
+      const fallback = () => { toast('아래 코드를 복사하세요'); prompt('공유 코드 (Ctrl+C 로 복사)', code); };
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(() => toast('구성 JSON을 복사했습니다'), fallback);
+          navigator.clipboard.writeText(code).then(() => toast('공유 코드를 복사했습니다'), fallback);
         } else fallback();
       } catch { fallback(); }
     };
     $('#importBtn').onclick = () => {
-      const text = prompt('구성 JSON을 붙여넣으세요');
+      const text = prompt('공유 코드(또는 예전 JSON)를 붙여넣으세요');
       if (!text) return;
-      let obj;
-      try { obj = JSON.parse(text); }
-      catch { toast('JSON 형식이 올바르지 않습니다'); return; }
+      const obj = decodeShare(text);
+      if (!obj) { toast('공유 코드 형식이 올바르지 않습니다'); return; }
       const r = deserialize(obj);
       toast(r.ok ? loadedMsg(r, '구성을 불러왔습니다') : '알 수 없는 기체입니다');
     };
@@ -3879,6 +4087,9 @@
   buildControls();
   renderAutoGrid();
   loadBanned();           // 저장된 기본 제외 파츠 복원
+  loadFavRecent();        // 즐겨찾기·최근 기체 복원
+  renderViewChips();
+  renderDataFresh();
   updateOwnedUi();        // 버튼 배지·모달 노트 초기화
   // 빌드 화면이 곧바로 채워지도록 기본 기체를 잡아두되, 시작 화면은 ① 기체 선택.
   state.ms = msData.find(m => T.msName(m.MS名).startsWith('건담 ')) || msData[0];
