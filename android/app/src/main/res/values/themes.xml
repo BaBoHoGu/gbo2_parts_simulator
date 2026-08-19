@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- targetSdk 35+ 의 edge-to-edge 강제를 끄고(상태바 불투명·내용은 그 아래),
+         시스템 바 색을 앱 배경색(#0f1013)에 맞춘다. 하위 기기에선 해당 속성이 무시된다. -->
+    <style name="AppTheme" parent="@android:style/Theme.NoTitleBar">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+        <item name="android:statusBarColor">#0f1013</item>
+        <item name="android:navigationBarColor">#0f1013</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">#0f1013</item>
+    </style>
+</resources>
