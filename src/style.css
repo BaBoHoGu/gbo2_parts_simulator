@@ -34,6 +34,12 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* 안전 영역(상태바·노치·제스처바) 회피 — WebView edge-to-edge 에서 상단/측면 짤림 방지.
+     시스템이 이미 인셋을 처리하는 경우 env() 값이 0 이라 영향이 없다. box-sizing:border-box 라 100vh 안에서 처리됨. */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 button, input, select {
