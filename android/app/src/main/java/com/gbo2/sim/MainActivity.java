@@ -27,10 +27,13 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);       // localStorage(저장 구성·즐겨찾기·기본 제외) 유지
         s.setDatabaseEnabled(true);
         s.setAllowFileAccess(true);
-        s.setLoadWithOverviewMode(true);
+        // 뷰포트: 메타(width=device-width)를 존중해 기기 폭 그대로 렌더.
+        // overviewMode 를 끄면 내용이 조금 넓어도 '전체 축소'로 세로 글자가 작아지지 않는다.
         s.setUseWideViewPort(true);
-        s.setSupportZoom(false);
-        s.setBuiltInZoomControls(false);
+        s.setLoadWithOverviewMode(false);
+        s.setSupportZoom(true);             // 사용자 핀치 확대는 허용(작게 느껴질 때)
+        s.setBuiltInZoomControls(true);
+        s.setDisplayZoomControls(false);
         s.setTextZoom(100);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
 
