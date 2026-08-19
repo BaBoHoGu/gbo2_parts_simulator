@@ -685,7 +685,8 @@
     const changed = state.view !== view;
     state.view = view;
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
-    if (view === 'select' && changed) renderMsList();
+    // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
+    if (view === 'select' && changed) { renderMsList(); renderViewChips(); }
     document.body.classList.toggle('view-select', view === 'select');
     document.body.classList.toggle('view-build', view === 'build');
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
@@ -2425,17 +2426,16 @@
   }
 
   /** 후보의 목표 지표 값 — 원시 스탯은 total, 파생 지표는 derivedMetrics 로 (후보에 캐시). */
+  // 파생값은 현재 상태(스킬·누적치)에 의존하므로 캐시하지 않고 그때그때 계산한다
+  // (후보 수가 적어 비용이 무시할 만하고, 상태 변경 시 값이 낡지 않는다).
   function candValue(c, key) {
-    if (DERIVED_KEYS.includes(key)) {
-      if (!c._dv) c._dv = derivedMetrics(c.parts, c.stats.total);
-      return c._dv[key];
-    }
+    if (DERIVED_KEYS.includes(key)) return derivedMetrics(c.parts, c.stats.total)[key];
     return c.stats.total[key] ?? 0;
   }
 
   /** 후보의 공격·내구 축 요약값 (트레이드오프를 카드에 보이기 위한 대표 수치). */
   function axisSummary(c) {
-    const dv = c._dv || (c._dv = derivedMetrics(c.parts, c.stats.total));
+    const dv = derivedMetrics(c.parts, c.stats.total);
     return {
       atk: Math.max(dv.effShoot, dv.effMelee),
       def: Math.round((dv.durSolid + dv.durBeam + dv.durMelee) / 3)
@@ -2478,7 +2478,10 @@
     const expLv = c.expLevel || state.expLevel;
     const skill = skillStatBonus();
     const full = c.stats.total;
-    const wScore = tot => C.STAT_KEYS.reduce((s, k) => s + (w[k] || 0) * (tot[k] || 0) / (O.UNIT[k] || 1), 0);
+    // 가중치를 하나도 안 준 경우(실효 지표 목표만으로 구성)엔 모든 스탯을 동일 가중(1)으로 보아
+    // 기여도가 전부 0으로 뭉개지지 않게 한다 — 정규화(UNIT)한 스탯 상승분 총합으로 순위·수치를 낸다.
+    const anyW = C.STAT_KEYS.some(k => (w[k] || 0) > 0);
+    const wScore = tot => C.STAT_KEYS.reduce((s, k) => s + (anyW ? (w[k] || 0) : 1) * (tot[k] || 0) / (O.UNIT[k] || 1), 0);
     const fullScore = wScore(full);
     const out = c.parts.map(p => {
       const without = c.parts.filter(q => q.name !== p.name);
