@@ -42,6 +42,18 @@ const copyDir = (src, dst, filter) => {
 // 1) 시뮬레이터 본체 (사용자가 여는 파일) — 이미지는 HTML 에 data URI 로 인라인돼 있어 별도 폴더 불필요.
 copyFile(p('dist', 'gbo2-simulator.html'), path.join(STAGE, 'dist', 'gbo2-simulator.html'));
 
+// 1.5) 모바일 APK (미리 빌드된 것) — 일반 사용자 PC 엔 Android SDK 가 없어 직접 빌드할 수 없으므로,
+//      개발 빌드에서 만든 APK 를 "완성본 파일"로 최상위에 동봉한다. 폰에 옮겨 바로 설치.
+{
+  const apkSrc = p('dist', 'gbo2-simulator-debug.apk');
+  if (fs.existsSync(apkSrc)) {
+    copyFile(apkSrc, path.join(STAGE, '모바일-앱.apk'));
+    console.log('  모바일 APK 동봉: 모바일-앱.apk');
+  } else {
+    console.log('  ⚠ dist\\gbo2-simulator-debug.apk 없음 — 모바일 APK 미동봉 (먼저 .\\update.ps1 실행)');
+  }
+}
+
 // 2) 재빌드용 이미지 원본 (build.js 가 assets/images → dist/images 로 복사)
 copyDir(p('assets', 'images'), path.join(STAGE, 'assets', 'images'));
 

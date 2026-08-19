@@ -35,7 +35,11 @@ function Build-Apk {
   $androidDir = Join-Path $PSScriptRoot 'android'
   $gradlew = Join-Path $androidDir 'gradlew.bat'
   $distHtml = Join-Path $PSScriptRoot 'dist\gbo2-simulator.html'
-  if (-not (Test-Path $gradlew)) { Write-Host 'android\gradlew 가 없어 APK 빌드를 건너뜁니다.' -ForegroundColor Yellow; return }
+  if (-not (Test-Path $gradlew)) {
+    Write-Host 'APK 빌드 도구(android 프로젝트)가 없어 APK 는 만들지 않습니다.' -ForegroundColor DarkGray
+    Write-Host '  (배포본에는 미리 빌드된 「모바일-앱.apk」 가 최상위에 동봉돼 있습니다 — 그걸 폰에 설치하세요)' -ForegroundColor DarkGray
+    return
+  }
   if (-not (Test-Path $distHtml)) { Write-Host 'dist\gbo2-simulator.html 이 없어 APK 빌드를 건너뜁니다.' -ForegroundColor Yellow; return }
 
   # JAVA_HOME 결정: 환경변수 → Android Studio 내장 JBR
