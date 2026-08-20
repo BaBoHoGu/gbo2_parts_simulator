@@ -2472,25 +2472,68 @@
   }
 
   /** '왜 이 파츠?' — 각 파츠를 뺐을 때의 가중총점 하락(기여도)과 주요 상승 스탯. */
+  // 스탯 → 역할군 (막대색·태그용)
+  const CONTRIB_ROLE = {
+    hp: 'def', armorRange: 'def', armorBeam: 'def', armorMelee: 'def',
+    shoot: 'atk', meleeCorrection: 'atk',
+    speed: 'mob', highSpeedMovement: 'mob', thruster: 'mob',
+    turnPerformanceGround: 'mob', turnPerformanceSpace: 'mob'
+  };
+  const ROLE_LABEL = { def: '내구', atk: '공격', mob: '기동' };
+
   function partContributions(c) {
     const w = c.usedWeights || state.weights;
     const exp = c.expansion || state.expansion;
     const expLv = c.expLevel || state.expLevel;
     const skill = skillStatBonus();
     const full = c.stats.total;
-    // 가중치를 하나도 안 준 경우(실효 지표 목표만으로 구성)엔 모든 스탯을 동일 가중(1)으로 보아
-    // 기여도가 전부 0으로 뭉개지지 않게 한다 — 정규화(UNIT)한 스탯 상승분 총합으로 순위·수치를 낸다.
+    const fullDv = derivedMetrics(c.parts, full);   // 전체 구성의 실효 지표 (한 번만)
+    // 가중치를 하나도 안 준 경우엔 모든 스탯을 동일 가중(1)으로 본다.
     const anyW = C.STAT_KEYS.some(k => (w[k] || 0) > 0);
     const wScore = tot => C.STAT_KEYS.reduce((s, k) => s + (anyW ? (w[k] || 0) : 1) * (tot[k] || 0) / (O.UNIT[k] || 1), 0);
     const fullScore = wScore(full);
+    // 지정한 목표들 (파츠별 '목표 필수' 판정용)
+    const targets = [
+      ...Object.entries(state.minimums).filter(([, v]) => v).map(([k, v]) => ({ k, v: +v, kind: 'min' })),
+      ...Object.entries(state.maximums).filter(([, v]) => v != null && v !== '').map(([k, v]) => ({ k, v: +v, kind: 'max' }))
+    ];
+    const tLabel = k => DERIVED_KEYS.includes(k) ? DERIVED_LABEL[k] : C.STAT_LABEL[k];
+    const effShort = k => DERIVED_LABEL[k].replace(/^(공격|내구)\s*/, '');   // '내구 빔'→'빔'
+
     const out = c.parts.map(p => {
       const without = c.parts.filter(q => q.name !== p.name);
       const st = C.calcStats(state.ms, without, state.stage, exp, partsByCat, fullst, expLv, null, skill).total;
-      const diffs = C.STAT_KEYS.map(k => ({ k, d: (full[k] || 0) - (st[k] || 0) }))
-        .filter(x => x.d > 0).sort((a, b) => b.d - a.d).slice(0, 3);
-      return { part: p, gain: fullScore - wScore(st), diffs };
+      const woDv = derivedMetrics(without, st);
+      // 원시 스탯 상승분
+      const rawDiffs = C.STAT_KEYS.map(k => ({ k, d: (full[k] || 0) - (st[k] || 0) })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
+      // 실효 지표 상승분 (피해경감·피해% 파츠는 원시 스탯이 안 올라도 여기서 드러난다)
+      const effDiffs = DERIVED_KEYS.map(k => ({ k, d: fullDv[k] - woDv[k] })).filter(x => x.d >= 1).sort((a, b) => b.d - a.d);
+      // 역할: 정규화 기여가 가장 큰 군 (원시 없으면 실효로 판정)
+      const roleScore = {};
+      for (const { k, d } of rawDiffs) { const r = CONTRIB_ROLE[k]; if (r) roleScore[r] = (roleScore[r] || 0) + d / (O.UNIT[k] || 1); }
+      if (!rawDiffs.length) for (const { k, d } of effDiffs) { const r = k.indexOf('dur') === 0 ? 'def' : 'atk'; roleScore[r] = (roleScore[r] || 0) + d; }
+      let roleCls = null, best = 0;
+      for (const r in roleScore) if (roleScore[r] > best) { best = roleScore[r]; roleCls = r; }
+      // 목표 필수: 이 파츠를 빼면 (전체는 만족하던) 목표가 미달로 뒤집히는가
+      const criticalFor = [];
+      for (const t of targets) {
+        const vFull = DERIVED_KEYS.includes(t.k) ? fullDv[t.k] : (full[t.k] || 0);
+        const vWo = DERIVED_KEYS.includes(t.k) ? woDv[t.k] : (st[t.k] || 0);
+        const fullOk = t.kind === 'min' ? vFull >= t.v : vFull <= t.v;
+        const woOk = t.kind === 'min' ? vWo >= t.v : vWo <= t.v;
+        if (fullOk && !woOk) criticalFor.push(tLabel(t.k));
+      }
+      // 순위 점수 = 원시 가중 기여 + 실효 지표 기여 (피해경감 파츠도 정당하게 순위에 오르게)
+      const rank = (fullScore - wScore(st)) + DERIVED_KEYS.reduce((s, k) => s + Math.max(0, fullDv[k] - woDv[k]) / (O.UNIT[k] || 1), 0);
+      const stats = rawDiffs.length
+        ? rawDiffs.slice(0, 3).map(d => C.STAT_LABEL[d.k] + ' +' + Math.round(d.d))
+        : effDiffs.slice(0, 2).map(d => '실효 ' + effShort(d.k) + ' +' + Math.round(d.d));
+      return { part: p, rank, roleCls, roleLabel: ROLE_LABEL[roleCls] || null, criticalFor, stats };
     });
-    out.sort((a, b) => b.gain - a.gain);
+    const maxR = Math.max(1e-6, ...out.map(o => o.rank));
+    out.forEach(o => o.share = Math.max(0, o.rank) / maxR);
+    // 목표 필수 파츠를 먼저, 그다음 기여 큰 순 — "왜 약한 파츠가 있나?" 를 바로 답한다
+    out.sort((a, b) => (b.criticalFor.length - a.criticalFor.length) || (b.rank - a.rank));
     return out;
   }
 
@@ -2560,12 +2603,18 @@
       why.onclick = ev => {
         ev.stopPropagation();
         if (whyBody.dataset.built !== '1') {
-          whyBody.append(el('div', 'why-cap', '기여도(가중 점수) · 주요 상승 스탯'));
-          for (const { part, gain, diffs } of partContributions(c)) {
+          whyBody.append(el('div', 'why-cap', '막대=기여도 · 태그=역할 · 🎯=목표 필수 · 실효=피해경감/피해% 반영'));
+          for (const o of partContributions(c)) {
             const row = el('div', 'why-row');
-            row.append(el('span', 'why-gain', (gain >= 0 ? '+' : '') + gain.toFixed(1)));
-            row.append(el('span', 'why-nm', T.partName(part.name)));
-            row.append(el('span', 'why-stats', diffs.map(d => C.STAT_LABEL[d.k] + ' +' + Math.round(d.d)).join(' · ') || '—'));
+            const barWrap = el('div', 'why-bar');
+            const bar = el('div', 'why-bar-fill' + (o.roleCls ? ' rb-' + o.roleCls : ''));
+            bar.style.width = Math.round(o.share * 100) + '%';
+            barWrap.append(bar);
+            const main = el('div', 'why-main');
+            main.append(el('span', 'why-ptn', T.partName(o.part.name)));
+            if (o.roleLabel) main.append(el('span', 'why-role r-' + o.roleCls, o.roleLabel));
+            if (o.criticalFor.length) main.append(el('span', 'why-crit', '🎯 ' + o.criticalFor.join('·') + ' 필수'));
+            row.append(barWrap, main, el('div', 'why-stats', o.stats.join(' · ') || '—'));
             whyBody.append(row);
           }
           whyBody.dataset.built = '1';
