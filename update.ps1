@@ -151,6 +151,16 @@ function Publish-Pc {
     if ($LASTEXITCODE -eq 0) { Write-Host "  $($item.label) 링크: https://github.com/$OtaRepo/releases/download/pc/$($item.name)" -ForegroundColor Green }
     else { Write-Host "  $($item.label) 업로드 실패." -ForegroundColor Red }
   }
+  # 모바일 APK 도 직접 링크로 (ASCII 이름으로 URL 깔끔하게)
+  $apk = Join-Path $PSScriptRoot 'dist\gbo2-simulator-debug.apk'
+  if (Test-Path $apk) {
+    $apkNamed = Join-Path $relDir 'gbo2-simulator.apk'
+    Copy-Item $apk $apkNamed -Force
+    Write-Host "`nGitHub 모바일 APK 업로드 중… ($([math]::Round((Get-Item $apk).Length/1MB,1)) MB)" -ForegroundColor Cyan
+    & $gh release upload pc $apkNamed --repo $OtaRepo --clobber
+    if ($LASTEXITCODE -eq 0) { Write-Host "  APK 링크: https://github.com/$OtaRepo/releases/download/pc/gbo2-simulator.apk" -ForegroundColor Green }
+    else { Write-Host '  APK 업로드 실패.' -ForegroundColor Red }
+  }
   $ErrorActionPreference = $prevEap
 }
 
