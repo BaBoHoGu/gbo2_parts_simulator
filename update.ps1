@@ -5,7 +5,7 @@
 #   .\update.ps1 -Rebuild   인터넷 없이 dist + APK 만 다시 만든다 (오버라이드 패치 적용용)
 #   .\update.ps1 -NoApk     APK 빌드를 건너뛰고 웹(dist)만 갱신
 #   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
-#   .\update.ps1 -Publish   최신 데이터를 GitHub Release 'data' 에 올려 폰 앱이 자동 갱신(OTA)
+#   .\update.ps1 -Publish   폰 OTA(data) + PC 배포본 ZIP 을 GitHub 에 올려 링크로 배포
 #
 # gbo2.jp 최신 데이터·일본 위키(밸런스 패치 목록 포함)에서 변경분만 가져와
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
@@ -91,15 +91,22 @@ function Build-Apk {
 # 최신 데이터(version.json + gbo2-simulator.html)를 GitHub Release 'data' 에 올려
 # 폰 앱이 자동으로 받아가게 한다(OTA). gh CLI 로그인이 돼 있어야 한다.
 $OtaRepo = 'BaBoHoGu/gbo2_parts_simulator'
+
+# gh CLI 경로 + 로그인 여부 확인. 안 되면 $null 반환(호출부에서 건너뛴다).
+function Resolve-Gh {
+  $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
+  $gh = if ($ghCmd) { $ghCmd.Source } else { 'C:\Program Files\GitHub CLI\gh.exe' }
+  if (-not (Test-Path $gh)) { Write-Host 'gh CLI 를 찾지 못했습니다 (winget install GitHub.cli).' -ForegroundColor Yellow; return $null }
+  & $gh auth status 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) { Write-Host 'gh 로그인이 안 돼 있습니다 (gh auth login).' -ForegroundColor Yellow; return $null }
+  return $gh
+}
+
 function Publish-Ota {
   $html = Join-Path $PSScriptRoot 'dist\gbo2-simulator.html'
   if (-not (Test-Path $html)) { Write-Host 'dist\gbo2-simulator.html 이 없어 OTA 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
-  # gh 경로 결정 (PATH → 표준 설치 경로)
-  $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
-  $gh = if ($ghCmd) { $ghCmd.Source } else { 'C:\Program Files\GitHub CLI\gh.exe' }
-  if (-not (Test-Path $gh)) { Write-Host 'gh CLI 를 찾지 못해 OTA 게시를 건너뜁니다 (winget install GitHub.cli).' -ForegroundColor Yellow; return }
-  & $gh auth status 2>$null | Out-Null
-  if ($LASTEXITCODE -ne 0) { Write-Host 'gh 로그인이 안 돼 있어 OTA 게시를 건너뜁니다 (gh auth login).' -ForegroundColor Yellow; return }
+  $gh = Resolve-Gh
+  if (-not $gh) { Write-Host '→ OTA 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
 
   # version.json (데이터 날짜) 생성 — 앱의 JSON 파서가 BOM 에 걸리지 않게 BOM 없는 UTF-8 로 쓴다
   $vj = Join-Path $PSScriptRoot 'dist\version.json'
@@ -115,6 +122,33 @@ function Publish-Ota {
     Write-Host "OTA 게시 완료 — 폰 앱이 실행 시 자동으로 최신 데이터를 받습니다." -ForegroundColor Green
   } else {
     Write-Host "OTA 게시 실패 (위 로그 확인). release 'data' 채널이 있는지 확인하세요." -ForegroundColor Red
+  }
+}
+
+# PC 배포본(자기업데이트 ZIP)을 GitHub Releases 'pc' 에 고정 이름으로 올려 다운로드 링크를 준다.
+# (ZIP 이 50MB 를 넘어 직접 공유가 어려우므로 링크로 배포 — Releases 는 2GB 까지 허용)
+function Publish-Pc {
+  $zip = Get-ChildItem (Join-Path $PSScriptRoot 'release') -Filter '*.zip' -ErrorAction SilentlyContinue |
+         Where-Object { $_.Name -ne 'gbo2-simulator-pc.zip' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if (-not $zip) { Write-Host '배포 ZIP 이 없어 PC 링크 게시를 건너뜁니다 (-Release 로 먼저 생성).' -ForegroundColor Yellow; return }
+  $gh = Resolve-Gh
+  if (-not $gh) { Write-Host '→ PC 배포본 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
+
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  # pc 릴리스가 없으면 만든다
+  & $gh release view pc --repo $OtaRepo 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) { & $gh release create pc --repo $OtaRepo --title 'PC 버전 (최신)' --notes 'PC용 오프라인 시뮬레이터 배포본. 압축을 풀고 run.bat 실행.' | Out-Null }
+  # 고정 이름으로 복사해 안정적인 다운로드 URL 유지
+  $named = Join-Path $PSScriptRoot 'release\gbo2-simulator-pc.zip'
+  Copy-Item $zip.FullName $named -Force
+  Write-Host "`nGitHub PC 배포본 업로드 중… ($([math]::Round($zip.Length/1MB,1)) MB)" -ForegroundColor Cyan
+  & $gh release upload pc $named --repo $OtaRepo --clobber
+  $up = $LASTEXITCODE
+  $ErrorActionPreference = $prevEap
+  if ($up -eq 0) {
+    Write-Host "PC 다운로드 링크: https://github.com/$OtaRepo/releases/download/pc/gbo2-simulator-pc.zip" -ForegroundColor Green
+  } else {
+    Write-Host 'PC 배포본 업로드 실패 (위 로그 확인).' -ForegroundColor Red
   }
 }
 
@@ -167,7 +201,7 @@ if (-not $Check) {
     & $node (Join-Path $PSScriptRoot 'tools\build_release.js')
     if ($LASTEXITCODE -ne 0) { Write-Host '배포 패키지 생성 실패 (위 로그 확인).' -ForegroundColor Red }
   }
-  # -Publish: 폰 자동 갱신용으로 최신 데이터를 GitHub Release 'data' 에 올린다(OTA)
-  if ($Publish) { Publish-Ota }
+  # -Publish: 폰 자동 갱신용 데이터(OTA) + PC 배포본 ZIP 을 GitHub 에 올린다
+  if ($Publish) { Publish-Ota; Publish-Pc }
 }
 Close-Window 0
