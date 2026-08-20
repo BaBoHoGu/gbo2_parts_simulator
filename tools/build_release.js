@@ -20,7 +20,10 @@ if (!fs.existsSync(p('dist', 'gbo2-simulator.html'))) {
 let commit = 'nogit';
 try { commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT }).toString().trim(); } catch {}
 const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-const NAME = `gbo2-simulator_${stamp}_${commit}`;
+// --light: HTML + 업데이트 스크립트만(≈16MB, GitHub 에서 데이터 받음). 기본: 완전판(node·도구 동봉).
+const LIGHT = process.argv.includes('--light');
+const stampArg = (() => { const i = process.argv.indexOf('--stamp'); return i >= 0 ? process.argv[i + 1] : null; })();
+const NAME = `gbo2-simulator${LIGHT ? '-light' : ''}_${stamp}_${commit}`;
 const STAGE = p('release', NAME);
 
 fs.rmSync(STAGE, { recursive: true, force: true });
@@ -35,6 +38,16 @@ const copyDir = (src, dst, filter) => {
     else copyFile(s, d);
   }
 };
+
+if (LIGHT) {
+  // ── 경량판: HTML + 업데이트 스크립트만 (node·도구·이미지 제외, GitHub 에서 데이터 받음) ──
+  copyFile(p('dist', 'gbo2-simulator.html'), path.join(STAGE, 'gbo2-simulator.html'));
+  copyDir(p('pc-light'), STAGE);                                    // 실행.bat·업데이트.bat·업데이트.ps1·사용법.txt
+  fs.writeFileSync(path.join(STAGE, '.data-version'), stampArg || '');   // 첫 실행 시 불필요 다운로드 방지
+  const apkSrc = p('dist', 'gbo2-simulator-debug.apk');
+  if (fs.existsSync(apkSrc)) copyFile(apkSrc, path.join(STAGE, '모바일-앱.apk'));   // 모바일 APK 도 동봉
+  if (fs.existsSync(p('패치노트.md'))) fs.copyFileSync(p('패치노트.md'), path.join(STAGE, '패치노트.md'));
+} else {
 
 // 개발 저장소와 같은 레이아웃으로 담는다 → update.ps1 이 도구 수정 없이 그대로 동작한다.
 // 사용자는 dist\gbo2-simulator.html 을 연다.
@@ -104,6 +117,8 @@ copyFile(process.execPath, path.join(STAGE, 'node', 'node.exe'));
 fs.copyFileSync(p('release', '사용법.txt'), path.join(STAGE, '사용법.txt'));
 if (fs.existsSync(p('패치노트.md'))) fs.copyFileSync(p('패치노트.md'), path.join(STAGE, '패치노트.md'));
 
+}   // end else(완전판)
+
 // 6) 압축 (Windows 기본 PowerShell Compress-Archive)
 const zip = STAGE + '.zip';
 fs.rmSync(zip, { force: true });
@@ -117,4 +132,5 @@ const mb = n => (n / 1024 / 1024).toFixed(1) + ' MB';
 console.log('\n■ 배포 패키지 완성');
 console.log('  폴더 :', path.relative(ROOT, STAGE), '(' + mb(size(STAGE)) + ')');
 console.log('  압축 :', path.relative(ROOT, zip), '(' + mb(fs.statSync(zip).size) + ')');
-console.log('  내장 node.exe 포함 — 사용자는 update.ps1 실행만으로 최신화됩니다.');
+console.log(LIGHT ? '  경량판 — 업데이트.bat 로 GitHub 에서 최신 데이터를 받습니다.'
+                  : '  완전판 — 내장 node.exe 로 update.ps1 이 직접 수집·재빌드합니다.');

@@ -128,28 +128,30 @@ function Publish-Ota {
 # PC 배포본(자기업데이트 ZIP)을 GitHub Releases 'pc' 에 고정 이름으로 올려 다운로드 링크를 준다.
 # (ZIP 이 50MB 를 넘어 직접 공유가 어려우므로 링크로 배포 — Releases 는 2GB 까지 허용)
 function Publish-Pc {
-  $zip = Get-ChildItem (Join-Path $PSScriptRoot 'release') -Filter '*.zip' -ErrorAction SilentlyContinue |
-         Where-Object { $_.Name -ne 'gbo2-simulator-pc.zip' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-  if (-not $zip) { Write-Host '배포 ZIP 이 없어 PC 링크 게시를 건너뜁니다 (-Release 로 먼저 생성).' -ForegroundColor Yellow; return }
+  $relDir = Join-Path $PSScriptRoot 'release'
+  # 완전판: gbo2-simulator_* / 경량판: gbo2-simulator-light_* (고정이름 -pc*.zip 은 대시라 안 걸림)
+  $full  = Get-ChildItem $relDir -Filter 'gbo2-simulator_*.zip' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  $light = Get-ChildItem $relDir -Filter 'gbo2-simulator-light_*.zip' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if (-not $full -and -not $light) { Write-Host '배포 ZIP 이 없어 PC 링크 게시를 건너뜁니다 (-Release 로 먼저 생성).' -ForegroundColor Yellow; return }
   $gh = Resolve-Gh
   if (-not $gh) { Write-Host '→ PC 배포본 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
 
   $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-  # pc 릴리스가 없으면 만든다
   & $gh release view pc --repo $OtaRepo 2>$null | Out-Null
-  if ($LASTEXITCODE -ne 0) { & $gh release create pc --repo $OtaRepo --title 'PC 버전 (최신)' --notes 'PC용 오프라인 시뮬레이터 배포본. 압축을 풀고 run.bat 실행.' | Out-Null }
-  # 고정 이름으로 복사해 안정적인 다운로드 URL 유지
-  $named = Join-Path $PSScriptRoot 'release\gbo2-simulator-pc.zip'
-  Copy-Item $zip.FullName $named -Force
-  Write-Host "`nGitHub PC 배포본 업로드 중… ($([math]::Round($zip.Length/1MB,1)) MB)" -ForegroundColor Cyan
-  & $gh release upload pc $named --repo $OtaRepo --clobber
-  $up = $LASTEXITCODE
-  $ErrorActionPreference = $prevEap
-  if ($up -eq 0) {
-    Write-Host "PC 다운로드 링크: https://github.com/$OtaRepo/releases/download/pc/gbo2-simulator-pc.zip" -ForegroundColor Green
-  } else {
-    Write-Host 'PC 배포본 업로드 실패 (위 로그 확인).' -ForegroundColor Red
+  if ($LASTEXITCODE -ne 0) { & $gh release create pc --repo $OtaRepo --title 'PC 버전 (최신)' --notes 'PC용 오프라인 시뮬레이터. 경량판(권장, GitHub 데이터)·완전판(오프라인 자립).' | Out-Null }
+
+  foreach ($item in @(
+      @{ zip = $light; name = 'gbo2-simulator-pc.zip';      label = '경량판' },
+      @{ zip = $full;  name = 'gbo2-simulator-pc-full.zip'; label = '완전판' })) {
+    if (-not $item.zip) { continue }
+    $named = Join-Path $relDir $item.name
+    Copy-Item $item.zip.FullName $named -Force
+    Write-Host "`nGitHub $($item.label) 업로드 중… ($([math]::Round($item.zip.Length/1MB,1)) MB)" -ForegroundColor Cyan
+    & $gh release upload pc $named --repo $OtaRepo --clobber
+    if ($LASTEXITCODE -eq 0) { Write-Host "  $($item.label) 링크: https://github.com/$OtaRepo/releases/download/pc/$($item.name)" -ForegroundColor Green }
+    else { Write-Host "  $($item.label) 업로드 실패." -ForegroundColor Red }
   }
+  $ErrorActionPreference = $prevEap
 }
 
 # node 결정 — 폴더에 동봉한 node\node.exe 를 먼저 쓰고, 없으면 시스템 node 를 쓴다.
@@ -195,11 +197,13 @@ if (-not $Check) {
   Write-Host "`n최신 결과물: dist\gbo2-simulator.html (브라우저에서 새로고침 하세요)" -ForegroundColor Green
   # 데이터가 갱신됐으면 APK 도 함께 최신화 (‑NoApk 로 건너뛸 수 있음)
   if (-not $NoApk) { Build-Apk }
-  # -Release: 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
+  # -Release: 배포 ZIP 을 완전판 + 경량판 두 가지로 생성 (모바일-앱.apk 동봉)
   if ($Release) {
-    Write-Host "`n배포 패키지 생성 중… (모바일-앱.apk 포함)" -ForegroundColor Cyan
+    Write-Host "`n배포 패키지 생성 중… (완전판 + 경량판)" -ForegroundColor Cyan
     & $node (Join-Path $PSScriptRoot 'tools\build_release.js')
-    if ($LASTEXITCODE -ne 0) { Write-Host '배포 패키지 생성 실패 (위 로그 확인).' -ForegroundColor Red }
+    if ($LASTEXITCODE -ne 0) { Write-Host '완전판 생성 실패 (위 로그 확인).' -ForegroundColor Red }
+    & $node (Join-Path $PSScriptRoot 'tools\build_release.js') '--light' '--stamp' $script:VerStamp
+    if ($LASTEXITCODE -ne 0) { Write-Host '경량판 생성 실패 (위 로그 확인).' -ForegroundColor Red }
   }
   # -Publish: 폰 자동 갱신용 데이터(OTA) + PC 배포본 ZIP 을 GitHub 에 올린다
   if ($Publish) { Publish-Ota; Publish-Pc }
