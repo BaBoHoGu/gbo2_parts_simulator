@@ -1311,3 +1311,40 @@ input[type="search"], input[type="text"] { width: 100%; }
   /* 필터 칩은 액션 버튼보다 작게 — 슬라이드라 세로를 더 아낀다 */
   .filter-group .chips > .chip { flex: 0 0 auto; min-height: 30px; padding: 5px 12px; font-size: 12px; }
 }
+
+/* ============================================================
+   UI 폴리시 패스 (설치 스킬 기반)
+   · make-interfaces-feel-better: 표 정렬 숫자, 줄바꿈 품질, elevation, 눌림 피드백
+   · apple-design: 포인터-다운 즉시 반응, 모션 절제, prefers-reduced-motion 존중
+   전부 기존 위에 얹는 추가 규칙 — 레이아웃/구조 변경 없음.
+   ============================================================ */
+
+/* 숫자는 표(tabular) 정렬 — 스탯·코스트·피해량이 자릿수마다 흔들리지 않는다 (데이터 툴에 특히 유효) */
+body { font-variant-numeric: tabular-nums; }
+
+/* 짧은 제목/텍스트 줄바꿈 품질 — 고아 단어 방지, 제목은 균형 */
+h1, h2, h3 { text-wrap: balance; }
+.pt-nm, .ac-k, .wd-k, .d-eff-lb, .filter-lb, .empty-state, .detail-empty,
+.pietan-hint, .owned-hint, .why-cap, .diag-msg { text-wrap: pretty; }
+
+/* 눌림 피드백 — 누르는 즉시 살짝 눌리는 느낌(애플: respond on press).
+   transform 만 바뀌므로 GPU 친화적이고, 기존 border/background 전환은 유지한다. */
+button, .chip, .seg-btn, .ms-card, .part-tile, .auto-cand, .pietan-row, .ms-fav, .ac-thumb {
+  transition: transform .10s ease, border-color .12s, background .12s, box-shadow .14s, color .12s;
+}
+button:not(:disabled):active, .chip:active, .seg-btn:active, .ms-card:active,
+.part-tile:active, .auto-cand:active, .pietan-row:active, .ms-fav:active {
+  transform: scale(.97);
+}
+
+/* 상호작용 카드에 은은한 깊이 — 구조는 보더, 깊이는 그림자(레이어드) */
+.ms-card:hover, .part-tile:hover, .auto-cand:hover, .saved-card:hover {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .30), 0 6px 16px rgba(0, 0, 0, .22);
+}
+
+/* 접근성: 모션 최소화 선호 시 전환·변형·애니메이션을 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+  button:active, .chip:active, .seg-btn:active, .ms-card:active, .part-tile:active,
+  .auto-cand:active, .pietan-row:active, .ms-fav:active { transform: none; }
+}
