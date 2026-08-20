@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.webkit.ValueCallback;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -20,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -73,6 +75,20 @@ public class MainActivity extends Activity {
                 }
                 return super.shouldInterceptRequest(view, request);
             }
+
+            // 앱 문서 로드가 실패하면(예: OTA 파일 문제) 그 파일을 버리고 번들로 복구한다.
+            // 번들 asset 은 항상 정상이라 한 번 리로드로 회복되고 무한 루프가 없다.
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (request.isForMainFrame() && request.getUrl() != null
+                        && APP_HOST.equals(request.getUrl().getHost()) && otaFile().exists()) {
+                    otaFile().delete();
+                    getSharedPreferences(PREFS, MODE_PRIVATE).edit().remove(KEY_DATE).apply();
+                    view.post(() -> view.loadUrl(APP_URL));
+                    return;
+                }
+                super.onReceivedError(view, request, error);
+            }
         });
 
         setContentView(web);
@@ -82,17 +98,15 @@ public class MainActivity extends Activity {
         new Thread(this::checkOta).start();
     }
 
-    /** 앱 HTML 응답 — OTA 로 받은 내부 파일이 있으면 그걸, 없으면 번들 asset 을 서빙. */
+    /** 앱 HTML 응답 — OTA 로 받은 내부 파일이 있으면 그걸, 실패하거나 없으면 번들 asset 을 서빙(폴백). */
     private WebResourceResponse serveApp() {
-        try {
-            File ota = otaFile();
-            InputStream in = (ota.exists() && ota.length() > 0)
-                ? new FileInputStream(ota)
-                : getAssets().open("index.html");
-            return new WebResourceResponse("text/html", "utf-8", in);
-        } catch (Exception e) {
-            return null;   // 실패 시 기본 처리
+        File ota = otaFile();
+        if (ota.exists() && ota.length() > 0) {
+            try { return new WebResourceResponse("text/html", "utf-8", new FileInputStream(ota)); }
+            catch (Exception ignored) { /* 아래 번들로 폴백 */ }
         }
+        try { return new WebResourceResponse("text/html", "utf-8", getAssets().open("index.html")); }
+        catch (Exception e) { return null; }
     }
 
     private File otaFile() {
@@ -122,7 +136,9 @@ public class MainActivity extends Activity {
 
             File tmp = new File(getFilesDir(), "ota_index.tmp");
             if (!httpDownload(OTA_HTML, tmp, 8000, 60000)) { tmp.delete(); return; }
-            if (tmp.length() < 1024) { tmp.delete(); return; }   // 손상/빈 파일 방어
+            // 무결성: 잘린 업로드/오류 페이지를 걸러 낸다 — 최소 크기 + 문서 끝 태그 확인.
+            // (통과한 것만 교체하므로, 손상본이 저장돼 앱이 깨진 채 남는 일이 없다.)
+            if (tmp.length() < 100000 || !htmlLooksComplete(tmp)) { tmp.delete(); return; }
 
             File dst = otaFile();
             dst.delete();
@@ -190,6 +206,21 @@ public class MainActivity extends Activity {
         int n;
         while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
         in.close();
+    }
+
+    /** 다운로드한 HTML 이 온전한지 — 파일 끝에 문서 종료 태그가 있는지로 잘림/오류 페이지를 판별. */
+    private static boolean htmlLooksComplete(File f) {
+        try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
+            long len = raf.length();
+            int n = (int) Math.min(2048, len);
+            raf.seek(len - n);
+            byte[] buf = new byte[n];
+            raf.readFully(buf);
+            String tail = new String(buf, "utf-8");
+            return tail.contains("</html>") || tail.contains("</body>");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** 하드웨어 뒤로가기: 모달 닫기 → 기체 선택 → 종료 (웹의 Escape 처리 재사용). */
