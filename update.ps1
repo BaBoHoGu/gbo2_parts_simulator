@@ -60,7 +60,8 @@ function Build-Apk {
   Copy-Item $distHtml (Join-Path $androidDir 'app\src\main\assets\index.html') -Force
 
   $vcode = Get-Date -Format 'yyyyMMdd'
-  $vname = Get-Date -Format 'yyyy-MM-dd'
+  # versionName 은 OTA 기준값이기도 하다 — 분 단위 타임스탬프라 같은 날 재배포도 폰에 반영된다.
+  $vname = if ($script:VerStamp) { $script:VerStamp } else { Get-Date -Format 'yyyy-MM-dd-HHmm' }
   Write-Host "`n안드로이드 APK 빌드 중… (버전 $vname)" -ForegroundColor Cyan
   $env:JAVA_HOME = $jh
   Push-Location $androidDir
@@ -102,7 +103,8 @@ function Publish-Ota {
 
   # version.json (데이터 날짜) 생성 — 앱의 JSON 파서가 BOM 에 걸리지 않게 BOM 없는 UTF-8 로 쓴다
   $vj = Join-Path $PSScriptRoot 'dist\version.json'
-  [System.IO.File]::WriteAllText($vj, ('{"date":"' + (Get-Date -Format 'yyyy-MM-dd') + '"}'), (New-Object System.Text.UTF8Encoding($false)))
+  $stamp = if ($script:VerStamp) { $script:VerStamp } else { Get-Date -Format 'yyyy-MM-dd-HHmm' }
+  [System.IO.File]::WriteAllText($vj, ('{"date":"' + $stamp + '"}'), (New-Object System.Text.UTF8Encoding($false)))
 
   Write-Host "`nGitHub OTA 게시 중… ($OtaRepo / data)" -ForegroundColor Cyan
   $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
@@ -154,6 +156,8 @@ if ($code -ne 0) {
 }
 
 if (-not $Check) {
+  # 이번 빌드의 버전 스탬프(분 단위) — APK versionName 과 OTA version.json 이 같은 값을 쓰게 한다.
+  $script:VerStamp = Get-Date -Format 'yyyy-MM-dd-HHmm'
   Write-Host "`n최신 결과물: dist\gbo2-simulator.html (브라우저에서 새로고침 하세요)" -ForegroundColor Green
   # 데이터가 갱신됐으면 APK 도 함께 최신화 (‑NoApk 로 건너뛸 수 있음)
   if (-not $NoApk) { Build-Apk }
