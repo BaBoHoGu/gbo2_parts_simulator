@@ -1254,3 +1254,41 @@ input[type="search"], input[type="text"] { width: 100%; }
   /* 데이터 신선도 배지는 좁으면 줄바꿈 허용 */
   .data-fresh { display: block; margin: 4px 0 0; }
 }
+
+/* ── 모바일 UX 강화: 터치 타깃 확대 · 가독성 · 자동구성 드로어 ──
+   (전부 좁은 화면 전용 미디어쿼리 → 데스크톱 레이아웃은 영향 없음) */
+@media (max-width: 700px) {
+  /* 상단 버튼·칩·세그먼트: 손가락으로 누르기 편한 크기 */
+  .topbar button { min-height: 40px; padding: 8px 12px; }
+  .chip { padding: 8px 14px; font-size: 12.5px; }
+  .chip, .seg-btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; }
+  .seg-btn { padding: 7px 13px; font-size: 12.5px; }
+  .tabs .chip { padding: 7px 12px; }
+  input[type="search"] { min-height: 44px; font-size: 15px; padding: 10px 12px; }
+  select { min-height: 38px; }
+  .build-weapons h2 select { min-height: 34px; font-size: 13px; padding: 4px 8px; }
+
+  /* 부품 타일: 조금 키워 오탭 방지 */
+  .part-tile { padding: 7px 4px 6px; }
+  .part-tile img, .pt-thumb { width: 52px; height: 52px; }
+  .pt-nm { font-size: 11px; }
+
+  /* 무장·피탄 행: 세로 탭 여백 확대 */
+  .weapon, .weapon-head { padding-top: 5px; padding-bottom: 5px; }
+  .pietan-row { padding: 12px; }
+
+  /* 자동 구성 드로어: 전체폭 + 입력 크게, 라벨 폭 확보 */
+  .drawer { width: 100%; max-width: 100%; }
+  .auto-grid { grid-template-columns: 1fr 50px 58px 58px; gap: 7px 5px; }
+  .auto-grid input { min-height: 40px; font-size: 15px; padding: 4px 6px; }
+  .auto-grid .lb { font-size: 12px; }
+  .auto-grid .hd { font-size: 10.5px; }
+  #runAuto { min-height: 46px; font-size: 14px; }
+
+  /* 모달·결과: 하단 시스템바 안전영역만큼 스크롤 여유 */
+  .auto-results, .compare-body, #savedResults, .pietan-cols { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .am-head b { font-size: 16px; }
+
+  /* 너무 작던 보조 텍스트 살짝 키움 */
+  .ms-card .meta, .ac-stat, .pietan-sub, .sc-tags { font-size: 11.5px; }
+}
