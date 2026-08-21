@@ -4173,6 +4173,54 @@
       const tgt = target(s.cls);
       if (tgt) { const x = el('button', 'sheet-close', '✕'); x.title = '닫기'; x.onclick = close; tgt.appendChild(x); }
     }
+
+    // ── 스와이프 제스처 (모바일 빌드 화면) ──
+    // 오른쪽 가장자리에서 왼쪽으로 끌면 성능 시트가 손끝을 따라 열리고,
+    // 열린 시트는 오른쪽으로 밀어 닫는다. (버튼도 그대로 동작)
+    const EDGE = 28, OPEN_AT = 0.32;
+    let drag = null;
+    const isMob = () => window.matchMedia('(max-width: 700px)').matches && document.body.classList.contains('view-build');
+    const openSheetEl = () => sheets.map(s => target(s.cls)).find(e => e && e.classList.contains('sheet-open'));
+    document.addEventListener('touchstart', ev => {
+      if (drag || !isMob() || ev.touches.length !== 1) return;
+      const x = ev.touches[0].clientX, y = ev.touches[0].clientY;
+      const openEl = openSheetEl();
+      if (openEl) {
+        drag = { sheet: openEl, mode: 'close', x0: x, y0: y, w: openEl.getBoundingClientRect().width, prog: 0, axis: null };
+      } else if (x >= window.innerWidth - EDGE) {
+        const sheet = target('build-stats'); if (!sheet) return;
+        drag = { sheet, mode: 'open', x0: x, y0: y, w: sheet.getBoundingClientRect().width || Math.min(window.innerWidth * .94, 480), prog: 0, axis: null };
+        sheet.style.transition = 'none'; sheet.style.transform = 'translateX(100%)';
+        backdrop.classList.add('on'); backdrop.style.transition = 'none'; backdrop.style.opacity = '0';
+      }
+    }, { passive: true });
+    document.addEventListener('touchmove', ev => {
+      if (!drag) return;
+      const dx = ev.touches[0].clientX - drag.x0, dy = ev.touches[0].clientY - drag.y0;
+      if (!drag.axis) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+        if (drag.axis === 'y') { endDrag(false); return; }       // 세로 스크롤이면 취소
+        if (drag.mode === 'close') drag.sheet.style.transition = 'none';
+      }
+      if (drag.axis !== 'x') return;
+      const prog = drag.mode === 'open' ? Math.min(1, Math.max(0, -dx) / drag.w) : Math.min(1, Math.max(0, dx) / drag.w);
+      drag.prog = prog;
+      drag.sheet.style.transform = `translateX(${(drag.mode === 'open' ? (1 - prog) : prog) * 100}%)`;
+      backdrop.style.opacity = String(drag.mode === 'open' ? prog : (1 - prog));
+    }, { passive: true });
+    function endDrag(commit) {
+      if (!drag) return;
+      const d = drag; drag = null;
+      d.sheet.style.transition = ''; d.sheet.style.transform = '';
+      backdrop.style.transition = ''; backdrop.style.opacity = '';
+      if (d.axis !== 'x' || !commit) { if (d.mode === 'open') close(); return; }
+      if (d.mode === 'open') { if (d.prog > OPEN_AT) open('build-stats'); else close(); }
+      else if (d.prog > OPEN_AT) close();   // close 모드: 충분히 밀면 닫힘, 아니면 유지
+    }
+    document.addEventListener('touchend', () => endDrag(true), { passive: true });
+    document.addEventListener('touchcancel', () => endDrag(false), { passive: true });
+
     closeMobileSheets = close;
     mobileSheetOpen = () => sheets.some(s => target(s.cls) && target(s.cls).classList.contains('sheet-open'));
   }
