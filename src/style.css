@@ -1510,3 +1510,34 @@ body {
 .ms-card img, .part-tile img, .eq img, .heroImg, #heroImg { background: #161b28; }
 .meter { background: #1d2432; }
 .ms-card.sel { background: #262110; }
+
+/* ============================================================
+   모션 (절제) — 진입 stagger · 모달/패널 등장. 스킬: animate · apple-design.
+   ※ prefers-reduced-motion 에서는 위 접근성 블록이 전부 끈다.
+   ============================================================ */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+@keyframes popIn  { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 빌드 화면 진입 — 컬럼들이 아래에서 살짝 떠오르며 순차 등장(전환 시에만) */
+body.view-build .screen-build > * { animation: fadeUp .30s ease-out both; }
+body.view-build .screen-build > *:nth-child(2) { animation-delay: .05s; }
+body.view-build .screen-build > *:nth-child(3) { animation-delay: .10s; }
+body.view-build .screen-build > *:nth-child(4) { animation-delay: .15s; }
+body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
+
+/* 선택 그리드 — 첫 로드 시 부드럽게 */
+.screen-select .ms-grid { animation: fadeIn .32s ease-out both; }
+
+/* 모달·메뉴 등장 — 열릴 때 살짝 떠오름(끊겨도 되돌아오는 transition 은 아님, 1회 등장) */
+.auto-modal:not([hidden]), .compare-modal:not([hidden]) { animation: popIn .18s ease-out; }
+#autoResultPanel:not([hidden]) { animation: fadeUp .20s ease-out; }
+.png-menu, .skill-menu, .detail-tooltip { animation: popIn .14s ease-out; }
+
+/* 자동 구성 결과 카드 — 등장 stagger (결과는 드물게 뜨므로 라우틴 아님) */
+.auto-cand { animation: fadeUp .30s ease-out both; }
+.auto-cand:nth-child(1) { animation-delay: .02s; }
+.auto-cand:nth-child(2) { animation-delay: .09s; }
+.auto-cand:nth-child(3) { animation-delay: .16s; }
+.auto-cand:nth-child(4) { animation-delay: .23s; }
+.auto-cand:nth-child(5) { animation-delay: .30s; }
