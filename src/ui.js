@@ -88,6 +88,7 @@
   // 발동 조건을 짧은 라벨로 — 동시 발동 가능 여부는 기체마다 복잡(정지+활공 가능, 이동+정지 불가 등)해
   // 자동 배타 대신 라벨만 보여 주고 사용자가 양립 가능한 것만 고르게 한다.
   function staggerCond(blob) {
+    if (/機体HPへのダメージと[^。]*への負荷/.test(blob)) return '부위피격';   // 脚部/頭部… 특수완충재(그 부위 피격 시)
     if (/動作開始|判定発生|格闘攻撃中/.test(blob)) return '격투중';   // 헤비어택 등 — 「空中で使用可」 언급보다 우선
     if (/静止|停止/.test(blob)) return '정지중';
     if (/空中|落下|滑空|ジャンプ/.test(blob)) return '공중';
@@ -118,7 +119,8 @@
     // 속성 표기 없는 일반 被ダメージ / ダメージが N%軽減 — 받는 공격의 속성·종류로 범위를 좁힌다.
     // (예: 다목적 대형 바인더 '射撃攻撃を受けた際' → 사격 한정 / 빔 교란 실드 'ビーム属性' → 빔 한정)
     if (!cuts.length) {
-      const gm = blob.match(/被ダメージ\s*[－-]\s*(\d+)\s*[%％]/) || blob.match(/ダメージ[がを]\s*(\d+)\s*[%％]\s*軽減/);
+      const gm = blob.match(/被ダメージ\s*[－-]\s*(\d+)\s*[%％]/) || blob.match(/ダメージ[がを]\s*(\d+)\s*[%％]\s*軽減/)
+        || blob.match(/機体HPへのダメージと[^。]{0,24}?(\d+)\s*[%％]\s*軽減/);   // 부위 특수완충재(機体HPへのダメージと〇〇HPへの負荷を N%軽減)
       if (gm) {
         let scope = 'all';
         const beam = /ビーム属性/.test(blob), solid = /実弾属性/.test(blob);
@@ -956,8 +958,11 @@
     if (!w || w.type === 'melee') return empty;
     const note = (w.info && w.info['備考']) || '';
     // 조사(照射): 최대 N 히트 — 지속 조사라 두 칸 공통
-    const mh = note.match(/最大\s*(\d+)\s*ヒット/);
+    const mh = note.match(/最大\s*(\d+)\s*(?:ヒット|HIT)/i);   // 「最大8ヒット」·「最大8HIT」(리미터 해제 등 라틴 표기) 모두
     if (mh && Number(mh[1]) > 1) { const x = { n: Number(mh[1]), label: '최대 ' + mh[1] + '히트' }; return { nc: x, ch: x }; }
+    // 지속 조사의 범위 표기 「3～20ヒット」(G-바드 등) — 풀 지속 시 최대 타수를 쓴다
+    const rg = /照射/.test(note) && note.match(/(\d+)\s*[～~]\s*(\d+)\s*(?:ヒット|HIT)/i);
+    if (rg && Number(rg[2]) > 1) { const x = { n: Number(rg[2]), label: rg[1] + '~' + rg[2] + '히트' }; return { nc: x, ch: x }; }
     let nc = null, ch = null, both = null;
     for (const b of note.split(' / ')) {
       const m = b.match(/([一二三四五六七八九十]|\d+)発?同時発射/);  // 바르길은 「7同時発射」로 発 이 빠져 있다
@@ -2051,24 +2056,37 @@
    * 화면에 뿌릴 파츠와 그 장착 판정을 함께 돌려준다.
    * 판정은 정렬과 렌더 양쪽에서 쓰이므로 여기서 한 번만 계산한다.
    */
+  // 필터(탭·검색·기체)별로 순서를 '한 번만' 고정한다. 장착/해제해도 타일이 안 움직여야
+  // 모바일에서 연속 탭 시 손가락 밑 타일이 바뀌어 엉뚱한 파츠가 장착되는 일이 없다.
+  let partOrderKey = null, partOrder = [];
   function visibleParts() {
     const q = state.partQuery.trim().toLowerCase();
     let list = state.partTab === C.CATEGORY_ALL ? allParts : partsByCat[state.partTab];
     if (q) list = list.filter(p => partSearchText.get(p).includes(q));
 
     const s = slots();
-    const rows = list.map(p => {
+    const rowOf = p => {
       const isEquipped = state.equipped.some(e => e.name === p.name);
       const banned = state.banned.has(p.name);
       // 기본 제외한 파츠는 장착 불가로 취급한다 (사유도 그렇게 보여 준다)
       const chk = banned ? { ok: false, code: 'banned', param: null }
         : state.ms ? C.checkEquip(p, state.ms, state.equipped, s) : { ok: false, code: null };
       return { p, isEquipped, chk, banned, blocked: !isEquipped && !chk.ok };
-    });
+    };
 
-    // 장착 가능한 것을 위로, 그 다음 장착 중, 마지막이 불가.
-    const rank = r => (r.isEquipped ? 1 : r.chk.ok ? 0 : 2);
-    return rows.sort((a, b) => rank(a) - rank(b));
+    const key = state.partTab + ' ' + q + ' ' + (state.ms ? state.ms.MS名 : '');
+    if (key !== partOrderKey) {
+      // 필터/기체가 바뀔 때만 '장착 가능→장착 중→불가' 로 정렬해 순서를 고정한다.
+      const rank = r => (r.isEquipped ? 1 : r.chk.ok ? 0 : 2);
+      partOrder = list.map(rowOf).sort((a, b) => rank(a) - rank(b)).map(r => r.p);
+      partOrderKey = key;
+    } else {
+      // 같은 필터 안에서는 순서 유지(빠진 건 제거, 새로 든 건 뒤에).
+      const set = new Set(list), have = new Set(partOrder);
+      partOrder = partOrder.filter(p => set.has(p));
+      for (const p of list) if (!have.has(p)) partOrder.push(p);
+    }
+    return partOrder.map(rowOf);
   }
 
   // 파츠 타일은 159개로 고정이라 한 번 만들어 두고 상태만 갱신한다.
@@ -4193,27 +4211,26 @@
       if (tgt) { const x = el('button', 'sheet-close', '✕'); x.title = '닫기'; x.onclick = close; tgt.appendChild(x); }
     }
 
-    // ── 스와이프 제스처 (모바일 빌드 화면) ──
-    // 성능(오른쪽 시트): 오른쪽 가장자리→왼쪽으로 끌어 열기 / 오른쪽으로 밀어 닫기.
-    // 무장(바텀 시트): 버튼으로 열고 / 맨 위에서 아래로 밀어 닫기(위·아래 슬라이드).
-    const EDGE = 28, OPEN_AT = 0.32;
+    // ── 스와이프 제스처 (모바일 빌드 화면) — 성능=오른쪽, 무장=왼쪽(반대 방향) ──
+    // 성능: 오른쪽 가장자리→왼쪽으로 열기 / 오른쪽으로 밀어 닫기.
+    // 무장: 왼쪽 가장자리→오른쪽으로 열기 / 왼쪽으로 밀어 닫기.
+    const EDGE = 30, OPEN_AT = 0.32;
     let drag = null;
     const isMob = () => window.matchMedia('(max-width: 700px)').matches && document.body.classList.contains('view-build');
     const openSheetEl = () => sheets.map(s => target(s.cls)).find(e => e && e.classList.contains('sheet-open'));
+    const sideOf = el => (el && el.classList.contains('build-weapons')) ? 'left' : 'right';
+    const clsOfSide = side => side === 'left' ? 'build-weapons' : 'build-stats';
+    // 셋업(시트 이동/변형)은 '실제 가로 스와이프'가 확인된 뒤에만 한다 → 파츠 탭엔 절대 개입 안 함.
     document.addEventListener('touchstart', ev => {
       if (drag || !isMob() || ev.touches.length !== 1) return;
       const x = ev.touches[0].clientX, y = ev.touches[0].clientY;
       const openEl = openSheetEl();
       if (openEl) {
-        const vert = openEl.classList.contains('build-weapons');   // 무장=바텀 시트
-        if (vert && openEl.scrollTop > 0) return;                  // 스크롤 중이면 닫기 제스처 안 잡음
-        const r = openEl.getBoundingClientRect();
-        drag = { sheet: openEl, mode: 'close', orient: vert ? 'v' : 'h', x0: x, y0: y, size: vert ? r.height : r.width, prog: 0, axis: null };
-      } else if (x >= window.innerWidth - EDGE) {
-        const sheet = target('build-stats'); if (!sheet) return;   // 성능(오른쪽 시트)만 가장자리 오픈
-        drag = { sheet, mode: 'open', orient: 'h', x0: x, y0: y, size: sheet.getBoundingClientRect().width || Math.min(window.innerWidth * .94, 480), prog: 0, axis: null };
-        sheet.style.transition = 'none'; sheet.style.transform = 'translateX(100%)';
-        backdrop.classList.add('on'); backdrop.style.transition = 'none'; backdrop.style.opacity = '0';
+        drag = { sheet: openEl, cls: sideOf(openEl) === 'left' ? 'build-weapons' : 'build-stats', mode: 'close', side: sideOf(openEl), x0: x, y0: y, size: openEl.getBoundingClientRect().width, prog: 0, axis: null };
+      } else if (x >= window.innerWidth - EDGE || x <= EDGE) {
+        const side = x <= EDGE ? 'left' : 'right', cls = clsOfSide(side);
+        if (!target(cls)) return;
+        drag = { sheet: null, cls, mode: 'open', side, x0: x, y0: y, size: 0, prog: 0, axis: null };   // 셋업은 touchmove 에서
       }
     }, { passive: true });
     document.addEventListener('touchmove', ev => {
@@ -4221,28 +4238,36 @@
       const dx = ev.touches[0].clientX - drag.x0, dy = ev.touches[0].clientY - drag.y0;
       if (!drag.axis) {
         if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-        const horiz = Math.abs(dx) > Math.abs(dy);
-        if ((drag.orient === 'h') !== horiz) { endDrag(false); return; }   // 의도한 축이 아니면 취소(스크롤 등)
-        drag.axis = 'go'; drag.sheet.style.transition = 'none';
+        if (Math.abs(dx) <= Math.abs(dy)) { drag = null; return; }   // 세로 우세 → 취소(스크롤). 셋업 전이라 정리 불필요
+        drag.axis = 'go';
+        if (drag.mode === 'open') {
+          toBody(drag.cls);
+          drag.sheet = target(drag.cls);
+          drag.size = drag.sheet.getBoundingClientRect().width || Math.min(window.innerWidth * .94, 480);
+          drag.sheet.style.transition = 'none';
+          drag.sheet.style.transform = drag.side === 'left' ? 'translateX(-100%)' : 'translateX(100%)';
+          backdrop.classList.add('on'); backdrop.style.transition = 'none'; backdrop.style.opacity = '0';
+        } else { drag.sheet.style.transition = 'none'; backdrop.style.transition = 'none'; }
       }
       let prog;
-      if (drag.mode === 'open') prog = Math.min(1, Math.max(0, -dx) / drag.size);        // 왼쪽으로 끌어 오픈
-      else if (drag.orient === 'h') prog = Math.min(1, Math.max(0, dx) / drag.size);     // 오른쪽으로 밀어 닫기
-      else prog = Math.min(1, Math.max(0, dy) / drag.size);                              // 아래로 밀어 닫기
-      drag.prog = prog;
-      drag.sheet.style.transform = drag.orient === 'h'
-        ? `translateX(${(drag.mode === 'open' ? (1 - prog) : prog) * 100}%)`
-        : `translateY(${prog * 100}%)`;
+      if (drag.mode === 'open') prog = drag.side === 'left' ? Math.max(0, dx) / drag.size : Math.max(0, -dx) / drag.size;
+      else prog = drag.side === 'left' ? Math.max(0, -dx) / drag.size : Math.max(0, dx) / drag.size;
+      prog = Math.min(1, prog); drag.prog = prog;
+      const off = (drag.mode === 'open' ? (1 - prog) : prog) * 100;
+      drag.sheet.style.transform = `translateX(${drag.side === 'left' ? -off : off}%)`;
       backdrop.style.opacity = String(drag.mode === 'open' ? prog : (1 - prog));
     }, { passive: true });
     function endDrag(commit) {
       if (!drag) return;
       const d = drag; drag = null;
-      d.sheet.style.transition = ''; d.sheet.style.transform = '';
+      if (!d.axis) return;                          // 탭/미이동 → 셋업 없었음, 정리 불필요
+      if (d.sheet) { d.sheet.style.transition = ''; d.sheet.style.transform = ''; }
       backdrop.style.transition = ''; backdrop.style.opacity = '';
-      if (!d.axis || !commit) { if (d.mode === 'open') close(); return; }
-      if (d.mode === 'open') { if (d.prog > OPEN_AT) open('build-stats'); else close(); }
-      else if (d.prog > OPEN_AT) close();   // 닫기: 충분히 밀면 닫힘, 아니면 유지
+      if (!commit) { if (d.mode === 'open') close(); return; }
+      if (d.mode === 'open') {
+        if (d.prog > OPEN_AT) { d.sheet.classList.add('sheet-open'); btns[d.cls].classList.add('on'); backdrop.classList.add('on'); }
+        else close();
+      } else if (d.prog > OPEN_AT) close();
     }
     document.addEventListener('touchend', () => endDrag(true), { passive: true });
     document.addEventListener('touchcancel', () => endDrag(false), { passive: true });
