@@ -4142,8 +4142,8 @@
   let closeMobileSheets = () => {};
   let mobileSheetOpen = () => false;
   function setupMobileSheets() {
+    // 파츠 상세는 인라인(장착↔파츠 사이)로 두고, 성능·무장만 슬라이드 시트로.
     const sheets = [
-      { cls: 'build-detail', label: '🔧 상세' },
       { cls: 'build-stats', label: '📊 성능' },
       { cls: 'build-weapons', label: '🗡 무장' }
     ];
