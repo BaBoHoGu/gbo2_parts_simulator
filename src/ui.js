@@ -2793,7 +2793,9 @@
     const expansion = C.EXPANSION_SKILLS.includes(bld.expansion) ? bld.expansion : C.EXPANSION_NONE;
     const expLevel = Number(bld.expLevel) || C.MAX_EXPANSION_LEVEL;
     const r = C.calcStats(ms, equipped, stage, expansion, partsByCat, fullst, expLevel, null, null);
-    return { ms, equipped, stage, expansion, expLevel, r };
+    // wanted: 저장된 파츠 수. equipped 보다 많으면 슬롯 초과·규칙 위반으로 빠진 것이 있다는 뜻
+    // (불러오기와 달리 비교는 조용히 빠지면 "저장이 반영 안 됐다"로 보이므로 헤더에 알린다)
+    return { ms, equipped, stage, expansion, expLevel, r, wanted: (bld.parts || []).length };
   }
 
   /** 빌드의 무장별 1히트 위력(논차지·집속)·리로드. 파츠·사격/격투 보정·피해% 반영(자세·스킬 미반영). */
@@ -2850,9 +2852,16 @@
     const idcell = (s, cls) => {
       const c = el('div', 'cmp-id ' + cls);
       c.append(el('b', '', T.msName(s.ms.MS名)));
-      c.append(el('span', 'cmp-sub', `${T.attrName(s.ms.属性)} · 코스트 ${s.ms.コスト} · ${STAGE_LABEL[s.stage]}`
+      const dropped = s.wanted - s.equipped.length;
+      const sub = el('span', 'cmp-sub', `${T.attrName(s.ms.属性)} · 코스트 ${s.ms.コスト} · ${STAGE_LABEL[s.stage]}`
         + (s.expansion !== C.EXPANSION_NONE ? ' · ' + expShort(s.expansion) + ' LV' + s.expLevel : '')
-        + ` · 파츠 ${s.equipped.length}`));
+        + ` · 파츠 ${s.equipped.length}` + (dropped > 0 ? `/${s.wanted}` : ''));
+      c.append(sub);
+      if (dropped > 0) {
+        const w = el('span', 'cmp-warn', `⚠ ${dropped}개 제외됨 (슬롯 초과·중복 등)`);
+        w.title = '저장된 파츠 중 이 기체·강화 단계에서 장착 규칙을 통과하지 못한 파츠가 있습니다.';
+        c.append(w);
+      }
       return c;
     };
     const head = el('div', 'cmp-head');
@@ -2887,9 +2896,22 @@
     mkRow('사격', effCorr(A, 'shoot'), effCorr(B, 'shoot'));
     mkRow('격투', effCorr(A, 'melee'), effCorr(B, 'melee'));
 
-    table.append(el('div', 'cmp-sec', '내구 지표'));
-    for (const [k, lb] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']])
-      mkRow(lb, durabilityOf(A.r.total, k), durabilityOf(B.r.total, k));
+    // 내구 지표 — 성능표와 같은 계산: 실효 HP 에 파츠 피해경감(신형완충재·오버튠 등)까지 접는다.
+    // (이걸 빼면 피해경감 파츠를 넣은 구성이 안 넣은 구성과 같은 값으로 나온다)
+    const dura = (s, k, dattr) => {
+      const cuts = partDamageCuts(s.equipped, C.msLevel(s.ms.MS名));   // 빌드엔 스킬 체크 없음 → 파츠만
+      return Math.round(durabilityOf(s.r.total, k) / staggerDmgFactor(cuts, dattr));
+    };
+    const duraCut = (s, dattr) => {
+      const f = staggerDmgFactor(partDamageCuts(s.equipped, C.msLevel(s.ms.MS名)), dattr);
+      return f < 1 ? Math.round((1 - f) * 100) : 0;
+    };
+    table.append(el('div', 'cmp-sec', '내구 지표 (실효 HP · 파츠 피해경감 반영)'));
+    for (const [k, lb, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
+      const ca = duraCut(A, dattr), cb = duraCut(B, dattr);
+      const tag = (ca || cb) ? ` (피해 -${ca}% / -${cb}%)` : '';
+      mkRow(lb + tag, dura(A, k, dattr), dura(B, k, dattr));
+    }
 
     // 무장 (파츠·보정 반영). 이름으로 맞춰 논차지·집속·리로드/OH 비교(다른 기체면 대부분 —).
     const wA = buildWeaponDamage(A), wB = buildWeaponDamage(B);
