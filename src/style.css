@@ -1478,15 +1478,15 @@ input:focus, select:focus, textarea:focus {
    밝은 톤업 (더 과감하게) — near-black → 슬레이트 + 밝은 강조로 '가볍고 밝은' 느낌
    ============================================================ */
 :root {
-  --bg: #171b24;
-  --panel: #212736;
-  --panel-2: #29303f;
-  --panel-3: #333b4d;
-  --line: #3c4557;
-  --line-soft: #2b3243;
-  --text: #f2f4f9;
-  --muted: #9ca5b8;
-  --dim: #6e7789;
+  --bg: #1c2130;
+  --panel: #272e40;
+  --panel-2: #30384b;
+  --panel-3: #3b4459;
+  --line: #47526a;
+  --line-soft: #333c50;
+  --text: #f4f6fb;
+  --muted: #a7b0c3;
+  --dim: #7b8498;
   --accent: #ffd24d;
   --accent-dim: #7d6318;
   --info: #63b0ff;
@@ -1507,6 +1507,6 @@ body {
 .topbar { background: linear-gradient(180deg, #262d3d, #1c222e); }
 
 /* 어두운 하드코딩 배경들을 톤업 (썸네일·미터 트랙 등) */
-.ms-card img, .part-tile img, .eq img, .heroImg, #heroImg { background: #10131b; }
-.meter { background: #171c26; }
-.ms-card.sel { background: #211d10; }
+.ms-card img, .part-tile img, .eq img, .heroImg, #heroImg { background: #161b28; }
+.meter { background: #1d2432; }
+.ms-card.sel { background: #262110; }
