@@ -4168,6 +4168,11 @@
     }
     backdrop.onclick = close;
     document.body.append(backdrop, bar);
+    // 각 시트에 닫기(✕) 버튼 — 시트가 열렸을 때만 보인다(CSS).
+    for (const s of sheets) {
+      const tgt = target(s.cls);
+      if (tgt) { const x = el('button', 'sheet-close', '✕'); x.title = '닫기'; x.onclick = close; tgt.appendChild(x); }
+    }
     closeMobileSheets = close;
     mobileSheetOpen = () => sheets.some(s => target(s.cls) && target(s.cls).classList.contains('sheet-open'));
   }

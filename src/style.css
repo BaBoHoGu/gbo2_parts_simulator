@@ -1590,3 +1590,38 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   /* 메인 스크롤이 액션바에 가리지 않게 */
   .screen-build { padding-bottom: 78px; }
 }
+
+/* ============================================================
+   모바일 다듬기 — 히어로/장착 컴팩트화 + 시트 닫기(✕)
+   ============================================================ */
+.sheet-close { display: none; }   /* 데스크톱 숨김(모바일 전용) */
+
+@media (max-width: 700px) {
+  /* 히어로: 이미지를 옆으로(행 배치) + 축소해 세로 공간 절약 */
+  .hero { padding: 8px 10px; gap: 6px; }
+  .hero-body { flex-direction: row; align-items: center; gap: 10px; }
+  .hero-body > img { width: 62px; height: 62px; }
+  .hero h3 { font-size: 15px; }
+
+  /* 장착 슬롯 컴팩트 */
+  .slot-bars { padding: 0 10px 6px; }
+  .equip-grid { gap: 5px; padding: 6px 10px; }
+  .equip-grid .eq { min-height: 66px; }
+  .eq img { width: 36px; height: 36px; }
+  .eq .nm { font-size: 10px; margin-top: 3px; }
+
+  /* 성능 시트 헤더의 긴 색상 범례는 숨겨 공간 확보(+ 닫기버튼 겹침 방지) */
+  .build-stats > .panel > h2 > .right.note { display: none; }
+
+  /* 시트 닫기(✕) — 열렸을 때만 우상단 고정 */
+  .build-detail.sheet-open > .sheet-close,
+  .build-stats.sheet-open > .sheet-close,
+  .build-weapons.sheet-open > .sheet-close {
+    display: flex; align-items: center; justify-content: center;
+    position: fixed; z-index: 48;
+    top: max(8px, env(safe-area-inset-top)); right: 12px;
+    width: 36px; height: 36px; border-radius: 999px;
+    background: var(--panel-3); border: 1px solid var(--line); color: var(--text);
+    font-size: 15px; line-height: 1; box-shadow: 0 2px 10px rgba(0, 0, 0, .4);
+  }
+}
