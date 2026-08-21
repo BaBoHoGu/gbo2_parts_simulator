@@ -1418,3 +1418,58 @@ body {
 .ms-card.sel { box-shadow: 0 0 0 1px var(--accent), 0 6px 18px rgba(255, 202, 58, .16); }
 .ms-fav.on { text-shadow: 0 0 8px rgba(255, 202, 58, .55); }
 .cost-badge { background: rgba(255, 202, 58, .10); padding: 0 6px; border-radius: 999px; }
+
+/* ============================================================
+   색상 정돈 (frontend-design) — 속성·데이터·상태색을 팔레트에 조율
+   ============================================================ */
+:root {
+  --info: #58a9ff;
+  --ok: #5fd18a;
+  --bad: #ff6b6b;
+  --close: #ff7a5c;   /* 근접/초과 — 코랄 */
+  --mid: #58b8ff;     /* 중거리 — 블루 */
+  --long: #b892ff;    /* 원거리 — 퍼플 */
+  --skill: #b892ff;   /* 스킬 발동분 */
+  --skill2: #34d6cc;  /* 스킬 2개+ */
+  --attr-assault: #ff6e63;   /* 강습 */
+  --attr-general: #58a9ff;   /* 범용 */
+  --attr-support: #5fd18a;   /* 지원 */
+}
+
+/* 속성 도트 — 색 조율 + 은은한 발광으로 한눈에 구분 */
+.dot { box-shadow: 0 0 5px currentColor; }
+.dot.強襲 { background: var(--attr-assault); color: var(--attr-assault); }
+.dot.汎用 { background: var(--attr-general); color: var(--attr-general); }
+.dot.支援 { background: var(--attr-support); color: var(--attr-support); }
+
+/* 속성 필터 칩(켜짐) — 속성색으로, 텍스트는 짙게 */
+.chip.attr-強襲.on { background: var(--attr-assault); border-color: var(--attr-assault); color: #2a0704; }
+.chip.attr-汎用.on { background: var(--attr-general); border-color: var(--attr-general); color: #041226; }
+.chip.attr-支援.on { background: var(--attr-support); border-color: var(--attr-support); color: #052414; }
+
+/* 선택된 기체 카드 — 탁한 갈색 대신 은은한 앰버 워시 */
+.ms-card.sel { background: #17150e; }
+
+/* ============================================================
+   리디자인 3 — 상호작용 요소 마감 (검색창·버튼·스텝 포커스/피드백)
+   ============================================================ */
+/* 입력창 — 안쪽 음영으로 '눌린 면' + 포커스 시 앰버 글로우 링 */
+input[type="search"], input[type="text"], input[type="number"] {
+  background: var(--panel);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35), 0 0 0 3px rgba(255, 202, 58, .22);
+}
+
+/* 주요 버튼(자동 구성 등) — 살짝 입체감 */
+.btn-primary {
+  background: linear-gradient(180deg, #ffd45a, var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 2px 9px rgba(255, 202, 58, .26);
+}
+.btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ffdd78, #ffd04a); }
+
+/* 스텝 활성 번호 — 은은한 발광 */
+.stepper li[data-step].on i { box-shadow: 0 0 10px rgba(255, 202, 58, .45); }
