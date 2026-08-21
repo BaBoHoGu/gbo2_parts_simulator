@@ -4116,6 +4116,7 @@
 
     document.addEventListener('keydown', ev => {
       if (ev.key !== 'Escape') return;
+      if (mobileSheetOpen()) { closeMobileSheets(); return; }   // 모바일 슬라이드 시트 먼저 닫기
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
       if (!$('#pietanModal').hidden) { openPietan(false); return; }
       if (!$('#compareModal').hidden) { openCompareModal(false); return; }
@@ -4136,8 +4137,44 @@
     });
   }
 
+  // 모바일 슬라이드 시트 — 성능·무장·상세를 오른쪽에서 열고 닫는다(하단 액션바로 토글).
+  // ESC/뒤로가기가 이 함수들을 참조하므로 모듈 스코프에 둔다.
+  let closeMobileSheets = () => {};
+  let mobileSheetOpen = () => false;
+  function setupMobileSheets() {
+    const sheets = [
+      { cls: 'build-detail', label: '🔧 상세' },
+      { cls: 'build-stats', label: '📊 성능' },
+      { cls: 'build-weapons', label: '🗡 무장' }
+    ];
+    const target = c => document.querySelector('.' + c);
+    const backdrop = el('div', 'sheet-backdrop');
+    const bar = el('div', 'm-actionbar');
+    const btns = {};
+    const close = () => {
+      for (const s of sheets) { target(s.cls) && target(s.cls).classList.remove('sheet-open'); btns[s.cls].classList.remove('on'); }
+      backdrop.classList.remove('on');
+    };
+    const open = cls => {
+      const already = target(cls) && target(cls).classList.contains('sheet-open');
+      close();
+      if (!already && target(cls)) { target(cls).classList.add('sheet-open'); btns[cls].classList.add('on'); backdrop.classList.add('on'); }
+    };
+    for (const s of sheets) {
+      const b = el('button', 'btn-ghost', s.label);
+      b.onclick = () => open(s.cls);
+      btns[s.cls] = b;
+      bar.append(b);
+    }
+    backdrop.onclick = close;
+    document.body.append(backdrop, bar);
+    closeMobileSheets = close;
+    mobileSheetOpen = () => sheets.some(s => target(s.cls) && target(s.cls).classList.contains('sheet-open'));
+  }
+
   buildControls();
   renderAutoGrid();
+  setupMobileSheets();    // 모바일: 성능·무장·상세 슬라이드 시트 + 하단 액션바
   loadBanned();           // 저장된 기본 제외 파츠 복원
   loadFavRecent();        // 즐겨찾기·최근 기체 복원
   renderViewChips();
