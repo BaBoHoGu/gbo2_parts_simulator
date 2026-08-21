@@ -1,18 +1,32 @@
 package com.gbo2.sim;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Base64;
 import android.view.KeyEvent;
+import android.webkit.JavascriptInterface;
+import android.webkit.JsPromptResult;
+import android.webkit.JsResult;
 import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import org.json.JSONObject;
 
@@ -47,7 +61,10 @@ public class MainActivity extends Activity {
     private static final String PREFS = "gbo2_ota";
     private static final String KEY_DATE = "data_date";   // 현재 서빙 중인 데이터 날짜(yyyy-MM-dd)
 
+    private static final int REQ_WRITE = 1001;
     private WebView web;
+    private byte[] pendingImg;      // pre-Q 저장 권한 대기 중인 이미지
+    private String pendingName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +107,49 @@ public class MainActivity extends Activity {
                 super.onReceivedError(view, request, error);
             }
         });
+
+        // JS prompt/confirm/alert 를 네이티브 다이얼로그로 처리한다.
+        // (WebView 는 기본적으로 이들을 무시 → 구성 저장·이름변경·삭제·공유코드 입력이 안 됨)
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onJsAlert(WebView v, String url, String msg, final JsResult r) {
+                new AlertDialog.Builder(MainActivity.this).setMessage(msg)
+                    .setPositiveButton("확인", (d, w) -> r.confirm())
+                    .setOnCancelListener(d -> r.cancel()).show();
+                return true;
+            }
+            @Override
+            public boolean onJsConfirm(WebView v, String url, String msg, final JsResult r) {
+                new AlertDialog.Builder(MainActivity.this).setMessage(msg)
+                    .setPositiveButton("확인", (d, w) -> r.confirm())
+                    .setNegativeButton("취소", (d, w) -> r.cancel())
+                    .setOnCancelListener(d -> r.cancel()).show();
+                return true;
+            }
+            @Override
+            public boolean onJsPrompt(WebView v, String url, String msg, String def, final JsPromptResult r) {
+                final EditText in = new EditText(MainActivity.this);
+                if (def != null) { in.setText(def); in.setSelection(def.length()); }
+                new AlertDialog.Builder(MainActivity.this).setMessage(msg).setView(in)
+                    .setPositiveButton("확인", (d, w) -> r.confirm(in.getText().toString()))
+                    .setNegativeButton("취소", (d, w) -> r.cancel())
+                    .setOnCancelListener(d -> r.cancel()).show();
+                return true;
+            }
+        });
+
+        // 이미지 저장 브리지 — WebView 는 blob 다운로드가 안 되므로 base64 를 받아 Download 폴더에 쓴다.
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void saveImage(String data, String filename) {
+                try {
+                    String b64 = data;
+                    int comma = data.indexOf(',');
+                    if (data.startsWith("data:") && comma >= 0) b64 = data.substring(comma + 1);
+                    writeImageToDownloads(Base64.decode(b64, Base64.DEFAULT), filename);
+                } catch (Exception e) { toastUi("이미지 저장에 실패했습니다"); }
+            }
+        }, "AndroidBridge");
 
         setContentView(web);
         web.loadUrl(APP_URL);
@@ -220,6 +280,64 @@ public class MainActivity extends Activity {
             return tail.contains("</html>") || tail.contains("</body>");
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    private void toastUi(final String msg) {
+        runOnUiThread(() -> Toast.makeText(this, msg, Toast.LENGTH_SHORT).show());
+    }
+
+    /** PNG 바이트를 기기 Download 폴더에 저장한다(Q+ 는 MediaStore, 그 이하는 권한 후 직접 쓰기). */
+    private void writeImageToDownloads(byte[] bytes, String filename) {
+        if (filename == null || filename.isEmpty()) filename = "gbo2.png";
+        if (!filename.toLowerCase().endsWith(".png")) filename += ".png";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                ContentValues cv = new ContentValues();
+                cv.put(MediaStore.Downloads.DISPLAY_NAME, filename);
+                cv.put(MediaStore.Downloads.MIME_TYPE, "image/png");
+                cv.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                cv.put(MediaStore.Downloads.IS_PENDING, 1);
+                Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+                if (uri == null) { toastUi("이미지 저장에 실패했습니다"); return; }
+                OutputStream os = getContentResolver().openOutputStream(uri);
+                os.write(bytes); os.close();
+                cv.clear(); cv.put(MediaStore.Downloads.IS_PENDING, 0);
+                getContentResolver().update(uri, cv, null, null);
+                toastUi("Download 폴더에 저장했습니다: " + filename);
+            } catch (Exception e) { toastUi("이미지 저장에 실패했습니다"); }
+        } else {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                pendingImg = bytes; pendingName = filename;
+                runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_WRITE));
+                return;
+            }
+            writeLegacyDownload(bytes, filename);
+        }
+    }
+
+    private void writeLegacyDownload(byte[] bytes, String filename) {
+        try {
+            File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            if (!dir.exists()) dir.mkdirs();
+            File out = new File(dir, filename);
+            FileOutputStream fos = new FileOutputStream(out);
+            fos.write(bytes); fos.close();
+            android.media.MediaScannerConnection.scanFile(this,
+                new String[]{out.getAbsolutePath()}, new String[]{"image/png"}, null);
+            toastUi("Download 폴더에 저장했습니다: " + filename);
+        } catch (Exception e) { toastUi("이미지 저장에 실패했습니다"); }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
+        if (req == REQ_WRITE) {
+            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED && pendingImg != null) {
+                writeLegacyDownload(pendingImg, pendingName);
+            } else {
+                toastUi("저장 권한이 필요합니다");
+            }
+            pendingImg = null; pendingName = null;
         }
     }
 

@@ -2039,6 +2039,13 @@
     ctx.textAlign = 'left';
 
     const safe = T.msName(m.MS名).replace(/[\\/:*?"<>|]/g, '') + '_LV' + lv + (showW ? '_상세' : '');
+    // 안드로이드 앱(WebView)은 blob 다운로드가 동작하지 않아 파일이 저장되지 않는다.
+    // → 네이티브 브리지로 base64 를 넘겨 기기 Download 폴더에 직접 저장한다(성공/실패 토스트는 네이티브가).
+    if (window.AndroidBridge && typeof window.AndroidBridge.saveImage === 'function') {
+      try { window.AndroidBridge.saveImage(cvs.toDataURL('image/png'), safe + '.png'); }
+      catch (e) { toast('이미지 저장에 실패했습니다'); }
+      return;
+    }
     cvs.toBlob(blob => {
       if (!blob) { toast('이미지 생성에 실패했습니다'); return; }
       const url = URL.createObjectURL(blob);

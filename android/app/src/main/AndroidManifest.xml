@@ -4,6 +4,9 @@
     <!-- 데이터 자동 갱신(OTA) 확인·수신용. 평소 시뮬레이터는 완전 오프라인 동작. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 이미지(성능 카드 PNG) 를 Download 폴더에 저장. Android 10(Q)+ 는 MediaStore 라 권한 불필요. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:label="GBO2 파츠 시뮬"
