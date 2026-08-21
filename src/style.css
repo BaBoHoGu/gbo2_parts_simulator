@@ -1548,9 +1548,9 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 .sheet-backdrop, .m-actionbar { display: none; }
 
 @media (max-width: 700px) {
-  /* 시트: 화면 밖 오른쪽 대기 → .sheet-open 이면 슬라이드 인 */
-  .build-detail, .build-stats, .build-weapons {
-    position: fixed; top: 0; right: 0; bottom: 0;
+  /* 시트(성능·무장): 화면 밖 오른쪽 대기 → .sheet-open 이면 슬라이드 인. (상세는 인라인 유지) */
+  .build-stats, .build-weapons {
+    position: fixed; top: 0; right: 0; bottom: 0; left: auto;
     width: min(94vw, 480px);
     z-index: 46;
     margin: 0 !important;
@@ -1563,8 +1563,8 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
     padding: 8px 8px calc(70px + env(safe-area-inset-bottom));
     padding-top: max(8px, env(safe-area-inset-top));
   }
-  .build-detail.sheet-open, .build-stats.sheet-open, .build-weapons.sheet-open { transform: none; }
-  .build-detail > .panel, .build-stats > .panel, .build-weapons > .panel { min-height: 100%; box-shadow: none; }
+  .build-stats.sheet-open, .build-weapons.sheet-open { transform: none; }
+  .build-stats > .panel, .build-weapons > .panel { min-height: 100%; box-shadow: none; }
 
   /* 백드롭 */
   .sheet-backdrop {
@@ -1614,7 +1614,6 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   .build-stats > .panel > h2 > .right.note { display: none; }
 
   /* 시트 닫기(✕) — 열렸을 때만 우상단 고정 */
-  .build-detail.sheet-open > .sheet-close,
   .build-stats.sheet-open > .sheet-close,
   .build-weapons.sheet-open > .sheet-close {
     display: flex; align-items: center; justify-content: center;
@@ -1624,4 +1623,22 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
     background: var(--panel-3); border: 1px solid var(--line); color: var(--text);
     font-size: 15px; line-height: 1; box-shadow: 0 2px 10px rgba(0, 0, 0, .4);
   }
+}
+
+/* ============================================================
+   테스트 피드백 수정 — 슬롯바 가시성 · 푸터 겹침
+   ============================================================ */
+/* 슬롯 바(근접/중거리/원거리)의 빈 트랙 — 밝은 배경에서 보이도록 톤업 */
+.slot-bar .track i { background: #3d465c; }
+.slot-bar .track i.on { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+
+/* 모바일: 하단 액션바에 푸터가 가리지 않게 여백 */
+@media (max-width: 700px) {
+  body.view-build .app-foot { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
+}
+
+/* 모바일: 화면 진입 애니메이션이 래퍼에 잔여 transform 을 남겨 슬라이드 시트(fixed)의
+   기준(containing block)을 망가뜨린다 → 모바일에선 진입 애니메이션을 끈다. */
+@media (max-width: 700px) {
+  body.view-build .screen-build > * { animation: none !important; }
 }
