@@ -1565,28 +1565,22 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   }
   .build-stats.sheet-open { transform: none; }
 
-  /* 무장 시트: 아래에서 위로 올라오는 바텀 시트(위·아래 슬라이드) */
+  /* 무장 시트: 왼쪽에서 슬라이드 인(성능과 반대 방향, 좌→우 스와이프로 열기) */
   .build-weapons {
-    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
-    height: 88vh; max-height: 88vh;
+    position: fixed; top: 0; left: 0; bottom: 0; right: auto;
+    width: min(94vw, 480px);
     z-index: 46;
     margin: 0 !important;
-    transform: translateY(101%);
-    transition: transform .28s cubic-bezier(.32, .72, 0, 1);
+    transform: translateX(-103%);
+    transition: transform .26s cubic-bezier(.32, .72, 0, 1);
     animation: none !important;
     overflow-y: auto;
     background: var(--bg);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -12px 34px rgba(0, 0, 0, .55);
-    padding: 14px 10px calc(70px + env(safe-area-inset-bottom));
+    box-shadow: 10px 0 34px rgba(0, 0, 0, .55);
+    padding: 8px 8px calc(70px + env(safe-area-inset-bottom));
+    padding-top: max(8px, env(safe-area-inset-top));
   }
   .build-weapons.sheet-open { transform: none; }
-  /* 바텀 시트 상단 드래그 핸들 */
-  .build-weapons::before {
-    content: ""; position: sticky; top: 0; display: block;
-    width: 40px; height: 4px; margin: -6px auto 8px;
-    background: var(--line); border-radius: 999px;
-  }
   .build-stats > .panel, .build-weapons > .panel { min-height: 100%; box-shadow: none; }
 
   /* 백드롭 */
@@ -1638,7 +1632,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 
   /* 시트 닫기(✕) — 열렸을 때만 고정. 성능=우상단, 무장(바텀)=시트 상단 우측 */
   .build-stats.sheet-open > .sheet-close { top: max(8px, env(safe-area-inset-top)); right: 12px; }
-  .build-weapons.sheet-open > .sheet-close { top: calc(12vh + 10px); right: 14px; }
+  .build-weapons.sheet-open > .sheet-close { top: max(8px, env(safe-area-inset-top)); left: calc(min(94vw, 480px) - 46px); right: auto; }
   .build-stats.sheet-open > .sheet-close,
   .build-weapons.sheet-open > .sheet-close {
     display: flex; align-items: center; justify-content: center;
