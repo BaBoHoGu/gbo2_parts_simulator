@@ -4151,14 +4151,33 @@
     const backdrop = el('div', 'sheet-backdrop');
     const bar = el('div', 'm-actionbar');
     const btns = {};
+    // 시트를 열 때 body 로 옮긴다 — transform 있는 조상(.build-bottom 등)이 fixed 의 기준이 되어
+    // 시트가 어긋나던 버그를 원천 차단. 닫히면(슬라이드 아웃 후) 원위치로 되돌린다.
+    const origPos = {};
+    const toBody = cls => {
+      const t = target(cls);
+      if (!t || t.parentElement === document.body) return;
+      origPos[cls] = { parent: t.parentElement, next: t.nextSibling };
+      document.body.appendChild(t);
+    };
+    const restoreClosed = () => {
+      for (const s of sheets) {
+        const t = target(s.cls), o = origPos[s.cls];
+        if (t && o && t.parentElement === document.body && !t.classList.contains('sheet-open')) {
+          o.parent.insertBefore(t, o.next); origPos[s.cls] = null;
+        }
+      }
+    };
     const close = () => {
-      for (const s of sheets) { target(s.cls) && target(s.cls).classList.remove('sheet-open'); btns[s.cls].classList.remove('on'); }
+      let any = false;
+      for (const s of sheets) { const t = target(s.cls); if (t) { if (t.classList.contains('sheet-open')) any = true; t.classList.remove('sheet-open'); } btns[s.cls].classList.remove('on'); }
       backdrop.classList.remove('on');
+      if (any) setTimeout(restoreClosed, 320);   // 슬라이드 아웃 애니메이션 후 원위치
     };
     const open = cls => {
       const already = target(cls) && target(cls).classList.contains('sheet-open');
       close();
-      if (!already && target(cls)) { target(cls).classList.add('sheet-open'); btns[cls].classList.add('on'); backdrop.classList.add('on'); }
+      if (!already && target(cls)) { toBody(cls); target(cls).classList.add('sheet-open'); btns[cls].classList.add('on'); backdrop.classList.add('on'); }
     };
     for (const s of sheets) {
       const b = el('button', 'btn-ghost', s.label);
@@ -4175,8 +4194,8 @@
     }
 
     // ── 스와이프 제스처 (모바일 빌드 화면) ──
-    // 오른쪽 가장자리에서 왼쪽으로 끌면 성능 시트가 손끝을 따라 열리고,
-    // 열린 시트는 오른쪽으로 밀어 닫는다. (버튼도 그대로 동작)
+    // 성능(오른쪽 시트): 오른쪽 가장자리→왼쪽으로 끌어 열기 / 오른쪽으로 밀어 닫기.
+    // 무장(바텀 시트): 버튼으로 열고 / 맨 위에서 아래로 밀어 닫기(위·아래 슬라이드).
     const EDGE = 28, OPEN_AT = 0.32;
     let drag = null;
     const isMob = () => window.matchMedia('(max-width: 700px)').matches && document.body.classList.contains('view-build');
@@ -4186,10 +4205,13 @@
       const x = ev.touches[0].clientX, y = ev.touches[0].clientY;
       const openEl = openSheetEl();
       if (openEl) {
-        drag = { sheet: openEl, mode: 'close', x0: x, y0: y, w: openEl.getBoundingClientRect().width, prog: 0, axis: null };
+        const vert = openEl.classList.contains('build-weapons');   // 무장=바텀 시트
+        if (vert && openEl.scrollTop > 0) return;                  // 스크롤 중이면 닫기 제스처 안 잡음
+        const r = openEl.getBoundingClientRect();
+        drag = { sheet: openEl, mode: 'close', orient: vert ? 'v' : 'h', x0: x, y0: y, size: vert ? r.height : r.width, prog: 0, axis: null };
       } else if (x >= window.innerWidth - EDGE) {
-        const sheet = target('build-stats'); if (!sheet) return;
-        drag = { sheet, mode: 'open', x0: x, y0: y, w: sheet.getBoundingClientRect().width || Math.min(window.innerWidth * .94, 480), prog: 0, axis: null };
+        const sheet = target('build-stats'); if (!sheet) return;   // 성능(오른쪽 시트)만 가장자리 오픈
+        drag = { sheet, mode: 'open', orient: 'h', x0: x, y0: y, size: sheet.getBoundingClientRect().width || Math.min(window.innerWidth * .94, 480), prog: 0, axis: null };
         sheet.style.transition = 'none'; sheet.style.transform = 'translateX(100%)';
         backdrop.classList.add('on'); backdrop.style.transition = 'none'; backdrop.style.opacity = '0';
       }
@@ -4199,14 +4221,18 @@
       const dx = ev.touches[0].clientX - drag.x0, dy = ev.touches[0].clientY - drag.y0;
       if (!drag.axis) {
         if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-        drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
-        if (drag.axis === 'y') { endDrag(false); return; }       // 세로 스크롤이면 취소
-        if (drag.mode === 'close') drag.sheet.style.transition = 'none';
+        const horiz = Math.abs(dx) > Math.abs(dy);
+        if ((drag.orient === 'h') !== horiz) { endDrag(false); return; }   // 의도한 축이 아니면 취소(스크롤 등)
+        drag.axis = 'go'; drag.sheet.style.transition = 'none';
       }
-      if (drag.axis !== 'x') return;
-      const prog = drag.mode === 'open' ? Math.min(1, Math.max(0, -dx) / drag.w) : Math.min(1, Math.max(0, dx) / drag.w);
+      let prog;
+      if (drag.mode === 'open') prog = Math.min(1, Math.max(0, -dx) / drag.size);        // 왼쪽으로 끌어 오픈
+      else if (drag.orient === 'h') prog = Math.min(1, Math.max(0, dx) / drag.size);     // 오른쪽으로 밀어 닫기
+      else prog = Math.min(1, Math.max(0, dy) / drag.size);                              // 아래로 밀어 닫기
       drag.prog = prog;
-      drag.sheet.style.transform = `translateX(${(drag.mode === 'open' ? (1 - prog) : prog) * 100}%)`;
+      drag.sheet.style.transform = drag.orient === 'h'
+        ? `translateX(${(drag.mode === 'open' ? (1 - prog) : prog) * 100}%)`
+        : `translateY(${prog * 100}%)`;
       backdrop.style.opacity = String(drag.mode === 'open' ? prog : (1 - prog));
     }, { passive: true });
     function endDrag(commit) {
@@ -4214,9 +4240,9 @@
       const d = drag; drag = null;
       d.sheet.style.transition = ''; d.sheet.style.transform = '';
       backdrop.style.transition = ''; backdrop.style.opacity = '';
-      if (d.axis !== 'x' || !commit) { if (d.mode === 'open') close(); return; }
+      if (!d.axis || !commit) { if (d.mode === 'open') close(); return; }
       if (d.mode === 'open') { if (d.prog > OPEN_AT) open('build-stats'); else close(); }
-      else if (d.prog > OPEN_AT) close();   // close 모드: 충분히 밀면 닫힘, 아니면 유지
+      else if (d.prog > OPEN_AT) close();   // 닫기: 충분히 밀면 닫힘, 아니면 유지
     }
     document.addEventListener('touchend', () => endDrag(true), { passive: true });
     document.addEventListener('touchcancel', () => endDrag(false), { passive: true });
