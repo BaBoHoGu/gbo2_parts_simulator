@@ -921,6 +921,7 @@ body.view-build  #screenSelect { display: none; }
 .cmp-id b { font-size: 13.5px; }
 .cmp-id.a b { color: var(--info); } .cmp-id.b b { color: var(--accent); }
 .cmp-sub { display: block; font-size: 10.5px; color: var(--dim); margin-top: 1px; }
+.cmp-warn { display: block; font-size: 10.5px; color: var(--warn, #ffb454); margin-top: 2px; }
 .cmp-row { padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
 .cmp-lb { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-a, .cmp-b { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
