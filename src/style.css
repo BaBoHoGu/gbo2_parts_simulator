@@ -1473,3 +1473,40 @@ input:focus, select:focus, textarea:focus {
 
 /* 스텝 활성 번호 — 은은한 발광 */
 .stepper li[data-step].on i { box-shadow: 0 0 10px rgba(255, 202, 58, .45); }
+
+/* ============================================================
+   밝은 톤업 (더 과감하게) — near-black → 슬레이트 + 밝은 강조로 '가볍고 밝은' 느낌
+   ============================================================ */
+:root {
+  --bg: #171b24;
+  --panel: #212736;
+  --panel-2: #29303f;
+  --panel-3: #333b4d;
+  --line: #3c4557;
+  --line-soft: #2b3243;
+  --text: #f2f4f9;
+  --muted: #9ca5b8;
+  --dim: #6e7789;
+  --accent: #ffd24d;
+  --accent-dim: #7d6318;
+  --info: #63b0ff;
+  --data: #3fd0cf;
+  --good: #63dc92;
+}
+
+/* 배경 — 더 뚜렷한 상단 라이트 글로우로 공기감 */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(1200px 560px at 50% -12%, rgba(120, 150, 215, .16), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, .022), transparent 200px);
+  background-attachment: fixed;
+}
+
+/* 툴바 — 살짝 밝은 슬레이트 + 앰버 라인 유지 */
+.topbar { background: linear-gradient(180deg, #262d3d, #1c222e); }
+
+/* 어두운 하드코딩 배경들을 톤업 (썸네일·미터 트랙 등) */
+.ms-card img, .part-tile img, .eq img, .heroImg, #heroImg { background: #10131b; }
+.meter { background: #171c26; }
+.ms-card.sel { background: #211d10; }
