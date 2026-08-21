@@ -89,6 +89,7 @@
   // 자동 배타 대신 라벨만 보여 주고 사용자가 양립 가능한 것만 고르게 한다.
   function staggerCond(blob) {
     if (/機体HPへのダメージと[^。]*への負荷/.test(blob)) return '부위피격';   // 脚部/頭部… 특수완충재(그 부위 피격 시)
+    if (/[^、。/]{2,12}へ攻撃を受けた際/.test(blob)) return '부위피격';        // 「A・アーマーDEへ攻撃を受けた際」 등 부위 피격형
     if (/動作開始|判定発生|格闘攻撃中/.test(blob)) return '격투중';   // 헤비어택 등 — 「空中で使用可」 언급보다 우선
     if (/静止|停止/.test(blob)) return '정지중';
     if (/空中|落下|滑空|ジャンプ/.test(blob)) return '공중';
@@ -98,6 +99,7 @@
     // 단순 HP 언급을 HP조건으로 오판하지 않도록 「以下」를 요구한다 (다목적 대형 바인더 등).
     if (/HP[^。]{0,10}以下/.test(blob)) return 'HP조건';
     if (/発動中|使用中|モード中|効果中|ハイパーモード/.test(blob)) return '발동중';
+    if (/能力UP|NT-D|覚醒/.test(blob)) return '발동중';   // 「NT-D」·「覚醒」 상태 한정 효과
     return '상시';
   }
 
@@ -116,28 +118,45 @@
     cut(/ビーム(?:属性|射撃|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'beam');
     cut(/格闘(?:属性|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'melee');
     cut(/(?<![実弾ビーム弾ム])射撃(?:属性|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'shoot');
-    // 속성 표기 없는 일반 被ダメージ / ダメージが N%軽減 — 받는 공격의 속성·종류로 범위를 좁힌다.
+    // 받는 공격의 속성·종류로 일반 경감의 범위를 좁힌다.
     // (예: 다목적 대형 바인더 '射撃攻撃を受けた際' → 사격 한정 / 빔 교란 실드 'ビーム属性' → 빔 한정)
+    const scopeOf = txt => {
+      const beam = /ビーム属性/.test(txt), solid = /実弾属性/.test(txt);
+      if (beam && !solid) return 'beam';
+      if (solid && !beam) return 'solid';
+      const rs = /(?:射撃|実弾|ビーム)[^。]{0,4}攻撃を受け|射撃属性/.test(txt), rm = /格闘[^。]{0,4}攻撃を受け/.test(txt);
+      if (rs && !rm) return 'shoot';
+      if (rm && !rs) return 'melee';
+      return 'all';
+    };
+    // 「기본 경감 + 조건부 속성 경감」을 함께 가진 스킬(밴시 노른 A·아머 DE: 부위 피격 50%,
+    // NT-D/각성 중 빔 30% 추가)은 조건이 서로 달라 한 항목으로 합칠 수 없다 → extra 로 분리한다.
+    // 기본값의 범위는 그 문장만 보고 판정한다(조건부 쪽의 「ビーム属性」에 끌려가지 않게).
+    // 「追加で」 를 요구하는 게 핵심 — 초밤 아머·사이코 필드처럼 EFF 산문과 DESC 항목이
+    // '같은 경감'을 두 번 적은 스킬을 둘로 쪼개 이중 계산하는 것을 막는다.
+    let extra = null;
+    const GEN_BASE = /(?:機体HPへのダメージ|ダメージ)[がを]\s*(\d+)\s*[%％]\s*軽減/;
+    if (cuts.length && /追加で/.test(blob)) {
+      const seg = blob.split(/ \/ |。/).find(t => GEN_BASE.test(t));
+      const gm = seg && seg.match(GEN_BASE);
+      if (gm) {
+        const attrTxt = /(?:実弾|ビーム|格闘|射撃)(?:属性|射撃|攻撃)*被ダメージ/.test(sk.desc || '') ? (sk.desc || '') : (sk.eff || '');
+        extra = { cuts: cuts.slice(), cond: staggerCond(attrTxt) };   // 조건부(속성) 몫
+        cuts.length = 0;
+        cuts.push({ scope: scopeOf(seg), pct: Number(gm[1]) });       // 기본 몫
+      }
+    }
+    // 속성 표기 없는 일반 被ダメージ / ダメージが N%軽減
     if (!cuts.length) {
       const gm = blob.match(/被ダメージ\s*[－-]\s*(\d+)\s*[%％]/) || blob.match(/ダメージ[がを]\s*(\d+)\s*[%％]\s*軽減/)
         || blob.match(/機体HPへのダメージと[^。]{0,24}?(\d+)\s*[%％]\s*軽減/);   // 부위 특수완충재(機体HPへのダメージと〇〇HPへの負荷を N%軽減)
-      if (gm) {
-        let scope = 'all';
-        const beam = /ビーム属性/.test(blob), solid = /実弾属性/.test(blob);
-        if (beam && !solid) scope = 'beam';
-        else if (solid && !beam) scope = 'solid';
-        else {
-          const rs = /(?:射撃|実弾|ビーム)[^。]{0,4}攻撃を受け|射撃属性/.test(blob), rm = /格闘[^。]{0,4}攻撃を受け/.test(blob);
-          if (rs && !rm) scope = 'shoot'; else if (rm && !rs) scope = 'melee';
-        }
-        cuts.push({ scope, pct: Number(gm[1]) });
-      }
+      if (gm) cuts.push({ scope: scopeOf(blob), pct: Number(gm[1]) });
     }
     // 누적치 감소·임계 또는 피해 경감 중 하나라도 있으면 방어 스킬로 본다.
     // (「リアクションを軽減」만 있는 기본 마뉴버아머처럼 수치 없는 것은 제외.)
     if (!mults.length && !tm && !cuts.length) return null;
     const mult = mults.length ? Math.max(...mults) / 100 : 1;
-    return { mult, threshold: tm ? Number(tm[1]) : null, cuts, cond: staggerCond(blob) };
+    return { mult, threshold: tm ? Number(tm[1]) : null, cuts, cond: staggerCond(blob), extra };
   }
 
   /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록.
@@ -153,6 +172,13 @@
       const from = Number((String(sk.msLv || '').match(/LV\s*(\d+)/i) || [])[1]) || 1;
       const prev = byName.get(sk.name);
       if (!prev || from > prev.from) byName.set(sk.name, { name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts, cond: p.cond, from });
+      // 조건부 추가 경감(예: A·아머 DE — NT-D/각성 중 빔 −30%)은 기본 경감과 발동 조건이 달라
+      // 별도 항목으로 넣는다. 사용자가 상황에 맞는 것만 체크한다.
+      if (p.extra) {
+        const xn = sk.name + '(추가)';
+        const xp = byName.get(xn);
+        if (!xp || from > xp.from) byName.set(xn, { name: xn, ko: skTr(sk.name) + ' (추가)', mult: 1, threshold: null, cuts: p.extra.cuts, cond: p.extra.cond, from });
+      }
     }
     // 부여 스킬 — 하이퍼모드 등이 「ハイ・マニューバーアーマー LVn」을 付与하는데 직접 항목이 없어 놓친다.
     // 하이마뉴버는 값이 일정(×0.5·피해−40%)하므로 부여를 감지해 별도 항목으로 넣는다.
