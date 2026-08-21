@@ -1548,22 +1548,45 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 .sheet-backdrop, .m-actionbar { display: none; }
 
 @media (max-width: 700px) {
-  /* 시트(성능·무장): 화면 밖 오른쪽 대기 → .sheet-open 이면 슬라이드 인. (상세는 인라인 유지) */
-  .build-stats, .build-weapons {
+  /* 성능 시트: 화면 밖 오른쪽 대기 → .sheet-open 이면 오른쪽에서 슬라이드 인. (상세는 인라인 유지) */
+  .build-stats {
     position: fixed; top: 0; right: 0; bottom: 0; left: auto;
     width: min(94vw, 480px);
     z-index: 46;
     margin: 0 !important;
     transform: translateX(103%);
     transition: transform .26s cubic-bezier(.32, .72, 0, 1);
-    animation: none !important;            /* 진입 fadeUp(translateY)와 충돌 방지 */
+    animation: none !important;
     overflow-y: auto;
     background: var(--bg);
     box-shadow: -10px 0 34px rgba(0, 0, 0, .55);
     padding: 8px 8px calc(70px + env(safe-area-inset-bottom));
     padding-top: max(8px, env(safe-area-inset-top));
   }
-  .build-stats.sheet-open, .build-weapons.sheet-open { transform: none; }
+  .build-stats.sheet-open { transform: none; }
+
+  /* 무장 시트: 아래에서 위로 올라오는 바텀 시트(위·아래 슬라이드) */
+  .build-weapons {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+    height: 88vh; max-height: 88vh;
+    z-index: 46;
+    margin: 0 !important;
+    transform: translateY(101%);
+    transition: transform .28s cubic-bezier(.32, .72, 0, 1);
+    animation: none !important;
+    overflow-y: auto;
+    background: var(--bg);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -12px 34px rgba(0, 0, 0, .55);
+    padding: 14px 10px calc(70px + env(safe-area-inset-bottom));
+  }
+  .build-weapons.sheet-open { transform: none; }
+  /* 바텀 시트 상단 드래그 핸들 */
+  .build-weapons::before {
+    content: ""; position: sticky; top: 0; display: block;
+    width: 40px; height: 4px; margin: -6px auto 8px;
+    background: var(--line); border-radius: 999px;
+  }
   .build-stats > .panel, .build-weapons > .panel { min-height: 100%; box-shadow: none; }
 
   /* 백드롭 */
@@ -1613,12 +1636,13 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   /* 성능 시트 헤더의 긴 색상 범례는 숨겨 공간 확보(+ 닫기버튼 겹침 방지) */
   .build-stats > .panel > h2 > .right.note { display: none; }
 
-  /* 시트 닫기(✕) — 열렸을 때만 우상단 고정 */
+  /* 시트 닫기(✕) — 열렸을 때만 고정. 성능=우상단, 무장(바텀)=시트 상단 우측 */
+  .build-stats.sheet-open > .sheet-close { top: max(8px, env(safe-area-inset-top)); right: 12px; }
+  .build-weapons.sheet-open > .sheet-close { top: calc(12vh + 10px); right: 14px; }
   .build-stats.sheet-open > .sheet-close,
   .build-weapons.sheet-open > .sheet-close {
     display: flex; align-items: center; justify-content: center;
     position: fixed; z-index: 48;
-    top: max(8px, env(safe-area-inset-top)); right: 12px;
     width: 36px; height: 36px; border-radius: 999px;
     background: var(--panel-3); border: 1px solid var(--line); color: var(--text);
     font-size: 15px; line-height: 1; box-shadow: 0 2px 10px rgba(0, 0, 0, .4);
