@@ -103,8 +103,14 @@ async function resolvePageIds() {
       .filter(x => x.id && x.name && !x.name.includes('/')));   // ログ 등 하위 페이지 제외
     const map = new Map();
     for (const { name, id } of pairs) if (!map.has(name)) map.set(name, id);   // 첫 등장 우선
+    // 전각/반각 차이를 흡수한 별칭 키도 넣는다.
+    // (gbo2.jp 는 「ゲルググＲ」(전각Ｒ), 위키는 「ゲルググR」(반각R) 로 적어 정확 일치가 실패한다)
+    for (const { name, id } of pairs) { const k = nameKey(name); if (k && !map.has(k)) map.set(k, id); }
     return map;
   });
 }
 
-module.exports = { findChrome, withBrowser, fetchWikiHtml, resolvePageIds };
+/** 기체명 매칭용 정규화 키 — NFKC(전각→반각) + 공백 제거. 표기 흔들림을 흡수한다. */
+const nameKey = s => String(s || '').normalize('NFKC').replace(/\s+/g, '');
+
+module.exports = { findChrome, withBrowser, fetchWikiHtml, resolvePageIds, nameKey };
