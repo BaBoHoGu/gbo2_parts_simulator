@@ -159,11 +159,23 @@
     return { mult, threshold: tm ? Number(tm[1]) : null, cuts, cond: staggerCond(blob), extra };
   }
 
+  const isAltSkillMode = mo => !!(mo && mo.mode && mo.mode !== '通常時');
+
+  /** 현재 모드(통상/변형·변신)에 해당하는 스킬 모드만 고른다.
+   *  각 모드는 그 상태의 '완결된' 스킬 목록이라, 섞지 않고 한쪽만 쓰는 게 맞다.
+   *  (NT-D 계열은 같은 스킬의 수치가 모드마다 다르다 — 밴시 노른 A·아머 DE 40%↔50%) */
+  function skillModesFor(modes) {
+    if (modes.length < 2) return modes;
+    const alt = modes.filter(isAltSkillMode), norm = modes.filter(mo => !isAltSkillMode(mo));
+    if (state.form === 'transform' && alt.length) return alt;
+    return norm.length ? norm : modes;
+  }
+
   /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록.
    *  같은 이름이 LV 구간별로 여러 개면(예: 데미지컨트롤 LV1=130·LV2~=160) 현재 LV 에 맞는 최상위를 쓴다. */
   function staggerSkillsOf(ms, lv) {
     if (!ms) return [];
-    const modes = msSkillsData[baseName(ms.MS名)] || [];
+    const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || []);
     const byName = new Map();
     for (const mode of modes) for (const sk of (mode.skills || [])) {
       if (!msLvHit(sk.msLv, lv)) continue;
@@ -1080,7 +1092,9 @@
   // override 의 _altMode(그 모드 스탯 절대값)로 통상/그 모드를 전환한다. 무장은 나누지 않는다.
   function altModeOf(ms) {
     if (!ms) return null;
-    if (C.hasTransform(ms)) return { key: '変形時', label: '변형' };
+    // 스킬 데이터에 통상 외 모드가 있으면 그 이름을 라벨로 쓴다(NT-D 계열은 '변신'이라 '변형'이 어색).
+    const alt = (msSkillsData[baseName(ms.MS名)] || []).find(isAltSkillMode);
+    if (C.hasTransform(ms)) return { key: (alt && alt.mode) || '変形時', label: (alt && SKILL_MODE_KO[alt.mode]) || '변형' };
     if (ms._altMode) return { key: ms._altMode.mode, label: ms._altMode.label };
     return null;
   }
