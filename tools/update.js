@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const { resolvePageIds } = require('./lib/wiki_fetch.js');
+const { resolvePageIds, nameKey } = require('./lib/wiki_fetch.js');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
@@ -229,7 +229,9 @@ async function detectPatch(msList) {
       const map = await resolvePageIds();
       let n = 0;
       for (const m of emptyUrlMechs) {
-        const id = map.get(baseName(m.MS名)) || map.get(m.MS名);
+        // 정확 일치 → 전각/반각 정규화 순으로 찾는다(gbo2 ゲルググＲ ↔ 위키 ゲルググR).
+        const id = map.get(baseName(m.MS名)) || map.get(m.MS名)
+          || map.get(nameKey(baseName(m.MS名))) || map.get(nameKey(m.MS名));
         if (!id) continue;
         ovNow[m.MS名] = { ...(ovNow[m.MS名] || {}), wiki_url: `https://w.atwiki.jp/battle-operation2/pages/${id}.html` };
         console.log(`     ↳ wiki_url 자동 연결: ${m.MS名} → pages/${id}`);
