@@ -747,6 +747,9 @@
     state.locked.clear();
     state.detailPart = null;
     state.skillPicks.clear();
+    // 방어 스킬 체크는 스킬 "이름"으로 저장돼 있어, 안 지우면 이름이 같은 스킬(데미지 컨트롤·
+    // 마뉴버아머 등)이 다른 기체에서 저절로 켜진 채로 내구 지표·피탄 수치를 바꿔 버린다.
+    state.staggerOn.clear();
     clearAutoResults();
     resetEnhance();             // 다른 기체를 고르면 확장·강화 설정을 초기값으로 되돌린다
     renderAll();
@@ -3489,7 +3492,15 @@
   const SKILL_MODE_KO = { '通常時': '통상', '変形時': '변형', '変身時': '변신', 'システム発動中': '시스템 발동중', '飛行時': '비행', '': '통상' };
   const SKILL_CAT_KO = { '足回り': '기동', '攻撃': '공격', '防御': '방어', 'その他': '기타', '移動': '이동', '格闘': '격투', '射撃': '사격', '': '기타' };
   const skTr = s => (s ? (skillText[s] || s) : '');            // 스킬 텍스트 번역 (없으면 원문)
-  let mskillMode = 0;                                          // 활성 모드 탭
+  // 활성 모드 탭은 따로 두지 않고 state.form(성능의 통상/변신 토글)에서 파생한다.
+  // 따로 두면 성능은 변신인데 스킬 패널만 통상이 되어 같은 화면이 서로 다른 값을 보여 준다.
+  const mskillModeIdx = modes => {
+    if (modes.length < 2) return 0;
+    const i = state.form === 'transform'
+      ? modes.findIndex(isAltSkillMode)
+      : modes.findIndex(m => !isAltSkillMode(m));
+    return i >= 0 ? i : 0;
+  };
 
   // 「LV1～3」「LV4～」에 현재 기체 LV 이 드는지
   function msLvHit(msLvStr, lv) {
@@ -3503,7 +3514,7 @@
     const btn = document.getElementById('skillListBtn');
     if (panel) panel.hidden = !open;
     if (btn) btn.classList.toggle('on', open);
-    if (open) { mskillMode = 0; renderMskill(); if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest' }); }
+    if (open) { renderMskill(); if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest' }); }
   }
 
   function renderMskill() {
@@ -3516,14 +3527,16 @@
     // 모드 탭 (다중모드일 때만)
     tabs.innerHTML = '';
     tabs.hidden = modes.length < 2;
+    const curIdx = mskillModeIdx(modes);
     if (modes.length > 1) modes.forEach((md, i) => {
-      const t = el('button', 'seg-btn' + (i === mskillMode ? ' on' : ''), SKILL_MODE_KO[md.mode] || md.mode || '통상');
-      t.onclick = () => { mskillMode = i; renderMskill(); };
+      const t = el('button', 'seg-btn' + (i === curIdx ? ' on' : ''), SKILL_MODE_KO[md.mode] || md.mode || '통상');
+      // 탭 = 성능의 통상/변신 토글과 같은 값. 여기서 바꾸면 성능 쪽도 함께 바뀐다.
+      t.onclick = () => { state.form = isAltSkillMode(md) ? 'transform' : 'normal'; renderAll(); };
       tabs.append(t);
     });
 
     const lv = state.ms ? msLevel(state.ms) : 1;
-    const mode = modes[Math.min(mskillMode, modes.length - 1)];
+    const mode = modes[Math.min(curIdx, modes.length - 1)];
     // 스킬명별로 현재 기체 LV 에 맞는 구간 하나를 고른다.
     // 단일 닫힌 구간(예: 「LV1～2」)만 가진 스킬은 그 상한을 넘는 LV 에서 어떤 구간에도
     // 안 맞아 사라지므로, 그럴 땐 가장 높은 from 구간으로 폴백해 계속 보여 준다.
@@ -3690,6 +3703,7 @@
     state.form = 'normal';
     state.openWeapon = null;
     state.skillPicks.clear();
+    state.staggerOn.clear();    // 불러온 구성도 방어 스킬 체크는 새로 시작한다(이전 기체 것이 남지 않게)
     clearAutoResults();         // 이전 기체의 자동 구성 후보가 남아 잘못 적용되지 않게 지운다
     // expLevel 이 없던 시절의 저장본은 앱 기본값(최대 레벨)으로 맞춘다
     state.expLevel = Number(obj.expLevel) || C.MAX_EXPANSION_LEVEL;
@@ -3826,6 +3840,8 @@
         b.classList.add('on');
         renderStats();
         renderWeapons();            // 사격·격투 보정이 바뀌면 무장 위력도 달라진다
+        // 스킬 패널이 열려 있으면 같은 모드로 따라가게 한다(성능만 변신, 패널은 통상이 되던 문제)
+        if (!document.getElementById('mskillInline').hidden) renderMskill();
       };
       seg.append(b);
     }
@@ -3935,7 +3951,7 @@
     renderIncompleteNotice();
     renderDetail(state.detailPart);
     renderWeapons();
-    if (!document.getElementById('mskillInline').hidden) { mskillMode = 0; renderMskill(); }
+    if (!document.getElementById('mskillInline').hidden) renderMskill();
   }
 
   /** 무장·스킬 데이터가 아직 없는 기체(예: gbo2.jp 선패치·위키 미반영)면 상단에 붉은 경고를 띄운다. */
