@@ -3536,8 +3536,12 @@
     const fromOf = s => { const m = String(s.msLv || '').match(/LV\s*(\d+)/i); return m ? Number(m[1]) : 1; };
     const picked = new Map();
     for (const [key, cands] of groups) {
+      // 폴백은 "LV 이 구간 상한을 넘어선" 경우에만 쓴다.
+      // 아직 습득 전(현재 LV < 최소 습득 LV)인 스킬까지 끌어오면 없는 스킬이 뜬다.
+      // (야크트 도가[소매] 데미지컨트롤 = LV3·LV4～ 인데 LV1 에서 보이던 문제)
+      const minFrom = Math.min(...cands.map(fromOf));
       const chosen = cands.find(s => msLvHit(s.msLv, lv))
-        || cands.slice().sort((a, b) => fromOf(b) - fromOf(a))[0];
+        || (lv >= minFrom ? cands.slice().sort((a, b) => fromOf(b) - fromOf(a))[0] : null);
       if (chosen) picked.set(key, chosen);
     }
     // 분류별 그룹
