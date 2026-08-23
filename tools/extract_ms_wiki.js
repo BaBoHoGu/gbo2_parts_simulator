@@ -23,18 +23,18 @@ const FIELD = {
 };
 
 const clean = s => s.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, '').replace(/\s+/g, ' ').trim();
-const tableRows = t => (t.match(/<tr[\s\S]*?<\/tr>/gi) || [])
-  .map(r => (r.match(/<t[dh][\s\S]*?<\/t[dh]>/gi) || []).map(clean));
-
-// page id → [{ m, lv }]
-const byPage = new Map();
-for (const m of msData) {
-  const id = (String(m.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
-  if (!id) continue;
-  const lv = Number((m.MS名.match(/_LV(\d+)/) || [])[1] || 1);
-  if (!byPage.has(id)) byPage.set(id, []);
-  byPage.get(id).push({ m, lv });
-}
+// colspan 을 펼쳐서 셀 위치 = LV 가 되도록 맞춘다.
+// 위키는 여러 LV 가 같은 값이면 「<td colspan="3">135</td>」처럼 묶어 적는다.
+// 이걸 무시하면 열이 통째로 밀려 엉뚱한 LV 의 값으로 교정해 버린다(아크트 자쿠 스피드 등).
+const tableRows = t => (t.match(/<tr[\s\S]*?<\/tr>/gi) || []).map(r => {
+  const out = [];
+  for (const c of (r.match(/<t[dh][\s\S]*?<\/t[dh]>/gi) || [])) {
+    const span = Math.min(Number((c.match(/colspan\s*=\s*"?(\d+)/i) || [])[1]) || 1, 12);
+    const v = clean(c);
+    for (let i = 0; i < span; i++) out.push(v);
+  }
+  return out;
+});
 
 const pagesArg = process.argv.find(a => a.startsWith('--pages='));
 const onlyIds = pagesArg ? new Set(pagesArg.slice('--pages='.length).split(',').filter(Boolean)) : null;
@@ -42,8 +42,22 @@ const onlyIds = pagesArg ? new Set(pagesArg.slice('--pages='.length).split(',').
 let override = {};
 try { override = JSON.parse(fs.readFileSync(OVERRIDE, 'utf8')); } catch { /* 처음 */ }
 
+// page id → [{ m, lv }]
+// wiki_url 은 override 를 먼저 본다 — gbo2.jp 가 URL 을 비워 보낸 신기체(ゲルググＲ 등)는
+// update.js 가 override 에만 URL 을 넣으므로, msData 만 보면 위키 대조에서 통째로 빠진다.
+const byPage = new Map();
+for (const m of msData) {
+  const url = (override[m.MS名] && override[m.MS名].wiki_url) || m.wiki_url || '';
+  const id = (String(url).match(/pages\/(\d+)\.html/) || [])[1];
+  if (!id) continue;
+  const lv = Number((m.MS名.match(/_LV(\d+)/) || [])[1] || 1);
+  if (!byPage.has(id)) byPage.set(id, []);
+  byPage.get(id).push({ m, lv });
+}
+
 const files = fs.existsSync(WIKI) ? fs.readdirSync(WIKI).filter(f => f.endsWith('.html')) : [];
 let mechs = 0, fixed = 0, cleared = 0;
+const autoAdds = [];   // 위키엔 있고 gbo2 엔 없는 LV (자동 생성)
 
 for (const f of files) {
   const id = f.replace('.html', '');
@@ -57,10 +71,13 @@ for (const f of files) {
   const slotT = tables.find(t => t.includes('近距離') && t.includes('遠距離') && !t.includes('機体HP'));
 
   const wikiVals = {};   // field → { lv: number }
+  const filledTo = {};   // field → 실제로 값이 적힌 마지막 LV (carry-forward 이전)
+  const rawRow = {};     // 숫자가 아닌 행(재출격·레어도)도 그대로 담아 둔다
   for (const t of [statT, slotT]) {
     if (!t) continue;
     for (const cells of tableRows(t)) {
       if (cells.length < 2) continue;
+      rawRow[cells[0]] = cells.slice(1);
       const field = FIELD[cells[0]];
       if (!field) continue;
       // 위키는 상위 LV 값이 이전과 같으면 칸을 비운다("이전 LV와 동일" 관례).
@@ -69,7 +86,7 @@ for (const f of files) {
       let last = null;
       cells.slice(1).forEach((c, i) => {
         const v = Number(c);
-        if (c !== '' && !isNaN(v)) last = v;
+        if (c !== '' && !isNaN(v)) { last = v; filledTo[field] = i + 1; }
         if (last != null) wikiVals[field][i + 1] = last;
       });
     }
@@ -91,7 +108,58 @@ for (const f of files) {
     }
     if (override[m.MS名] && !Object.keys(override[m.MS名]).length) delete override[m.MS名];
   }
+
+  // ── 위키엔 있는데 gbo2.jp 에 아직 없는 LV 를 보충한다 ──────────────────────
+  // 위키가 미러보다 빠르다. 이미 있는 LV 를 베이스로 복제하고 위키 값만 덮어쓴다.
+  // build.js 는 같은 MS名 이 공식에 생기면 이 추가분을 자동 무시하므로 중복 걱정이 없다.
+  // 실제로 값이 적힌 마지막 LV 까지만 만든다(carry-forward 로 채워진 빈 칸은 세지 않는다).
+  // 레벨 수는 HP·코스트처럼 LV 마다 값이 다른 행으로만 판단하고, 둘 다 있으면 작은 쪽을 쓴다.
+  // (colspan 은 존재하지 않는 LV 칸까지 덮을 수 있어 넉넉히 잡으면 없는 LV 를 만들어 낸다)
+  const lvCand = [filledTo['HP'], filledTo['コスト']].filter(Boolean);
+  const maxLv = lvCand.length ? Math.min(...lvCand) : 0;
+  if (maxLv > 1) {
+    const haveLv = new Set(entries.map(e => e.lv));
+    const baseEntry = entries.slice().sort((a, b) => b.lv - a.lv)[0];   // 가장 높은 기존 LV 를 베이스로
+    const stem = baseEntry.m.MS名.replace(/_LV\d+$/, '');
+    const wikiUrl = (override[baseEntry.m.MS名] && override[baseEntry.m.MS名].wiki_url) || baseEntry.m.wiki_url || '';
+    for (let lv = 2; lv <= maxLv; lv++) {
+      if (haveLv.has(lv)) continue;
+      const e = JSON.parse(JSON.stringify(baseEntry.m));
+      e.MS名 = stem + '_LV' + lv;
+      e.wiki_url = wikiUrl;
+      for (const [field, byLv] of Object.entries(wikiVals)) if (byLv[lv] != null) e[field] = byLv[lv];
+      const sec = (rawRow['再出撃時間'] || [])[lv - 1];       // '11秒' → 11
+      if (sec && /\d/.test(sec)) e.再出撃時間 = Number(sec.match(/\d+/)[0]);
+      const rar = (rawRow['レアリティ'] || [])[lv - 1];
+      if (rar) e.レアリティ = rar;
+      e._fromWiki = true;                                     // 자동 생성 표시(수동 추가분과 구분)
+      autoAdds.push(e);
+    }
+  }
 }
 
 fs.writeFileSync(OVERRIDE, JSON.stringify(override, null, 1));
 console.log(`위키 대조: 기체 페이지 ${mechs}개 · 교정 ${fixed} · 해제 ${cleared} → ${Object.keys(override).length}기 오버라이드`);
+
+// 자동 보충 LV 를 additions 에 반영한다.
+// --pages 로 일부만 돌 때 다른 기체의 자동 분을 지우지 않도록, 이번에 본 페이지의 것만 갈아끼운다.
+// 손으로 넣은 항목(_fromWiki 없음)은 언제나 보존한다.
+{
+  const ADD = path.join(ROOT, 'data', 'msData.additions.json');
+  let prev = [];
+  try { prev = JSON.parse(fs.readFileSync(ADD, 'utf8')); } catch { /* 처음 */ }
+  const touched = new Set(autoAdds.map(m => m.MS名.replace(/_LV\d+$/, '')));
+  const kept = prev.filter(m => !m._fromWiki || !touched.has(String(m.MS名).replace(/_LV\d+$/, '')));
+  const have = new Set(kept.map(m => m.MS名));
+  const merged = kept.concat(autoAdds.filter(m => !have.has(m.MS名)));
+  const official = new Set(msData.map(m => m.MS名));
+  const live = merged.filter(m => !m._fromWiki || !official.has(m.MS名));   // 공식에 생긴 자동분은 정리
+  if (live.length !== prev.length || autoAdds.length) {
+    fs.writeFileSync(ADD, JSON.stringify(live, null, 1) + '\n');
+  }
+  const autoN = live.filter(m => m._fromWiki).length;
+  if (autoAdds.length || autoN) {
+    console.log(`  위키 보충 LV: 이번 ${autoAdds.length}건 · 보관 중 ${autoN}건 (gbo2 반영 시 자동 소멸)`);
+    for (const m of autoAdds) console.log(`     + ${m.MS名} (코스트 ${m.コスト} · HP ${m.HP})`);
+  }
+}
