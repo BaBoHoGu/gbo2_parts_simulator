@@ -177,11 +177,18 @@
     if (!ms) return [];
     const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || []);
     const byName = new Map();
+    // 스킬명별로 구간을 모아 현재 LV 에 맞는 것 하나만 고른다(폴백 규칙은 스킬 패널과 동일).
+    const groups = new Map();
     for (const mode of modes) for (const sk of (mode.skills || [])) {
-      if (!msLvHit(sk.msLv, lv)) continue;
+      if (!groups.has(sk.name)) groups.set(sk.name, []);
+      groups.get(sk.name).push(sk);
+    }
+    for (const cands of groups.values()) {
+      const sk = pickByMsLv(cands, lv);
+      if (!sk) continue;
       const p = parseStaggerSkill(sk);
       if (!p) continue;
-      const from = Number((String(sk.msLv || '').match(/LV\s*(\d+)/i) || [])[1]) || 1;
+      const from = msLvFrom(sk.msLv);
       const prev = byName.get(sk.name);
       if (!prev || from > prev.from) byName.set(sk.name, { name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts, cond: p.cond, from });
       // 조건부 추가 경감(예: A·아머 DE — NT-D/각성 중 빔 −30%)은 기본 경감과 발동 조건이 달라
@@ -3818,11 +3825,26 @@
     return i >= 0 ? i : 0;
   };
 
-  // 「LV1～3」「LV4～」에 현재 기체 LV 이 드는지
+  // 「LV1～3」「LV4～」「LV3」에 현재 기체 LV 이 드는지.
+  // 물결(～) 유무가 중요하다 — 「LV3」은 **그 레벨 전용**이고 「LV3～」이 LV3 이상이다.
+  // 둘을 같게 보면 리바우 LV2 처럼 「LV1」짜리 구간이 상위 LV 까지 따라와 낮은 스킬이 표시된다.
+  // 다만 위키가 마지막 구간의 물결을 빼먹은 경우가 있어(10건), 어디에도 안 맞으면
+  // 호출부에서 '가장 높은 구간'으로 폴백한다.
   function msLvHit(msLvStr, lv) {
-    const m = String(msLvStr || '').match(/LV\s*(\d+)\s*[～~]?\s*(\d+)?/i);
+    const m = String(msLvStr || '').match(/LV\s*(\d+)\s*([～~\-])?\s*(?:LV)?\s*(\d+)?/i);
     if (!m) return true;
-    return lv >= Number(m[1]) && lv <= (m[2] ? Number(m[2]) : 99);
+    const from = Number(m[1]);
+    if (!m[2]) return lv === from;                       // 물결 없음 = 그 레벨만
+    return lv >= from && lv <= (m[3] ? Number(m[3]) : 99);
+  }
+  /** msLv 표기의 시작 레벨. */
+  const msLvFrom = v => Number((String(v || '').match(/LV\s*(\d+)/i) || [])[1]) || 1;
+  /** 이름별 후보 중 현재 LV 에 맞는 구간 하나. 없으면 가장 높은 구간으로 폴백(습득 전이면 null). */
+  function pickByMsLv(cands, lv) {
+    const hit = cands.find(s => msLvHit(s.msLv, lv));
+    if (hit) return hit;
+    if (lv < Math.min(...cands.map(s => msLvFrom(s.msLv)))) return null;   // 아직 습득 전
+    return cands.slice().sort((a, b) => msLvFrom(b.msLv) - msLvFrom(a.msLv))[0];
   }
 
   function openMskill(open) {
@@ -3865,12 +3887,10 @@
     const fromOf = s => { const m = String(s.msLv || '').match(/LV\s*(\d+)/i); return m ? Number(m[1]) : 1; };
     const picked = new Map();
     for (const [key, cands] of groups) {
-      // 폴백은 "LV 이 구간 상한을 넘어선" 경우에만 쓴다.
-      // 아직 습득 전(현재 LV < 최소 습득 LV)인 스킬까지 끌어오면 없는 스킬이 뜬다.
-      // (야크트 도가[소매] 데미지컨트롤 = LV3·LV4～ 인데 LV1 에서 보이던 문제)
-      const minFrom = Math.min(...cands.map(fromOf));
-      const chosen = cands.find(s => msLvHit(s.msLv, lv))
-        || (lv >= minFrom ? cands.slice().sort((a, b) => fromOf(b) - fromOf(a))[0] : null);
+      // 구간 선택·폴백 규칙은 방어 스킬과 같은 것을 쓴다(pickByMsLv).
+      //   · 아직 습득 전이면 안 보여 준다 (야크트 도가[소매] 데미지컨트롤 LV3·LV4～ 가 LV1 에 뜨던 문제)
+      //   · 위키가 마지막 구간의 물결을 빼먹어 어디에도 안 맞으면 가장 높은 구간으로
+      const chosen = pickByMsLv(cands, lv);
       if (chosen) picked.set(key, chosen);
     }
     // 분류별 그룹
