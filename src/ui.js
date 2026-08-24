@@ -1067,6 +1067,37 @@
     return { nc, ch };
   }
 
+  /**
+   * 고정 피해 — 소이(焼夷) 계열이 명중 후 따로 넣는 피해. 「2700固定ダメージ(450x6HIT)」
+   * 무장 표의 위력과는 **별개로 더해진다**(43종 중 34종은 위력과 1틱 값이 아예 다르다).
+   * 이름 그대로 固定 이라 사격·격투 보정을 받지 않으므로, 위키 값을 그대로 쓴다.
+   */
+  function fixedDamageOf(w) {
+    const note = (w && w.info && w.info['備考']) || '';
+    const m = note.match(/(\d+)\s*固定ダメージ\s*[（(]\s*(\d+)\s*[x×ｘ]\s*(\d+)\s*HIT/i);
+    if (!m) return null;
+    return { total: Number(m[1]), per: Number(m[2]), hits: Number(m[3]) };
+  }
+
+  /** 무장이 거는 디버프 — 계산엔 안 쓰고 표시만 한다(효과량이 위키에 수치로 없다). */
+  const DEBUFF_RULES = [
+    [/炎上/, '연소'],
+    [/速度デバフ|移動速度低下|速度低下/, '속도↓'],
+    [/スラスター消費量増加/, '스러스터↑'],
+    [/スラスターOH時間増加/, 'OH↑'],
+    [/射撃補正低下/, '사격↓'],
+    [/格闘補正低下/, '격투↓'],
+    [/スタン/, '스턴']
+  ];
+  function debuffsOf(w) {
+    const note = (w && w.info && w.info['備考']) || '';
+    const out = [];
+    for (const [re, label] of DEBUFF_RULES) if (re.test(note)) out.push(label);
+    // 종류를 못 밝힌 「デバフ付与」 만 있는 경우 — 있다는 사실만 알린다
+    if (!out.length && /デバフ/.test(note)) out.push('디버프');
+    return out;
+  }
+
   /* ---------- DPS(지속 화력) ---------- */
   // 위력 칸 아래에 초당 피해를 보여 준다. 기본 위력 기준(파츠·스킬 미반영)의 무장 비교용.
   //   순간 DPS = 1트리거 피해 ÷ 발사간격,  지속 DPS = 탄창분 피해 ÷ (탄창 소진 + 리로드/OH복귀)
@@ -1221,6 +1252,19 @@
       // 이름 옆 칩: 두 모드가 같으면 하나, 다르면 있는 쪽 (각 칸의 '전탄'이 정확히 보여 준다)
       const chip = (mult.nc && mult.ch && mult.nc.n === mult.ch.n) ? mult.nc : (mult.nc || mult.ch);
       if (chip) nm.append(el('span', 'w-mult', chip.label));
+      // 고정 피해(소이 등) — 위력과 별개로 더해지는 몫이라 안 보여 주면 무장이 실제보다 약해 보인다
+      const fx = fixedDamageOf(w);
+      if (fx) {
+        const c = el('span', 'w-fixed', '고정 ' + fx.total.toLocaleString());
+        c.title = `명중 후 고정 피해 ${fx.total.toLocaleString()} (${fx.per}×${fx.hits}히트)\n`
+          + '보정을 받지 않는 고정값이라 위력 칸과 별도로 들어간다.';
+        nm.append(c);
+      }
+      for (const d of debuffsOf(w)) {
+        const c = el('span', 'w-debuff', d);
+        c.title = '이 무장이 거는 디버프 — 효과량이 위키에 수치로 없어 표시만 한다.';
+        nm.append(c);
+      }
       nm.title = w.name;
       row.append(nm);
 
@@ -3424,6 +3468,14 @@
     hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
     hd.append(el('b', 'pietan-rnm', T.weaponName(w.name)));
     if (w.react) hd.append(el('span', 'pietan-react' + (w.react === '강경직' ? ' strong' : ''), w.react));
+    // 상대 무장의 고정 피해·디버프 — 직격 피해와 별개라 격파 수만 봐서는 놓친다
+    const inFx = fixedDamageOf({ info: { '備考': w.note } });
+    if (inFx) {
+      const c = el('span', 'w-fixed', '고정 ' + inFx.total.toLocaleString());
+      c.title = `직격과 별도로 고정 피해 ${inFx.total.toLocaleString()} (${inFx.per}×${inFx.hits}히트)\n보정을 받지 않아 아래 격파 수에는 포함돼 있지 않다.`;
+      hd.append(c);
+    }
+    for (const d of debuffsOf({ info: { '備考': w.note } })) hd.append(el('span', 'w-debuff', d));
     box.append(hd);
     if (pietanMs) box.append(el('div', 'pietan-msctx',
       `${T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')} · LV${pietanMsLv}`
