@@ -206,6 +206,32 @@
     return [...byName.values()];
   }
 
+  /** 상대 무장의 성질에 따라서만 걸리는 파츠 경감 — 내구 지표(무장을 특정하지 않음)에는
+   *  넣을 수 없고, 무장을 하나 고르는 피탄 시뮬에서만 조건을 확인해 적용한다.
+   *    관통 경감 장갑 — 「사이코뮤 제외 + 관통 성능을 가진 사격 무장」에서 받는 피해
+   *    폭풍 경감 장갑 — 「兵装による爆風ダメージ」 (「爆風なし」 명시 무장은 제외)
+   *  @param {{note:string, psycommu:boolean, attr:string}} w 고른 상대 무장 */
+  function conditionalPartCuts(equipped, w) {
+    const out = [];
+    if (!w) return out;
+    const note = String(w.note || '');
+    const isShoot = w.attr === 'solid' || w.attr === 'beam' || w.attr === 'shoot';
+    const pierces = /ユニット貫通/.test(note) && !w.psycommu && isShoot;
+    const blasts = /爆風/.test(note) && !/爆風なし/.test(note);
+    for (const p of equipped || []) {
+      const d = String(p.description || '');
+      if (pierces) {
+        const m = d.match(/貫通性能を備えた射撃兵装からの被ダメージを\s*(\d+)\s*[%％]\s*軽減/);
+        if (m) out.push({ scope: 'all', pct: Number(m[1]), label: '관통 경감' });
+      }
+      if (blasts) {
+        const m = d.match(/爆風ダメージを\s*(\d+)\s*[%％]\s*軽減/);
+        if (m) out.push({ scope: 'all', pct: Number(m[1]), label: '폭풍 경감' });
+      }
+    }
+    return out;
+  }
+
   /** 완충재계 스킬의 '기체HP 피해 경감량'을 올려 주는 파츠(신형 완충재)의 강화 %.
    *  「緩衝材系スキルの効果である機体HPへのダメージ軽減効果をさらに N%強化」 */
   function bufferBoostOf(equipped) {
@@ -3152,7 +3178,9 @@
         : /よろけ有|ひるみ有|転倒|ダウン/.test(sTxt) ? '경직' : null;
       // 격투 변형(기본/헤비어택 등)·방향별 배율(N격/횡격/하격…) — meleeDamage 의 ccd 로 적용
       const variants = (w.melee && w.melee.variants && w.melee.variants.length) ? w.melee.variants : null;
-      out.push({ name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets, react, variants });
+      // note·psycommu·type 은 조건부 파츠 경감(관통 경감 장갑·폭풍 경감 장갑) 판정에 쓴다.
+      out.push({ name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets, react, variants,
+        note, psycommu: !!w.psycommu, type: w.type });
     }
     return out;
   }
@@ -3363,7 +3391,9 @@
     const key = PIETAN_ARMOR[w.attr] || 'armorRange';
     const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
     const stg = activeStaggerMods(state.ms, state.ms ? msLevel(state.ms) : 1);   // 내 누적치 스킬
-    const dmgFactor = staggerDmgFactor([...partDamageCuts(state.equipped, msLevel(state.ms)), ...boostBufferCuts(stg.cuts, state.equipped)], w.attr);   // 파츠+방어 스킬 피해 경감
+    const condCuts = conditionalPartCuts(state.equipped, w);   // 이 무장에만 걸리는 파츠 경감(관통·폭풍)
+    const dmgFactor = staggerDmgFactor([...partDamageCuts(state.equipped, msLevel(state.ms)), ...condCuts,
+      ...boostBufferCuts(stg.cuts, state.equipped)], w.attr);   // 파츠+조건부 파츠+방어 스킬 피해 경감
     const isMelee = w.attr === 'melee';
     // 격투 변형(기본/헤비어택)·방향(N격/횡격/하격) — 무장 데이터의 방향별 배율(ccd)을 적용한다.
     const variants = isMelee && w.variants && w.variants.length ? w.variants : null;
@@ -3434,7 +3464,9 @@
       m.append(el('span', 'pietan-mnote', note));
       return m;
     };
-    const cutTxt = dmgFactor < 1 ? ` · 스킬 경감 ×${+dmgFactor.toFixed(3)}` : '';
+    // 조건부 파츠 경감은 이 무장이라서 걸린 것이라 따로 이름을 밝혀 준다
+    const condTxt = condCuts.length ? ' · ' + [...new Set(condCuts.map(c => c.label + ' -' + c.pct + '%'))].join(' · ') : '';
+    const cutTxt = dmgFactor < 1 ? ` · 경감 ×${+dmgFactor.toFixed(3)}${condTxt}` : '';
     const varTxt = variants && variants.length > 1 ? `${variants[pietanVariant].label} ` : '';
     const dirTxt = dirs ? ` · ${varTxt}${mLabel(dirs[pietanDir].label)} ${dirs[pietanDir].raw}` : '';
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
