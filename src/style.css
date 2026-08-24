@@ -1680,3 +1680,5 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   .w-nm { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
   .w-fixed, .w-debuff, .w-mult { flex-shrink: 0; }
 }
+/* 고정 피해에 파츠 몫이 붙었을 때의 증가분 */
+.w-fixed-up { font-style: normal; color: var(--good, #7ddc8a); font-weight: 700; }
