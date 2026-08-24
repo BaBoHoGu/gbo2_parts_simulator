@@ -1115,6 +1115,38 @@
     return { total: Number(m[1]), per: Number(m[2]), hits: Number(m[3]) };
   }
 
+  /**
+   * 소이(焼夷) 효과를 키우는 파츠 — 고정 피해에 반영한다.
+   *   특수 연소제      1틱 피해 +25% · 지속시간 +10%
+   *   이레귤러 DBL 계열 지속시간 +10% (피해는 그대로)
+   * 위키 5891 의 실측 34행으로 맞춰 본 결과 —
+   *   1틱 피해 floor(×1.25) 32/34 일치(예외 2건은 ×1.10 로 측정돼 편차로 본다)
+   *   히트 수 round(×지속배수) 46/56 일치. 위키도 「같은 지속시간이라도 늘기도 안 늘기도
+   *   한다. 要検証」이라 적어 둔 부분이라, 늘어난 히트는 툴팁에서 불확실하다고 밝힌다.
+   */
+  function burnBoostOf(equipped) {
+    let dmg = 1, dur = 1;
+    for (const p of equipped || []) {
+      const d = String(p.description || '');
+      const m = d.match(/焼夷効果によって当てるダメージを\s*(\d+)\s*[%％]\s*増加/);
+      if (m) dmg *= 1 + Number(m[1]) / 100;
+      const t = d.match(/焼夷効果の継続時間を\s*(\d+)\s*[%％]\s*増加/)
+        || d.match(/状態異常の継続時間を\s*(\d+)\s*[%％]\s*増加/);
+      if (t) dur *= 1 + Number(t[1]) / 100;
+    }
+    return { dmg, dur };
+  }
+
+  /** 파츠를 반영한 고정 피해. base 가 없으면 null. */
+  function fixedDamageWithParts(w, equipped) {
+    const fx = fixedDamageOf(w);
+    if (!fx) return null;
+    const b = burnBoostOf(equipped);
+    const per = Math.floor(fx.per * b.dmg);
+    const hits = Math.round(fx.hits * b.dur);
+    return { base: fx, per, hits, total: per * hits, boosted: per !== fx.per || hits !== fx.hits };
+  }
+
   /** 무장이 거는 디버프 — 계산엔 안 쓰고 표시만 한다(효과량이 위키에 수치로 없다). */
   const DEBUFF_RULES = [
     [/炎上/, '연소'],
@@ -1289,11 +1321,17 @@
       const chip = (mult.nc && mult.ch && mult.nc.n === mult.ch.n) ? mult.nc : (mult.nc || mult.ch);
       if (chip) nm.append(el('span', 'w-mult', chip.label));
       // 고정 피해(소이 등) — 위력과 별개로 더해지는 몫이라 안 보여 주면 무장이 실제보다 약해 보인다
-      const fx = fixedDamageOf(w);
+      const fx = fixedDamageWithParts(w, state.equipped);
       if (fx) {
         const c = el('span', 'w-fixed', '고정 ' + fx.total.toLocaleString());
+        if (fx.boosted) c.append(el('i', 'w-fixed-up', ' +' + (fx.total - fx.base.total).toLocaleString()));
         c.title = `명중 후 고정 피해 ${fx.total.toLocaleString()} (${fx.per}×${fx.hits}히트)\n`
-          + '보정을 받지 않는 고정값이라 위력 칸과 별도로 들어간다.';
+          + '보정을 받지 않는 고정값이라 위력 칸과 별도로 들어간다.'
+          + (fx.boosted ? `\n\n파츠 미장착 시 ${fx.base.total.toLocaleString()} (${fx.base.per}×${fx.base.hits}히트)` : '')
+          + (fx.hits !== fx.base.hits
+            ? `\n※ 히트 수는 지속시간에 따라 늘기도 안 늘기도 한다(위키도 要検証).`
+              + `\n   안 늘면 ${(fx.per * fx.base.hits).toLocaleString()} (${fx.per}×${fx.base.hits}히트).`
+            : '');
         nm.append(c);
       }
       for (const d of debuffsOf(w)) {
