@@ -4351,10 +4351,63 @@
       if (tgt) { const x = el('button', 'sheet-close', '✕'); x.title = '닫기'; x.onclick = close; tgt.appendChild(x); }
     }
 
-    // 시트 제어는 '하단 버튼 · 시트의 ✕ · 배경 탭' 뿐이다.
-    // 예전에는 화면 가장자리 스와이프로 열고 밀어서 닫았는데, 무장 표를 가로로 훑거나
-    // 시트 안에서 조작할 때 그 드래그가 닫기 제스처로 잡혀 창이 멋대로 닫혔다.
-    // 오작동 여지를 없애려고 스와이프 제스처는 두지 않는다.
+    // ── 스와이프 제스처 — '성능' 시트에만 둔다 ─────────────────────────────
+    // 무장 시트는 가로로 훑어 볼 내용(무장 표)이 있어 그 드래그가 닫기로 잡혀 창이
+    // 멋대로 닫혔다. 그래서 무장은 버튼 전용(하단 버튼·✕·배경 탭)으로 두고,
+    // 가로로 끌 일이 없는 성능 시트만 제스처를 유지한다.
+    //   열기 — 오른쪽 가장자리에서 왼쪽으로 / 닫기 — 오른쪽으로 밀기
+    const STATS = 'build-stats', EDGE = 30, OPEN_AT = 0.32;
+    let drag = null;
+    const isMob = () => window.matchMedia('(max-width: 700px)').matches && document.body.classList.contains('view-build');
+    const isOpen = cls => { const t = target(cls); return !!(t && t.classList.contains('sheet-open')); };
+
+    document.addEventListener('touchstart', ev => {
+      if (drag || !isMob() || ev.touches.length !== 1) return;
+      if (isOpen('build-weapons')) return;                 // 무장이 열려 있으면 제스처 일절 개입 안 함
+      const x = ev.touches[0].clientX, y = ev.touches[0].clientY;
+      if (isOpen(STATS)) {
+        drag = { mode: 'close', x0: x, y0: y, sheet: target(STATS), size: target(STATS).getBoundingClientRect().width, prog: 0, axis: null };
+      } else if (x >= window.innerWidth - EDGE) {
+        drag = { mode: 'open', x0: x, y0: y, sheet: null, size: 0, prog: 0, axis: null };   // 셋업은 실제로 끌 때
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', ev => {
+      if (!drag) return;
+      const dx = ev.touches[0].clientX - drag.x0, dy = ev.touches[0].clientY - drag.y0;
+      if (!drag.axis) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        if (Math.abs(dx) <= Math.abs(dy)) { drag = null; return; }   // 세로 우세 → 스크롤이지 제스처가 아니다
+        drag.axis = 'go';
+        if (drag.mode === 'open') {
+          toBody(STATS);
+          drag.sheet = target(STATS);
+          drag.size = drag.sheet.getBoundingClientRect().width || Math.min(window.innerWidth * 0.94, 480);
+          drag.sheet.style.transition = 'none';
+          drag.sheet.style.transform = 'translateX(100%)';
+          backdrop.classList.add('on'); backdrop.style.transition = 'none'; backdrop.style.opacity = '0';
+        } else { drag.sheet.style.transition = 'none'; backdrop.style.transition = 'none'; }
+      }
+      const prog = Math.min(1, Math.max(0, drag.mode === 'open' ? -dx : dx) / drag.size);
+      drag.prog = prog;
+      drag.sheet.style.transform = `translateX(${(drag.mode === 'open' ? (1 - prog) : prog) * 100}%)`;
+      backdrop.style.opacity = String(drag.mode === 'open' ? prog : (1 - prog));
+    }, { passive: true });
+
+    function endDrag(commit) {
+      if (!drag) return;
+      const d = drag; drag = null;
+      if (!d.axis) return;                        // 탭이었을 뿐 — 손댄 게 없으니 정리도 불필요
+      if (d.sheet) { d.sheet.style.transition = ''; d.sheet.style.transform = ''; }
+      backdrop.style.transition = ''; backdrop.style.opacity = '';
+      if (!commit) { if (d.mode === 'open') close(); return; }
+      if (d.mode === 'open') {
+        if (d.prog > OPEN_AT) { d.sheet.classList.add('sheet-open'); btns[STATS].classList.add('on'); backdrop.classList.add('on'); }
+        else close();
+      } else if (d.prog > OPEN_AT) close();
+    }
+    document.addEventListener('touchend', () => endDrag(true), { passive: true });
+    document.addEventListener('touchcancel', () => endDrag(false), { passive: true });
 
     closeMobileSheets = close;
     mobileSheetOpen = () => sheets.some(s => target(s.cls) && target(s.cls).classList.contains('sheet-open'));
