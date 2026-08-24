@@ -255,25 +255,23 @@
     return cuts;
   }
 
-  /** 장착 파츠의 '전 사격/격투' 与ダメージ% (오버튠[사격/격투]·특화 프로그램 등). 오버튠은 LV 스케일.
-   *  속성 한정(빔/실탄 전용 코넥팅 등)은 무장별이라 여기 공격 지표엔 넣지 않는다. */
+  // 공격 지표용 '대표 무장' — 실탄·빔·격투 각각에 어떤 % 가 걸리는지 재 보는 데만 쓴다.
+  // damage.js 의 빔 판정은 attr 이 아니라 '무장 이름'을 보므로, 빔 쪽 대표는 이름을 빔으로 준다.
+  const PROBE_SOLID = { name: 'マシンガン', type: 'shooting', attr: 'solid', info: {}, levels: {} };
+  const PROBE_BEAM = { name: 'ビーム・ライフル', type: 'shooting', attr: 'beam', info: {}, levels: {} };
+  const PROBE_MELEE = { name: 'ヒート・サーベル', type: 'melee', attr: 'melee', info: {}, levels: {} };
+
+  /** 장착 파츠의 '전 사격/격투' 与ダメージ% (오버튠·특화 프로그램·교육형 컴퓨터 등).
+   *  무장 피해와 같은 규칙을 쓰려고 damage.js 의 파싱을 그대로 재사용한다 — 따로 정규식을
+   *  두었더니 「敵に与えるダメージを3%増加」처럼 속성 접두가 없는 표기를 놓쳐, 무장 피해는
+   *  오르는데 공격 지표만 그대로인 불일치가 났다(교육형 컴퓨터·화기관제·CP내장 등 5종).
+   *  속성 한정(빔 전용 코넥팅 등)은 실탄·빔 중 한쪽만 오르므로 min 으로 자연히 빠진다. */
   function partAttackBonus(equipped, msLv) {
-    const out = { shoot: 0, melee: 0 };
-    for (const p of equipped) {
-      const d = String(p.description || '');
-      for (const [ja, key] of [['射撃', 'shoot'], ['格闘', 'melee']]) {
-        const m = d.match(new RegExp(ja + '攻撃(?:で|による敵に)?与えるダメージが\\s*(\\d+)\\s*[%％]\\s*(増加|減少)'));
-        if (!m) continue;
-        let pct = Number(m[1]);
-        if (m[2] === '増加') {   // 오버튠 LV 스케일 (감소분엔 스케일 없음)
-          const per = d.match(/機体LVが1上昇するごとに\s*(\d+)\s*[%％]/);
-          const max = d.match(/最大上昇値は\s*(\d+)\s*[%％]/);
-          if (per && max) pct = Math.min(pct + (Math.max(1, msLv) - 1) * Number(per[1]), Number(max[1]));
-          out[key] += pct;
-        } else out[key] -= pct;
-      }
-    }
-    return out;
+    const mods = D.weaponModsOf(equipped, msLv, state.ms && state.ms.属性);
+    return {
+      shoot: Math.min(D.damagePctFor(mods, PROBE_SOLID, 'shoot'), D.damagePctFor(mods, PROBE_BEAM, 'shoot')),
+      melee: D.damagePctFor(mods, PROBE_MELEE, 'melee')
+    };
   }
 
   /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. */
