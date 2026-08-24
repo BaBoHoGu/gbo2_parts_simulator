@@ -29,7 +29,18 @@ function endOfValue(from) {
 function declText(name) {
   const fn = SRC.indexOf('function ' + name + '(');
   if (fn >= 0) {
-    const open = SRC.indexOf('{', fn);
+    // 파라미터 목록을 먼저 건너뛴다. 구조분해 파라미터(function nL(n,{relative:e}))의
+    // 중괄호를 본문 시작으로 오해하면 그 괄호가 닫히는 곳에서 함수가 잘려 버린다.
+    let j = SRC.indexOf('(', fn), pd = 0, pStr = null, pPrev = '';
+    for (; j < SRC.length; j++) {
+      const ch = SRC[j];
+      if (pStr) { if (ch === pStr && pPrev !== '\\') pStr = null; }
+      else if (ch === '"' || ch === "'" || ch === '`') pStr = ch;
+      else if (ch === '(') pd++;
+      else if (ch === ')') { pd--; if (pd === 0) { j++; break; } }
+      pPrev = ch;
+    }
+    const open = SRC.indexOf('{', j);
     let i = open, depth = 0, inStr = null, prev = '';
     for (; i < SRC.length; i++) {
       const ch = SRC[i];
@@ -50,17 +61,47 @@ function declText(name) {
   throw new Error('번들에서 ' + name + ' 를 찾지 못했습니다');
 }
 
-// 의존성 → 사용처 순 (rL: 기본 상한, AL: 기체 LV, nL: 소체, iL: 상한 초기화, Tw: 슬롯)
-const NAMES = ['rL', 'AL', 'nL', 'iL', 'uf', 'Tw'];
-const body = NAMES.map(declText).join('\n');
-
-const out = `/* 자동 생성 — raw/app.js 에서 추출한 원본 계산 로직. 직접 수정하지 말 것.
+// 의존성 → 사용처 순 (rL: 소체 스탯, AL: 상한 초기화, iL: 기본 상한, uf: 스탯, Tw: 슬롯)
+// 예전 목록에 있던 nL 은 번들 재빌드로 그 난독화 이름이 다른 함수(React Router)에 재배정됐다.
+// uf·Tw 어느 쪽도 참조하지 않으므로 뺀다 — 두면 엉뚱한 함수를 끌어와 추출본이 깨진다.
+// 뿌리 두 개만 지정하고 나머지 의존성은 자동으로 끌어온다.
+// 번들이 재빌드되면 난독화 이름과 의존 관계가 통째로 바뀌므로, 이름 목록을 손으로
+// 관리하면 매번 깨진다. 실제로 한 번 호출해 보고 "X is not defined" 가 나면 그 X 를
+// 앞에 붙여 다시 만드는 식으로, 성공할 때까지 반복해 스스로 목록을 완성한다.
+const dest = path.join(__dirname, '_original_calc.js');
+const render = names => `/* 자동 생성 — raw/app.js 에서 추출한 원본 계산 로직. 직접 수정하지 말 것.
  * 재생성: node tools/extract_original_calc.js
  */
-${body}
+${names.map(declText).join('\n')}
 
-module.exports = { calcStatsOriginal: uf, calcSlotsOriginal: Tw, baseStatsOriginal: nL, limitsOriginal: iL, msLevelOriginal: AL };
+module.exports = { calcStatsOriginal: uf, calcSlotsOriginal: Tw };
 `;
-const dest = path.join(__dirname, '_original_calc.js');
-fs.writeFileSync(dest, out);
-console.log('추출:', NAMES.join(', '), '→', path.relative(process.cwd(), dest), (out.length / 1024).toFixed(1) + 'KB');
+
+/** 추출본이 실제로 계산을 해내는지 — 기체 하나로 스탯·슬롯을 한 번씩 돌려 본다. */
+function smoke(mod) {
+  const d = f => JSON.parse(fs.readFileSync(path.join(ROOT_DATA, f), 'utf8'));
+  const msData = d('msData.json'), partsByCat = d('parts.json'), fullst = d('fullst.json');
+  const ms = msData[0];
+  mod.calcStatsOriginal(ms, [], 6, 'none', partsByCat, fullst);
+  mod.calcSlotsOriginal(ms, [], 6, fullst);
+}
+const ROOT_DATA = path.join(__dirname, '..', 'data');
+
+let names = ['rL', 'AL', 'iL', 'uf', 'Tw'];
+let ok = false, added = [];
+for (let i = 0; i < 40 && !ok; i++) {
+  fs.writeFileSync(dest, render(names));
+  delete require.cache[require.resolve(dest)];
+  try { smoke(require(dest)); ok = true; }
+  catch (e) {
+    const m = /^(\w+) is not defined$/.exec(e.message);
+    if (!m || names.includes(m[1])) throw e;
+    names.unshift(m[1]);          // 의존성은 사용처보다 앞에 와야 한다(const 는 호이스팅 안 됨)
+    added.push(m[1]);
+  }
+}
+if (!ok) throw new Error('의존성을 다 못 채웠습니다 — 번들 구조가 크게 바뀐 듯합니다');
+
+const out = fs.readFileSync(dest, 'utf8');
+console.log('추출:', names.join(', '), '→', path.relative(process.cwd(), dest), (out.length / 1024).toFixed(1) + 'KB');
+if (added.length) console.log('  자동 추가된 의존성:', added.join(', '));
