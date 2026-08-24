@@ -3839,12 +3839,16 @@
   }
   /** msLv 표기의 시작 레벨. */
   const msLvFrom = v => Number((String(v || '').match(/LV\s*(\d+)/i) || [])[1]) || 1;
-  /** 이름별 후보 중 현재 LV 에 맞는 구간 하나. 없으면 가장 높은 구간으로 폴백(습득 전이면 null). */
+  /** 이름별 후보 중 현재 LV 에 맞는 구간 하나. 없으면 가장 높은 구간으로 폴백(습득 전이면 null).
+   *  구간이 겹칠 때는 **높은 쪽**을 쓴다 — 위키가 「LV1～」과 「LV2～」를 함께 적어 두면
+   *  앞의 것은 사실상 다음 구간 전까지라는 뜻이라, 먼저 찾은 것을 쓰면 낮은 스킬이 잡힌다
+   *  (리크 돔Ⅱ 다리 특수 완충재 LV2 = 15% 인데 10% 로 나오던 자리). */
+  const byFromDesc = (a, b) => msLvFrom(b.msLv) - msLvFrom(a.msLv);
   function pickByMsLv(cands, lv) {
-    const hit = cands.find(s => msLvHit(s.msLv, lv));
-    if (hit) return hit;
+    const hits = cands.filter(s => msLvHit(s.msLv, lv));
+    if (hits.length) return hits.slice().sort(byFromDesc)[0];
     if (lv < Math.min(...cands.map(s => msLvFrom(s.msLv)))) return null;   // 아직 습득 전
-    return cands.slice().sort((a, b) => msLvFrom(b.msLv) - msLvFrom(a.msLv))[0];
+    return cands.slice().sort(byFromDesc)[0];
   }
 
   function openMskill(open) {
