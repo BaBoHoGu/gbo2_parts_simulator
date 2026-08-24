@@ -1033,6 +1033,65 @@
     return String(fit.length ? fit[fit.length - 1] : lvs[0]);
   }
 
+  /* ---------- 스러스터 지표 ---------- */
+  // 위키 83(전투 시스템) 실측표. 초기소비·소비속도는 % 가 아니라 '스라값 그 자체'(절대값)다.
+  //   「初期消費量はスラスター値そのもの（固定値）」「回復速度は全機固定で約5/s」
+  // 열은 표준/강습/적성 셋뿐이라, 적성이 있으면 적성 · 없고 강습이면 강습 · 그 외 표준을 쓴다
+  // (강습이면서 적성인 조합은 위키에 값이 없다).
+  const THRUSTER_TBL = {
+    ground: { init: { std: 20, assault: 15, adapt: 19 }, rate: { std: 8, assault: 8, adapt: 7.6 } },
+    space: { init: { std: 15, assault: 16, adapt: 12 }, rate: { std: 6.4, assault: 6.4, adapt: 4.0 } }
+  };
+  const THR_RECOVER = 5;                 // 스라값/초 — 전 기체 공통
+  const OH_SEC = 7, OH_SEC_GROUND_ADAPT = 6.3;   // 지상적성만 10% 짧다(우주적성은 효과 없음)
+  const isTankMs = ms => /タンク|ヒルドルブ/.test(String(ms && ms.MS名 || ''));
+
+  /** 스러스터 관련 파츠 효과 — 회복속도%·OH단축%·소비경감%(초기/이동중). 모두 가산 중복. */
+  function thrusterPartFx(equipped) {
+    let recover = 0, oh = 0, cutInit = 0, cutRate = 0;
+    for (const p of equipped || []) {
+      const d = String(p.description || '').replace(/\\n/g, ' ');
+      let m = d.match(/スラスターの回復速度が\s*(\d+)\s*[%％]\s*上昇/);
+      if (m) recover += Number(m[1]);
+      m = d.match(/スラスターオーバーヒート時の回復時間が\s*(\d+)\s*[%％]\s*短縮/);
+      if (m) oh += Number(m[1]);
+      // 「高速移動開始時と…消費量を N%軽減」은 초기소비까지, 「高速移動中の…」은 이동 중만
+      m = d.match(/高速移動開始時[^。]*?スラスター消費量を\s*(\d+)\s*[%％]\s*軽減/);
+      if (m) { cutInit += Number(m[1]); cutRate += Number(m[1]); }
+      else {
+        m = d.match(/高速移動中の[^。]*?スラスター消費量を\s*(\d+)\s*[%％]\s*軽減/);
+        if (m) cutRate += Number(m[1]);
+      }
+    }
+    return { recover, oh, cutInit, cutRate };
+  }
+
+  /**
+   * 환경(지상/우주)별 스러스터 지표.
+   *   부스트 지속 = (스라값 − 초기소비) ÷ 소비속도
+   *   완충 시간   = 스라값 ÷ 회복속도
+   *   OH 복귀     = 기준초 × (1 − 단축%)
+   * 소비속도는 2족 기준이라 탱크는 지속 시간을 내지 않는다(위키도 값에 ? 를 달아 뒀다).
+   */
+  function thrusterMetrics(ms, thrusterVal, equipped, env) {
+    if (!ms || !thrusterVal) return null;
+    const t = THRUSTER_TBL[env];
+    const adapt = env === 'ground' ? ms['環境適正_地上'] : ms['環境適正_宇宙'];
+    const col = adapt ? 'adapt' : (ms['属性'] === '強襲' ? 'assault' : 'std');
+    const fx = thrusterPartFx(equipped);
+    const init = t.init[col] * (1 - fx.cutInit / 100);
+    const rate = t.rate[col] * (1 - fx.cutRate / 100);
+    const boost = (!isTankMs(ms) && thrusterVal > init && rate > 0)
+      ? (thrusterVal - init) / rate : null;
+    const full = thrusterVal / (THR_RECOVER * (1 + fx.recover / 100));
+    const ohBase = (env === 'ground' && ms['環境適正_地上']) ? OH_SEC_GROUND_ADAPT : OH_SEC;
+    return {
+      boost, full, oh: ohBase * (1 - fx.oh / 100), col, fx,
+      base: { boost: (!isTankMs(ms) && thrusterVal > t.init[col]) ? (thrusterVal - t.init[col]) / t.rate[col] : null,
+        full: thrusterVal / THR_RECOVER, oh: ohBase }
+    };
+  }
+
   // 조사·산탄·동시발사 무장은 무장 표의 위력이 1히트/1발당 값이라, 備考의 배수를 읽어
   // 전탄(전히트) 명중 시 총 피해를 함께 보여 준다. (격투는 방향/연격으로 따로 표기)
   const CJK_NUM = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
@@ -1890,6 +1949,41 @@
     sr.append(el('span', 'stagger-detail',
       `임계 ${stg.threshold}%` + (stg.mult < 1 ? ` · 받는 누적 ×${+stg.mult.toFixed(3)}` : '')));
     body.append(sr);
+
+    // 스러스터 지표 — 부스트 지속 · 완충 · OH 복귀. 지상/우주 각각(환경적성·강습 보정이 다르다).
+    {
+      const thr = r.total.thruster || 0;
+      // 소수 한 자리로 통일한다 — 16.2 와 15.6 이 둘 다 '16초' 로 보이면 변화가 가려진다
+      const sec = v => v == null ? '—' : (Math.round(v * 10) / 10).toFixed(1) + '초';
+      for (const [env, label] of [['ground', '지상'], ['space', '우주']]) {
+        if (env === 'ground' && state.ms['出撃_地上可'] === false) continue;
+        if (env === 'space' && state.ms['出撃_宇宙可'] === false) continue;
+        const m = thrusterMetrics(state.ms, thr, state.equipped, env);
+        if (!m) continue;
+        const row = el('div', 'dura-row thr-row');
+        row.append(el('span', 'dura-lb', '스러스터 ' + label));
+        const cell = (k, v, base) => {
+          const c = el('span', 'dura-cell');
+          c.append(el('span', 'dura-k', k));
+          c.append(el('span', 'dura-v', sec(v)));
+          if (v != null && base != null && Math.abs(v - base) > 0.05) {
+            const better = k === '완충' || k === 'OH복귀' ? v < base : v > base;
+            c.append(el('span', better ? 'dura-up' : 'dura-down', (v > base ? '+' : '') + (Math.round((v - base) * 10) / 10) + '초'));
+          }
+          return c;
+        };
+        row.append(cell('부스트', m.boost, m.base.boost));
+        row.append(cell('완충', m.full, m.base.full));
+        row.append(cell('OH복귀', m.oh, m.base.oh));
+        const colKo = m.col === 'adapt' ? '환경적성' : m.col === 'assault' ? '강습 보정' : '표준';
+        row.title = '위키 실측 기준(' + colKo + ')\n'
+          + '· 부스트 지속 = (스러스터 ' + thr + ' − 초기소비) ÷ 소비속도\n'
+          + '· 완충 = 스러스터 ÷ (5/초 × 회복 파츠)\n'
+          + '· OH 복귀 = ' + m.base.oh + '초 × (1 − 단축 파츠)'
+          + (isTankMs(state.ms) ? '\n※ 탱크형은 소비속도가 위키 미확정이라 부스트 지속을 내지 않는다.' : '');
+        body.append(row);
+      }
+    }
 
     // 방어 스킬 체크박스 — 체크 시 위 내구 지표·누적치에 반영된다.
     const cl = staggerCheckList(state.ms, lv, () => renderAll());
