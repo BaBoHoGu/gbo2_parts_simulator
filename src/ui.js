@@ -1967,18 +1967,18 @@
           c.append(el('span', 'dura-k', k));
           c.append(el('span', 'dura-v', sec(v)));
           if (v != null && base != null && Math.abs(v - base) > 0.05) {
-            const better = k === '완충' || k === 'OH복귀' ? v < base : v > base;
+            const better = k === '풀회복' || k === 'OH복귀' ? v < base : v > base;
             c.append(el('span', better ? 'dura-up' : 'dura-down', (v > base ? '+' : '') + (Math.round((v - base) * 10) / 10) + '초'));
           }
           return c;
         };
         row.append(cell('부스트', m.boost, m.base.boost));
-        row.append(cell('완충', m.full, m.base.full));
+        row.append(cell('풀회복', m.full, m.base.full));
         row.append(cell('OH복귀', m.oh, m.base.oh));
         const colKo = m.col === 'adapt' ? '환경적성' : m.col === 'assault' ? '강습 보정' : '표준';
         row.title = '위키 실측 기준(' + colKo + ')\n'
           + '· 부스트 지속 = (스러스터 ' + thr + ' − 초기소비) ÷ 소비속도\n'
-          + '· 완충 = 스러스터 ÷ (5/초 × 회복 파츠)\n'
+          + '· 풀회복 = 게이지 0 → 가득 (스러스터 ÷ 5/초, 회복 파츠 반영)\n'
           + '· OH 복귀 = ' + m.base.oh + '초 × (1 − 단축 파츠)'
           + (isTankMs(state.ms) ? '\n※ 탱크형은 소비속도가 위키 미확정이라 부스트 지속을 내지 않는다.' : '');
         body.append(row);
@@ -2061,7 +2061,10 @@
         ammo: ammoStr,
         stagger: mods.stagger ? jaUnits(mods.stagger) : '—',
         range: f('射程') || '—',
-        reload: reloadStr
+        reload: reloadStr,
+        // 고정 피해(소이)는 위력 칸과 별개로 들어가는 몫이라 카드에도 함께 실어야 오해가 없다
+        fx: fixedDamageWithParts(w, state.equipped),
+        debuffs: debuffsOf(w)
       });
     }
     return out;
@@ -2263,6 +2266,21 @@
       lt('내성 ' + Math.round(stg.threshold / stg.mult) + '%    임계 ' + stg.threshold + '%'
         + (stg.mult < 1 ? '    받는 누적 ×' + (+stg.mult.toFixed(3)) : ''), rxi + 78, ry + 4, '13px ' + F, CO.text);
       ry += 20;
+      // 스러스터 지표 — 성능표와 같은 값(부스트·풀회복·OH). 출격 가능한 환경만.
+      {
+        const thrV = r.total.thruster || 0;
+        const sec1 = v => v == null ? '—' : (Math.round(v * 10) / 10).toFixed(1) + '초';
+        for (const [env, lb] of [['ground', '지상'], ['space', '우주']]) {
+          if (env === 'ground' && m['出撃_地上可'] === false) continue;
+          if (env === 'space' && m['出撃_宇宙可'] === false) continue;
+          const tm = thrusterMetrics(m, thrV, state.equipped, env);
+          if (!tm) continue;
+          lt('스러스터 ' + lb, rxi, ry + 4, '700 12px ' + F, CO.muted);
+          lt('부스트 ' + sec1(tm.boost) + '    풀회복 ' + sec1(tm.full) + '    OH ' + sec1(tm.oh),
+            rxi + 96, ry + 4, '13px ' + F, CO.text);   // '스러스터 지상' 이 길어 78 이면 값과 붙는다
+          ry += 20;
+        }
+      }
       if (skills.length) {
         ry += 8; rule(ry, rxi, rR); ry += 12;
         lt('발동 스킬', rxi, ry + 4, '700 12px ' + F, skillCol);
@@ -2333,7 +2351,17 @@
         const tc = wp.type === 'melee' ? CO.close : wp.type === 'shield' ? CO.long : CO.mid;
         dtext(wp.sec, cSec, ry, '11px ' + F, CO.muted);
         ctx.fillStyle = tc; ctx.beginPath(); ctx.arc(dotX, ry - 4, 3.5, 0, 7); ctx.fill();
-        dtext(dclip(wp.name, cType - cName - 10, vf), cName, ry, vf, CO.text);
+        // 고정 피해·디버프는 이름 뒤에 작은 태그로. 태그 폭만큼 이름을 먼저 줄인다.
+        const tag = [wp.fx ? '고정 ' + wp.fx.total.toLocaleString() : '', ...(wp.debuffs || [])]
+          .filter(Boolean).join(' · ');
+        ctx.font = '10px ' + F;
+        const tagW = tag ? ctx.measureText(tag).width + 6 : 0;
+        const nmTxt = dclip(wp.name, cType - cName - 10 - tagW, vf);
+        dtext(nmTxt, cName, ry, vf, CO.text);
+        if (tag) {
+          ctx.font = vf;
+          dtext(tag, cName + ctx.measureText(nmTxt).width + 6, ry, '10px ' + F, CO.close);
+        }
         dtext(wp.kind, cType, ry, vf, tc);
         dtext(wp.nc ? wp.nc.one.toLocaleString() : '—', cNC, ry, vfb, wp.nc ? CO.text : CO.dim, 'right');
         dtext(wp.ch ? wp.ch.one.toLocaleString() : '—', cCH, ry, vf, wp.ch ? CO.text : CO.dim, 'right');
