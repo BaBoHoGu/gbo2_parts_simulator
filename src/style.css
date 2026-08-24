@@ -1682,3 +1682,5 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 }
 /* 고정 피해에 파츠 몫이 붙었을 때의 증가분 */
 .w-fixed-up { font-style: normal; color: var(--good, #7ddc8a); font-weight: 700; }
+/* 스러스터 지표 — 나빠지는 방향은 붉게 */
+.dura-down { font-size: 10px; font-weight: 700; color: var(--bad, #ff7a7a); margin-left: 3px; }
