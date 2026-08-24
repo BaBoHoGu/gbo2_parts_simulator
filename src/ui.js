@@ -4351,66 +4351,10 @@
       if (tgt) { const x = el('button', 'sheet-close', '✕'); x.title = '닫기'; x.onclick = close; tgt.appendChild(x); }
     }
 
-    // ── 스와이프 제스처 (모바일 빌드 화면) — 성능=오른쪽, 무장=왼쪽(반대 방향) ──
-    // 성능: 오른쪽 가장자리→왼쪽으로 열기 / 오른쪽으로 밀어 닫기.
-    // 무장: 왼쪽 가장자리→오른쪽으로 열기 / 왼쪽으로 밀어 닫기.
-    const EDGE = 30, OPEN_AT = 0.32;
-    let drag = null;
-    const isMob = () => window.matchMedia('(max-width: 700px)').matches && document.body.classList.contains('view-build');
-    const openSheetEl = () => sheets.map(s => target(s.cls)).find(e => e && e.classList.contains('sheet-open'));
-    const sideOf = el => (el && el.classList.contains('build-weapons')) ? 'left' : 'right';
-    const clsOfSide = side => side === 'left' ? 'build-weapons' : 'build-stats';
-    // 셋업(시트 이동/변형)은 '실제 가로 스와이프'가 확인된 뒤에만 한다 → 파츠 탭엔 절대 개입 안 함.
-    document.addEventListener('touchstart', ev => {
-      if (drag || !isMob() || ev.touches.length !== 1) return;
-      const x = ev.touches[0].clientX, y = ev.touches[0].clientY;
-      const openEl = openSheetEl();
-      if (openEl) {
-        drag = { sheet: openEl, cls: sideOf(openEl) === 'left' ? 'build-weapons' : 'build-stats', mode: 'close', side: sideOf(openEl), x0: x, y0: y, size: openEl.getBoundingClientRect().width, prog: 0, axis: null };
-      } else if (x >= window.innerWidth - EDGE || x <= EDGE) {
-        const side = x <= EDGE ? 'left' : 'right', cls = clsOfSide(side);
-        if (!target(cls)) return;
-        drag = { sheet: null, cls, mode: 'open', side, x0: x, y0: y, size: 0, prog: 0, axis: null };   // 셋업은 touchmove 에서
-      }
-    }, { passive: true });
-    document.addEventListener('touchmove', ev => {
-      if (!drag) return;
-      const dx = ev.touches[0].clientX - drag.x0, dy = ev.touches[0].clientY - drag.y0;
-      if (!drag.axis) {
-        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-        if (Math.abs(dx) <= Math.abs(dy)) { drag = null; return; }   // 세로 우세 → 취소(스크롤). 셋업 전이라 정리 불필요
-        drag.axis = 'go';
-        if (drag.mode === 'open') {
-          toBody(drag.cls);
-          drag.sheet = target(drag.cls);
-          drag.size = drag.sheet.getBoundingClientRect().width || Math.min(window.innerWidth * .94, 480);
-          drag.sheet.style.transition = 'none';
-          drag.sheet.style.transform = drag.side === 'left' ? 'translateX(-100%)' : 'translateX(100%)';
-          backdrop.classList.add('on'); backdrop.style.transition = 'none'; backdrop.style.opacity = '0';
-        } else { drag.sheet.style.transition = 'none'; backdrop.style.transition = 'none'; }
-      }
-      let prog;
-      if (drag.mode === 'open') prog = drag.side === 'left' ? Math.max(0, dx) / drag.size : Math.max(0, -dx) / drag.size;
-      else prog = drag.side === 'left' ? Math.max(0, -dx) / drag.size : Math.max(0, dx) / drag.size;
-      prog = Math.min(1, prog); drag.prog = prog;
-      const off = (drag.mode === 'open' ? (1 - prog) : prog) * 100;
-      drag.sheet.style.transform = `translateX(${drag.side === 'left' ? -off : off}%)`;
-      backdrop.style.opacity = String(drag.mode === 'open' ? prog : (1 - prog));
-    }, { passive: true });
-    function endDrag(commit) {
-      if (!drag) return;
-      const d = drag; drag = null;
-      if (!d.axis) return;                          // 탭/미이동 → 셋업 없었음, 정리 불필요
-      if (d.sheet) { d.sheet.style.transition = ''; d.sheet.style.transform = ''; }
-      backdrop.style.transition = ''; backdrop.style.opacity = '';
-      if (!commit) { if (d.mode === 'open') close(); return; }
-      if (d.mode === 'open') {
-        if (d.prog > OPEN_AT) { d.sheet.classList.add('sheet-open'); btns[d.cls].classList.add('on'); backdrop.classList.add('on'); }
-        else close();
-      } else if (d.prog > OPEN_AT) close();
-    }
-    document.addEventListener('touchend', () => endDrag(true), { passive: true });
-    document.addEventListener('touchcancel', () => endDrag(false), { passive: true });
+    // 시트 제어는 '하단 버튼 · 시트의 ✕ · 배경 탭' 뿐이다.
+    // 예전에는 화면 가장자리 스와이프로 열고 밀어서 닫았는데, 무장 표를 가로로 훑거나
+    // 시트 안에서 조작할 때 그 드래그가 닫기 제스처로 잡혀 창이 멋대로 닫혔다.
+    // 오작동 여지를 없애려고 스와이프 제스처는 두지 않는다.
 
     closeMobileSheets = close;
     mobileSheetOpen = () => sheets.some(s => target(s.cls) && target(s.cls).classList.contains('sheet-open'));
