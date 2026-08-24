@@ -241,6 +241,18 @@ body.view-build  #screenSelect { display: none; }
   color: var(--accent); background: var(--accent-dim);
   padding: 0 5px; border-radius: 4px; margin-left: 2px;
 }
+/* 고정 피해(소이 등) — 위력과 별개로 더해지는 몫 */
+.w-fixed {
+  flex-shrink: 0; font-size: 10px; font-weight: 700; line-height: 1.5;
+  color: #ff8a5c; background: rgba(255, 138, 92, .14);
+  padding: 0 5px; border-radius: 4px; margin-left: 3px;
+}
+/* 디버프 — 표시 전용(수치 없음) */
+.w-debuff {
+  flex-shrink: 0; font-size: 10px; font-weight: 600; line-height: 1.5;
+  color: var(--muted); background: var(--panel-3);
+  padding: 0 5px; border-radius: 4px; margin-left: 3px;
+}
 /* 무장 유형 (실탄/빔/격투/실드/기타) — 위키 무장표 속성과 동일 */
 .w-type {
   font-size: 11px; font-weight: 700; text-align: center;
@@ -1660,4 +1672,11 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    기준(containing block)을 망가뜨린다 → 모바일에선 진입 애니메이션을 끈다. */
 @media (max-width: 700px) {
   body.view-build .screen-build > * { animation: none !important; }
+}
+
+/* 모바일: 무장 이름 칸이 좁아 고정 피해·디버프 칩이 잘려 보이지 않는다.
+   칩은 줄여 봐야 뜻이 사라지므로, 이름을 줄바꿈해 칩을 아랫줄로 내린다. */
+@media (max-width: 700px) {
+  .w-nm { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
+  .w-fixed, .w-debuff, .w-mult { flex-shrink: 0; }
 }
