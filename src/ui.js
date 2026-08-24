@@ -1037,15 +1037,51 @@
   // 전탄(전히트) 명중 시 총 피해를 함께 보여 준다. (격투는 방향/연격으로 따로 표기)
   const CJK_NUM = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
   const cjkNum = s => (CJK_NUM[s] ?? Number(s));
+  /** 한 번에 나가는 발수 — 「6発同時発射」「4発連続発射」「二発同時発射」. 없으면 1. */
+  function shotCountOf(note) {
+    const m = String(note).match(/([一二三四五六七八九十]|\d+)\s*発?\s*(?:同時|連続)発射/);
+    return m ? Math.max(1, cjkNum(m[1])) : 1;
+  }
+  /** 연사 횟수 — 「2発同時発射 x2回攻撃」의 x2. 발사 표기가 있는 조각 안에서만 찾는다
+   *  (「よろけ値：… x2射」에도 같은 꼴이 있어 note 전체에서 찾으면 오인한다). */
+  function volleyCountOf(note) {
+    const seg = String(note).split(' / ').find(s => /(?:同時|連続)発射/.test(s));
+    const m = seg && seg.match(/[x×ｘ]\s*(\d+)\s*(?:回攻撃|射)/);
+    return m ? Math.max(1, Number(m[1])) : 1;
+  }
   // 동시발사(산탄) 배수를 모드별로 읽는다. 「非集束時N…」은 논차지만, 「集束時N…」은 풀차지만,
   // 접두가 없으면 두 모드 공통. (非集束時 이 集束時 를 부분포함하므로 非 를 먼저 가른다.)
   function fireMult(w) {
     const empty = { nc: null, ch: null };
     if (!w || w.type === 'melee') return empty;
     const note = (w.info && w.info['備考']) || '';
-    // 조사(照射): 최대 N 히트 — 지속 조사라 두 칸 공통
-    const mh = note.match(/最大\s*(\d+)\s*(?:ヒット|HIT)/i);   // 「最大8ヒット」·「最大8HIT」(리미터 해제 등 라틴 표기) 모두
-    if (mh && Number(mh[1]) > 1) { const x = { n: Number(mh[1]), label: '최대 ' + mh[1] + '히트' }; return { nc: x, ch: x }; }
+    // 조사(照射)·지속 폭발: 최대 N 히트 — 지속이라 두 칸 공통.
+    // 히트 수만 읽고 끝내면 여러 발을 쏘는 무장의 몫이 통째로 빠진다(펀넬x6 조사 = 6발 × 5히트).
+    // 발수는 두 가지로 적히는데 **같은 뜻**이라 하나만 센다:
+    //   「最大5HIT x4」 — 괄호 안에 배수가 붙는 형(대함대공 미사일x4)
+    //   「最大5ヒット」 + 다른 조각의 「6発同時発射」(펀넬x6 조사)
+    // 둘 다 있는 무장은 앞의 배수가 곧 뒤의 발수라, 겹쳐 곱하면 4배로 부풀려진다.
+    // 모드별로 히트 수가 다른 무장도 있다(「非集束時最大5ヒット / 集束時最大10ヒット」)
+    // → 조각마다 접두를 보고 논차지/집속에 나눠 담는다. 접두가 없으면 두 모드 공통.
+    {
+      const shots = shotCountOf(note), volleys = volleyCountOf(note);
+      let a = null, b = null, common = null;
+      for (const seg of note.split(' / ')) {
+        const m = seg.match(/最大\s*(\d+)\s*(?:ヒット|HIT)\s*(?:[x×ｘ]\s*(\d+))?/i);
+        if (!m) continue;
+        const hits = Number(m[1]);
+        if (hits <= 0) continue;
+        const mul = (m[2] ? Number(m[2]) : shots) * volleys;
+        const n = hits * mul;
+        if (n <= 1) continue;
+        const cell = { n, label: mul > 1 ? mul + '발 ×' + hits + '히트' : '최대 ' + hits + '히트' };
+        if (/非集束時/.test(seg)) a = cell;
+        else if (/集束時/.test(seg)) b = cell;
+        else common = cell;
+      }
+      if (common) { a = a || common; b = b || common; }
+      if (a || b) return { nc: a, ch: b };
+    }
     // 지속 조사의 범위 표기 「3～20ヒット」(G-바드 등) — 풀 지속 시 최대 타수를 쓴다
     const rg = /照射/.test(note) && note.match(/(\d+)\s*[～~]\s*(\d+)\s*(?:ヒット|HIT)/i);
     if (rg && Number(rg[2]) > 1) { const x = { n: Number(rg[2]), label: rg[1] + '~' + rg[2] + '히트' }; return { nc: x, ch: x }; }
