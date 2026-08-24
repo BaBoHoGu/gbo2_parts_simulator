@@ -62,7 +62,8 @@ function attackPower(correction, extra = 0) {
 function shootingDamage(wp, correction, opt = {}) {
   const att = attackPower(correction, opt.extraAtt || 0);
   const tAtt = floorTo(att * (1 + (opt.etcA || 0)), 2);
-  const pr = ATTR_BONUS[opt.attr] ?? 0;
+  // attrBonus: 카테고리 특공 프로그램처럼 상성 배율 자체를 올리는 파츠가 있으면 그 값을 쓴다
+  const pr = opt.attrBonus != null ? opt.attrBonus : (ATTR_BONUS[opt.attr] ?? 0);
   const r = opt.region;
 
   // Def·ETCb 는 1 이므로 곱셈 단계를 그대로 둔 채 생략한다.
@@ -81,7 +82,8 @@ function shootingDamage(wp, correction, opt = {}) {
 function meleeDamage(wp, correction, opt = {}) {
   const att = attackPower(correction, opt.extraAtt || 0);
   const tAtt = floorTo(att * (1 + (opt.etcA || 0)), 2);
-  const pr = ATTR_BONUS[opt.attr] ?? 0;
+  // attrBonus: 카테고리 특공 프로그램처럼 상성 배율 자체를 올리는 파츠가 있으면 그 값을 쓴다
+  const pr = opt.attrBonus != null ? opt.attrBonus : (ATTR_BONUS[opt.attr] ?? 0);
   const r = opt.region;
   const ccd = opt.ccd && opt.ccd.length ? opt.ccd : [1];
   const cct = opt.cct || [];
@@ -325,7 +327,7 @@ function shortenTimeText(text, pct) {
 const GBO2Damage = {
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
-  weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag,
+  weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag, ATTR_BONUS,
   shortenTime, shortenTimeText, applyDamagePct
 };
 

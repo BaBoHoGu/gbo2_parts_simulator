@@ -1147,6 +1147,19 @@
     return { base: fx, per, hits, total: per * hits, boosted: per !== fx.per || hits !== fx.hits };
   }
 
+  /**
+   * 상성(카테고리) 배율 — 카테고리 특공 프로그램은 우위일 때만 이 배율 자체를 올린다.
+   * 위키 7000: 「数値はカテゴリ補正の130%に＋10%され、140%になる。実ダメージでいうと＋7～8%」
+   * 우리 기본값이 advantage 0.3(=130%)이라 +0.1 하면 140% 가 된다.
+   * 불리·동일 상성에는 효과가 없다(설명이 '有利カテゴリの敵機에' 로 한정).
+   */
+  function attrBonusOf(equipped, attr) {
+    const base = D.ATTR_BONUS[attr] ?? 0;
+    if (attr !== 'advantage') return base;
+    const has = (equipped || []).some(p => /有利カテゴリの敵機に与えるダメージを増加/.test(String(p.description || '')));
+    return has ? base + 0.1 : base;
+  }
+
   /** 무장이 거는 디버프 — 계산엔 안 쓰고 표시만 한다(효과량이 위키에 수치로 없다). */
   const DEBUFF_RULES = [
     [/炎上/, '연소'],
@@ -3627,7 +3640,11 @@
       const enemyEff = durabilityOf(enemyTot, PIETAN_ARMOR[attr] || 'armorRange');
       const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
       const a = kind === 'melee' ? corr.melee : corr.shooting;
-      const raw = w.type === 'melee' ? D.meleeDamage(d.power, a, { attr: outAttr }) : D.shootingDamage(d.power, a, { attr: outAttr });
+      // 카테고리 특공 프로그램은 상성 우위 배율 자체를 130%→140% 로 올린다
+      const aBonus = attrBonusOf(state.equipped, outAttr);
+      const raw = w.type === 'melee'
+        ? D.meleeDamage(d.power, a, { attr: outAttr, attrBonus: aBonus })
+        : D.shootingDamage(d.power, a, { attr: outAttr, attrBonus: aBonus });
       const dmg = D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]);
       const mult = fireMult(w);
       const n = (mult.nc && mult.nc.n) || 1;
