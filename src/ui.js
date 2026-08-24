@@ -206,6 +206,27 @@
     return [...byName.values()];
   }
 
+  /** 완충재계 스킬의 '기체HP 피해 경감량'을 올려 주는 파츠(신형 완충재)의 강화 %.
+   *  「緩衝材系スキルの効果である機体HPへのダメージ軽減効果をさらに N%強化」 */
+  function bufferBoostOf(equipped) {
+    let n = 0;
+    for (const p of equipped || []) {
+      const m = String(p.description || '').match(/緩衝材系スキル[^。]*?(\d+)\s*[%％]\s*強化/);
+      if (m) n += Number(m[1]);
+    }
+    return n;
+  }
+
+  /** 완충재계 스킬 몫의 경감량에 강화분을 더한다(퍼센트포인트 가산).
+   *  대상은 「◯◯特殊緩衝材」 뿐 — 「特殊防御機構」·「特殊装甲材」 등에는 효과가 없다.
+   *  국부(부위) HP 경감은 원래 지표에 안 넣으므로 자연히 제외된다. */
+  function boostBufferCuts(cuts, equipped) {
+    const boost = bufferBoostOf(equipped);
+    if (!boost) return cuts;
+    return cuts.map(c => (c.from && /緩衝材/.test(c.from) && !/防御機構/.test(c.from))
+      ? { ...c, pct: Math.min(99, c.pct + boost) } : c);
+  }
+
   /** 켜 둔 스킬만 적용한 누적치 상태 — mult(받는 누적 배수) · threshold(임계) · cuts(피해 경감).
    *  누적치 감소(마뉴버·정지사격·헤비어택·활공 등)는 발동 상황이 배타적이라 동시에 못 쓴다
    *  → 하나만 적용(여럿 켜졌으면 감소가 가장 약한=값이 큰 쪽 보수적). 임계형(데미지컨트롤)은 상시. */
@@ -217,7 +238,7 @@
       if (!state.staggerOn.has(s.name)) continue;
       if (s.mult < 1) { mult *= s.mult; mults.push(s.mult); }   // 감소 배수
       if (s.threshold != null) threshold = Math.max(threshold, s.threshold);
-      cuts.push(...s.cuts);
+      cuts.push(...s.cuts.map(c => ({ ...c, from: s.name })));   // 어느 스킬 몫인지 남긴다(완충재 강화 판정용)
     }
     mults.sort((a, b) => a - b);   // 감소가 큰(배수가 작은) 스킬부터 순서대로 적용
     return { skills, mult, mults, threshold, cuts };
@@ -1685,7 +1706,7 @@
     const du = el('div', 'dura-row');
     du.append(el('span', 'dura-lb', '내구 지표'));
     for (const [k, label, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
-      const base = durabilityOf(r.total, k), f = staggerDmgFactor([...partCuts, ...stg.cuts], dattr);
+      const base = durabilityOf(r.total, k), f = staggerDmgFactor([...partCuts, ...boostBufferCuts(stg.cuts, state.equipped)], dattr);
       const cell = el('span', 'dura-cell');
       cell.append(el('span', 'dura-k', label));
       if (f < 1) {
@@ -2264,7 +2285,7 @@
       const mul = (1 + atkB[key] / 100) * skillDmgPctList(key).reduce((m, p) => m * (1 + p / 100), 1);
       return Math.round(((1 + corr / 100) * mul - 1) * 100);
     };
-    const cuts = [...partDamageCuts(equipped, lv), ...activeStaggerMods(state.ms, lv).cuts];
+    const cuts = [...partDamageCuts(equipped, lv), ...boostBufferCuts(activeStaggerMods(state.ms, lv).cuts, equipped)];
     // 내구 지표 = 실효 내성(armor 단위). 내성값과 피해경감 %를 합쳐 "체감 내성"으로 환산한다.
     // 예: armor 40 + 피해경감 10% → 100×(1 − 0.6×0.9) = 46. 목표 '50'을 armor처럼 지정.
     const dur = (key, dattr) => {
@@ -3342,7 +3363,7 @@
     const key = PIETAN_ARMOR[w.attr] || 'armorRange';
     const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
     const stg = activeStaggerMods(state.ms, state.ms ? msLevel(state.ms) : 1);   // 내 누적치 스킬
-    const dmgFactor = staggerDmgFactor([...partDamageCuts(state.equipped, msLevel(state.ms)), ...stg.cuts], w.attr);   // 파츠+방어 스킬 피해 경감
+    const dmgFactor = staggerDmgFactor([...partDamageCuts(state.equipped, msLevel(state.ms)), ...boostBufferCuts(stg.cuts, state.equipped)], w.attr);   // 파츠+방어 스킬 피해 경감
     const isMelee = w.attr === 'melee';
     // 격투 변형(기본/헤비어택)·방향(N격/횡격/하격) — 무장 데이터의 방향별 배율(ccd)을 적용한다.
     const variants = isMelee && w.variants && w.variants.length ? w.variants : null;
