@@ -1607,7 +1607,9 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   /* 하단 액션바 — 빌드 화면에서만 */
   .m-actionbar {
     display: none;
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 44;
+    /* 백드롭(45)·시트(46) 보다 위 — 시트가 열린 채로도 다른 시트로 바로 전환할 수 있어야 한다
+       (예전엔 백드롭에 가려 버튼이 안 눌렸다) */
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 47;
     gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     background: linear-gradient(180deg, rgba(28, 33, 48, .72), var(--panel));
     border-top: 1px solid var(--line);
@@ -1697,4 +1699,26 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   /* 시트 안에서 표가 화면보다 넓으면 시트가 가로로 스크롤된다 */
   .build-weapons { overflow: auto; }
   .build-weapons > .panel { min-width: max-content; }
+}
+
+/* 모바일: 스킬 패널을 무장에서 떼어 별도 시트로 (하단 「🛠 스킬」 버튼으로 연다)
+   무장과 같은 왼쪽 슬라이드. 버튼 전용이라 제스처는 붙이지 않는다. */
+@media (max-width: 700px) {
+  .mskill-inline.sheet-open {
+    position: fixed; top: 0; left: 0; bottom: 0; right: auto;
+    width: min(94vw, 480px);
+    z-index: 46;
+    margin: 0 !important;
+    transform: none;
+    overflow-y: auto;
+    background: var(--bg);
+    box-shadow: 10px 0 34px rgba(0, 0, 0, .55);
+    padding: 8px 8px calc(70px + env(safe-area-inset-bottom));
+    padding-top: max(8px, env(safe-area-inset-top));
+    border-radius: 0;
+  }
+  /* 시트로 뜰 때는 인라인용 테두리·여백을 걷어낸다 */
+  .mskill-inline.sheet-open > .mskill-inline-head { position: sticky; top: 0; background: var(--bg); z-index: 1; }
+  /* 하단 액션바가 3개 버튼이 되므로 폭을 고르게 */
+  .m-actionbar button { flex: 1 1 0; min-width: 0; }
 }
