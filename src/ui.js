@@ -4487,9 +4487,15 @@
     // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명 (무장 칸 안에서 토글)
     $('#skillListBtn').onclick = () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
-      openMskill($('#mskillInline').hidden);   // 토글
+      // 모바일에선 별도 시트로 연다(무장 표와 섞이면 보기 어렵다). 데스크톱은 기존 인라인 토글.
+      if (isMobileView() && openMobileSheet) openMobileSheet('mskill-inline');
+      else openMskill($('#mskillInline').hidden);   // 토글
     };
-    $('#mskillClose').onclick = () => openMskill(false);
+    // 패널 안 '닫기' — 모바일에선 시트로 떠 있으므로 시트까지 닫아야 백드롭이 사라진다
+    $('#mskillClose').onclick = () => {
+      if (isMobileView() && $('#mskillInline').classList.contains('sheet-open')) closeMobileSheets();
+      else openMskill(false);
+    };
 
     // 불러오기 결과 안내 — 제외된 파츠가 있으면 조용히 넘기지 않는다 (가져오기에서 사용)
     const loadedMsg = (r, okText) => r.missing
@@ -4598,11 +4604,16 @@
   // ESC/뒤로가기가 이 함수들을 참조하므로 모듈 스코프에 둔다.
   let closeMobileSheets = () => {};
   let mobileSheetOpen = () => false;
+  let openMobileSheet = null;                      // 모바일 시트 열기(설치되면 채워진다)
+  const isMobileView = () => window.matchMedia('(max-width: 700px)').matches
+    && document.body.classList.contains('view-build');
   function setupMobileSheets() {
     // 파츠 상세는 인라인(장착↔파츠 사이)로 두고, 성능·무장만 슬라이드 시트로.
     const sheets = [
       { cls: 'build-stats', label: '📊 성능' },
-      { cls: 'build-weapons', label: '🗡 무장' }
+      { cls: 'build-weapons', label: '🗡 무장' },
+      // 스킬은 원래 무장 칸 안 인라인인데, 모바일에선 무장 표와 섞여 보기 어려워 시트로 뗀다.
+      { cls: 'mskill-inline', label: '🛠 스킬' }
     ];
     const target = c => document.querySelector('.' + c);
     const backdrop = el('div', 'sheet-backdrop');
@@ -4625,17 +4636,24 @@
         }
       }
     };
+    // 스킬 패널만 hidden 속성으로 여닫히므로(데스크톱 인라인 동작) 시트로 쓸 때도 함께 맞춘다.
+    const SKILL = 'mskill-inline';
     const close = () => {
       let any = false;
       for (const s of sheets) { const t = target(s.cls); if (t) { if (t.classList.contains('sheet-open')) any = true; t.classList.remove('sheet-open'); } btns[s.cls].classList.remove('on'); }
       backdrop.classList.remove('on');
+      const sp = target(SKILL);
+      if (sp && !sp.hidden) { sp.hidden = true; const sb = document.getElementById('skillListBtn'); if (sb) sb.classList.remove('on'); }
       if (any) setTimeout(restoreClosed, 320);   // 슬라이드 아웃 애니메이션 후 원위치
     };
     const open = cls => {
       const already = target(cls) && target(cls).classList.contains('sheet-open');
       close();
-      if (!already && target(cls)) { toBody(cls); target(cls).classList.add('sheet-open'); btns[cls].classList.add('on'); backdrop.classList.add('on'); }
+      if (already || !target(cls)) return;
+      if (cls === SKILL) { target(cls).hidden = false; renderMskill(); }
+      toBody(cls); target(cls).classList.add('sheet-open'); btns[cls].classList.add('on'); backdrop.classList.add('on');
     };
+    openMobileSheet = open;
     for (const s of sheets) {
       const b = el('button', 'btn-ghost', s.label);
       b.onclick = () => open(s.cls);
