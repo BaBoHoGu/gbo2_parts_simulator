@@ -3843,7 +3843,13 @@
    *  구간이 겹칠 때는 **높은 쪽**을 쓴다 — 위키가 「LV1～」과 「LV2～」를 함께 적어 두면
    *  앞의 것은 사실상 다음 구간 전까지라는 뜻이라, 먼저 찾은 것을 쓰면 낮은 스킬이 잡힌다
    *  (리크 돔Ⅱ 다리 특수 완충재 LV2 = 15% 인데 10% 로 나오던 자리). */
-  const byFromDesc = (a, b) => msLvFrom(b.msLv) - msLvFrom(a.msLv);
+  /** 스킬 자체의 LV(「LV3」) — 없으면 0. */
+  const skillLvNum = v => Number((String(v || '').match(/LV\s*(\d+)/i) || [])[1]) || 0;
+  /** 겹칠 때의 우선순위 — ① 스킬 LV 이 높은 쪽 ② 그다음 msLv 구간이 늦게 시작하는 쪽.
+   *  위키에 「LV1」과 「LV1～」처럼 불규칙하게 적힌 자리가 있는데(5건), 그럴 때 msLv 만 보면
+   *  기체 LV 이 올라갔는데 스킬이 낮아지는 결과가 나온다(수중형 건담 기동전 복합시스템).
+   *  GBO2 에서 기체 LV 이 올라 스킬이 내려가는 일은 없으므로 스킬 LV 을 먼저 본다. */
+  const byFromDesc = (a, b) => (skillLvNum(b.lv) - skillLvNum(a.lv)) || (msLvFrom(b.msLv) - msLvFrom(a.msLv));
   function pickByMsLv(cands, lv) {
     const hits = cands.filter(s => msLvHit(s.msLv, lv));
     if (hits.length) return hits.slice().sort(byFromDesc)[0];
