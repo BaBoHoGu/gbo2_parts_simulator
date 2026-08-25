@@ -1684,3 +1684,17 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 .w-fixed-up { font-style: normal; color: var(--good, #7ddc8a); font-weight: 700; }
 /* 스러스터 지표 — 나빠지는 방향은 붉게 */
 .dura-down { font-size: 10px; font-weight: 700; color: var(--bad, #ff7a7a); margin-left: 3px; }
+
+/* 모바일 무장 표: 헤더와 목록이 따로 놀던 문제
+   .weapon-list 에 overflow-y 가 걸려 있으면 CSS 규칙상 가로도 자체 스크롤 컨테이너가 되어,
+   목록만 옆으로 밀리고 형제인 .weapon-head 는 제자리에 남아 열이 어긋난다.
+   모바일에선 시트(.build-weapons) 가 이미 스크롤하므로 목록의 자체 스크롤을 끄고
+   가로 스크롤을 시트로 넘겨 헤더·본문이 함께 움직이게 한다. */
+@media (max-width: 700px) {
+  .weapon-list { max-height: none; overflow: visible; }
+  /* 좌우 여백은 손대지 않는다 — 헤더(margin 10 + padding 6)와
+     행(리스트 padding 10 + 행 padding 6)이 이미 16px 로 맞춰져 있다 */
+  /* 시트 안에서 표가 화면보다 넓으면 시트가 가로로 스크롤된다 */
+  .build-weapons { overflow: auto; }
+  .build-weapons > .panel { min-width: max-content; }
+}
