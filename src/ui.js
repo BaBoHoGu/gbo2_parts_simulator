@@ -4680,7 +4680,9 @@
 
     document.addEventListener('touchstart', ev => {
       if (drag || !isMob() || ev.touches.length !== 1) return;
-      if (isOpen('build-weapons')) return;                 // 무장이 열려 있으면 제스처 일절 개입 안 함
+      // 성능 외의 시트(무장·스킬…)가 떠 있으면 제스처가 일절 개입하지 않는다.
+      // 시트를 새로 추가할 때 여기 조건을 빠뜨리기 쉬워, 이름을 하나씩 적지 않고 목록에서 뽑는다.
+      if (sheets.some(x => x.cls !== STATS && isOpen(x.cls))) return;
       const x = ev.touches[0].clientX, y = ev.touches[0].clientY;
       if (isOpen(STATS)) {
         drag = { mode: 'close', x0: x, y0: y, sheet: target(STATS), size: target(STATS).getBoundingClientRect().width, prog: 0, axis: null };
