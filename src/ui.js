@@ -3847,8 +3847,12 @@
   function pickByMsLv(cands, lv) {
     const hits = cands.filter(s => msLvHit(s.msLv, lv));
     if (hits.length) return hits.slice().sort(byFromDesc)[0];
-    if (lv < Math.min(...cands.map(s => msLvFrom(s.msLv)))) return null;   // 아직 습득 전
-    return cands.slice().sort(byFromDesc)[0];
+    // 어디에도 안 맞으면 '현재 LV 이하'의 구간 중 가장 높은 것을 쓴다.
+    // 그냥 최고 구간을 집으면 구간 사이에 빈틈이 있을 때 상위 스킬이 튀어나온다
+    // (실바 바레트 서프레서 LV2 · 다리 특수 완충재 = 구간 [LV1, LV3～] 자리).
+    const below = cands.filter(s => msLvFrom(s.msLv) <= lv);
+    if (!below.length) return null;                       // 아직 습득 전
+    return below.slice().sort(byFromDesc)[0];
   }
 
   function openMskill(open) {
