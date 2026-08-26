@@ -574,11 +574,16 @@ function conflictsWithMovement(part, equipped) {
 }
 
 /** 카테고리 특공 프로그램은 해당 속성 기체에만 장착 가능. */
-function categoryRestricted(part, ms) {
-  const base = part.name ? part.name.replace(/_LV\d+$/, '') : '';
-  if (!ms) return false;
+/** 이 파츠가 요구하는 카테고리(카테고리 특공 프로그램 등). 제한이 없으면 null. */
+function categoryOfPart(part) {
+  const base = part && part.name ? part.name.replace(/_LV\d+$/, '') : '';
   const m = base.match(CATEGORY_PROGRAM);
-  return !!m && ATTRIBUTES.includes(m[1]) && ms.属性 !== m[1];
+  return m && ATTRIBUTES.includes(m[1]) ? m[1] : null;
+}
+function categoryRestricted(part, ms) {
+  if (!ms) return false;
+  const c = categoryOfPart(part);
+  return !!c && ms.属性 !== c;
 }
 
 /**
@@ -590,7 +595,9 @@ function checkEquip(part, ms, equipped, slots) {
   const no = (code, param = null) => ({ ok: false, code, param });
   if (equipped.some(e => e.name === part.name)) return no('equipped');
   if (equipped.length >= MAX_PARTS) return no('full');
-  if (categoryRestricted(part, ms)) return no('category', ms.属性);
+  // 파츠가 '요구하는' 카테고리를 넘긴다 — 내 기체 카테고리를 넘기면
+  //  강습 전용 파츠가 범용 기체에서 '범용 전용' 으로 보인다.
+  if (categoryRestricted(part, ms)) return no('category', categoryOfPart(part));
   if (part.kind && equipped.some(e => e.kind === part.kind)) return no('kind', part.kind);
   const clash = effectConflict(part, equipped);
   if (clash) return no('effect', clash);
@@ -610,7 +617,7 @@ const GBO2Core = {
   EXPANSION_SKILLS, EXPANSION_LABEL, EXPANSION_LEVELS, MAX_EXPANSION_LEVEL, MAX_PARTS,
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
-  calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted,
+  calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
   effectConflict, partBase
 };
 

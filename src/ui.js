@@ -3794,7 +3794,7 @@
       tbl.append(row);
     }
     box.append(tbl);
-    box.append(el('div', 'pietan-foot', '※ 상대는 기본(파츠 없음·강화6) 내구 기준. 내 위력은 파츠·스킬 반영, 상성·국부보정 미반영. 전탄 명중 가정.'));
+    box.append(el('div', 'pietan-foot', '※ 상대는 기본(파츠 없음·강화6) 내구 기준. 내 위력은 파츠·스킬·상성 반영(국부보정 미반영). 전탄 명중 가정.'));
   }
 
   function openPietan(open) {
