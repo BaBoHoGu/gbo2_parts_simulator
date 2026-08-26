@@ -3117,6 +3117,8 @@
   function openDrawer(open) {
     $('#autoDrawer').classList.toggle('open', open);
     $('#drawerBack').classList.toggle('open', open);
+    // 폰 하단 액션바(z-index 47)가 드로어(41) 위라 「실행」 버튼을 가렸다 — 열려 있는 동안 감춘다.
+    document.body.classList.toggle('drawer-open', open);
   }
 
   /* ---------- 저장 / 불러오기 ---------- */
