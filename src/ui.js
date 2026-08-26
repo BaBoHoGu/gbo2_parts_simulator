@@ -4731,7 +4731,7 @@
   let closeMobileSheets = () => {};
   let mobileSheetOpen = () => false;
   let openMobileSheet = null;                      // 모바일 시트 열기(설치되면 채워진다)
-  const isMobileView = () => window.matchMedia('(max-width: 700px), (max-height: 500px) and (pointer: coarse)').matches
+  const isMobileView = () => window.matchMedia('(max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px)').matches
     && document.body.classList.contains('view-build');
   /** 모바일 상단바 — 버튼 9개가 390px 폭에 1,211px 로 깔려 가로 스크롤로만 닿았다.
    *  자주 쓰는 것(피탄 시뮬·자동 구성)만 남기고 나머지는 「⋯」 메뉴로 접는다.
@@ -4837,7 +4837,7 @@
     //   열기 — 오른쪽 가장자리에서 왼쪽으로 / 닫기 — 오른쪽으로 밀기
     const STATS = 'build-stats', EDGE = 30, OPEN_AT = 0.32;
     let drag = null;
-    const isMob = () => window.matchMedia('(max-width: 700px), (max-height: 500px) and (pointer: coarse)').matches && document.body.classList.contains('view-build');
+    const isMob = () => window.matchMedia('(max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px)').matches && document.body.classList.contains('view-build');
     const isOpen = cls => { const t = target(cls); return !!(t && t.classList.contains('sheet-open')); };
 
     document.addEventListener('touchstart', ev => {
