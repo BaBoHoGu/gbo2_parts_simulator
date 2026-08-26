@@ -1854,3 +1854,79 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   .pt-lv, .pt-why, .stg-cond, .why-role, .why-crit { font-size: 10.5px; }
   .ms-card .stars, .eq .cost, .eq .nm, .pt-hint { font-size: 11px; }
 }
+
+/* ── 토스트 동작 버튼 (되돌리기) ── */
+.toast { display: flex; align-items: center; gap: 10px; }
+/* .toast 는 pointer-events:none 이라 버튼이 죽는다 — 버튼만 되살린다 */
+.toast-act {
+  pointer-events: auto;
+  flex: none; font-size: 12.5px; font-weight: 700; color: var(--accent);
+  background: transparent; border: 1px solid var(--accent); border-radius: 999px;
+  padding: 4px 11px; cursor: pointer;
+}
+.toast-act:hover { background: var(--accent); color: #241c00; }
+
+/* ── 파츠 타일 길게 누르기 메뉴 ── */
+.tile-menu { min-width: 200px; max-width: min(300px, 92vw); }
+.tile-menu-hd {
+  padding: 9px 12px 7px; font-size: 12px; font-weight: 700; color: var(--muted);
+  border-bottom: 1px solid var(--line); line-height: 1.3;
+}
+
+/* ── 가로 폰: 장착 슬롯을 4열로 ──
+   2열이면 8칸이 4줄(≈400px)이 되어, 390px 높이에서 파츠 목록이 한참 아래로 밀린다. */
+@media (max-height: 500px) and (pointer: coarse) {
+  .equip-grid { grid-template-columns: repeat(4, 1fr); }
+  .hero-body img { width: 56px; height: 56px; }
+  .app-foot { padding-top: 8px; padding-bottom: 8px; font-size: 10.5px; }
+  .app-foot p:first-child { display: none; }
+}
+
+/* ── 가로로 눕힌 폰: 빌드 화면을 2열로 ──
+   한 줄로 쌓으면 390px 높이에서 파츠 목록이 스크롤 748px 아래에 있었다.
+   왼쪽에 기체·장착·상세, 오른쪽에 파츠 목록을 붙여 둘 다 첫 화면에 둔다.
+   (성능·무장·스킬은 하단 액션바의 시트로 빠져 있어 자리를 안 쓴다) */
+@media (max-height: 500px) and (pointer: coarse) and (min-width: 680px) {
+  .screen-build {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; padding: 8px; align-content: start;
+  }
+  /* 기본 규칙이 .build-left/.build-detail/.build-stats 에 grid-row 를 1 로 못박아 두어,
+     열만 바꾸면 셋이 같은 칸에 겹친다 — 행도 auto 로 풀어 준다. */
+  .screen-build > * { grid-column: 1; grid-row: auto; margin-bottom: 0 !important; }
+  .incomplete-notice { grid-column: 1 / -1; }
+  .build-parts { grid-column: 2; grid-row: 1 / span 99; display: flex; flex-direction: column; }
+  .build-parts > .panel.fill { min-height: 0; flex: 1 1 auto; }
+  .build-col { display: flex; flex-direction: column; }
+  /* 목록은 화면 높이에 맞춰 자체 스크롤 — 안 잡으면 화면 전체가 4,000px 로 늘어난다 */
+  .part-list { max-height: calc(100vh - 104px); overflow-y: auto; flex: 1 1 auto; }
+  .build-detail > .panel { min-height: 0; }
+}
+
+/* 파츠 상세가 비었을 때 — 폰에선 200px 넘는 빈 칸이 파츠 목록을 그만큼 아래로 밀었다.
+   안내 한 줄만 남기고 접는다(파츠를 고르면 원래 높이로 돌아온다). */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  #detailPanel.is-empty { min-height: 0; }
+  #detailPanel.is-empty .detail-empty { padding: 10px 8px; font-size: 11.5px; }
+  #detailPanel.is-empty #detailBody { min-height: 0; }
+}
+/* 파츠 목록 머리(카테고리 탭·검색)를 붙여 둔다 — 스크롤해도 필터가 남게 */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .build-parts > .panel > h2 {
+    position: sticky; top: 0; z-index: 3;
+    background: var(--panel); border-radius: 9px 9px 0 0;
+  }
+}
+
+/* 빈 장착 칸은 「+」 하나뿐인데 84px 를 차지해, 8칸이면 폰에서 290px 를 먹고
+   파츠 목록을 그만큼 아래로 밀었다. 폰에서만 빈 칸을 낮게 — 채워진 칸이 있는
+   줄은 그 칸에 맞춰 늘어나므로 목록 모양은 그대로다. */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .eq.empty { min-height: 48px; }
+  .equip-grid { align-items: stretch; }
+}
+
+/* 폰 빌드 화면에선 하단 액션바(66px)가 있어 토스트가 그 아래 깔렸다 — 위로 올린다 */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  body.view-build .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
+}

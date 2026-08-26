@@ -485,13 +485,30 @@
   };
 
   let toastTimer = null;
-  function toast(msg) {
+  function toast(msg, action) {
     const t = $('#toast');
-    t.textContent = msg;
+    t.replaceChildren(el('span', 'toast-msg', msg));
+    if (action) {                       // 되돌리기처럼 토스트에서 바로 누르는 동작
+      const b = el('button', 'toast-act', action.label);
+      b.onclick = () => { t.classList.remove('show'); action.run(); };
+      t.append(b);
+    }
     t.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    toastTimer = setTimeout(() => t.classList.remove('show'), action ? 5000 : 2200);
   }
+
+  /** 파츠 구성 되돌리기 — 장착/해제/전체 해제 직전 상태로 한 번 되돌린다. */
+  function snapshotEquip() {
+    return { equipped: state.equipped.slice(), locked: new Set(state.locked) };
+  }
+  function restoreEquip(snap) {
+    state.equipped = snap.equipped.slice();
+    state.locked = new Set(snap.locked);
+    renderAll();
+    toast('되돌렸습니다');
+  }
+  const undoToast = (msg, snap) => toast(msg, { label: '되돌리기', run: () => restoreEquip(snap) });
 
   /* ---------- 검색 색인 ---------- */
 
@@ -825,13 +842,15 @@
   function equip(part) {
     // 기본 제외한 파츠는 자동 구성뿐 아니라 직접 장착도 막는다 (우클릭으로 해제)
     if (state.banned.has(part.name)) {
-      toast('기본 제외한 파츠입니다 — 우클릭으로 해제하세요');
+      toast('기본 제외한 파츠입니다 — 우클릭(폰은 길게 누르기)으로 해제하세요');
       return;
     }
     const chk = C.checkEquip(part, state.ms, state.equipped, slots());
     if (!chk.ok) { toast(reasonText(chk) + ' — 장착할 수 없습니다'); return; }
+    const snap = snapshotEquip();
     state.equipped.push(part);
     renderAll();
+    undoToast(T.partName(part.name) + ' 장착', snap);
   }
 
   /** 기본 제외 토글 (영구). 이미 장착 중인 파츠를 제외하면 함께 해제해 상태를 어긋나지 않게 한다. */
@@ -851,9 +870,11 @@
   }
 
   function unequip(name) {
+    const snap = snapshotEquip();
     state.equipped = state.equipped.filter(p => p.name !== name);
     state.locked.delete(name);
     renderAll();
+    undoToast(T.partName(name) + ' 해제', snap);
   }
 
   function renderEquipped() {
@@ -934,10 +955,13 @@
 
   function renderDetail(part) {
     const box = $('#detailBody');
+    const panel = $('#detailPanel');
     box.innerHTML = '';
+    // 비어 있는 동안은 폰에서 200px 넘는 빈 칸이라 파츠 목록을 그만큼 아래로 민다.
+    if (panel) panel.classList.toggle('is-empty', !part);
     if (!part) {
       const e = el('div', 'detail-empty');
-      e.innerHTML = '파츠에 마우스를 올리거나 눌러<br>상세 정보를 확인하세요';
+      e.innerHTML = '파츠를 길게 눌러(PC 는 마우스를 올려)<br>상세 정보를 볼 수 있습니다';
       box.append(e);
       return;
     }
@@ -2468,6 +2492,8 @@
     // 핸들러는 만들 때 한 번만 붙이고, 판정은 그때그때 최신 상태에서 읽는다.
     tile.onmouseenter = () => { state.detailPart = p; renderDetail(p); };
     tile.onclick = ev => {
+      const fired = entryLp.get(tile);
+      if (fired && fired()) return;              // 길게 눌러 메뉴를 연 것 — 장착까지 하지 않는다
       if (ev.shiftKey) { toast(v.fullNm + ' — ' + (v.desc || '설명 없음')); return; }
       state.detailPart = p;
       if (state.equipped.some(e => e.name === p.name)) unequip(p.name);
@@ -2478,10 +2504,60 @@
       state.detailPart = p;
       toggleBan(p);
     };
+    // 폰엔 우클릭도 hover 도 없어 '기본 제외'와 '장착 없이 상세만 보기'에 닿을 길이 없었다.
+    // 길게 누르기(0.5초, 손가락이 10px 넘게 움직이면 취소)로 같은 것을 연다.
+    let lpTimer = null, lpFired = false, lpXY = null;
+    const lpCancel = () => { clearTimeout(lpTimer); lpTimer = null; };
+    tile.addEventListener('touchstart', ev => {
+      const t = ev.touches[0]; lpXY = [t.clientX, t.clientY]; lpFired = false;
+      lpTimer = setTimeout(() => {
+        lpFired = true;
+        if (navigator.vibrate) navigator.vibrate(12);
+        openTileMenu(p, v, lpXY);
+      }, 500);
+    }, { passive: true });
+    tile.addEventListener('touchmove', ev => {
+      if (!lpTimer) return;
+      const t = ev.touches[0];
+      if (Math.abs(t.clientX - lpXY[0]) > 10 || Math.abs(t.clientY - lpXY[1]) > 10) lpCancel();
+    }, { passive: true });
+    tile.addEventListener('touchend', lpCancel, { passive: true });
+    tile.addEventListener('touchcancel', lpCancel, { passive: true });
+    tile.dataset.lp = '1';
+    entryLp.set(tile, () => lpFired);
 
     const entry = { tile, hint, why };
     tileCache.set(p, entry);
     return entry;
+  }
+
+  const entryLp = new WeakMap();     // 타일 → '방금 길게 눌렀는가' 판정
+  /** 파츠 타일 길게 누르기 메뉴 — 데스크톱 우클릭과 같은 것을 폰에서 연다. */
+  function openTileMenu(p, v, xy) {
+    document.querySelectorAll('.png-menu').forEach(m => m.remove());
+    const menu = el('div', 'png-menu tile-menu');
+    const mk = (t, sub, fn) => {
+      const b = el('button', 'png-menu-item');
+      b.append(el('span', 'pm-t', t));
+      if (sub) b.append(el('span', 'pm-s', sub));
+      b.onclick = () => { menu.remove(); fn(); };
+      return b;
+    };
+    menu.append(el('div', 'tile-menu-hd', v.fullNm));
+    menu.append(mk('상세 보기', v.cat + ' · ' + v.slotTxt, () => {
+      state.detailPart = p; renderDetail(p);
+      const d = $('#detailPanel'); if (d) d.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }));
+    const banned = state.banned.has(p.name);
+    menu.append(mk(banned ? '기본 제외 해제' : '기본 제외',
+      banned ? '목록·자동 구성에 다시 넣는다' : '자동 구성·장착에서 빼 둔다', () => toggleBan(p)));
+    document.body.append(menu);
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    menu.style.left = Math.max(6, Math.min(xy[0] - mw / 2, window.innerWidth - mw - 8)) + 'px';
+    menu.style.top = Math.max(6, Math.min(xy[1] + 10, window.innerHeight - mh - 8)) + 'px';
+    setTimeout(() => document.addEventListener('click', function h(e) {
+      if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); }
+    }), 0);
   }
 
   function renderPartList() {
@@ -4510,9 +4586,12 @@
     $('#autoModalClose').onclick = () => openResultModal(false);   // 상세로 되돌림(후보는 유지)
     $('#autoResultShow').onclick = () => openResultModal(true);     // 남아 있는 결과 다시 보기
     $('#clearParts').onclick = () => {
+      if (!state.equipped.length) { toast('장착한 파츠가 없습니다'); return; }
+      const snap = snapshotEquip();
       state.equipped = [];
       state.locked.clear();
       renderAll();
+      undoToast('파츠 ' + snap.equipped.length + '개를 모두 해제', snap);
     };
 
     // 저장: 이름을 지정해 목록에 담는다 / 불러오기: 저장 목록을 카드로 연다
