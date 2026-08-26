@@ -1930,3 +1930,39 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   body.view-build .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
+
+/* 자동 구성 드로어가 열려 있는 동안엔 하단 액션바를 감춘다.
+   액션바 z-index 47 > 드로어 41 이라 드로어 맨 아래 「실행」 버튼이 가려져 있었다.
+   (드로어가 열린 동안은 성능·무장·스킬 시트를 열 일도 없다) */
+body.drawer-open .m-actionbar { display: none !important; }
+
+/* 가로로 눕힌 폰: 슬라이드 시트 폭을 넓힌다.
+   480px 로 고정돼 있어 844px 화면에서 43%를 놀리고, 1,143px 짜리 무장 표를
+   좁은 창으로 옆으로 밀어 봐야 했다. 세로 폰은 그대로(94vw 가 이미 상한). */
+@media (max-height: 500px) and (pointer: coarse) and (min-width: 680px) {
+  .build-stats, .build-weapons, .mskill-inline.sheet-open { width: min(94vw, 760px); }
+  .build-weapons.sheet-open > .sheet-close { left: calc(min(94vw, 760px) - 46px); }
+}
+/* 무장 시트 머리(제목·스킬·정렬 세그)를 보이는 폭에 고정한다.
+   표가 1,143px 이라 h2 도 그만큼 늘어나, 정렬 세그가 오른쪽 끝(1,120px)으로
+   밀려 닫기(✕) 아래에 깔렸다. 가로로 밀어도 머리는 제자리에 남는다. */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .build-weapons.sheet-open > .panel > h2 {
+    position: sticky; left: 0; z-index: 2;
+    width: min(94vw, 480px); padding-right: 58px;
+    background: var(--panel);
+    white-space: nowrap; flex-wrap: wrap;
+  }
+  /* 정렬·자세 컨트롤은 제목 아랫줄에 한 줄로 깔고 옆으로 슬라이드시킨다.
+     같은 줄에 두면 폭이 157px 밖에 안 남고, 접으면 머리가 154px 로 부푼다. */
+  .build-weapons.sheet-open > .panel > h2 > .w-tools {
+    flex: 0 0 100%; min-width: 0; flex-wrap: nowrap; margin: 2px 0 0;
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .build-weapons.sheet-open > .panel > h2 > .w-tools > * { flex: 0 0 auto; }
+  .build-weapons.sheet-open > .panel > h2 > .w-tools::-webkit-scrollbar { display: none; }
+  .build-stats.sheet-open > .panel > h2 { padding-right: 58px; }
+}
+@media (max-height: 500px) and (pointer: coarse) and (min-width: 680px) {
+  .build-weapons.sheet-open > .panel > h2 { width: min(94vw, 760px); }
+}
