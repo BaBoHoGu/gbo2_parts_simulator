@@ -164,18 +164,18 @@
   /** 현재 모드(통상/변형·변신)에 해당하는 스킬 모드만 고른다.
    *  각 모드는 그 상태의 '완결된' 스킬 목록이라, 섞지 않고 한쪽만 쓰는 게 맞다.
    *  (NT-D 계열은 같은 스킬의 수치가 모드마다 다르다 — 밴시 노른 A·아머 DE 40%↔50%) */
-  function skillModesFor(modes) {
+  function skillModesFor(modes, form) {
     if (modes.length < 2) return modes;
     const alt = modes.filter(isAltSkillMode), norm = modes.filter(mo => !isAltSkillMode(mo));
-    if (state.form === 'transform' && alt.length) return alt;
+    if ((form || state.form) === 'transform' && alt.length) return alt;
     return norm.length ? norm : modes;
   }
 
   /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록.
    *  같은 이름이 LV 구간별로 여러 개면(예: 데미지컨트롤 LV1=130·LV2~=160) 현재 LV 에 맞는 최상위를 쓴다. */
-  function staggerSkillsOf(ms, lv) {
+  function staggerSkillsOf(ms, lv, form) {
     if (!ms) return [];
-    const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || []);
+    const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || [], form);
     const byName = new Map();
     // 스킬명별로 구간을 모아 현재 LV 에 맞는 것 하나만 고른다(폴백 규칙은 스킬 패널과 동일).
     const groups = new Map();
@@ -264,11 +264,12 @@
    *  누적치 감소(마뉴버·정지사격·헤비어택·활공 등)는 발동 상황이 배타적이라 동시에 못 쓴다
    *  → 하나만 적용(여럿 켜졌으면 감소가 가장 약한=값이 큰 쪽 보수적). 임계형(데미지컨트롤)은 상시. */
   // 체크한 스킬만 적용. 동시 발동 가능 여부는 사용자가 조건 라벨을 보고 판단(양립 불가한 건 안 켬).
-  function activeStaggerMods(ms, lv) {
-    const skills = staggerSkillsOf(ms, lv);
+  function activeStaggerMods(ms, lv, sel, form) {
+    const on = sel || state.staggerOn;
+    const skills = staggerSkillsOf(ms, lv, form);
     let mult = 1, threshold = 100; const cuts = [], mults = [];
     for (const s of skills) {
-      if (!state.staggerOn.has(s.name)) continue;
+      if (!on.has(s.name)) continue;
       if (s.mult < 1) { mult *= s.mult; mults.push(s.mult); }   // 감소 배수
       if (s.threshold != null) threshold = Math.max(threshold, s.threshold);
       cuts.push(...s.cuts.map(c => ({ ...c, from: s.name })));   // 어느 스킬 몫인지 남긴다(완충재 강화 판정용)
@@ -338,15 +339,16 @@
 
   /** 누적치 스킬 체크박스 묶음 (내구 지표·피탄 시뮬 공통). onChange 는 상태 반영 후 콜백.
    *  각 스킬의 발동 조건을 라벨로 보여 주고, 동시 발동 가능한 것만 사용자가 자유롭게 체크한다. */
-  function staggerCheckList(ms, lv, onChange) {
+  function staggerCheckList(ms, lv, onChange, sel, form) {
+    const on = sel || state.staggerOn;            // 적 방어 스킬은 별도 Set 을 넘겨 같은 UI 를 쓴다
     const wrap = el('div', 'stagger-skills');
-    const skills = staggerSkillsOf(ms, lv);
+    const skills = staggerSkillsOf(ms, lv, form);
     if (skills.length > 1) wrap.append(el('span', 'stg-hint', '※ 동시에 발동 가능한 조건만 체크하세요'));
     for (const s of skills) {
-      const lab = el('label', 'stg-chk' + (state.staggerOn.has(s.name) ? ' on' : ''));
+      const lab = el('label', 'stg-chk' + (on.has(s.name) ? ' on' : ''));
       lab.title = s.cond + ' 발동';
-      const box = el('input'); box.type = 'checkbox'; box.checked = state.staggerOn.has(s.name);
-      box.onchange = () => { box.checked ? state.staggerOn.add(s.name) : state.staggerOn.delete(s.name); onChange(); };
+      const box = el('input'); box.type = 'checkbox'; box.checked = on.has(s.name);
+      box.onchange = () => { box.checked ? on.add(s.name) : on.delete(s.name); onChange(); };
       const tags = [];
       if (s.threshold != null) tags.push(`임계 ${s.threshold}%`);
       if (s.mult < 1) tags.push(`누적 ×${+s.mult.toFixed(3)}`);
@@ -3381,6 +3383,7 @@
   let pietanAttr = 'same';       // 적의 속성 상성 (same|advantage|disadvantage)
   let pietanAttrTouched = false; // 상성 수동 변경 여부 (그러면 기체 바꿔도 유지)
   let pietanEnemySkills = new Set();  // 체크한 적 공격 스킬 이름들 (여러 개 조합 가능)
+  let pietanEnemyDef = new Set();     // 체크한 적 방어 스킬 이름들 — 내 무장의 피해를 깎는다
   let pietanBuild = null;        // 적이 저장 빌드일 때 그 빌드(파츠 포함), 아니면 null
   let pietanVariant = 0;         // 선택한 격투 변형 인덱스 (기본/헤비어택…)
   let pietanDir = 0;             // 선택한 격투 방향 인덱스 (N격/횡격/하격…)
@@ -3554,9 +3557,9 @@
     pietanBuild = null;                           // 기본 기체(파츠 없음)
     pietanCorrTouched = false;                    // 새 기체는 공격보정 다시 자동
     pietanAttrTouched = false; pietanAutoAttr();  // 상성도 다시 자동
-    pietanEnemySkills.clear();
+    pietanEnemySkills.clear(); pietanEnemyDef.clear();
     pietanVariant = 0; pietanDir = 0;
-    renderPietanLeft(); renderPietanResult();
+    renderPietanChecks(); renderPietanLeft(); renderPietanResult();
   }
 
   /** 적을 내 저장 빌드(파츠 적용)로 선택. */
@@ -3566,9 +3569,9 @@
     pietanMs = ms; pietanMsBase = baseName(ms.MS名); pietanMsLv = msLevel(ms);
     pietanBuild = bld; pietanPick = null;
     pietanCorrTouched = false; pietanAttrTouched = false; pietanAutoAttr();
-    pietanEnemySkills.clear();
+    pietanEnemySkills.clear(); pietanEnemyDef.clear();
     pietanVariant = 0; pietanDir = 0;
-    renderPietanLeft(); renderPietanResult();
+    renderPietanChecks(); renderPietanLeft(); renderPietanResult();
   }
 
   function renderPietanLeft() {
@@ -3623,7 +3626,8 @@
       for (const m of arr) {
         const lv = msLevel(m);
         const b = el('button', 'seg-btn' + (m === pietanMs ? ' on' : ''), 'LV' + lv);
-        b.onclick = () => { pietanMs = m; pietanMsLv = lv; pietanPick = null; renderPietanLeft(); renderPietanResult(); };
+        b.onclick = () => { pietanMs = m; pietanMsLv = lv; pietanPick = null; pietanEnemyDef.clear();
+          renderPietanChecks(); renderPietanLeft(); renderPietanResult(); };
         seg.append(b);
       }
       box.append(seg);
@@ -3644,9 +3648,16 @@
   function renderPietanChecks() {
     const box = $('#pietanStagger'); if (!box) return;
     box.innerHTML = '';
-    if (!state.ms) return;
-    const cl = staggerCheckList(state.ms, msLevel(state.ms), () => { renderPietanChecks(); renderPietanResult(); });
-    if (cl.count) { box.append(el('span', 'pietan-ctrl-lb', '방어 스킬')); box.append(cl.wrap); }
+    const redraw = () => { renderPietanChecks(); renderPietanResult(); };
+    const grp = (cls, label, cl) => {
+      if (!cl.count) return;
+      const g = el('div', 'pietan-skgrp' + (cls ? ' ' + cls : ''));
+      g.append(el('span', 'pietan-ctrl-lb', label), cl.wrap);
+      box.append(g);
+    };
+    // 적 방어 스킬이 위 — 내 무장 피해를 깎는다. 내 방어 스킬은 아래(받는 피해).
+    if (pietanMs) grp('enemy', '적 방어 스킬', staggerCheckList(pietanMs, pietanMsLv, redraw, pietanEnemyDef, 'normal'));
+    if (state.ms) grp('', '내 방어 스킬', staggerCheckList(state.ms, msLevel(state.ms), redraw));
   }
 
   function renderPietanResult() {
@@ -3773,7 +3784,7 @@
       + (w.react === '강경직' ? ' 이 무장은 직격 시 강경직(大よろけ).' : '')));
   }
 
-  /** 내 무장 → 상대 격파까지 발수 (TTK 역방향). 상대 내구는 빌드 파츠 반영, 내 위력은 파츠·스킬 반영. */
+  /** 내 무장 → 상대 격파까지 발수 (TTK 역방향). 상대의 파츠·체크한 방어 스킬로 피해가 깎인다. */
   function renderPietanOutgoing(box) {
     const enemyTot = enemyStatsTotal();
     const outAttr = pietanMatchup(state.ms.属性, pietanMs.属性);   // 내→적 상성 (자동)
@@ -3781,7 +3792,9 @@
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
     const wm = D.weaponModsOf(state.equipped, msLevel(state.ms), state.ms.属性);
     const eEq = enemyEquipped();                                   // 적이 낀 파츠
-    const eCuts = partDamageCuts(eEq, pietanMsLv);                 // 적 파츠의 % 피해 경감
+    const eStg = activeStaggerMods(pietanMs, pietanMsLv, pietanEnemyDef, 'normal');   // 체크한 적 방어 스킬
+    const eCuts = [...partDamageCuts(eEq, pietanMsLv),             // 적 파츠의 % 피해 경감
+      ...boostBufferCuts(eStg.cuts, eEq)];                         // 적 방어 스킬(신형 완충재 강화 포함)
     const rows = [];
     for (const w of msWeapons()) {
       if (w.type === 'shield') continue;
@@ -3821,8 +3834,9 @@
     box.append(tbl);
     box.append(el('div', 'pietan-foot',
       (pietanBuild
-        ? '※ 상대는 그 구성의 파츠를 양방향 반영(내구·공격보정·피해경감·특공). 상대의 방어 스킬은 미반영. '
+        ? '※ 상대는 그 구성의 파츠를 양방향 반영(내구·공격보정·피해경감·특공). '
         : '※ 상대는 기본(파츠 없음·강화6) 내구 기준. ')
+      + '체크한 적 방어 스킬만큼 내 피해가 깎인다. '
       + '내 위력은 파츠·스킬·상성 반영(국부보정 미반영). 전탄 명중 가정.'));
   }
 

@@ -1755,6 +1755,8 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
     flex: 1 1 auto; min-height: 0;
     display: flex; flex-direction: column; gap: 8px;
   }
+  /* 방어 스킬 두 묶음이 세로를 다 먹지 않게 — 폰에선 더 낮게 잡고 이 영역만 스크롤 */
+  #pietanModal .pietan-stagger { max-height: 18vh; }
   #pietanModal .pietan-list { flex: 1 1 auto; min-height: 132px; overflow-y: auto; }
   #pietanModal .pietan-result { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
   /* 가로(낮은 높이)에선 상단 정보 블록을 더 줄인다 */
@@ -1784,3 +1786,27 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   }
   #pietanModal .pietan-list, #pietanModal .pietan-result { min-height: 0; overflow-y: auto; }
 }
+
+/* ── 피탄 시뮬: 세로가 길어져도 모달 밖으로 늘어지지 않게 (데스크톱) ──
+   .auto-modal 은 max-height:88vh 인데 안쪽에 스크롤 축이 없어, 결과가 길면
+   내용이 모달 아래로 삐져나갔다. 헤더·상단 정보는 고정하고 목록·결과가
+   남은 높이를 나눠 각자 스크롤하게 한다. */
+#pietanModal .am-head,
+#pietanModal .pietan-dura,
+#pietanModal .pietan-ctrl,
+#pietanModal .pietan-hint,
+#pietanModal #pietanQuery { flex: 0 0 auto; }
+#pietanModal .pietan-cols { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+#pietanModal .pietan-list { max-height: none; min-height: 0; }
+#pietanModal .pietan-result { align-self: stretch; min-height: 0; overflow-y: auto; }
+
+/* 방어 스킬 묶음 — 적 / 내 것을 두 줄로 쌓는다. 스킬이 많으면 이 영역만 스크롤. */
+.pietan-stagger { flex-basis: 100%; flex-direction: column; flex-wrap: nowrap; align-items: stretch;
+  gap: 2px; max-height: 24vh; overflow-y: auto; }
+.pietan-skgrp { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; flex: 0 0 auto; }
+/* 같은 안내문이 두 묶음에 겹쳐 나오지 않게 — 위쪽 것만 남긴다 */
+.pietan-skgrp + .pietan-skgrp .stg-hint { display: none; }
+.pietan-skgrp .pietan-ctrl-lb { flex-basis: 100%; margin: 3px 0 0; }
+.pietan-skgrp .stagger-skills { padding: 0; }
+.pietan-skgrp.enemy .pietan-ctrl-lb { color: var(--close); }
+.pietan-skgrp.enemy .stg-chk input { accent-color: var(--close); }
