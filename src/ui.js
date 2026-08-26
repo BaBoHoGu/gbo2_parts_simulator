@@ -4579,7 +4579,9 @@
       menu.append(mk('요약 카드', '기체 · 파츠 · 성능', 'summary'));
       menu.append(mk('상세 카드', '+ 무장 피해량', 'detail'));
       document.body.append(menu);
-      const rc = ev.currentTarget.getBoundingClientRect();
+      const rc0 = ev.currentTarget.getBoundingClientRect();
+      // 모바일에선 이 버튼이 「⋯」 안에 접혀 있어 rect 가 0 이다 — 그때는 「⋯」를 기준으로.
+      const rc = rc0.width ? rc0 : ($('#topbarMore') || document.body).getBoundingClientRect();
       menu.style.top = (rc.bottom + 4) + 'px';
       menu.style.left = Math.max(6, Math.min(rc.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
       setTimeout(() => document.addEventListener('click', function h(e) {
@@ -4648,8 +4650,44 @@
   let closeMobileSheets = () => {};
   let mobileSheetOpen = () => false;
   let openMobileSheet = null;                      // 모바일 시트 열기(설치되면 채워진다)
-  const isMobileView = () => window.matchMedia('(max-width: 700px)').matches
+  const isMobileView = () => window.matchMedia('(max-width: 700px), (max-height: 500px) and (pointer: coarse)').matches
     && document.body.classList.contains('view-build');
+  /** 모바일 상단바 — 버튼 9개가 390px 폭에 1,211px 로 깔려 가로 스크롤로만 닿았다.
+   *  자주 쓰는 것(피탄 시뮬·자동 구성)만 남기고 나머지는 「⋯」 메뉴로 접는다.
+   *  메뉴 항목은 원래 버튼을 그대로 click() 하므로 동작·상태는 한 벌만 유지된다. */
+  const TOPBAR_MORE = ['#save', '#load', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn'];
+  function setupTopbarOverflow() {
+    const bar = document.querySelector('.topbar'); if (!bar) return;
+    for (const sel of TOPBAR_MORE) { const b = $(sel); if (b) b.classList.add('in-more'); }
+    const btn = el('button', 'btn-ghost topbar-more');
+    btn.id = 'topbarMore'; btn.textContent = '⋯';
+    btn.title = '저장 · 저장 목록 · 비교 · 공유 · 이미지 · 가져오기 · 기본 파츠 설정';
+    btn.setAttribute('aria-label', '더보기');
+    bar.append(btn);
+    btn.onclick = ev => {
+      ev.stopPropagation();
+      const old = document.querySelector('.more-menu'); if (old) { old.remove(); return; }
+      const menu = el('div', 'png-menu more-menu');
+      const onSelect = document.body.classList.contains('view-select');
+      for (const sel of TOPBAR_MORE) {
+        const src = $(sel);
+        if (!src || (onSelect && src.classList.contains('step-only'))) continue;   // 기체 선택 화면에선 숨는 것들
+        const it = el('button', 'png-menu-item');
+        it.append(el('span', 'pm-t', src.textContent.trim()));
+        if (src.title) it.append(el('span', 'pm-s', src.title));
+        it.onclick = () => { menu.remove(); src.click(); };
+        menu.append(it);
+      }
+      document.body.append(menu);
+      const rc = btn.getBoundingClientRect();
+      menu.style.top = (rc.bottom + 4) + 'px';
+      menu.style.left = Math.max(6, Math.min(rc.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+      setTimeout(() => document.addEventListener('click', function h(e) {
+        if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); }
+      }), 0);
+    };
+  }
+
   function setupMobileSheets() {
     // 파츠 상세는 인라인(장착↔파츠 사이)로 두고, 성능·무장만 슬라이드 시트로.
     const sheets = [
@@ -4718,7 +4756,7 @@
     //   열기 — 오른쪽 가장자리에서 왼쪽으로 / 닫기 — 오른쪽으로 밀기
     const STATS = 'build-stats', EDGE = 30, OPEN_AT = 0.32;
     let drag = null;
-    const isMob = () => window.matchMedia('(max-width: 700px)').matches && document.body.classList.contains('view-build');
+    const isMob = () => window.matchMedia('(max-width: 700px), (max-height: 500px) and (pointer: coarse)').matches && document.body.classList.contains('view-build');
     const isOpen = cls => { const t = target(cls); return !!(t && t.classList.contains('sheet-open')); };
 
     document.addEventListener('touchstart', ev => {
@@ -4777,6 +4815,7 @@
 
   buildControls();
   renderAutoGrid();
+  setupTopbarOverflow();  // 모바일: 상단바 보조 버튼을 「⋯」 메뉴로 접는다
   setupMobileSheets();    // 모바일: 성능·무장·상세 슬라이드 시트 + 하단 액션바
   loadBanned();           // 저장된 기본 제외 파츠 복원
   loadFavRecent();        // 즐겨찾기·최근 기체 복원
