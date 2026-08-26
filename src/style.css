@@ -1722,3 +1722,65 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   /* 하단 액션바가 3개 버튼이 되므로 폭을 고르게 */
   .m-actionbar button { flex: 1 1 0; min-width: 0; }
 }
+
+/* ── 모바일: 스킬 시트 하단 공백 ──────────────────────────────
+   .mskill-body 의 max-height:46vh 는 '무장 칸 안 인라인' 시절 값이다.
+   시트로 뜰 때도 걸려서 본문이 46vh 에서 잘리고 그 아래가 통째로 비었다.
+   시트에서는 시트가 스크롤하므로 본문 제한을 푼다. */
+@media (max-width: 700px) {
+  .mskill-inline.sheet-open .mskill-body { max-height: none; overflow: visible; }
+}
+
+/* ── 모바일: 피탄 시뮬레이터 ─────────────────────────────────
+   세로에선 제목·닫기가 줄바꿈되고, 가로에선 헤더가 높이를 다 먹어 목록이 잘렸다.
+   전체 화면으로 띄우고 헤더는 고정, 목록·결과가 남은 높이를 나눠 갖게 한다. */
+@media (max-width: 700px) {
+  #pietanModal {
+    top: 0; left: 0; transform: none;
+    width: 100%; max-width: none;
+    height: 100%; max-height: none;
+    border-radius: 0; border: 0;
+    display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* 제목 줄 — 줄바꿈 금지, 기체명은 남는 폭만큼만 */
+  #pietanModal .am-head { flex: 0 0 auto; flex-wrap: nowrap; gap: 8px; }
+  #pietanModal .am-head > b { white-space: nowrap; }
+  #pietanModal .am-head .am-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #pietanModal .am-head button { flex: 0 0 auto; white-space: nowrap; }
+  /* 긴 안내문은 좁은 화면에서 세로를 크게 먹는다 — 필요할 때만 보이게 접어 둔다 */
+  #pietanModal .pietan-hint { display: none; }
+  /* 목록·결과가 남은 높이를 갖도록 */
+  #pietanModal .pietan-cols {
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  #pietanModal .pietan-list { flex: 1 1 auto; min-height: 132px; overflow-y: auto; }
+  #pietanModal .pietan-result { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  /* 가로(낮은 높이)에선 상단 정보 블록을 더 줄인다 */
+  @media (max-height: 460px) {
+    #pietanModal .pietan-stagger { max-height: 84px; overflow-y: auto; }
+    #pietanModal .pietan-dura { font-size: 12px; }
+  }
+}
+
+/* 가로로 눕힌 폰 — 폭은 700 을 넘지만 높이가 낮다. 위 모바일 규칙이 안 걸리므로 따로 준다. */
+@media (max-height: 500px) and (pointer: coarse), (max-height: 500px) and (max-width: 950px) {
+  #pietanModal {
+    top: 0; left: 0; transform: none;
+    width: 100%; max-width: none;
+    height: 100%; max-height: none;
+    border-radius: 0; border: 0;
+    display: flex; flex-direction: column;
+  }
+  #pietanModal .am-head { flex: 0 0 auto; flex-wrap: nowrap; gap: 8px; }
+  #pietanModal .am-head > b { white-space: nowrap; }
+  #pietanModal .pietan-hint { display: none; }
+  /* 낮은 높이에선 상단 정보를 접고, 목록·결과를 좌우로 나눠 세로를 아낀다 */
+  #pietanModal .pietan-stagger { max-height: 70px; overflow-y: auto; }
+  #pietanModal .pietan-cols {
+    flex: 1 1 auto; min-height: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  #pietanModal .pietan-list, #pietanModal .pietan-result { min-height: 0; overflow-y: auto; }
+}
