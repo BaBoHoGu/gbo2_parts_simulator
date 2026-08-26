@@ -204,7 +204,9 @@ public class MainActivity extends Activity {
             dst.delete();
             if (tmp.renameTo(dst)) {
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_DATE, remote).apply();
-                // 다음 실행부터 적용된다(현재 세션은 건드리지 않아 사용 중 화면이 바뀌지 않음).
+                // 받아만 두면 사용자는 새 버전이 온 줄 모른 채 다음 실행까지 옛 화면을 쓴다
+                // (실제로 "고쳤다는데 그대로다" 문의로 이어졌다). 물어보고 바로 적용한다.
+                promptApplyOta(remote);
             } else {
                 tmp.delete();
             }
@@ -281,6 +283,28 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /** OTA 를 받았을 때 바로 적용할지 묻는다 — 「지금 적용」이면 새로고침해 그 자리에서 새 버전이 된다.
+     *  (거절해도 다음 실행부터는 새 버전이 서빙되므로 어느 쪽이든 옛 버전에 갇히지 않는다) */
+    private void promptApplyOta(final String date) {
+        runOnUiThread(() -> {
+            if (isFinishing() || isDestroyed()) return;
+            try {
+                new AlertDialog.Builder(this)
+                    .setTitle("새 버전 준비 완료")
+                    .setMessage("업데이트(" + date + ")를 받았습니다.
+지금 적용할까요?
+
+※ 작업 중인 파츠 구성은 초기화됩니다.")
+                    .setPositiveButton("지금 적용", (d, w) -> { if (web != null) web.loadUrl(APP_URL); })
+                    .setNegativeButton("나중에", null)
+                    .setCancelable(true)
+                    .show();
+            } catch (Exception e) {
+                toastUi("새 버전을 받았습니다 — 앱을 완전히 종료 후 다시 켜 주세요");
+            }
+        });
     }
 
     private void toastUi(final String msg) {

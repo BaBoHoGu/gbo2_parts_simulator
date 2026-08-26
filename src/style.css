@@ -1219,7 +1219,7 @@ input[type="search"], input[type="text"] { width: 100%; }
 }
 
 /* 좁은 화면(모바일) */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .topbar { padding: 8px 10px; }
   .topbar .brand span { display: none; }
   .stepper { margin-left: 8px; gap: 5px; }
@@ -1249,7 +1249,7 @@ input[type="search"], input[type="text"] { width: 100%; }
 }
 
 /* ── 모바일/APK(WebView) 폴리시 ── */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   /* 툴바: 여러 줄로 쌓이지 않게 가로 스크롤 한 줄로 (버튼이 많아짐) */
   .topbar { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 8px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .topbar::-webkit-scrollbar { display: none; }
@@ -1272,7 +1272,7 @@ input[type="search"], input[type="text"] { width: 100%; }
 
 /* ── 모바일 UX 강화: 터치 타깃 확대 · 가독성 · 자동구성 드로어 ──
    (전부 좁은 화면 전용 미디어쿼리 → 데스크톱 레이아웃은 영향 없음) */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   /* 상단 버튼·칩·세그먼트: 손가락으로 누르기 편한 크기 */
   .topbar button { min-height: 40px; padding: 8px 12px; }
   .chip { padding: 8px 14px; font-size: 12.5px; }
@@ -1310,7 +1310,7 @@ input[type="search"], input[type="text"] { width: 100%; }
 
 /* ── 모바일: 상단 필터(보기·속성·코스트·레벨·등급)를 줄바꿈 대신 가로 슬라이드로 ──
    세로 공간을 크게 줄인다. 각 필터가 [라벨 | 옆으로 스와이프되는 칩들] 한 줄이 된다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .filter-row { flex-direction: column; gap: 6px; }
   .filter-group { width: 100%; align-items: center; gap: 8px; }
   .filter-lb { padding-top: 0; min-width: 34px; }
@@ -1562,7 +1562,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    ============================================================ */
 .sheet-backdrop, .m-actionbar { display: none; }
 
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   /* 성능 시트: 화면 밖 오른쪽 대기 → .sheet-open 이면 오른쪽에서 슬라이드 인. (상세는 인라인 유지) */
   .build-stats {
     position: fixed; top: 0; right: 0; bottom: 0; left: auto;
@@ -1630,7 +1630,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    ============================================================ */
 .sheet-close { display: none; }   /* 데스크톱 숨김(모바일 전용) */
 
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   /* 히어로: 이미지를 옆으로(행 배치) + 축소해 세로 공간 절약 */
   .hero { padding: 8px 10px; gap: 6px; }
   .hero-body { flex-direction: row; align-items: center; gap: 10px; }
@@ -1668,19 +1668,19 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 .slot-bar .track i.on { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
 
 /* 모바일: 하단 액션바에 푸터가 가리지 않게 여백 */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   body.view-build .app-foot { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
 }
 
 /* 모바일: 화면 진입 애니메이션이 래퍼에 잔여 transform 을 남겨 슬라이드 시트(fixed)의
    기준(containing block)을 망가뜨린다 → 모바일에선 진입 애니메이션을 끈다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   body.view-build .screen-build > * { animation: none !important; }
 }
 
 /* 모바일: 무장 이름 칸이 좁아 고정 피해·디버프 칩이 잘려 보이지 않는다.
    칩은 줄여 봐야 뜻이 사라지므로, 이름을 줄바꿈해 칩을 아랫줄로 내린다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .w-nm { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
   .w-fixed, .w-debuff, .w-mult { flex-shrink: 0; }
 }
@@ -1694,7 +1694,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    목록만 옆으로 밀리고 형제인 .weapon-head 는 제자리에 남아 열이 어긋난다.
    모바일에선 시트(.build-weapons) 가 이미 스크롤하므로 목록의 자체 스크롤을 끄고
    가로 스크롤을 시트로 넘겨 헤더·본문이 함께 움직이게 한다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .weapon-list { max-height: none; overflow: visible; }
   /* 좌우 여백은 손대지 않는다 — 헤더(margin 10 + padding 6)와
      행(리스트 padding 10 + 행 padding 6)이 이미 16px 로 맞춰져 있다 */
@@ -1705,7 +1705,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 
 /* 모바일: 스킬 패널을 무장에서 떼어 별도 시트로 (하단 「🛠 스킬」 버튼으로 연다)
    무장과 같은 왼쪽 슬라이드. 버튼 전용이라 제스처는 붙이지 않는다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .mskill-inline.sheet-open {
     position: fixed; top: 0; left: 0; bottom: 0; right: auto;
     width: min(94vw, 480px);
@@ -1729,14 +1729,14 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    .mskill-body 의 max-height:46vh 는 '무장 칸 안 인라인' 시절 값이다.
    시트로 뜰 때도 걸려서 본문이 46vh 에서 잘리고 그 아래가 통째로 비었다.
    시트에서는 시트가 스크롤하므로 본문 제한을 푼다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .mskill-inline.sheet-open .mskill-body { max-height: none; overflow: visible; }
 }
 
 /* ── 모바일: 피탄 시뮬레이터 ─────────────────────────────────
    세로에선 제목·닫기가 줄바꿈되고, 가로에선 헤더가 높이를 다 먹어 목록이 잘렸다.
    전체 화면으로 띄우고 헤더는 고정, 목록·결과가 남은 높이를 나눠 갖게 한다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   #pietanModal {
     top: 0; left: 0; transform: none;
     width: 100%; max-width: none;
@@ -1769,7 +1769,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 }
 
 /* 가로로 눕힌 폰 — 폭은 700 을 넘지만 높이가 낮다. 위 모바일 규칙이 안 걸리므로 따로 준다. */
-@media (max-height: 500px) and (pointer: coarse), (max-height: 500px) and (max-width: 950px) {
+@media (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   #pietanModal {
     top: 0; left: 0; transform: none;
     width: 100%; max-width: none;
@@ -1817,7 +1817,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    9개를 가로 스크롤 스트립에 밀어 넣어 놓아, 폰에서 저장·비교·공유 따위가
    옆으로 밀려 보이지도 닿지도 않았다. */
 .topbar-more { display: none; font-size: 18px; line-height: 1; padding: 4px 12px; }
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .topbar-more { display: inline-flex; align-items: center; }
   .topbar .in-more { display: none !important; }
   .more-menu { min-width: 190px; max-width: min(280px, 92vw); }
@@ -1826,7 +1826,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 
 /* 좁은 폰에서 상단바가 여전히 646px 였다 — 브랜드 글자와 지나간 단계를 접어 한 줄에 맞춘다.
    (뒤로 가기는 빌드 화면의 「‹ 기체 변경」 버튼이 이미 담당한다) */
-@media (max-width: 460px), (max-height: 430px) and (pointer: coarse) {
+@media (max-width: 460px), (max-height: 430px) and (max-width: 1100px) {
   .topbar .brand > div { display: none; }
   .stepper li[data-step]:not(.on), .stepper li.arrow { display: none; }
   .topbar { gap: 4px; padding: 8px 7px; }
@@ -1840,17 +1840,17 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    칩·세그먼트는 이미 38px(필터 칩은 가로 슬라이드라 일부러 30px)인데, 화면 안쪽
    작은 버튼들이 빠져 있었다 — 「전체 해제」 28px · 「‹ 기체 변경」 31px 등.
    폰에서 이들만 36px 로 맞춘다(칩 규칙은 기존 것을 그대로 둔다). */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .btn-ghost, .btn-primary, .back-btn, .pietan-back, .png-menu-item { min-height: 36px; }
   .stg-chk { min-height: 32px; }
 }
-@media (max-width: 700px) and (pointer: coarse) {
+@media (max-width: 700px) {
   .stepper li[data-step] { padding: 7px 2px; }
 }
 
 /* ── 최소 글자 크기 ──
    9.5~10px 는 폰에서 읽기 어렵다. 폰에서만 바닥을 올린다(데스크톱 밀도는 그대로). */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .pt-lv, .pt-why, .stg-cond, .why-role, .why-crit { font-size: 10.5px; }
   .ms-card .stars, .eq .cost, .eq .nm, .pt-hint { font-size: 11px; }
 }
@@ -1875,7 +1875,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 
 /* ── 가로 폰: 장착 슬롯을 4열로 ──
    2열이면 8칸이 4줄(≈400px)이 되어, 390px 높이에서 파츠 목록이 한참 아래로 밀린다. */
-@media (max-height: 500px) and (pointer: coarse) {
+@media (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .equip-grid { grid-template-columns: repeat(4, 1fr); }
   .hero-body img { width: 56px; height: 56px; }
   .app-foot { padding-top: 8px; padding-bottom: 8px; font-size: 10.5px; }
@@ -1886,7 +1886,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    한 줄로 쌓으면 390px 높이에서 파츠 목록이 스크롤 748px 아래에 있었다.
    왼쪽에 기체·장착·상세, 오른쪽에 파츠 목록을 붙여 둘 다 첫 화면에 둔다.
    (성능·무장·스킬은 하단 액션바의 시트로 빠져 있어 자리를 안 쓴다) */
-@media (max-height: 500px) and (pointer: coarse) and (min-width: 680px) {
+@media (max-height: 560px) and (min-width: 680px) and (max-width: 1100px) {
   .screen-build {
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 8px; padding: 8px; align-content: start;
@@ -1905,13 +1905,13 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 
 /* 파츠 상세가 비었을 때 — 폰에선 200px 넘는 빈 칸이 파츠 목록을 그만큼 아래로 밀었다.
    안내 한 줄만 남기고 접는다(파츠를 고르면 원래 높이로 돌아온다). */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   #detailPanel.is-empty { min-height: 0; }
   #detailPanel.is-empty .detail-empty { padding: 10px 8px; font-size: 11.5px; }
   #detailPanel.is-empty #detailBody { min-height: 0; }
 }
 /* 파츠 목록 머리(카테고리 탭·검색)를 붙여 둔다 — 스크롤해도 필터가 남게 */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .build-parts > .panel > h2 {
     position: sticky; top: 0; z-index: 3;
     background: var(--panel); border-radius: 9px 9px 0 0;
@@ -1921,13 +1921,13 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 /* 빈 장착 칸은 「+」 하나뿐인데 84px 를 차지해, 8칸이면 폰에서 290px 를 먹고
    파츠 목록을 그만큼 아래로 밀었다. 폰에서만 빈 칸을 낮게 — 채워진 칸이 있는
    줄은 그 칸에 맞춰 늘어나므로 목록 모양은 그대로다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .eq.empty { min-height: 48px; }
   .equip-grid { align-items: stretch; }
 }
 
 /* 폰 빌드 화면에선 하단 액션바(66px)가 있어 토스트가 그 아래 깔렸다 — 위로 올린다 */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   body.view-build .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
 
@@ -1939,14 +1939,14 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* 가로로 눕힌 폰: 슬라이드 시트 폭을 넓힌다.
    480px 로 고정돼 있어 844px 화면에서 43%를 놀리고, 1,143px 짜리 무장 표를
    좁은 창으로 옆으로 밀어 봐야 했다. 세로 폰은 그대로(94vw 가 이미 상한). */
-@media (max-height: 500px) and (pointer: coarse) and (min-width: 680px) {
+@media (max-height: 560px) and (min-width: 680px) and (max-width: 1100px) {
   .build-stats, .build-weapons, .mskill-inline.sheet-open { width: min(94vw, 760px); }
   .build-weapons.sheet-open > .sheet-close { left: calc(min(94vw, 760px) - 46px); }
 }
 /* 무장 시트 머리(제목·스킬·정렬 세그)를 보이는 폭에 고정한다.
    표가 1,143px 이라 h2 도 그만큼 늘어나, 정렬 세그가 오른쪽 끝(1,120px)으로
    밀려 닫기(✕) 아래에 깔렸다. 가로로 밀어도 머리는 제자리에 남는다. */
-@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .build-weapons.sheet-open > .panel > h2 {
     position: sticky; left: 0; z-index: 2;
     width: min(94vw, 480px); padding-right: 58px;
@@ -1963,6 +1963,6 @@ body.drawer-open .m-actionbar { display: none !important; }
   .build-weapons.sheet-open > .panel > h2 > .w-tools::-webkit-scrollbar { display: none; }
   .build-stats.sheet-open > .panel > h2 { padding-right: 58px; }
 }
-@media (max-height: 500px) and (pointer: coarse) and (min-width: 680px) {
+@media (max-height: 560px) and (min-width: 680px) and (max-width: 1100px) {
   .build-weapons.sheet-open > .panel > h2 { width: min(94vw, 760px); }
 }
