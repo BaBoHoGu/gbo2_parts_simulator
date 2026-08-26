@@ -915,6 +915,9 @@ body.view-build  #screenSelect { display: none; }
   display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
 }
 .auto-modal[hidden] { display: none; }
+/* [hidden] 은 어떤 미디어 규칙보다 세야 한다. 모바일 블록의 #pietanModal{display:flex}
+   가 id 특이도로 위 규칙을 이겨, 닫힌 피탄 모달이 앱 전체를 덮고 있었다. */
+.auto-modal[hidden] { display: none !important; }
 .am-head {
   display: flex; align-items: center; gap: 10px; padding: 12px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel-2); border-radius: 12px 12px 0 0;
@@ -1216,7 +1219,7 @@ input[type="search"], input[type="text"] { width: 100%; }
 }
 
 /* 좁은 화면(모바일) */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .topbar { padding: 8px 10px; }
   .topbar .brand span { display: none; }
   .stepper { margin-left: 8px; gap: 5px; }
@@ -1246,14 +1249,13 @@ input[type="search"], input[type="text"] { width: 100%; }
 }
 
 /* ── 모바일/APK(WebView) 폴리시 ── */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   /* 툴바: 여러 줄로 쌓이지 않게 가로 스크롤 한 줄로 (버튼이 많아짐) */
   .topbar { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 8px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .topbar::-webkit-scrollbar { display: none; }
   .topbar button { flex: 0 0 auto; }
 
-  /* 터치 타깃 확대 */
-  .chip, .seg-btn { min-height: 30px; }
+  /* 터치 타깃 확대 (칩·세그먼트는 아래 블록에서 38px 로 통일) */
   .auto-grid input { min-height: 30px; font-size: 13px; }
   .ms-fav { width: 28px; height: 28px; font-size: 17px; }
 
@@ -1270,7 +1272,7 @@ input[type="search"], input[type="text"] { width: 100%; }
 
 /* ── 모바일 UX 강화: 터치 타깃 확대 · 가독성 · 자동구성 드로어 ──
    (전부 좁은 화면 전용 미디어쿼리 → 데스크톱 레이아웃은 영향 없음) */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   /* 상단 버튼·칩·세그먼트: 손가락으로 누르기 편한 크기 */
   .topbar button { min-height: 40px; padding: 8px 12px; }
   .chip { padding: 8px 14px; font-size: 12.5px; }
@@ -1308,7 +1310,7 @@ input[type="search"], input[type="text"] { width: 100%; }
 
 /* ── 모바일: 상단 필터(보기·속성·코스트·레벨·등급)를 줄바꿈 대신 가로 슬라이드로 ──
    세로 공간을 크게 줄인다. 각 필터가 [라벨 | 옆으로 스와이프되는 칩들] 한 줄이 된다. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .filter-row { flex-direction: column; gap: 6px; }
   .filter-group { width: 100%; align-items: center; gap: 8px; }
   .filter-lb { padding-top: 0; min-width: 34px; }
@@ -1560,7 +1562,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    ============================================================ */
 .sheet-backdrop, .m-actionbar { display: none; }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   /* 성능 시트: 화면 밖 오른쪽 대기 → .sheet-open 이면 오른쪽에서 슬라이드 인. (상세는 인라인 유지) */
   .build-stats {
     position: fixed; top: 0; right: 0; bottom: 0; left: auto;
@@ -1628,7 +1630,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    ============================================================ */
 .sheet-close { display: none; }   /* 데스크톱 숨김(모바일 전용) */
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   /* 히어로: 이미지를 옆으로(행 배치) + 축소해 세로 공간 절약 */
   .hero { padding: 8px 10px; gap: 6px; }
   .hero-body { flex-direction: row; align-items: center; gap: 10px; }
@@ -1666,19 +1668,19 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 .slot-bar .track i.on { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
 
 /* 모바일: 하단 액션바에 푸터가 가리지 않게 여백 */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   body.view-build .app-foot { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
 }
 
 /* 모바일: 화면 진입 애니메이션이 래퍼에 잔여 transform 을 남겨 슬라이드 시트(fixed)의
    기준(containing block)을 망가뜨린다 → 모바일에선 진입 애니메이션을 끈다. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   body.view-build .screen-build > * { animation: none !important; }
 }
 
 /* 모바일: 무장 이름 칸이 좁아 고정 피해·디버프 칩이 잘려 보이지 않는다.
    칩은 줄여 봐야 뜻이 사라지므로, 이름을 줄바꿈해 칩을 아랫줄로 내린다. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .w-nm { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
   .w-fixed, .w-debuff, .w-mult { flex-shrink: 0; }
 }
@@ -1692,7 +1694,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    목록만 옆으로 밀리고 형제인 .weapon-head 는 제자리에 남아 열이 어긋난다.
    모바일에선 시트(.build-weapons) 가 이미 스크롤하므로 목록의 자체 스크롤을 끄고
    가로 스크롤을 시트로 넘겨 헤더·본문이 함께 움직이게 한다. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .weapon-list { max-height: none; overflow: visible; }
   /* 좌우 여백은 손대지 않는다 — 헤더(margin 10 + padding 6)와
      행(리스트 padding 10 + 행 padding 6)이 이미 16px 로 맞춰져 있다 */
@@ -1703,7 +1705,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 
 /* 모바일: 스킬 패널을 무장에서 떼어 별도 시트로 (하단 「🛠 스킬」 버튼으로 연다)
    무장과 같은 왼쪽 슬라이드. 버튼 전용이라 제스처는 붙이지 않는다. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .mskill-inline.sheet-open {
     position: fixed; top: 0; left: 0; bottom: 0; right: auto;
     width: min(94vw, 480px);
@@ -1727,14 +1729,14 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
    .mskill-body 의 max-height:46vh 는 '무장 칸 안 인라인' 시절 값이다.
    시트로 뜰 때도 걸려서 본문이 46vh 에서 잘리고 그 아래가 통째로 비었다.
    시트에서는 시트가 스크롤하므로 본문 제한을 푼다. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .mskill-inline.sheet-open .mskill-body { max-height: none; overflow: visible; }
 }
 
 /* ── 모바일: 피탄 시뮬레이터 ─────────────────────────────────
    세로에선 제목·닫기가 줄바꿈되고, 가로에선 헤더가 높이를 다 먹어 목록이 잘렸다.
    전체 화면으로 띄우고 헤더는 고정, 목록·결과가 남은 높이를 나눠 갖게 한다. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   #pietanModal {
     top: 0; left: 0; transform: none;
     width: 100%; max-width: none;
@@ -1810,3 +1812,45 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 .pietan-skgrp .stagger-skills { padding: 0; }
 .pietan-skgrp.enemy .pietan-ctrl-lb { color: var(--close); }
 .pietan-skgrp.enemy .stg-chk input { accent-color: var(--close); }
+
+/* ── 모바일 상단바: 보조 버튼을 「⋯」 메뉴로 ──
+   9개를 가로 스크롤 스트립에 밀어 넣어 놓아, 폰에서 저장·비교·공유 따위가
+   옆으로 밀려 보이지도 닿지도 않았다. */
+.topbar-more { display: none; font-size: 18px; line-height: 1; padding: 4px 12px; }
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .topbar-more { display: inline-flex; align-items: center; }
+  .topbar .in-more { display: none !important; }
+  .more-menu { min-width: 190px; max-width: min(280px, 92vw); }
+  .more-menu .pm-s { white-space: normal; line-height: 1.35; }
+}
+
+/* 좁은 폰에서 상단바가 여전히 646px 였다 — 브랜드 글자와 지나간 단계를 접어 한 줄에 맞춘다.
+   (뒤로 가기는 빌드 화면의 「‹ 기체 변경」 버튼이 이미 담당한다) */
+@media (max-width: 460px), (max-height: 430px) and (pointer: coarse) {
+  .topbar .brand > div { display: none; }
+  .stepper li[data-step]:not(.on), .stepper li.arrow { display: none; }
+  .topbar { gap: 4px; padding: 8px 7px; }
+  .topbar button { padding: 8px 9px; }
+  .topbar-more { padding: 4px 8px; }
+}
+/* 「⋯」 메뉴가 낮은 화면에서 아래로 잘렸다 */
+.more-menu { max-height: calc(100vh - 66px); overflow-y: auto; }
+
+/* ── 터치 타겟 ──
+   칩·세그먼트는 이미 38px(필터 칩은 가로 슬라이드라 일부러 30px)인데, 화면 안쪽
+   작은 버튼들이 빠져 있었다 — 「전체 해제」 28px · 「‹ 기체 변경」 31px 등.
+   폰에서 이들만 36px 로 맞춘다(칩 규칙은 기존 것을 그대로 둔다). */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .btn-ghost, .btn-primary, .back-btn, .pietan-back, .png-menu-item { min-height: 36px; }
+  .stg-chk { min-height: 32px; }
+}
+@media (max-width: 700px) and (pointer: coarse) {
+  .stepper li[data-step] { padding: 7px 2px; }
+}
+
+/* ── 최소 글자 크기 ──
+   9.5~10px 는 폰에서 읽기 어렵다. 폰에서만 바닥을 올린다(데스크톱 밀도는 그대로). */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .pt-lv, .pt-why, .stg-cond, .why-role, .why-crit { font-size: 10.5px; }
+  .ms-card .stars, .eq .cost, .eq .nm, .pt-hint { font-size: 11px; }
+}
