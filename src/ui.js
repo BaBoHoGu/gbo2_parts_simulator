@@ -3448,8 +3448,21 @@
   /** 적 기체의 기본 공격보정(파츠 없음·강화6) — 무장 종류에 맞는 값을 공격보정에 자동 채운다. */
   /** 적 총 스탯 — 저장 빌드면 그 파츠 반영, 아니면 기본(파츠 없음·강화6). */
   function enemyStatsTotal() {
-    if (pietanBuild) { const bs = statsForBuild(pietanBuild); if (bs) return bs.r.total; }
+    const bs = enemyBuildStats(); if (bs) return bs.r.total;
     return C.calcStats(pietanMs, [], 6, C.EXPANSION_NONE, partsByCat, fullst, C.MAX_EXPANSION_LEVEL, null, null).total;
+  }
+  /** 적 저장 빌드의 계산 결과(파츠 포함). 렌더마다 calcStats 를 다시 돌리지 않게 캐시한다. */
+  let pietanBuildStats = null;
+  function enemyBuildStats() {
+    if (!pietanBuild) return null;
+    if (!pietanBuildStats || pietanBuildStats.bld !== pietanBuild)
+      pietanBuildStats = { bld: pietanBuild, bs: statsForBuild(pietanBuild) };
+    return pietanBuildStats.bs;
+  }
+  /** 적이 낀 파츠 — 기본 기체(저장 구성이 아님)면 빈 배열. */
+  function enemyEquipped() {
+    const bs = enemyBuildStats();
+    return (bs && bs.equipped) || [];
   }
   function enemyBaseCorr() {
     const t = enemyStatsTotal();
@@ -3665,11 +3678,16 @@
     const eatk = enemyAttackEffect(isMelee ? 'melee' : 'shoot');
     const eCorr = pietanCorr + eatk.corr;
     const eMul = eatk.mul;
+    // 적이 낀 파츠 — 상성 우위 배율(카테고리 특공)과 与ダメージ% 는 내 파츠와 같은 규칙으로 건다.
+    const eEq = enemyEquipped();
+    const eKind = isMelee ? 'melee' : 'shoot';
+    const eAttrBonus = attrBonusOf(eEq, pietanAttr);
+    const ePartPct = pietanMs ? D.damagePctFor(D.weaponModsOf(eEq, pietanMsLv, pietanMs.属性), w, eKind) : 0;
     // 1히트 피해 = 공격 항 [Wp・{Att・ETCa}・(CCd)・Pr] × 피해% × 방어 스킬 피해 경감 (방어보정은 실효 HP).
     const perHit = (base, ccd) => base > 0
-      ? Math.floor((isMelee
-        ? D.meleeDamage(base, eCorr, { attr: pietanAttr, ccd: ccd || [1] })
-        : D.shootingDamage(base, eCorr, { attr: pietanAttr })) * eMul * dmgFactor)
+      ? Math.floor(D.applyDamagePct(isMelee
+        ? D.meleeDamage(base, eCorr, { attr: pietanAttr, attrBonus: eAttrBonus, ccd: ccd || [1] })
+        : D.shootingDamage(base, eCorr, { attr: pietanAttr, attrBonus: eAttrBonus }), ePartPct) * eMul * dmgFactor)
       : 0;
     const dmg = perHit(w.power || w.charged, meleeCcd);
     const hits = dmg > 0 ? Math.ceil(eff / dmg) : null;
@@ -3696,6 +3714,8 @@
     if (pietanMs) box.append(el('div', 'pietan-msctx',
       `${T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')} · LV${pietanMsLv}`
       + (pietanBuild ? ' · 내 구성(파츠)' : '')
+      + (eAttrBonus !== (D.ATTR_BONUS[pietanAttr] || 0) ? ' · 적 카테고리 특공' : '')
+      + (ePartPct ? ` · 적 파츠 피해 +${ePartPct}%` : '')
       + ` · 공격보정 ${eCorr}`
       + (eatk.names.length ? ` (적 스킬 ${eatk.names.length}개${eatk.mul > 1 ? ` · 피해 ×${+eatk.mul.toFixed(3)}` : ''})` : '')));
     box.append(el('div', 'pietan-sub',
@@ -3760,6 +3780,8 @@
     const r = stats();
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
     const wm = D.weaponModsOf(state.equipped, msLevel(state.ms), state.ms.属性);
+    const eEq = enemyEquipped();                                   // 적이 낀 파츠
+    const eCuts = partDamageCuts(eEq, pietanMsLv);                 // 적 파츠의 % 피해 경감
     const rows = [];
     for (const w of msWeapons()) {
       if (w.type === 'shield') continue;
@@ -3767,6 +3789,9 @@
       if (!d || !d.power) continue;
       const attr = weaponAttr(w);
       const enemyEff = durabilityOf(enemyTot, PIETAN_ARMOR[attr] || 'armorRange');
+      // 조건부 파츠 경감(관통·폭풍)은 무장의 備考 를 보므로 피탄 쪽과 같은 모양으로 맞춰 넘긴다.
+      const wc = { name: w.name, attr, type: w.type, psycommu: !!w.psycommu, note: (w.info && w.info['備考']) || '' };
+      const eFactor = staggerDmgFactor([...eCuts, ...conditionalPartCuts(eEq, wc)], attr);
       const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
       const a = kind === 'melee' ? corr.melee : corr.shooting;
       // 카테고리 특공 프로그램은 상성 우위 배율 자체를 130%→140% 로 올린다
@@ -3774,7 +3799,7 @@
       const raw = w.type === 'melee'
         ? D.meleeDamage(d.power, a, { attr: outAttr, attrBonus: aBonus })
         : D.shootingDamage(d.power, a, { attr: outAttr, attrBonus: aBonus });
-      const dmg = D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]);
+      const dmg = Math.floor(D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]) * eFactor);
       const mult = fireMult(w);
       const n = (mult.nc && mult.nc.n) || 1;
       const per = dmg * n;                          // 전탄(동시발사) 1트리거 피해
@@ -3794,7 +3819,11 @@
       tbl.append(row);
     }
     box.append(tbl);
-    box.append(el('div', 'pietan-foot', '※ 상대는 기본(파츠 없음·강화6) 내구 기준. 내 위력은 파츠·스킬·상성 반영(국부보정 미반영). 전탄 명중 가정.'));
+    box.append(el('div', 'pietan-foot',
+      (pietanBuild
+        ? '※ 상대는 그 구성의 파츠를 양방향 반영(내구·공격보정·피해경감·특공). 상대의 방어 스킬은 미반영. '
+        : '※ 상대는 기본(파츠 없음·강화6) 내구 기준. ')
+      + '내 위력은 파츠·스킬·상성 반영(국부보정 미반영). 전탄 명중 가정.'));
   }
 
   function openPietan(open) {
