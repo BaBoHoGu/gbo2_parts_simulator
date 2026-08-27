@@ -181,8 +181,11 @@
         <button type="button" class="tool-btn" id="skillListBtn" title="이 기체의 스킬 목록·설명">🛠 스킬</button>
         <span class="right w-tools">
           <span class="seg sort-seg" id="weaponSort" title="무장 정렬 기준"></span>
-          <span class="seg posture-seg" id="postureSeg" title="사격 자세 — 피해에 자세 보정을 얹습니다"></span>
-          <button type="button" class="tool-btn" id="scopeBtn" title="스코프 조준 (사격 피해 +5%)">스코프</button>
+          <span class="skill-box posture-box" id="postureBox">
+            <button type="button" class="skill-btn" id="postureBtn" title="사격 자세·스코프 — 피해에 보정을 얹습니다">
+              <span id="postureBtnText">선 자세</span> <i>▾</i>
+            </button>
+          </span>
           <span class="note">기본 <span style="color:var(--ok)">(+보정)</span> <span style="color:var(--skill)">(+스킬)</span></span>
         </span>
       </h2>

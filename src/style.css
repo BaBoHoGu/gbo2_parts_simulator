@@ -1966,3 +1966,23 @@ body.drawer-open .m-actionbar { display: none !important; }
 @media (max-height: 560px) and (min-width: 680px) and (max-width: 1100px) {
   .build-weapons.sheet-open > .panel > h2 { width: min(94vw, 760px); }
 }
+
+/* ── 고정 배치 오버레이의 안전 영역(상태바·노치) 회피 ──
+   body 에 준 padding 은 position:fixed 요소엔 안 걸린다. targetSdk 36 은 edge-to-edge 라
+   화면 맨 위가 '상태바 아래' 가 아니라 '상태바 뒤' 다 — 전체화면 피탄 모달·드로어의 머리가
+   상태바에 먹히고 있었다. (시트들은 이미 각자 처리돼 있었고 여기만 빠져 있었다) */
+#pietanModal { padding-top: env(safe-area-inset-top); }
+.drawer { padding-top: env(safe-area-inset-top); }
+/* 가운데 뜨는 모달은 안전 영역 '안'에서 가운데를 잡는다 */
+.auto-modal:not(#pietanModal) {
+  top: calc(50% + (env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 2);
+  max-height: min(88vh, calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px));
+}
+
+/* 자세·스코프 드롭다운 — 성능의 스킬 메뉴와 같은 모양 */
+/* body 로 띄우는 팝오버 — .skill-menu 의 absolute/top/left 를 덮는다 */
+.posture-menu { position: fixed; top: auto; left: auto; z-index: 60;
+  min-width: 210px; max-width: min(280px, 92vw); max-height: none; }
+.posture-menu .skill-item input { accent-color: var(--mid); }
+.skill-sep { height: 1px; background: var(--line); margin: 4px 6px; }
+.posture-box.on .skill-btn { border-color: var(--mid); color: var(--mid); background: #1a2733; }
