@@ -126,14 +126,26 @@ setTimeout(async () => {
       .map(m => base(m.MS名)));
   const addOnly = [...new Set(D.msData.map(m => base(m.MS名)))].filter(n => !officialBase.has(n));
   if (addOnly.length) console.log('INFO 보강 기체(이미지는 기본값): ' + addOnly.join(', '));
+  // 배포처(gbo2.jp)에 이미지가 아예 없는 기체는 fetch_images 가 assets/missing.txt 에 적어 둔다.
+  // 우리 잘못이 아니므로 '알려진 누락'으로 빼고, 예상 밖의 누락만 실패로 본다.
+  // (예전엔 허용 개수를 1 로 박아 두어, 누락이 하나 늘 때마다 손봐야 했다)
+  let knownMissing = new Set();
+  try {
+    knownMissing = new Set(fs.readFileSync(path.join(__dirname, '..', 'assets', 'missing.txt'), 'utf8')
+      .split(/\r?\n/).map(x => x.trim()).filter(Boolean)
+      .filter(x => x.startsWith('ms/')).map(x => nfc(x.slice(3))));
+  } catch { /* 없으면 빈 집합 */ }
   const msMiss = [...new Set(D.msData.map(m => base(m.MS名)))]
-    .filter(n => officialBase.has(n) && !has('ms', n));
+    .filter(n => officialBase.has(n) && !has('ms', n) && !knownMissing.has(nfc(n)));
+  const msKnown = [...new Set(D.msData.map(m => base(m.MS名)))]
+    .filter(n => officialBase.has(n) && !has('ms', n) && knownMissing.has(nfc(n)));
+  if (msKnown.length) console.log('INFO 배포처에 이미지가 없는 기체(기본 이미지): ' + msKnown.join(', '));
   // 위키에서 보강한 파츠(_wiki)는 미러에 없으니 이미지도 없다 — 기본 이미지로 대체된다.
   // 빠뜨리지 않도록 개수는 따로 알린다.
   const wikiParts = partsAll.filter(p => p._wiki).map(p => p.name);
   const partMiss = partsAll.filter(p => !p._wiki).map(p => p.name).filter(n => !has('parts', n));
   if (wikiParts.length) console.log('INFO 위키 보강 파츠(이미지는 기본값): ' + wikiParts.join(', '));
-  check('기체 이미지 존재', msMiss.length <= 1, msMiss.join(', ') || '전부 존재');
+  check('기체 이미지 존재', msMiss.length === 0, msMiss.join(', ') || '전부 존재');
   check('파츠 이미지 존재', partMiss.length === 0, partMiss.slice(0, 5).join(', ') || '전부 존재');
   check('기본 이미지 존재', has('ms', '_default') && has('parts', '_default'));
 
