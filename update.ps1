@@ -74,17 +74,17 @@ function Build-Apk {
     & $gradlew 'assembleDebug' "-Pvcode=$vcode" "-Pvname=$vname" '--console=plain' '-q'
     $ok = ($LASTEXITCODE -eq 0)
   } catch {
-    Write-Host "APK 빌드 중 예외: $_" -ForegroundColor Red
+    $script:ApkFailed = $true; Write-Host "APK 빌드 중 예외: $_" -ForegroundColor Red
   } finally { $ErrorActionPreference = $prevEap; Pop-Location }
 
-  if (-not $ok) { Write-Host 'APK 빌드에 실패했습니다 (위 로그 확인). 웹 업데이트는 정상입니다.' -ForegroundColor Red; return }
+  if (-not $ok) { $script:ApkFailed = $true; Write-Host 'APK 빌드에 실패했습니다 (위 로그 확인). 웹 업데이트는 정상입니다.' -ForegroundColor Red; return }
 
   $apk = Join-Path $androidDir 'app\build\outputs\apk\debug\app-debug.apk'
   if (Test-Path $apk) {
     Copy-Item $apk (Join-Path $PSScriptRoot 'dist\gbo2-simulator-debug.apk') -Force
     Write-Host "APK 완료: dist\gbo2-simulator-debug.apk (버전 $vname) — 폰에 덮어쓰기 설치하세요." -ForegroundColor Green
   } else {
-    Write-Host 'APK 산출물을 찾지 못했습니다.' -ForegroundColor Red
+    $script:ApkFailed = $true; Write-Host 'APK 산출물을 찾지 못했습니다.' -ForegroundColor Red
   }
 }
 
@@ -207,6 +207,14 @@ if (-not $Check) {
   Write-Host "`n최신 결과물: dist\gbo2-simulator.html (브라우저에서 새로고침 하세요)" -ForegroundColor Green
   # 데이터가 갱신됐으면 APK 도 함께 최신화 (‑NoApk 로 건너뛸 수 있음)
   if (-not $NoApk) { Build-Apk }
+  # APK 빌드가 실패했는데 그대로 진행하면, 배포본에 '지난번 APK' 가 동봉되고 GitHub 에도
+  # 그게 올라간다. 실제로 그렇게 한 번 나갔다 - 실패하면 여기서 멈춘다.
+  if ($script:ApkFailed -and ($Release -or $Publish)) {
+    Write-Host "`nAPK 빌드가 실패해 배포를 중단합니다." -ForegroundColor Red
+    Write-Host '  (그대로 두면 지난번 APK 가 배포본·GitHub 에 올라갑니다)' -ForegroundColor Yellow
+    Write-Host '  APK 없이 웹만 배포하려면 -NoApk 를 붙여 실행하세요.' -ForegroundColor Yellow
+    Close-Window 1
+  }
   # -Release: 배포 ZIP 을 완전판 + 경량판 두 가지로 생성 (모바일-앱.apk 동봉)
   if ($Release) {
     Write-Host "`n배포 패키지 생성 중… (완전판 + 경량판)" -ForegroundColor Cyan
