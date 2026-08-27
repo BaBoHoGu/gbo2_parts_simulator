@@ -1463,6 +1463,22 @@
         c.title = '이 무장이 거는 디버프 — 효과량이 위키에 수치로 없어 표시만 한다.';
         nm.append(c);
       }
+      // 실드 보정 — 피탄 시뮬의 「실드로 막음」 을 켰을 때만 붙인다.
+      // 표기가 아예 없는 무장(2,666종)엔 칩을 안 붙여 목록이 지저분해지지 않게 한다.
+      if (pietanShield) {
+        const sm = D.shieldMultOf(w);
+        if (sm) {
+          const txt = sm.unknown ? '?' : (sm.nc === sm.ch ? sm.nc : sm.nc + '→' + sm.ch) + '배';
+          const lvl = sm.unknown ? '' : (sm.nc >= 1.2 ? ' hi' : sm.nc < 1 ? ' lo' : '');
+          const c = el('span', 'w-shield' + lvl, '🛡' + txt);
+          c.title = sm.unknown
+            ? '실드 보정이 위키 미확인(？倍)이라 실드 계산을 하지 않는다.'
+            : '실드에 맞았을 때 배율 — 실드 피해 = 기체에 줄 피해 × ' + sm.nc + '배'
+              + (sm.nc !== sm.ch ? '\n집속 시 ' + sm.ch + '배' : '')
+              + '\n실드로 받은 공격은 기체 HP 피해를 막는다(위키 83).';
+          nm.append(c);
+        }
+      }
       nm.title = w.name;
       row.append(nm);
 
@@ -4809,6 +4825,7 @@
     $('#pietanShield').onclick = () => {
       pietanShield = !pietanShield;
       $('#pietanShield').classList.toggle('on', pietanShield);
+      renderWeapons();          // 무장 표의 실드 보정 칩도 같이 켜고 끈다
       renderPietanResult();
     };
     $('#pietanAttr').onclick = ev => {
