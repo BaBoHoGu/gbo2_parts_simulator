@@ -3485,6 +3485,7 @@
   let pietanAttrTouched = false; // 상성 수동 변경 여부 (그러면 기체 바꿔도 유지)
   let pietanEnemySkills = new Set();  // 체크한 적 공격 스킬 이름들 (여러 개 조합 가능)
   let pietanEnemyDef = new Set();     // 체크한 적 방어 스킬 이름들 — 내 무장의 피해를 깎는다
+  let pietanShield = false;           // 「실드로 막음」 — 실드 HP 로 받는 계산을 함께 보여 준다
   let pietanBuild = null;        // 적이 저장 빌드일 때 그 빌드(파츠 포함), 아니면 null
   let pietanVariant = 0;         // 선택한 격투 변형 인덱스 (기본/헤비어택…)
   let pietanDir = 0;             // 선택한 격투 방향 인덱스 (N격/횡격/하격…)
@@ -3523,6 +3524,30 @@
   }
 
   /** 적 기체가 그 LV 에서 실제로 쓰는 무장 목록 (위력·누적치를 그 레벨로). */
+  /** 이 기체가 든 실드 — 그 LV 의 シールドHP + 실드 보강재·커넥팅 파츠. 실드가 없으면 null.
+   *  실드 HP 자체는 무장 표에서 이미 쓰던 계산(D.weaponModsOf().shieldHp)을 그대로 쓴다. */
+  function shieldOf(ms, msLv, equipped) {
+    const id = pietanPageId(ms), page = id && weaponData[id];
+    if (!page) return null;
+    const sh = (page.weapons || []).find(w => w.type === 'shield'
+      && Object.values(w.levels || {}).some(d => d && d.raw && d.raw['シールドHP']));
+    if (!sh) return null;
+    const lvk = pietanWeaponLv(sh, msLv);
+    const d = lvk && sh.levels[lvk];
+    const base = Number(d && d.raw && d.raw['シールドHP']) || 0;
+    if (!base) return null;
+    const bonus = D.weaponModsOf(equipped || [], msLv, ms['属性']).shieldHp || 0;
+    return { hp: base + bonus, base, bonus, name: T.weaponName(sh.name) };
+  }
+
+  /** 무장 하나가 실드에 주는 1히트 피해. 보정이 없거나 「？倍」면 null(계산 안 함). */
+  function shieldHit(dmg, sm, charged) {
+    if (!sm || sm.unknown) return null;
+    const mult = charged ? sm.ch : sm.nc;
+    if (mult == null) return null;
+    return Math.floor(dmg * mult);
+  }
+
   function enemyWeaponsOfMs(ms, msLv) {
     const id = pietanPageId(ms), page = id && weaponData[id];
     if (!page) return [];
@@ -3880,6 +3905,18 @@
       ? `임계 ${stg.threshold}% ÷ 히트당 ${perHitStagger}%${stepTxt}` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(stagN / w.pellets)}발` : '')
       : (w.stagger > 0 ? `누적치 ${w.stagger}%${stepTxt} → 0 — 이 무장으론 경직 안 됨` : '누적치 0% (경직값 없음)');
     box.append(metric('경직까지', stagVal, stagNote));
+    // 실드로 받으면 기체 HP 피해를 막고 실드 HP 가 대신 깎인다(위키 83).
+    if (pietanShield) {
+      const mine = shieldOf(state.ms, msLevel(state.ms), state.equipped);
+      const sm = D.shieldMultOf({ info: { '備考': w.note || '' } });
+      const sHit = mine && shieldHit(dmg, sm, false);
+      if (!mine) box.append(metric('실드로 막으면', '—', '내 기체엔 실드가 없다', 'sub'));
+      else if (sHit == null) box.append(metric('실드로 막으면', '—',
+        sm && sm.unknown ? '이 무장의 실드 보정이 위키 미확인(？倍)' : '이 무장엔 실드 보정 표기가 없다', 'sub'));
+      else box.append(metric('실드로 막으면', Math.ceil(mine.hp / sHit) + '발',
+        `${mine.name} HP ${mine.hp.toLocaleString()}` + (mine.bonus ? ` (+${mine.bonus.toLocaleString()})` : '')
+        + ` ÷ 1히트 ${sHit.toLocaleString()} (피해 ${dmg.toLocaleString()} × 보정 ${sm.nc}배)`, 'sub'));
+    }
     box.append(el('div', 'pietan-foot',
       '※ 공격 항 실피해식[Wp·Att·(방향)·Pr] + 방어 스킬 경감. 방어보정은 내구 지표(Def). 蓄積 경직은 일반 경직 기준(국부·시간 감쇠 미반영).'
       + (w.react === '강경직' ? ' 이 무장은 직격 시 강경직(大よろけ).' : '')));
@@ -3894,6 +3931,7 @@
     const wm = D.weaponModsOf(state.equipped, msLevel(state.ms), state.ms.属性);
     const eEq = enemyEquipped();                                   // 적이 낀 파츠
     const eStg = activeStaggerMods(pietanMs, pietanMsLv, pietanEnemyDef, 'normal');   // 체크한 적 방어 스킬
+    const eShield = pietanShield ? shieldOf(pietanMs, pietanMsLv, eEq) : null;
     const eCuts = [...partDamageCuts(eEq, pietanMsLv),             // 적 파츠의 % 피해 경감
       ...boostBufferCuts(eStg.cuts, eEq)];                         // 적 방어 스킬(신형 완충재 강화 포함)
     const rows = [];
@@ -3917,18 +3955,32 @@
       const mult = fireMult(w);
       const n = (mult.nc && mult.nc.n) || 1;
       const per = dmg * n;                          // 전탄(동시발사) 1트리거 피해
-      rows.push({ name: T.weaponName(w.name), attr, per, n, hits: per > 0 ? Math.ceil(enemyEff / per) : null });
+      // 실드로 막는 상대라면 실드부터 깨야 한다 — 같은 무장이라도 실드 보정이 5배까지 갈린다.
+      let shHits = undefined, shNote = '';
+      if (pietanShield && eShield) {
+        const sm = D.shieldMultOf(w);
+        const sHit = shieldHit(dmg, sm, false);
+        // 같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다.
+        if (sHit == null) { shHits = null; shNote = sm && sm.unknown ? '보정 불명' : '표기 없음'; }
+        else shHits = Math.ceil(eShield.hp / (sHit * n));
+      }
+      rows.push({ name: T.weaponName(w.name), attr, per, n, shHits, shNote,
+        hits: per > 0 ? Math.ceil(enemyEff / per) : null });
     }
     if (!rows.length) return;
     rows.sort((x, y) => (x.hits || 1e9) - (y.hits || 1e9));
 
-    box.append(el('div', 'pietan-out-lb', '내 무장 → ' + T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '') + ' 격파'));
-    const tbl = el('div', 'pietan-out');
+    box.append(el('div', 'pietan-out-lb', '내 무장 → ' + T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '') + ' 격파'
+      + (eShield ? ` (실드 ${eShield.name} HP ${eShield.hp.toLocaleString()})` : '')));
+    const tbl = el('div', 'pietan-out' + (eShield ? ' has-shield' : ''));
     for (const w of rows) {
       const row = el('div', 'pietan-out-row');
       row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
       row.append(el('span', 'pietan-out-nm', w.name));
       row.append(el('span', 'pietan-out-dmg', w.per.toLocaleString() + (w.n > 1 ? ' (×' + w.n + ')' : '')));
+      if (w.shHits !== undefined) {
+        row.append(el('span', 'pietan-out-sh', w.shHits != null ? '실드 ' + w.shHits + '발' : w.shNote));
+      }
       row.append(el('span', 'pietan-out-hits', w.hits != null ? w.hits + '발' : '—'));
       tbl.append(row);
     }
@@ -4754,6 +4806,11 @@
     $('#pietanBack').onclick = () => openPietan(false);
     $('#pietanQuery').oninput = () => renderPietanLeft();
     $('#pietanCorr').oninput = () => { pietanCorr = Math.max(0, Number($('#pietanCorr').value) || 0); pietanCorrTouched = true; renderPietanResult(); };
+    $('#pietanShield').onclick = () => {
+      pietanShield = !pietanShield;
+      $('#pietanShield').classList.toggle('on', pietanShield);
+      renderPietanResult();
+    };
     $('#pietanAttr').onclick = ev => {
       const b = ev.target.closest('[data-a]'); if (!b) return;
       pietanAttr = b.dataset.a; pietanAttrTouched = true;   // 수동 지정 — 기체 바꿔도 유지
