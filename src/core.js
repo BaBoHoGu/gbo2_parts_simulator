@@ -175,6 +175,11 @@ const LEVEL_LINK_RULES = {
 const RELOAD_TEXT = ['リロード', '兵装のオーバーヒート'];
 // 「리로드를 줄이는 파츠와는 함께 못 단다」 고 설명에 직접 밝힌 파츠 (신규 파츠용)
 const RELOAD_EXCLUSIVE_RE = /リロード時間を短縮できるパーツとは同時装備不可/;
+// 위 배타의 '상대'를 고르는 규칙. RELOAD_TEXT 는 원본 판정식(대용량 보급 팩)용이라
+// 「兵装のオーバーヒート」 까지 포함하는데, 그건 리로드가 아니다 —
+// 그대로 쓰면 補助ジェネレーター(빔 OH 복귀 단축)·水中戦適正化装置 까지 막힌다.
+// 탄약 강화 키트의 문구는 「リロード時間を短縮できるパーツ」 이므로 리로드 시간만 본다.
+const RELOAD_TIME_RE = /リロード時間[^。]*?(?:短縮|上昇)/;
 const ASL_TEXT = ['ASL', '兵装の集束時間'];
 const CONNECT_SUPPORT1 = 'コネクティングシステム[支援Ⅰ型]_LV1';
 
@@ -537,10 +542,10 @@ function effectConflict(part, equipped) {
 
   // 설명이 그렇게 밝힌 파츠는 리로드를 줄이는 아무 파츠와도 함께 못 단다(양방향).
   if (reloadExclusive) {
-    const other = find(e => e.name !== name && hasText(e.description || '', RELOAD_TEXT));
+    const other = find(e => e.name !== name && RELOAD_TIME_RE.test(e.description || ''));
     if (other) return other.name;
   }
-  if (carriesReload) {
+  if (RELOAD_TIME_RE.test(desc)) {
     const other = find(e => e.name !== name && RELOAD_EXCLUSIVE_RE.test(e.description || ''));
     if (other) return other.name;
   }
