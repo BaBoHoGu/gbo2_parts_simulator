@@ -4,6 +4,7 @@
 #   .\update.ps1 -Check     감지만 하고 무엇이 바뀌는지 리포트 (반영 안 함)
 #   .\update.ps1 -Rebuild   인터넷 없이 dist + APK 만 다시 만든다 (오버라이드 패치 적용용)
 #   .\update.ps1 -NoApk     APK 빌드를 건너뛰고 웹(dist)만 갱신
+#   .\update.ps1 -NoUiCheck 배포 전 UI 회귀 점검을 건너뛴다(권장하지 않음)
 #   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
 #   .\update.ps1 -Publish   폰 OTA(data) + PC 배포본 ZIP 을 GitHub 에 올려 링크로 배포
 #
@@ -11,7 +12,7 @@
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$Release, [switch]$Publish)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$Release, [switch]$Publish)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -209,6 +210,21 @@ if (-not $Check) {
   if (-not $NoApk) { Build-Apk }
   # APK 빌드가 실패했는데 그대로 진행하면, 배포본에 '지난번 APK' 가 동봉되고 GitHub 에도
   # 그게 올라간다. 실제로 그렇게 한 번 나갔다 - 실패하면 여기서 멈춘다.
+  # 배포용이면 실제 Chrome 으로 화면을 훑어 회귀를 먼저 잡는다.
+  # (여기 있는 항목은 전부 예전에 배포까지 나갔던 것들 — 닫힌 모달이 앱을 덮음,
+  #  가로 폰이 데스크톱으로 뜸, 상단이 상태바에 먹힘, 안 눌리는 버튼, 가로 스크롤)
+  if (($Release -or $Publish) -and -not $NoUiCheck) {
+    Write-Host "`nUI 회귀 점검 중… (실제 Chrome, 4개 화면 크기)" -ForegroundColor Cyan
+    $prevEap2 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    & $node (Join-Path $PSScriptRoot 'tools\ui_check.js') '--shots'
+    $uiCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap2
+    if ($uiCode -ne 0) {
+      Write-Host "`nUI 점검에 걸려 배포를 중단합니다. (위 목록 · dist\ui_check 스크린샷 확인)" -ForegroundColor Red
+      Write-Host '  그래도 배포하려면 -NoUiCheck 를 붙이세요.' -ForegroundColor Yellow
+      Close-Window 1
+    }
+  }
   if ($script:ApkFailed -and ($Release -or $Publish)) {
     Write-Host "`nAPK 빌드가 실패해 배포를 중단합니다." -ForegroundColor Red
     Write-Host '  (그대로 두면 지난번 APK 가 배포본·GitHub 에 올라갑니다)' -ForegroundColor Yellow
