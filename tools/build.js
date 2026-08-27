@@ -31,6 +31,23 @@ if (fs.existsSync(overridePath)) {
   if (n) console.log(`위키 교정 적용: ${Object.keys(override).length}기 · ${n}개 필드`);
 }
 const parts = readJson('data', 'parts.json');
+// 미러(gbo2.jp)에 아직 없는 파츠를 위키에서 보강한다 — 기체의 msData.additions.json 과 같은 역할.
+// 미러에 같은 이름이 생기면 그쪽이 이기고 추가분은 자동으로 빠진다(중복 걱정 없음).
+{
+  const add = readJson('data', 'parts.additions.json');
+  let n = 0;
+  for (const [cat, list] of Object.entries(add)) {
+    if (cat.startsWith('_') || !Array.isArray(list)) continue;   // _주석 같은 메타 키는 건너뛴다
+    if (!parts[cat]) parts[cat] = [];
+    const have = new Set(parts[cat].map(x => x.name));
+    for (const it of list) {
+      if (!it || typeof it !== 'object' || !it.name) continue;    // 문자열 등 잘못된 항목 방어
+      if (have.has(it.name)) continue;
+      parts[cat].push(it); n++;
+    }
+  }
+  if (n) console.log(`파츠 보강: ${n}개 (parts.additions.json)`);
+}
 const fullst = readJson('data', 'fullst.json');
 const weapons = readJson('data', 'weapons.json');
 const skills = readJson('data', 'skills.json');

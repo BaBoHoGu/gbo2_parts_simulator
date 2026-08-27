@@ -173,6 +173,8 @@ const LEVEL_LINK_RULES = {
 
 /** 효과 중복 배타 판정에 쓰는 설명문 키워드. */
 const RELOAD_TEXT = ['リロード', '兵装のオーバーヒート'];
+// 「리로드를 줄이는 파츠와는 함께 못 단다」 고 설명에 직접 밝힌 파츠 (신규 파츠용)
+const RELOAD_EXCLUSIVE_RE = /リロード時間を短縮できるパーツとは同時装備不可/;
 const ASL_TEXT = ['ASL', '兵装の集束時間'];
 const CONNECT_SUPPORT1 = 'コネクティングシステム[支援Ⅰ型]_LV1';
 
@@ -521,6 +523,10 @@ function effectConflict(part, equipped) {
   const isConn1 = name.includes(CONNECT_SUPPORT1);
   const carriesReload = hasText(desc, RELOAD_TEXT);
   const carriesAsl = hasText(desc, ASL_TEXT);
+  // 설명에 「リロード時間を短縮できるパーツとは同時装備不可」 를 직접 적어 둔 파츠(탄약 강화 키트).
+  // 원본 번들에 없는 신규 파츠라 원본 판정식이 알 수 없어, 위키 문구를 그대로 규칙으로 쓴다.
+  // 이름이 아니라 문구로 판정하므로 기존 161개에는 걸리지 않는다(전수 확인: 0건).
+  const reloadExclusive = RELOAD_EXCLUSIVE_RE.test(desc);
 
   // 대부분의 파츠는 어느 규칙에도 걸리지 않는다 — 장착 목록을 훑기 전에 끝낸다.
   // (탐색 루프에서 수만 번 호출되므로 이 조기 반환이 비용을 좌우한다)
@@ -528,6 +534,16 @@ function effectConflict(part, equipped) {
 
   const list = Array.isArray(equipped) ? equipped : [];
   const find = fn => list.find(fn) || null;
+
+  // 설명이 그렇게 밝힌 파츠는 리로드를 줄이는 아무 파츠와도 함께 못 단다(양방향).
+  if (reloadExclusive) {
+    const other = find(e => e.name !== name && hasText(e.description || '', RELOAD_TEXT));
+    if (other) return other.name;
+  }
+  if (carriesReload) {
+    const other = find(e => e.name !== name && RELOAD_EXCLUSIVE_RE.test(e.description || ''));
+    if (other) return other.name;
+  }
   const bySupply = p => p.name && p.name.includes('大容量補給パック');
   const byFCS = p => p.name && p.name.includes('火器管制最適化システム');
 

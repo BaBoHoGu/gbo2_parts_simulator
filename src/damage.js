@@ -206,7 +206,11 @@ const DAMAGE_PCT_RULES = [
   { kind: 'any', scope: 'all', sign: +1, re: /敵へ与えるダメージを(\d+)%増加/ },
   // 커넥팅[지원Ⅰ/Ⅱ형] — 무장 종류가 한정된다
   { kind: 'shoot', scope: 'beam', sign: +1, re: /ビーム射撃兵装で敵機に与えるダメージが(\d+)%増加/ },
-  { kind: 'shoot', scope: 'solid', sign: +1, re: /実弾射撃兵装で敵機に与えるダメージが(\d+)%増加/ }
+  { kind: 'shoot', scope: 'solid', sign: +1, re: /実弾射撃兵装で敵機に与えるダメージが(\d+)%増加/ },
+  // 탄약 강화 키트 — 「実弾属性の攻撃で敵の機体HPに与えるダメージが N%増加」.
+  // 実弾属性 은 사격 판정 무장만이라 kind:'shoot' 로 잠근다(scope:'solid' 만 두면
+  // 이름이 빔이 아닌 격투 무장까지 solid 로 걸려 잘못 오른다).
+  { kind: 'shoot', scope: 'solid', sign: +1, re: /実弾属性の攻撃で敵の機体HPに与えるダメージが(\d+)%増加/ }
 ];
 
 /**
@@ -317,6 +321,29 @@ function damagePctFor(mods, w, kind) {
  * 1.0 으로 가정하면 123 종에 근거 없는 숫자가 퍼진다.
  * 표기 자체가 없으면(2,666 종) null 을 준다.
  */
+/**
+ * 실드에 주는 피해를 올려 주는 파츠의 합 % — 「シールドへ与えるダメージが N%増加」.
+ * attr('solid'|'beam'|'melee') 를 주면 속성 한정 조항을 걸러 준다.
+ *
+ * 탄약 강화 키트의 원문은
+ *   「実弾属性の攻撃で敵の機体HPに与えるダメージが10%増加し、シールドへ与えるダメージが30%増加」
+ * 로, 「〜し、」 로 이어진 한 문장이라 앞의 「実弾属性の攻撃で」 가 뒤 절까지 걸린다고 읽는다.
+ * 즉 실드 +30% 도 실탄 한정. 빔·격투까지 주면 실제보다 좋게 나오므로 보수적으로 잡는다.
+ */
+function shieldDmgPctOf(equipped, attr) {
+  let pct = 0;
+  for (const p of equipped || []) {
+    const d = String((p && p.description) || '').replace(/％/g, '%');
+    const m = d.match(/シールドへ与えるダメージが\s*(\d+)\s*%\s*増加/);
+    if (!m) continue;
+    // 같은 문장 안(마침표 전)에서 앞 절이 속성을 한정하고 있으면 그 속성에만 건다
+    const solidOnly = /実弾属性[^。]*$/.test(d.slice(0, m.index));
+    if (solidOnly && attr && attr !== 'solid') continue;
+    pct += Number(m[1]);
+  }
+  return pct;
+}
+
 function shieldMultOf(w) {
   const note = (w && w.info && w.info['備考']) || '';
   if (!/シールド補正/.test(note)) return null;            // 표기 없음
@@ -348,7 +375,7 @@ const GBO2Damage = {
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag, ATTR_BONUS,
-  shortenTime, shortenTimeText, applyDamagePct, shieldMultOf
+  shortenTime, shortenTimeText, applyDamagePct, shieldMultOf, shieldDmgPctOf
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Damage;
