@@ -309,6 +309,26 @@ function damagePctFor(mods, w, kind) {
  * 파츠 % 와 합산되지 않고 별도 배율로 곱해지므로, 스킬 몫은 별도 원소로 넣는다.
  * 단계마다 버림(게임 계산 관례).
  */
+/**
+ * 무장의 실드 보정 — 備考의 「シールド補正：1.5倍（1.35倍）」.
+ * 위키 83: 「シールドへのダメージは、補正がかかった後のダメージ」 즉
+ *   실드 피해 = 기체에 줄 피해 × 실드 보정.
+ * 괄호는 집속(차지) 시 값. 「？倍」는 위키 미확인이라 null 로 둔다 —
+ * 1.0 으로 가정하면 123 종에 근거 없는 숫자가 퍼진다.
+ * 표기 자체가 없으면(2,666 종) null 을 준다.
+ */
+function shieldMultOf(w) {
+  const note = (w && w.info && w.info['備考']) || '';
+  if (!/シールド補正/.test(note)) return null;            // 표기 없음
+  // 콜론이 빠진 표기(16종)도 받는다
+  const m = note.match(/シールド補正\s*[：:]?\s*([\d.]+|？|\?)\s*倍\s*(?:（\s*([\d.]+|？|\?)\s*倍\s*）)?/);
+  if (!m) return null;
+  const num = v => (v == null || /[？?]/.test(v)) ? null : Number(v);
+  const nc = num(m[1]);
+  const ch = m[2] != null ? num(m[2]) : nc;               // 괄호 없으면 두 모드 같다
+  return { nc, ch, unknown: nc == null && ch == null };
+}
+
 function applyDamagePct(dmg, pct) {
   const arr = Array.isArray(pct) ? pct : [pct];
   return arr.reduce((d, p) => (p ? Math.max(0, Math.floor(d * (1 + p / 100))) : d), dmg);
@@ -328,7 +348,7 @@ const GBO2Damage = {
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag, ATTR_BONUS,
-  shortenTime, shortenTimeText, applyDamagePct
+  shortenTime, shortenTimeText, applyDamagePct, shieldMultOf
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Damage;
