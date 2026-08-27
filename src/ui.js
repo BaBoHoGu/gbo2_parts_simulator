@@ -1077,7 +1077,26 @@
   };
   const THR_RECOVER = 5;                 // 스라값/초 — 전 기체 공통
   const OH_SEC = 7, OH_SEC_GROUND_ADAPT = 6.3;   // 지상적성만 10% 짧다(우주적성은 효과 없음)
+  // 부스트 계열 스킬은 '효과가 끝나면' 스러스터 OH 복귀가 21초로 늘어난다(기본의 3배).
+  // 스킬 설명에 「効果終了時のOH回復時間は21秒」 로 못박혀 있는 셋만 잡는다 — 합쳐 38기.
+  // 발동 중에만 걸리는 값이라 지표를 갈아치우지 않고, 옆에 따로 적어 준다.
+  const OH_LONG_SKILLS = ['EXブースト', 'オーバーブースト', 'シューティングブースト'];
+  const OH_LONG_SEC = 21;
   const isTankMs = ms => /タンク|ヒルドルブ/.test(String(ms && ms.MS名 || ''));
+
+  /** 이 기체 LV 에서 쓸 수 있는 '부스트 후 OH 21초' 스킬 이름(한글). 없으면 null. */
+  function ohLongSkillOf(ms, lv) {
+    if (!ms) return null;
+    const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || []);
+    const byName = new Map();
+    for (const mo of modes) for (const sk of (mo.skills || [])) {
+      if (!OH_LONG_SKILLS.includes(sk.name)) continue;
+      if (!byName.has(sk.name)) byName.set(sk.name, []);
+      byName.get(sk.name).push(sk);
+    }
+    for (const [name, cands] of byName) if (pickByMsLv(cands, lv)) return skTr(name);
+    return null;
+  }
 
   /** 스러스터 관련 파츠 효과 — 회복속도%·OH단축%·소비경감%(초기/이동중). 모두 가산 중복. */
   function thrusterPartFx(equipped) {
@@ -2008,11 +2027,15 @@
         row.append(cell('부스트', m.boost, m.base.boost));
         row.append(cell('풀회복', m.full, m.base.full));
         row.append(cell('OH복귀', m.oh, m.base.oh));
+        const ohLong = ohLongSkillOf(state.ms, lv);
+        if (ohLong) row.append(el('span', 'thr-ohlong', ohLong + ' 후 ' + OH_LONG_SEC + '초'));
         const colKo = m.col === 'adapt' ? '환경적성' : m.col === 'assault' ? '강습 보정' : '표준';
         row.title = '위키 실측 기준(' + colKo + ')\n'
           + '· 부스트 지속 = (스러스터 ' + thr + ' − 초기소비) ÷ 소비속도\n'
           + '· 풀회복 = 게이지 0 → 가득 (스러스터 ÷ 5/초, 회복 파츠 반영)\n'
           + '· OH 복귀 = ' + m.base.oh + '초 × (1 − 단축 파츠)'
+          + (ohLong ? '\n※ ' + ohLong + ' 효과가 끝난 뒤에는 OH 복귀가 ' + OH_LONG_SEC
+              + '초 (스킬 설명에 명시된 고정값 — 위 단축 파츠와 별개).' : '')
           + (isTankMs(state.ms) ? '\n※ 탱크형은 소비속도가 위키 미확정이라 부스트 지속을 내지 않는다.' : '');
         body.append(row);
       }

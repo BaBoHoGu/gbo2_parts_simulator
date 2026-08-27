@@ -110,9 +110,15 @@ setTimeout(async () => {
   check('파츠 사전 전수 번역',
     partsAll.every(p => !kana.test(I.partName(p.name)) && !kana.test(I.partDesc(p.name, p.description))));
 
-  /* --- 이미지 파일 존재 --- */
+  /* --- 이미지 존재 ---
+     이미지는 dist/images 파일이 아니라 HTML 안에 data URI 로 인라인된다(window.GBO2_IMAGES).
+     예전엔 파일을 찾아 보느라 셋 다 늘 FAIL 이었고, 늘 빨간불이면 아무도 안 본다.
+     키는 '<dir>/<NFC이름>.webp'. */
   const base = n => n.replace(/_LV\d+$/i, '').trim();
-  const has = (dir, name) => fs.existsSync(path.join(DIST, 'images', dir, name + '.webp'));
+  const IMG = window.GBO2_IMAGES || {};
+  const nfc = n => String(n).normalize('NFC');
+  const has = (dir, name) => !!IMG[dir + '/' + nfc(name) + '.webp'];
+  check('이미지가 HTML 에 인라인됨', Object.keys(IMG).length > 0, Object.keys(IMG).length + '개');
   const msMiss = [...new Set(D.msData.map(m => base(m.MS名)))].filter(n => !has('ms', n));
   const partMiss = partsAll.map(p => p.name).filter(n => !has('parts', n));
   check('기체 이미지 존재', msMiss.length <= 1, msMiss.join(', ') || '전부 존재');
