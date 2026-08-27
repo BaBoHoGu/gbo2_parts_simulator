@@ -3556,12 +3556,13 @@
     return { hp: base + bonus, base, bonus, name: T.weaponName(sh.name) };
   }
 
-  /** 무장 하나가 실드에 주는 1히트 피해. 보정이 없거나 「？倍」면 null(계산 안 함). */
-  function shieldHit(dmg, sm, charged) {
+  /** 무장 하나가 실드에 주는 1히트 피해. 보정이 없거나 「？倍」면 null(계산 안 함).
+   *  pct 는 공격하는 쪽 파츠의 「실드에 주는 피해 +N%」(탄약 강화 키트 등). */
+  function shieldHit(dmg, sm, charged, pct) {
     if (!sm || sm.unknown) return null;
     const mult = charged ? sm.ch : sm.nc;
     if (mult == null) return null;
-    return Math.floor(dmg * mult);
+    return Math.floor(dmg * mult * (1 + (pct || 0) / 100));
   }
 
   function enemyWeaponsOfMs(ms, msLv) {
@@ -3925,13 +3926,14 @@
     if (pietanShield) {
       const mine = shieldOf(state.ms, msLevel(state.ms), state.equipped);
       const sm = D.shieldMultOf({ info: { '備考': w.note || '' } });
-      const sHit = mine && shieldHit(dmg, sm, false);
+      const eShPct = D.shieldDmgPctOf(eEq, w.attr);  // 실드 피해 증가는 때리는 쪽(적) 파츠 몫
+      const sHit = mine && shieldHit(dmg, sm, false, eShPct);
       if (!mine) box.append(metric('실드로 막으면', '—', '내 기체엔 실드가 없다', 'sub'));
       else if (sHit == null) box.append(metric('실드로 막으면', '—',
         sm && sm.unknown ? '이 무장의 실드 보정이 위키 미확인(？倍)' : '이 무장엔 실드 보정 표기가 없다', 'sub'));
       else box.append(metric('실드로 막으면', Math.ceil(mine.hp / sHit) + '발',
         `${mine.name} HP ${mine.hp.toLocaleString()}` + (mine.bonus ? ` (+${mine.bonus.toLocaleString()})` : '')
-        + ` ÷ 1히트 ${sHit.toLocaleString()} (피해 ${dmg.toLocaleString()} × 보정 ${sm.nc}배)`, 'sub'));
+        + ` ÷ 1히트 ${sHit.toLocaleString()} (피해 ${dmg.toLocaleString()} × 보정 ${sm.nc}배`        + (eShPct ? ` × 적 파츠 +${eShPct}%` : '') + ')', 'sub'));
     }
     box.append(el('div', 'pietan-foot',
       '※ 공격 항 실피해식[Wp·Att·(방향)·Pr] + 방어 스킬 경감. 방어보정은 내구 지표(Def). 蓄積 경직은 일반 경직 기준(국부·시간 감쇠 미반영).'
@@ -3948,6 +3950,7 @@
     const eEq = enemyEquipped();                                   // 적이 낀 파츠
     const eStg = activeStaggerMods(pietanMs, pietanMsLv, pietanEnemyDef, 'normal');   // 체크한 적 방어 스킬
     const eShield = pietanShield ? shieldOf(pietanMs, pietanMsLv, eEq) : null;
+
     const eCuts = [...partDamageCuts(eEq, pietanMsLv),             // 적 파츠의 % 피해 경감
       ...boostBufferCuts(eStg.cuts, eEq)];                         // 적 방어 스킬(신형 완충재 강화 포함)
     const rows = [];
@@ -3975,7 +3978,7 @@
       let shHits = undefined, shNote = '';
       if (pietanShield && eShield) {
         const sm = D.shieldMultOf(w);
-        const sHit = shieldHit(dmg, sm, false);
+        const sHit = shieldHit(dmg, sm, false, D.shieldDmgPctOf(state.equipped, attr));
         // 같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다.
         if (sHit == null) { shHits = null; shNote = sm && sm.unknown ? '보정 불명' : '표기 없음'; }
         else shHits = Math.ceil(eShield.hp / (sHit * n));

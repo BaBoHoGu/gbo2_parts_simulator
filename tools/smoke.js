@@ -120,7 +120,11 @@ setTimeout(async () => {
   const has = (dir, name) => !!IMG[dir + '/' + nfc(name) + '.webp'];
   check('이미지가 HTML 에 인라인됨', Object.keys(IMG).length > 0, Object.keys(IMG).length + '개');
   const msMiss = [...new Set(D.msData.map(m => base(m.MS名)))].filter(n => !has('ms', n));
-  const partMiss = partsAll.map(p => p.name).filter(n => !has('parts', n));
+  // 위키에서 보강한 파츠(_wiki)는 미러에 없으니 이미지도 없다 — 기본 이미지로 대체된다.
+  // 빠뜨리지 않도록 개수는 따로 알린다.
+  const wikiParts = partsAll.filter(p => p._wiki).map(p => p.name);
+  const partMiss = partsAll.filter(p => !p._wiki).map(p => p.name).filter(n => !has('parts', n));
+  if (wikiParts.length) console.log('INFO 위키 보강 파츠(이미지는 기본값): ' + wikiParts.join(', '));
   check('기체 이미지 존재', msMiss.length <= 1, msMiss.join(', ') || '전부 존재');
   check('파츠 이미지 존재', partMiss.length === 0, partMiss.slice(0, 5).join(', ') || '전부 존재');
   check('기본 이미지 존재', has('ms', '_default') && has('parts', '_default'));
