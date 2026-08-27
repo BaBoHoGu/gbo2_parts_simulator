@@ -175,6 +175,15 @@ const LEVEL_LINK_RULES = {
 const RELOAD_TEXT = ['リロード', '兵装のオーバーヒート'];
 // 「리로드를 줄이는 파츠와는 함께 못 단다」 고 설명에 직접 밝힌 파츠 (신규 파츠용)
 const RELOAD_EXCLUSIVE_RE = /リロード時間を短縮できるパーツとは同時装備不可/;
+// 「同一効果 … 와는 동시 장착 불가」 를 밝힌 파츠 — 자기가 가진 효과 축을 공유하는 파츠와도 못 단다.
+const SAME_EFFECT_RE = /同一効果/;
+// 효과 축 하나: '상태이상(소이 포함) 지속 시간 증가'
+//   イレギュラーDBL / 試験型イレギュラーDBL / 特殊燃焼剤 / 弾薬強化キット 넷이 여기 걸린다.
+//   (리로드 축은 위 RELOAD_* 규칙이 이미 담당한다)
+const STATUS_DURATION_RE = /継続時間を\s*\d+\s*%\s*増加/;
+// 파츠 설명은 반각 % 와 전각 ％ 가 섞여 있다(試験型イレギュラーDBL 는 전각).
+// 정규화하지 않으면 같은 효과인데 한쪽만 걸려 조용히 새어 나간다.
+const nzPct = t => String(t || '').replace(/％/g, '%');
 const ASL_TEXT = ['ASL', '兵装の集束時間'];
 const CONNECT_SUPPORT1 = 'コネクティングシステム[支援Ⅰ型]_LV1';
 
@@ -527,10 +536,11 @@ function effectConflict(part, equipped) {
   // 원본 번들에 없는 신규 파츠라 원본 판정식이 알 수 없어, 위키 문구를 그대로 규칙으로 쓴다.
   // 이름이 아니라 문구로 판정하므로 기존 161개에는 걸리지 않는다(전수 확인: 0건).
   const reloadExclusive = RELOAD_EXCLUSIVE_RE.test(desc);
+  const carriesStatusDur = STATUS_DURATION_RE.test(nzPct(desc));
 
   // 대부분의 파츠는 어느 규칙에도 걸리지 않는다 — 장착 목록을 훑기 전에 끝낸다.
   // (탐색 루프에서 수만 번 호출되므로 이 조기 반환이 비용을 좌우한다)
-  if (!isSupply && !isFCS && !isConn1 && !carriesReload && !carriesAsl) return null;
+  if (!isSupply && !isFCS && !isConn1 && !carriesReload && !carriesAsl && !carriesStatusDur) return null;
 
   const list = Array.isArray(equipped) ? equipped : [];
   const find = fn => list.find(fn) || null;
@@ -542,6 +552,20 @@ function effectConflict(part, equipped) {
   }
   if (carriesReload) {
     const other = find(e => e.name !== name && RELOAD_EXCLUSIVE_RE.test(e.description || ''));
+    if (other) return other.name;
+  }
+
+  // 「同一効果」 를 밝힌 파츠는 같은 효과 축을 가진 파츠와도 못 단다.
+  // 밝힌 쪽(弾薬強化キット)이 있을 때만 걸리므로, 서로 밝히지 않은 기존 파츠끼리
+  // (イレギュラーDBL ↔ 特殊燃焼剤) 는 지금까지처럼 함께 달 수 있다 — 원본 판정과 어긋나지 않는다.
+  if (carriesStatusDur) {
+    const declares = SAME_EFFECT_RE.test(desc);
+    const other = find(e => {
+      if (e.name === name) return false;
+      const od = nzPct(e.description);
+      if (!STATUS_DURATION_RE.test(od)) return false;
+      return declares || SAME_EFFECT_RE.test(od);     // 둘 중 한쪽이라도 밝혔으면 배타
+    });
     if (other) return other.name;
   }
   const bySupply = p => p.name && p.name.includes('大容量補給パック');
