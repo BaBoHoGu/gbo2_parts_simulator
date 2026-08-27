@@ -293,10 +293,7 @@ public class MainActivity extends Activity {
             try {
                 new AlertDialog.Builder(this)
                     .setTitle("새 버전 준비 완료")
-                    .setMessage("업데이트(" + date + ")를 받았습니다.
-지금 적용할까요?
-
-※ 작업 중인 파츠 구성은 초기화됩니다.")
+                    .setMessage("업데이트(" + date + ")를 받았습니다.\n지금 적용할까요?\n\n※ 작업 중인 파츠 구성은 초기화됩니다.")
                     .setPositiveButton("지금 적용", (d, w) -> { if (web != null) web.loadUrl(APP_URL); })
                     .setNegativeButton("나중에", null)
                     .setCancelable(true)
