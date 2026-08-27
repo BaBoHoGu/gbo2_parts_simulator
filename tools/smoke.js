@@ -119,7 +119,15 @@ setTimeout(async () => {
   const nfc = n => String(n).normalize('NFC');
   const has = (dir, name) => !!IMG[dir + '/' + nfc(name) + '.webp'];
   check('이미지가 HTML 에 인라인됨', Object.keys(IMG).length > 0, Object.keys(IMG).length + '개');
-  const msMiss = [...new Set(D.msData.map(m => base(m.MS名)))].filter(n => !has('ms', n));
+  // 미러(gbo2.jp)에 없어 위키·게임 화면에서 보강한 기체는 이미지도 없다 — 기본 이미지로 대체된다.
+  // 미러에 있는 기체만 이미지를 요구하고, 보강분은 INFO 로 알린다.
+  const officialBase = new Set(
+    JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'msData.json'), 'utf8'))
+      .map(m => base(m.MS名)));
+  const addOnly = [...new Set(D.msData.map(m => base(m.MS名)))].filter(n => !officialBase.has(n));
+  if (addOnly.length) console.log('INFO 보강 기체(이미지는 기본값): ' + addOnly.join(', '));
+  const msMiss = [...new Set(D.msData.map(m => base(m.MS名)))]
+    .filter(n => officialBase.has(n) && !has('ms', n));
   // 위키에서 보강한 파츠(_wiki)는 미러에 없으니 이미지도 없다 — 기본 이미지로 대체된다.
   // 빠뜨리지 않도록 개수는 따로 알린다.
   const wikiParts = partsAll.filter(p => p._wiki).map(p => p.name);
