@@ -2554,7 +2554,7 @@
     document.body.append(menu);
     const mw = menu.offsetWidth, mh = menu.offsetHeight;
     menu.style.left = Math.max(6, Math.min(xy[0] - mw / 2, window.innerWidth - mw - 8)) + 'px';
-    menu.style.top = Math.max(6, Math.min(xy[1] + 10, window.innerHeight - mh - 8)) + 'px';
+    menu.style.top = Math.max(safeTop() + 6, Math.min(xy[1] + 10, window.innerHeight - mh - 8)) + 'px';
     setTimeout(() => document.addEventListener('click', function h(e) {
       if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); }
     }), 0);
@@ -4349,6 +4349,69 @@
     return { num: num.join(' · ') || '—', how };
   }
 
+  const POSTURES = [['stand', '선 자세', '보정 없음'],
+                    ['crouch', '앉기·정지', '사격 피해 +10% · 이동 불가'],
+                    ['prone', '엎드리기', '사격 피해 +15% · 이동 불가']];
+
+  /** 「자세 ▾」 버튼 라벨 — 기본(선 자세·스코프 꺼짐)이 아니면 켜진 색으로 보여 준다. */
+  function updatePostureButton() {
+    const cur = POSTURES.find(x => x[0] === state.posture) || POSTURES[0];
+    const on = state.posture !== 'stand' || state.scope;
+    $('#postureBtnText').textContent = cur[1] + (state.scope ? ' · 스코프' : '');
+    $('#postureBox').classList.toggle('on', on);
+    $('#postureBtn').title = cur[1] + ' — ' + cur[2] + (state.scope ? '\n스코프 조준 — 사격 피해 +5%' : '');
+  }
+
+  /** 안전 영역(상태바·노치) 높이 — body 패딩으로 들어가 있다. fixed 메뉴를 그 아래로 밀 때 쓴다. */
+  const safeTop = () => parseFloat(getComputedStyle(document.body).paddingTop) || 0;
+
+  /** 자세(라디오) + 스코프(체크) 드롭다운. 성능의 스킬 메뉴와 같은 모양·조작.
+   *  무장 머리(.w-tools)가 overflow:auto 라 안쪽에 두면 잘린다 — body 로 띄운다. */
+  function openPostureMenu(btn) {
+    document.querySelectorAll('.posture-menu').forEach(m => m.remove());
+    const menu = el('div', 'skill-menu posture-menu');
+    const mk = (type, name, checked, k, v, onChange) => {
+      const item = el('label', 'skill-item');
+      const inp = el('input');
+      inp.type = type;
+      if (name) inp.name = name;
+      inp.checked = checked;
+      inp.onchange = () => onChange(inp);
+      item.append(inp);
+      const tx = el('div');
+      tx.append(el('span', 'k', k));
+      tx.append(el('span', 'v', v));
+      item.append(tx);
+      return item;
+    };
+    for (const [val, label, desc] of POSTURES) {
+      menu.append(mk('radio', 'posture', state.posture === val, label, desc, () => {
+        state.posture = val;
+        updatePostureButton();
+        renderWeapons();            // 자세 보정은 무장 피해에만 영향
+      }));
+    }
+    menu.append(el('div', 'skill-sep'));
+    menu.append(mk('checkbox', null, state.scope, '스코프', '사격 피해 +5% (자세와 겹쳐 적용)', inp => {
+      state.scope = inp.checked;
+      updatePostureButton();
+      renderWeapons();
+    }));
+
+    document.body.append(menu);
+    const rc = btn.getBoundingClientRect();
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    menu.style.left = Math.max(6, Math.min(rc.left, window.innerWidth - mw - 8)) + 'px';
+    const below = rc.bottom + 4;
+    menu.style.top = (below + mh <= window.innerHeight - 8
+      ? below                                             // 아래로 펼치는 게 기본
+      : Math.max(safeTop() + 6, rc.top - mh - 4)) + 'px';  // 안 들어가면 위로
+    menu.onclick = ev => ev.stopPropagation();
+    setTimeout(() => document.addEventListener('click', function h(e) {
+      if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); }
+    }), 0);
+  }
+
   /** 버튼 라벨·색만 갱신한다 (메뉴는 다시 그리지 않아 체크 시 스크롤이 튀지 않는다). */
   function updateSkillButton() {
     const n = state.skillPicks.size;
@@ -4549,21 +4612,13 @@
       };
       sortSeg.append(b);
     }
-    const postureSeg = $('#postureSeg');
-    for (const [v, label] of [['stand', '선 자세'], ['crouch', '앉기·정지'], ['prone', '엎드리기']]) {
-      const b = el('button', 'seg-btn' + (state.posture === v ? ' on' : ''), label);
-      b.onclick = () => {
-        state.posture = v;
-        [...postureSeg.children].forEach(c => c.classList.remove('on'));
-        b.classList.add('on');
-        renderWeapons();            // 자세 보정은 무장 피해에만 영향
-      };
-      postureSeg.append(b);
-    }
-    $('#scopeBtn').onclick = () => {
-      state.scope = !state.scope;
-      $('#scopeBtn').classList.toggle('on', state.scope);
-      renderWeapons();
+    // 자세·스코프는 버튼 4개가 가로를 크게 먹어(폰에선 표 머리를 밀어냈다)
+    // 성능의 「스킬 ▾」 와 같은 드롭다운 하나로 묶었다. 자세는 라디오, 스코프는 체크.
+    updatePostureButton();
+    $('#postureBtn').onclick = ev => {
+      ev.stopPropagation();
+      if (document.querySelector('.posture-menu')) { document.querySelector('.posture-menu').remove(); return; }
+      openPostureMenu(ev.currentTarget);
     };
 
     $('#backToSelect').onclick = () => setView('select');
