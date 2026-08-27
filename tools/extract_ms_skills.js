@@ -8,6 +8,9 @@ const { parseTable: parseGrid } = require('./lib/table.js');
 const ROOT = path.join(__dirname, '..');
 const WIKI = path.join(ROOT, 'raw', 'wiki');
 const DEST = path.join(ROOT, 'data', 'ms_skills.json');
+// 정상 기체의 스킬 수는 최대 38개다. 그 배를 넘으면 스텁 페이지를 긁은 것으로 본다.
+const SKILL_SANITY_MAX = 80;
+const skipped = [];
 
 const clean = s => s
   .replace(/<br\s*\/?>/gi, ' / ').replace(/<[^>]+>/g, '')
@@ -94,6 +97,18 @@ for (const f of files) {
   });
   if (!modes.length) continue;
 
+  // 아직 스탯이 안 채워진 '스텁' 페이지는 스킬 표 자리에 위키의 스킬 용어집(전 스킬 목록)이
+  // 그대로 들어 있어, 긁으면 기체가 수백 개 스킬을 가진 것처럼 된다.
+  // (실제로 ガンダムDX 가 306개로 들어왔다 — 정상 기체의 최대는 38개)
+  // 상한을 넘으면 추출 실패로 보고 건너뛴다. 기체 하나 빠지는 편이 거짓 데이터보다 낫다.
+  const total = modes.reduce((a, m) => a + m.skills.length, 0);
+  if (total > SKILL_SANITY_MAX) {
+    const who = [...bases][0] || ('페이지 ' + id);   // bases 는 Set 이라 인덱스로 못 꺼낸다
+    console.log(`  건너뜀: ${who} — 스킬 ${total}개(상한 ${SKILL_SANITY_MAX}). 위키 페이지가 아직 스텁으로 보입니다.`);
+    skipped.push(who);
+    continue;
+  }
+
   for (const base of bases) { out[base] = modes; }
   mechs++; modeCount += modes.length;
 }
@@ -101,3 +116,4 @@ for (const f of files) {
 fs.writeFileSync(DEST, JSON.stringify(out, null, 1) + '\n');
 const kb = (fs.statSync(DEST).size / 1024).toFixed(0);
 console.log(`스킬 추출: 기체 ${Object.keys(out).length}기 (이번 ${mechs}) · 모드 ${modeCount} → data/ms_skills.json ${kb}KB`);
+if (skipped.length) console.log(`⚠ 스텁으로 보여 건너뛴 기체 ${skipped.length}기: ${skipped.join(', ')}`);

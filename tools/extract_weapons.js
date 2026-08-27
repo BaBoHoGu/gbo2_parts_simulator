@@ -320,11 +320,40 @@ const MERGE = process.argv.includes('--merge');
 const out = MERGE && fs.existsSync(DEST) ? JSON.parse(fs.readFileSync(DEST, 'utf8')) : {};
 const baseCount = Object.keys(out).length;
 let tableCount = 0, weaponCount = 0, skipped = 0, shieldCount = 0;
+const stubbed = [];
+
+/**
+ * 아직 아무도 값을 안 채운 '스텁' 기체 페이지인가.
+ * 게임에 갓 나온 기체는 위키에 틀만 먼저 생기는데, 그 상태로 긁으면 무장 표 자리에
+ * 위키의 예시·용어집 표가 들어와 엉뚱한 위력이 박힌다(ガンダムDX 가 그랬다 —
+ * G해머 3400 이 1100 으로, 실드 HP 8000 이 2000 으로).
+ * 판정: 스탯 표의 「機体HP」 행에 숫자가 하나도 없으면 스텁으로 본다.
+ */
+function isStubPage(html) {
+  // 「機体HP」 는 스킬 설명 안에도 흔히 나온다(機体HPが30%以下… 등). 그래서 문서 전체가
+  // 아니라 '스탯 표'(Cost 와 機体HP 가 같이 있는 표)의 機体HP 행만 본다.
+  //   정상: | 機体HP | 26500 |      스텁: | 機体HP | | | (값 없음)
+  for (const t of html.match(/<table[\s\S]*?<\/table>/g) || []) {
+    if (!t.includes('Cost') || !t.includes('機体HP')) continue;
+    const row = t.match(/<tr[^>]*>(?:(?!<\/tr>)[\s\S])*?機体HP[\s\S]*?<\/tr>/);
+    if (!row) continue;
+    return !/\d/.test(row[0].replace(/<[^>]+>/g, ' '));   // 숫자가 하나도 없으면 스텁
+  }
+  return false;                                           // 스탯 표가 없으면 판단하지 않는다
+}
+
 
 for (const f of files) {
   const id = f.replace('.html', '');
   const html = fs.readFileSync(path.join(WIKI, f), 'utf8')
     .replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '');
+
+  if (isStubPage(html)) {
+    const who = (namesByPage.get(id) || [])[0] || ('페이지 ' + id);
+    console.log(`  건너뜀: ${who} — 위키 스탯 표가 비어 있어(스텁) 무장을 신뢰할 수 없습니다.`);
+    stubbed.push(who);
+    continue;
+  }
 
   // 표 직전의 제목을 따라가며 「主兵装 / 副兵装」 구획과 이름 없는 표의 무장명을 잡는다.
   // 각 무장 표는 <div id="table_weapon_XXX"> 로 감싸여 있고, 그 접미사가 무장의 속성이다

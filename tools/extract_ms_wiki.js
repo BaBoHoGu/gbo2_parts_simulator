@@ -152,8 +152,12 @@ console.log(`위키 대조: 기체 페이지 ${mechs}개 · 교정 ${fixed} · �
   const kept = prev.filter(m => !m._fromWiki || !touched.has(String(m.MS名).replace(/_LV\d+$/, '')));
   const have = new Set(kept.map(m => m.MS名));
   const merged = kept.concat(autoAdds.filter(m => !have.has(m.MS名)));
-  const official = new Set(msData.map(m => m.MS名));
-  const live = merged.filter(m => !m._fromWiki || !official.has(m.MS名));   // 공식에 생긴 자동분은 정리
+  // 위키와 gbo2.jp 는 같은 기체를 전각/반각으로 다르게 적는다(ゲルググＲ ↔ ゲルググR).
+  // 문자열 그대로 비교하면 공식에 생겼는데도 보충분이 안 지워져 같은 기체가 둘로 늘어난다.
+  // NFKC 로 접어서 비교한다.
+  const key = n => String(n).normalize('NFKC').replace(/\s+/g, '');
+  const official = new Set(msData.map(m => key(m.MS名)));
+  const live = merged.filter(m => !m._fromWiki || !official.has(key(m.MS名)));   // 공식에 생긴 자동분은 정리
   if (live.length !== prev.length || autoAdds.length) {
     fs.writeFileSync(ADD, JSON.stringify(live, null, 1) + '\n');
   }
