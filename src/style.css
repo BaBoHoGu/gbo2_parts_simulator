@@ -1986,3 +1986,8 @@ body.drawer-open .m-actionbar { display: none !important; }
 .posture-menu .skill-item input { accent-color: var(--mid); }
 .skill-sep { height: 1px; background: var(--line); margin: 4px 6px; }
 .posture-box.on .skill-btn { border-color: var(--mid); color: var(--mid); background: #1a2733; }
+/* 부스트 계열 스킬 종료 후 스러스터 OH 복귀가 21초가 되는 기체 표기 */
+.thr-ohlong {
+  font-size: 10.5px; font-weight: 700; color: var(--bad);
+  background: rgba(230, 96, 74, .13); border-radius: 999px; padding: 1px 8px; margin-left: 4px;
+}
