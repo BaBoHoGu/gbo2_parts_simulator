@@ -2125,9 +2125,11 @@
       else reloadStr = '—';
 
       out.push({
-        name: T.weaponName(w.name), type: w.type,
+        name: T.weaponName(w.name), type: w.type, attr: weaponAttr(w),
         sec: w.type === 'shield' ? '실드' : w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타',
-        kind: w.type === 'shield' ? '실드' : w.type === 'melee' ? '격투' : '사격',
+        // 유형은 '사용 방식'(type)이 아니라 '속성'(attr)이다 — 무장 표와 같은 기준을 쓴다.
+        // 던지는 격투 무장처럼 type=shooting·attr=melee 인 것이 있어 둘이 갈린다.
+        kind: ATTR_LABEL[weaponAttr(w)] || '기타',
         nc: fin(d.power, mult.nc), ch: fin(d.powerCharged, mult.ch),
         cool: cool ? jaUnits(cool) : '—',
         ammo: ammoStr,
@@ -2420,7 +2422,8 @@
       const vf = '12px ' + F, vfb = '700 12px ' + F;
       weapons.forEach((wp, i) => {
         const ry = wy + 16 + i * wpRowH;
-        const tc = wp.type === 'melee' ? CO.close : wp.type === 'shield' ? CO.long : CO.mid;
+        const tc = wp.attr === 'melee' ? CO.close : wp.attr === 'beam' ? CO.info
+          : wp.attr === 'shield' ? CO.long : wp.attr === 'solid' ? CO.accent : CO.mid;
         dtext(wp.sec, cSec, ry, '11px ' + F, CO.muted);
         ctx.fillStyle = tc; ctx.beginPath(); ctx.arc(dotX, ry - 4, 3.5, 0, 7); ctx.fill();
         // 고정 피해·디버프는 이름 뒤에 작은 태그로. 태그 폭만큼 이름을 먼저 줄인다.
@@ -2451,11 +2454,45 @@
     ctx.textAlign = 'right'; ctx.fillText(new Date().toISOString().slice(0, 10), W - PAD, footerY);
     ctx.textAlign = 'left';
 
-    const safe = T.msName(m.MS名).replace(/[\\/:*?"<>|]/g, '') + '_LV' + lv + (showW ? '_상세' : '');
+    // T.msName 은 이미 「… LV2」 로 끝난다 — 그대로 붙이면 「문 건담 LV2_LV2」 가 된다.
+    const safe = T.msName(m.MS名).replace(/\s*LV\d+$/, '').replace(/[\\/:*?"<>|]/g, '')
+      + '_LV' + lv + (showW ? '_상세' : '');
     // 안드로이드 앱(WebView)은 blob 다운로드가 동작하지 않아 파일이 저장되지 않는다.
     // → 네이티브 브리지로 base64 를 넘겨 기기 Download 폴더에 직접 저장한다(성공/실패 토스트는 네이티브가).
+    // 예전엔 곧바로 내려받아, 어떤 카드가 나왔는지 파일을 열어 봐야 알 수 있었다.
+    // 먼저 보여 주고 저장/복사를 고르게 한다.
+    openPngPreview(cvs, safe);
+  }
+
+  /* ---------- 이미지 미리보기 ---------- */
+  let pngShot = null;                       // { canvas, name }
+
+  function openPngModal(open) {
+    const m = document.getElementById('pngModal'), b = document.getElementById('pngModalBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (!open) { const box = document.getElementById('pngPreview'); if (box) box.innerHTML = ''; pngShot = null; }
+  }
+
+  function openPngPreview(cvs, name) {
+    pngShot = { cvs, name };
+    const box = $('#pngPreview');
+    box.innerHTML = '';
+    const img = el('img');
+    img.src = cvs.toDataURL('image/png');
+    img.alt = name;
+    box.append(img);
+    $('#pngNote').textContent = name + '.png · ' + cvs.width + '×' + cvs.height;
+    $('#pngCopy').hidden = !(navigator.clipboard && window.ClipboardItem);
+    openPngModal(true);
+  }
+
+  /** 캔버스를 파일로 저장 — 안드로이드는 앱 브리지로 다운로드 폴더에 넣는다. */
+  function savePngShot() {
+    if (!pngShot) return;
+    const { cvs, name } = pngShot;
     if (window.AndroidBridge && typeof window.AndroidBridge.saveImage === 'function') {
-      try { window.AndroidBridge.saveImage(cvs.toDataURL('image/png'), safe + '.png'); }
+      try { window.AndroidBridge.saveImage(cvs.toDataURL('image/png'), name + '.png'); }
       catch (e) { toast('이미지 저장에 실패했습니다'); }
       return;
     }
@@ -2463,10 +2500,24 @@
       if (!blob) { toast('이미지 생성에 실패했습니다'); return; }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = safe + '.png';
+      a.href = url; a.download = name + '.png';
       document.body.append(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast('이미지를 저장했습니다: ' + safe + '.png');
+      toast('이미지를 저장했습니다: ' + name + '.png');
+    }, 'image/png');
+  }
+
+  /** 클립보드로 — 채팅창에 바로 붙여넣을 수 있다. 지원 안 하면 버튼 자체를 숨긴다. */
+  function copyPngShot() {
+    if (!pngShot || !navigator.clipboard || !window.ClipboardItem) return;
+    pngShot.cvs.toBlob(async blob => {
+      if (!blob) { toast('이미지 생성에 실패했습니다'); return; }
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        toast('이미지를 복사했습니다 — 붙여넣기로 바로 쓸 수 있습니다');
+      } catch (e) {
+        toast('복사가 막혀 있습니다 — 저장 후 쓰세요');
+      }
     }, 'image/png');
   }
 
@@ -4818,6 +4869,11 @@
         if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); }
       }), 0);
     };
+
+    $('#pngSave').onclick = savePngShot;
+    $('#pngCopy').onclick = copyPngShot;
+    $('#pngClose').onclick = () => openPngModal(false);
+    $('#pngModalBack').onclick = () => openPngModal(false);
 
     // 피탄 시뮬레이터 — 적 무장에 몇 발 버티는지 / 몇 발에 다운되는지
     $('#pietanBtn').onclick = () => openPietan(true);
