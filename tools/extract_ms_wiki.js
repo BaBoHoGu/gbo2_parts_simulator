@@ -157,7 +157,9 @@ console.log(`위키 대조: 기체 페이지 ${mechs}개 · 교정 ${fixed} · �
   // NFKC 로 접어서 비교한다.
   const key = n => String(n).normalize('NFKC').replace(/\s+/g, '');
   const official = new Set(msData.map(m => key(m.MS名)));
-  const live = merged.filter(m => !m._fromWiki || !official.has(key(m.MS名)));   // 공식에 생긴 자동분은 정리
+  // 자동 보충분(_fromWiki)과 '미러에서 사라져 보관한 것'(_keptFromMirror)은
+  // 공식에 (다시) 실리면 정리한다. 손으로 넣은 항목은 언제나 남긴다.
+  const live = merged.filter(m => (!m._fromWiki && !m._keptFromMirror) || !official.has(key(m.MS名)));
   if (live.length !== prev.length || autoAdds.length) {
     fs.writeFileSync(ADD, JSON.stringify(live, null, 1) + '\n');
   }

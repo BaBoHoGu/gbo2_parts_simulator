@@ -223,6 +223,51 @@ async function detectPatch(msList) {
     run('extract_original_calc.js');
   }
 
+  // (b0) 미러가 내린 기체 보험 — 위키에 아직 있으면 지우지 않고 보관한다.
+  //
+  // gbo2.jp 는 갓 나온 기체를 잠깐 실었다가 내리는 일이 있다(2026-08-28 ガンダムDX).
+  // msData.json 을 원격으로 통째로 덮어쓰기 때문에, 그대로 두면 앱에서도 사라진다.
+  // 위키에 남아 있으면 additions 로 옮겨 살려 두고, 미러가 다시 실으면 build 가
+  // 같은 이름을 보고 추가분을 자동으로 무시한다.
+  //
+  // 위키 조회 자체가 실패하면(Cloudflare·Chrome 없음) '모르는 상태'이므로 전부 보관한다.
+  // 잘못 지우는 쪽이 잘못 남기는 쪽보다 나쁘다.
+  if (removed.length) {
+    let map = null, lookupFailed = false;
+    try { map = await resolvePageIds(); } catch { lookupFailed = true; }
+    if (!map || !map.size) lookupFailed = true;
+
+    const keep = [], gone = [];
+    for (const m of removed) {
+      const base = String(m.MS名).replace(/_LV\d+$/, '');
+      const onWiki = !lookupFailed && (map.has(base) || map.has(nameKey(base)));
+      (lookupFailed || onWiki ? keep : gone).push(m);
+    }
+
+    if (keep.length) {
+      const ADD = path.join(ROOT, 'data', 'msData.additions.json');
+      let adds = []; try { adds = JSON.parse(fs.readFileSync(ADD, 'utf8')); } catch { adds = []; }
+      const have = new Set(adds.map(x => x.MS名));
+      let n = 0;
+      for (const m of keep) {
+        if (have.has(m.MS名)) continue;
+        adds.push({ ...m, _keptFromMirror: true,
+          _source: `gbo2.jp 미러에서 사라져 보관 (${new Date().toISOString().slice(0, 10)}).`
+            + (lookupFailed ? ' 위키 조회 실패로 보수적으로 남김.' : ' 위키에는 아직 있음.') });
+        n++;
+      }
+      if (n) {
+        fs.writeFileSync(ADD, JSON.stringify(adds, null, 1) + '\n');
+        console.log(`  · 미러에서 사라진 ${n}기를 msData.additions 에 보관했습니다`
+          + (lookupFailed ? ' (위키 조회 실패 — 보수적으로 전부 보관)' : ' (위키에 아직 있음)')
+          + `: ${keep.slice(0, 5).map(m => m.MS名).join(', ')}`);
+      }
+    }
+    if (gone.length) {
+      console.log(`  · 위키에도 없어 그대로 삭제: ${gone.map(m => m.MS名).join(', ')}`);
+    }
+  }
+
   // (b) 기체 스탯이 바뀐 경우에만 msData 교체
   if (msChanged) fs.copyFileSync(path.join(REMOTE, 'msData.json'), path.join(ROOT, 'data', 'msData.json'));
 
