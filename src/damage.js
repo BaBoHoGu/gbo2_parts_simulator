@@ -158,6 +158,13 @@ function isBeamWeapon(w) {
  *   beam — 빔 무장만
  * 같은 파츠의 다른 레벨을 함께 달면 합산한다.
  */
+/**
+ * 설명이 「実弾属性の攻撃で…」 로 시작해 파츠 전체가 실탄 한정인 파츠.
+ * 弾薬強化キット 하나뿐이다 — 피해·실드·리로드·상태이상이 모두 실탄에만 걸린다(사용자 확인).
+ * 문장이 나뉘어 있어 절 단위 판정으로는 못 잡으므로 파츠 단위로 본다.
+ */
+const SOLID_ONLY_PART_RE = /実弾属性の攻撃で/;
+
 const WEAPON_MOD_RULES = [
   // 집속 시간 — 고정밀 집속 링 3·6·10% / 화기 관제 최적화 시스템 5% (모두 빔 사격 무장 한정)
   { key: 'chargeTime', scope: 'beam', re: /集束時間を([\d.]+)%短縮/ },
@@ -234,7 +241,15 @@ const SHIELD_HP_RE = /シールドHPが(\d+)増加/;
  * @param {number} [msLv] 기체 레벨 (오버튠 계산에 쓴다)
  * @param {string} [msAttr] 기체 속성 (커넥팅[지원Ⅰ형]의 조건부 효과에 쓴다)
  */
-function weaponModsOf(equipped, msLv, msAttr) {
+/**
+ * 확장 스킬 「カスタムパーツ複合拡張α」 — 「攻撃」 타입 파츠 1개당 무장의 리로드·OH 를 1% 줄인다.
+ * 위키 拡張スキル一覧表(6432) 기준으로 LV1~5 전부 1% 로 같다(HP·스러스터만 LV 마다 다르다).
+ * 원본 번들은 이 시간 단축을 아예 다루지 않아 스탯만 반영돼 있었다.
+ */
+const EXPANSION_ALPHA = 'カスタムパーツ複合拡張α';
+const EXPANSION_ALPHA_TIME_PCT = 1;
+
+function weaponModsOf(equipped, msLv, msAttr, expansion) {
   const time = { chargeTime: {}, reloadTime: {}, weaponOH: {} };
   const damage = [];
   let shieldHp = 0;
@@ -246,9 +261,13 @@ function weaponModsOf(equipped, msLv, msAttr) {
     // 일부 신규 파츠 설명은 전각 ％(U+FF05) 를 쓴다 — 규칙(반각 %)이 매칭되도록 정규화한다
     const desc = (p.description || '').replace(/\\n/g, '').replace(/／/g, '/').replace(/％/g, '%');
 
+    // 실탄 한정 파츠면 시간 단축도 실탄 무장에만 건다(기본 규칙은 scope:'all' 이라 전 무장에 걸린다)
+    const solidOnly = SOLID_ONLY_PART_RE.test(desc);
     for (const rule of WEAPON_MOD_RULES) {
       const m = rule.re.exec(desc);
-      if (m) addTime(rule.key, rule.scope, Number(m[1]));
+      if (!m) continue;
+      const scope = (solidOnly && rule.scope === 'all') ? 'solidShoot' : rule.scope;
+      addTime(rule.key, scope, Number(m[1]));
     }
     const cs = CONNECT_SUPPORT1_CHARGE.re.exec(desc);
     if (cs && msAttr === CONNECT_SUPPORT1_CHARGE.attr) addTime('chargeTime', 'beam', Number(cs[1]));
@@ -267,12 +286,24 @@ function weaponModsOf(equipped, msLv, msAttr) {
     const sh = SHIELD_HP_RE.exec(desc);
     if (sh) shieldHp += Number(sh[1]);
   }
+
+  if (expansion === EXPANSION_ALPHA) {
+    const n = (equipped || []).filter(p => p && p.category === '攻撃').length;
+    if (n) {
+      addTime('reloadTime', 'all', n * EXPANSION_ALPHA_TIME_PCT);
+      addTime('weaponOH', 'all', n * EXPANSION_ALPHA_TIME_PCT);
+    }
+  }
   return { time, damage, shieldHp };
 }
 
 /** 무장이 어느 `scope` 에 해당하는지. 사이코뮤 무장은 'psycommu' scope 도 받는다. */
 const weaponScopes = w => {
-  const s = ['all', isBeamWeapon(w) ? 'beam' : 'solid'];
+  const beam = isBeamWeapon(w);
+  const s = ['all', beam ? 'beam' : 'solid'];
+  // 'solid' 는 이름이 빔이 아니면 격투 무장까지 포함한다(격투는 実弾属性이 아니다).
+  // 実弾属性 한정 효과를 걸 때 쓸, 격투를 뺀 스코프를 따로 둔다.
+  if (!beam && w && w.type !== 'melee' && w.attr !== 'melee') s.push('solidShoot');
   if (w && w.psycommu) s.push('psycommu');
   return s;
 };
@@ -336,9 +367,8 @@ function shieldDmgPctOf(equipped, attr) {
     const d = String((p && p.description) || '').replace(/％/g, '%');
     const m = d.match(/シールドへ与えるダメージが\s*(\d+)\s*%\s*増加/);
     if (!m) continue;
-    // 같은 문장 안(마침표 전)에서 앞 절이 속성을 한정하고 있으면 그 속성에만 건다
-    const solidOnly = /実弾属性[^。]*$/.test(d.slice(0, m.index));
-    if (solidOnly && attr && attr !== 'solid') continue;
+    // 파츠 전체가 실탄 한정이면(탄약 강화 키트) 실드 피해도 실탄 무장에만 건다
+    if (SOLID_ONLY_PART_RE.test(d) && attr && attr !== 'solid') continue;
     pct += Number(m[1]);
   }
   return pct;
