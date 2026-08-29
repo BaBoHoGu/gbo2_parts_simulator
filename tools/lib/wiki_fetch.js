@@ -89,6 +89,22 @@ async function fetchWikiHtml(ids, onHtml) {
 }
 
 /**
+ * 위키의 아무 URL 이나 헤드리스로 받아 HTML 을 돌려준다. 실패하면 null.
+ * 첫 페이지(밸런스 패치 목록)처럼 pages/{id}.html 이 아닌 곳에 쓴다.
+ * 평문 https 로는 Cloudflare 가 403 을 준다 — 이 경로가 유일하게 통한다.
+ */
+async function fetchWikiUrl(url) {
+  try {
+    return await withBrowser(async browser => {
+      const page = await newPage(browser);
+      await page.goto(url.startsWith('http') ? url : BASE + url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      if (!(await waitClear(page))) return null;
+      return await page.content();
+    });
+  } catch { return null; }
+}
+
+/**
  * 機体一覧 태그 페이지에서 (기체명 → 페이지ID) 매핑을 만든다.
  * gbo2.jp 가 wiki_url 을 비워 보낸 신기체의 페이지를 이름으로 찾는 데 쓴다.
  * @returns {Promise<Map<string,string>>}
@@ -113,4 +129,4 @@ async function resolvePageIds() {
 /** 기체명 매칭용 정규화 키 — NFKC(전각→반각) + 공백 제거. 표기 흔들림을 흡수한다. */
 const nameKey = s => String(s || '').normalize('NFKC').replace(/\s+/g, '');
 
-module.exports = { findChrome, withBrowser, fetchWikiHtml, resolvePageIds, nameKey };
+module.exports = { findChrome, withBrowser, fetchWikiHtml, fetchWikiUrl, resolvePageIds, nameKey };
