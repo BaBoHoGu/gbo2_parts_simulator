@@ -45,8 +45,18 @@ try { override = JSON.parse(fs.readFileSync(OVERRIDE, 'utf8')); } catch { /* 처
 // page id → [{ m, lv }]
 // wiki_url 은 override 를 먼저 본다 — gbo2.jp 가 URL 을 비워 보낸 신기체(ゲルググＲ 등)는
 // update.js 가 override 에만 URL 을 넣으므로, msData 만 보면 위키 대조에서 통째로 빠진다.
+//
+// 미러에 없는 기체(msData.additions.json — 손으로 넣은 것, 미러에서 사라져 보관한 것,
+// 위키가 앞서 만든 LV)도 함께 넣는다. 이걸 빼면 그 기체들은 위키 페이지가 통째로
+// 건너뛰어져 밸런스 패치를 영영 못 받는다(보관된 ガンダムDX 가 그 상태였다).
+// build.js 가 additions 를 병합한 *뒤에* override 를 적용하므로 반영 경로는 이미 있다.
+// 주의: 아래 official 판정은 순수 미러(msData)로 해야 하므로 msData 는 건드리지 않는다.
+let addData = [];
+try { addData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.additions.json'), 'utf8')); } catch { /* 없어도 됨 */ }
+const msAll = msData.concat(addData);
+
 const byPage = new Map();
-for (const m of msData) {
+for (const m of msAll) {
   const url = (override[m.MS名] && override[m.MS名].wiki_url) || m.wiki_url || '';
   const id = (String(url).match(/pages\/(\d+)\.html/) || [])[1];
   if (!id) continue;
@@ -97,7 +107,20 @@ for (const f of files) {
   for (const { m, lv } of entries) {
     for (const [field, byLv] of Object.entries(wikiVals)) {
       const wv = byLv[lv];
-      if (wv == null) continue;
+      // 위키가 그 값을 비웠으면(되돌렸으면) 낡은 교정도 함께 거둔다.
+      // 그러지 않으면 한 번 생긴 교정이 영영 남아, 미러/수동 입력 값을 계속 덮어쓴다.
+      if (wv == null) {
+        if (override[m.MS名] && field in override[m.MS名]) { delete override[m.MS名][field]; cleared++; }
+        continue;
+      }
+      // carry-forward 로 채워진 칸(= 위키가 그 LV 를 아직 안 적음)으로는 교정하지 않는다.
+      // 빈 칸의 뜻은 '이전 LV 와 동일'이지만, 마지막 기재 LV 를 넘어선 빈 칸은
+      // '동일'이 아니라 '미기재'다. 이걸 값으로 믿으면 없는 LV 를 지어낸다
+      // (ガブスレイ LV4 슬롯이 LV3 값으로 덮일 뻔했다).
+      if (filledTo[field] && lv > filledTo[field]) {
+        if (override[m.MS名] && field in override[m.MS名]) { delete override[m.MS名][field]; cleared++; }
+        continue;
+      }
       if (wv !== Number(m[field])) {              // 위키 ≠ gbo2 → 위키 값으로 교정
         (override[m.MS名] = override[m.MS名] || {})[field] = wv;
         fixed++;
