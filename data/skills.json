@@ -3150,6 +3150,37 @@
      "hpUp": 0
     }
    ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
   }
  ],
  "ガンダムEz8": [
@@ -9165,7 +9196,7 @@
    "name": "最大出力（K）",
    "nameKo": "최대 출력 (K)",
    "forever": false,
-   "secs": 60,
+   "secs": 90,
    "hp": null,
    "manual": true,
    "levels": [
@@ -15070,6 +15101,197 @@
      "limitUp": 0,
      "dmgAny": 0,
      "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "リゲルグ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ジム・スナイパーカスタム": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
      "dmgMelee": 0,
      "armorRange": 0,
      "armorBeam": 0,

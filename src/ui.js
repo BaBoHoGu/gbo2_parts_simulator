@@ -322,7 +322,7 @@
    *  오르는데 공격 지표만 그대로인 불일치가 났다(교육형 컴퓨터·화기관제·CP내장 등 5종).
    *  속성 한정(빔 전용 코넥팅 등)은 실탄·빔 중 한쪽만 오르므로 min 으로 자연히 빠진다. */
   function partAttackBonus(equipped, msLv) {
-    const mods = D.weaponModsOf(equipped, msLv, state.ms && state.ms.属性);
+    const mods = D.weaponModsOf(equipped, msLv, state.ms && state.ms.属性, state.expansion);
     return {
       shoot: Math.min(D.damagePctFor(mods, PROBE_SOLID, 'shoot'), D.damagePctFor(mods, PROBE_BEAM, 'shoot')),
       melee: D.damagePctFor(mods, PROBE_MELEE, 'melee')
@@ -1894,7 +1894,7 @@
   }
 
   /** 현재 장착 기준 파츠 무장 보정 (상세 패널에서도 쓴다). */
-  const wm0 = () => D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性);
+  const wm0 = () => D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性, state.expansion);
 
   /* ---------- 스탯 ---------- */
 
@@ -2075,7 +2075,7 @@
     const r = stats();
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
     const dmgKey = w => (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shooting';
-    const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性);
+    const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性, state.expansion);
     const sk = skillEffect();
     const postureEtc = w => {
       if (dmgKey(w) === 'melee') return 0;
@@ -3321,7 +3321,7 @@
     if (!bs) return [];
     const msLv = C.msLevel(bs.ms.MS名);
     const corr = { shooting: bs.r.total.shoot, melee: bs.r.total.meleeCorrection };
-    const wm = D.weaponModsOf(bs.equipped, msLv, bs.ms.属性);
+    const wm = D.weaponModsOf(bs.equipped, msLv, bs.ms.属性, bs.expansion);
     const out = [];
     for (const w of weaponsOfMs(bs.ms)) {
       if (w.type === 'shield') continue;
@@ -3997,7 +3997,7 @@
     const outAttr = pietanMatchup(state.ms.属性, pietanMs.属性);   // 내→적 상성 (자동)
     const r = stats();
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
-    const wm = D.weaponModsOf(state.equipped, msLevel(state.ms), state.ms.属性);
+    const wm = D.weaponModsOf(state.equipped, msLevel(state.ms), state.ms.属性, state.expansion);
     const eEq = enemyEquipped();                                   // 적이 낀 파츠
     const eStg = activeStaggerMods(pietanMs, pietanMsLv, pietanEnemyDef, 'normal');   // 체크한 적 방어 스킬
     const eShield = pietanShield ? shieldOf(pietanMs, pietanMsLv, eEq) : null;

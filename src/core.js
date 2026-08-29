@@ -491,14 +491,19 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   }
 
   // % 증가 파츠는 상한 적용 전 합계에 곱해진 뒤 다시 상한을 적용한다.
+  //
+  // 다만 발동 스킬 몫(skillBonus)은 빼고 곱한다. ZERO 시스템처럼 「발동 전 수치의 15%」 인
+  // 스킬은 그 '발동 전 수치'가 이미 파츠 % 를 먹은 값이라, 그 결과에 파츠 % 를 또 곱하면
+  // 이중 적용이 된다. (윙건담제로 + 특수강화장치[Type-β]: 67 → 79 로 나오던 것이 정상은 77)
   for (const [key, field] of Object.entries(PERCENT_FIELD)) {
     const pct = equipped.reduce((s, p) => s + (typeof p[field] === 'number' ? p[field] : 0), 0);
     if (pct <= 0) continue;
-    const before = rawTotal[key];
+    const sk = skillBonus[key] || 0;
+    const before = rawTotal[key] - sk;
     const after = Math.floor(before * (1 + pct / 100));
     partBonus[key] += after - before;
-    rawTotal[key] = after;
-    total[key] = Math.min(after, limits[key] ?? Infinity);
+    rawTotal[key] = after + sk;
+    total[key] = Math.min(rawTotal[key], limits[key] ?? Infinity);
     isModified[key] = true;
   }
 
