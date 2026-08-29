@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const { resolvePageIds, nameKey } = require('./lib/wiki_fetch.js');
+const { resolvePageIds, nameKey, fetchWikiUrl } = require('./lib/wiki_fetch.js');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
@@ -68,9 +68,13 @@ const readPatchApplied = () => { try { return rdJson('data', 'patch.json').appli
  */
 async function detectPatch(msList) {
   try {
-    const html = (await get('https://w.atwiki.jp/battle-operation2/')).toString('utf8');
+    // 평문 https 는 Cloudflare 가 403 을 준다(실측). try/catch 가 이를 삼켜
+    // '패치 없음'으로 조용히 넘어가는 바람에, 위키에 올라온 밸런스 조정이
+    // 하나도 반영되지 않고 있었다. 헤드리스 경로로 받는다.
+    const html = await fetchWikiUrl('https://w.atwiki.jp/battle-operation2/');
+    if (!html) { console.log('  ⚠ 위키 첫 페이지를 받지 못해 밸런스 패치 감지를 건너뜁니다.'); return { date: '', ids: [] }; }
     const start = html.search(/パラメータ調整/);
-    if (start < 0) return { date: '', ids: [] };
+    if (start < 0) { console.log('  ⚠ 위키에서 「パラメータ調整」 목록을 찾지 못했습니다.'); return { date: '', ids: [] }; }
     const rest = html.slice(start + 10);
     const endRel = rest.search(/<h3[ >]/);            // 다음 대분류 전까지
     const seg = endRel < 0 ? rest : rest.slice(0, endRel);
@@ -250,7 +254,22 @@ async function detectPatch(msList) {
     const ids = new Set();
     for (const m of added) { const id = pageId(urlOf(m)); if (id) ids.add(id); }
     for (const c of changed) { const id = pageId(urlOf(c.ms)); if (id) ids.add(id); }
-    if (patchNew) for (const id of patch.ids) ids.add(id);   // 밸런스 패치로 무장이 바뀐 기체
+    // 밸런스 패치로 무장이 바뀐 기체.
+    // patchNew 만 보면, 감지가 실패한 채 patch.json 만 새 날짜로 적힌 적이 있을 때
+    // 그 패치는 영영 안 받아진다(실제로 위키가 403 을 주던 동안 그렇게 됐다).
+    // 그래서 '캐시가 패치 날짜보다 오래된' 페이지는 언제나 다시 받는다 — 스스로 복구된다.
+    if (patch.date) {
+      const stamp = Date.parse(patch.date.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3T00:00:00+09:00'));
+      let stale = 0;
+      for (const id of patch.ids) {
+        if (patchNew) { ids.add(id); continue; }
+        const f = path.join(ROOT, 'raw', 'wiki', id + '.html');
+        let mt = 0;
+        try { mt = fs.statSync(f).mtimeMs; } catch { mt = 0; }
+        if (!mt || (stamp && mt < stamp)) { ids.add(id); stale++; }
+      }
+      if (!patchNew && stale) console.log(`  · 조정 기체 캐시가 패치(${patch.date})보다 오래돼 ${stale}개를 다시 받습니다.`);
+    }
     for (const m of staleMechs) { const id = pageId(urlOf(m)); if (id) ids.add(id); }   // A: 누락 기체
     for (const m of emptyUrlMechs) { const id = pageId(urlOf(m)); if (id) ids.add(id); } // B: 방금 연결된 기체
     const targetIds = [...ids];
