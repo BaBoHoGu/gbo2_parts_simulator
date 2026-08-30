@@ -1396,7 +1396,7 @@
     // 무장에 붙는 파츠 보정 (집속·리로드·OH·피해 %·실드 HP).
     // 효과마다 걸리는 무장 범위가 달라 무장별로 다시 뽑아 쓴다.
     const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1,
-      state.ms && state.ms.属性);
+      state.ms && state.ms.属性, state.expansion);
 
     // 자세·스코프 보정 — 사격 판정 무장에만 (격투 판정이면 attr==melee 라 제외), (1+etcA) 로 곱해진다
     const postureEtcA = w => {
