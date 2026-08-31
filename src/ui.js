@@ -2078,6 +2078,9 @@
     if (!list.length) return [];
     const r = stats();
     const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
+    // 스킬을 뺀 값 — 스킬로 늘어난 몫만 따로 보여 주려고 화면 무장 표와 같게 구한다.
+    const bareR = skillEffect() ? stats(null) : null;
+    const corrBare = bareR ? { shooting: bareR.total.shoot, melee: bareR.total.meleeCorrection } : corr;
     const dmgKey = w => (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shooting';
     const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性, state.expansion);
     const sk = skillEffect();
@@ -2097,16 +2100,21 @@
       const info = w.info || {}, mods = w.mods || {};
       const f = (...names) => wField(d, info, ...names);
       const mult = fireMult(w);
+      // 화면 무장 표(dmgCell)와 같은 분해 — 기본 위력 · 파츠분 · 스킬분.
+      // 카드가 최종 합계 하나만 실어서, 파츠를 껴서 얼마나 올랐는지 이미지로는 알 수 없었다.
       const fin = (base, m) => {
         if (base == null) return null;
         const n = m ? m.n : 1;
-        if (w.attr === 'shield' || w.type === 'shield') return { one: base, n, total: base * n };
+        if (w.attr === 'shield' || w.type === 'shield') return { base, one: base, n, gain: 0, skillGain: 0, total: base * n };
         const kind = dmgKey(w) === 'melee' ? 'melee' : 'shoot';
-        const raw = w.type === 'melee'
-          ? D.meleeDamage(base, corr[dmgKey(w)] || 0, { etcA: postureEtc(w) + skEtc(w) })
-          : D.shootingDamage(base, corr[dmgKey(w)] || 0, { etcA: postureEtc(w) + skEtc(w) });
-        const one = D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]);
-        return { one, n, total: one * n };
+        const pct = D.damagePctFor(wm, w, kind);
+        const skPcts = skillDmgPctList(kind);
+        const raw = (corrOf, etc) => (w.type === 'melee'
+          ? D.meleeDamage(base, corrOf, { etcA: etc })
+          : D.shootingDamage(base, corrOf, { etcA: etc }));
+        const withoutSkill = D.applyDamagePct(raw(corrBare[dmgKey(w)] || 0, postureEtc(w)), pct);
+        const one = D.applyDamagePct(raw(corr[dmgKey(w)] || 0, postureEtc(w) + skEtc(w)), [pct, ...skPcts]);
+        return { base, one, n, gain: withoutSkill - base, skillGain: one - withoutSkill, total: one * n };
       };
       // ⑤ 쿨타임 / 발사간격
       const cool = f('クールタイム') || f('発射間隔', '発射速度', '発射間', '照射時間');
@@ -2406,7 +2414,7 @@
     content(measure, false);
     const panelH = Math.max(leftBottom, rightBottom) - panelTop + IP;
     const wpTop = panelTop + panelH + GAP;
-    const wpRowH = 25, wpH = showW ? IP + 26 + 22 + weapons.length * wpRowH + IP - 8 : 0;
+    const wpRowH = 34, wpH = showW ? IP + 26 + 22 + weapons.length * wpRowH + IP - 8 : 0;
     const contentBottom = showW ? wpTop + wpH : panelTop + panelH;
     const footerY = contentBottom + 22;
     const H = Math.ceil(footerY + PAD - 6);
@@ -2437,7 +2445,8 @@
       const wx0 = PAD + IP, wR = W - PAD - IP;
       // 컬럼 x (좌측정렬: 구분·이름·유형 / 우측정렬: 나머지)
       const cSec = wx0, dotX = wx0 + 52, cName = wx0 + 62, cType = wx0 + 300;
-      const cNC = wx0 + 430, cCH = wx0 + 520, cCool = wx0 + 660, cAmmo = wx0 + 790, cStg = wx0 + 872, cRange = wx0 + 972, cRel = wR;
+      // 논차지·풀차지는 「기본 (+파츠) (+스킬)」 가 한 줄에 들어가야 해서 넓게 잡는다.
+      const cNC = wx0 + 472, cCH = wx0 + 610, cCool = wx0 + 726, cAmmo = wx0 + 838, cStg = wx0 + 916, cRange = wx0 + 1010, cRel = wR;
       let wy = wpTop + IP + 4;
       dtext('무장 내역', wx0, wy + 8, '700 13px ' + F, CO.text);
       dtext('(피해량은 파츠·스킬·자세 반영)', wx0 + 82, wy + 8, '11px ' + F, CO.dim);
@@ -2481,8 +2490,25 @@
           dtext(tag, cName + ctx.measureText(nmTxt).width + 6, ry, '10px ' + F, CO.close);
         }
         dtext(wp.kind, cType, ry, vf, tc);
-        dtext(wp.nc ? wp.nc.one.toLocaleString() : '—', cNC, ry, vfb, wp.nc ? CO.text : CO.dim, 'right');
-        dtext(wp.ch ? wp.ch.one.toLocaleString() : '—', cCH, ry, vf, wp.ch ? CO.text : CO.dim, 'right');
+        // 피해 칸 — 화면 무장 표와 같이 「기본 (+파츠) (+스킬)」 로 쪼개 오른쪽 정렬로 쌓는다.
+        // 조사·산탄·동시발사는 1발 값만으로는 세기를 못 재니 아래 줄에 전탄 합계를 적는다.
+        const dmgAt = (v, x, bold) => {
+          if (!v) { dtext('—', x, ry, vf, CO.dim, 'right'); return; }
+          let rx = x;
+          const seg = (t, font, col) => { dtext(t, rx, ry, font, col, 'right'); ctx.font = font; rx -= ctx.measureText(t).width + 3; };
+          if (v.skillGain) seg('(' + (v.skillGain > 0 ? '+' : '') + v.skillGain.toLocaleString() + ')', '10px ' + F, skillCol);
+          if (v.gain) seg('(' + (v.gain > 0 ? '+' : '') + v.gain.toLocaleString() + ')', '10px ' + F, v.gain > 0 ? CO.ok : CO.bad);
+          seg(v.base.toLocaleString(), bold ? vfb : vf, CO.text);
+          if (v.n > 1) {
+            let sx = x;
+            const sub = (t, col) => { dtext(t, sx, ry + 12, '10px ' + F, col, 'right'); ctx.font = '10px ' + F; sx -= ctx.measureText(t).width + 3; };
+            if (v.skillGain) sub('(' + (v.skillGain > 0 ? '+' : '') + (v.skillGain * v.n).toLocaleString() + ')', skillCol);
+            if (v.gain) sub('(' + (v.gain > 0 ? '+' : '') + (v.gain * v.n).toLocaleString() + ')', v.gain > 0 ? CO.ok : CO.bad);
+            sub('전탄 ' + (v.base * v.n).toLocaleString() + ' ×' + v.n, CO.muted);
+          }
+        };
+        dmgAt(wp.nc, cNC, true);
+        dmgAt(wp.ch, cCH, false);
         dtext(wp.cool, cCool, ry, vf, wp.cool === '—' ? CO.dim : CO.muted, 'right');
         dtext(wp.ammo, cAmmo, ry, vf, wp.ammo === '—' ? CO.dim : CO.muted, 'right');
         dtext(wp.stagger, cStg, ry, vf, wp.stagger === '—' ? CO.dim : CO.muted, 'right');
