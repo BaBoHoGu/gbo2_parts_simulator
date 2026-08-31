@@ -387,13 +387,13 @@ function shieldMultOf(w) {
 }
 
 /**
- * 국부(局部) 보정 — 팔·다리처럼 몸통이 아닌 부위에 맞았을 때의 배율.
+ * 국부(局部) 보정 — 팔·다리 등 부위에 맞았을 때의 배율.
  * 표기는 실드 보정과 같은 자리(備考)에 같은 형식으로 붙는다.
  *   「局部補正：1.2倍（1.1倍）」 괄호는 집속 시 값 · 「？倍」 는 위키 미확인 · 「等倍」 는 1.0
  *
- * 어디에 맞는지는 시뮬레이터가 알 수 없다. 그래서 피해 계산에 조용히 섞지 않고,
- * 실드 보정과 똑같이 '사용자가 켰을 때만' 쓴다. 위키의 与ダメージスクリプト 도
- * 「局部ダメージ以外の計算は誤差はないはず」라고 적어, 이 값만은 따로 두고 있다.
+ * **부위 파괴에만 걸린다 — 기체 HP 피해에는 영향이 없다.**
+ * 그래서 격파수·피해 계산에 곱하면 안 된다(2026-08-31 사용자 확인). 무장을 고를 때
+ * 참고하는 성질값이라 무장 표의 한 칸으로 보여 주기만 한다.
  */
 function localMultOf(w) {
   const note = (w && w.info && w.info['備考']) || '';
@@ -405,38 +405,6 @@ function localMultOf(w) {
   const nc = num(m[1]);
   const ch = m[2] != null ? num(m[2]) : nc;              // 괄호 없으면 두 모드 같다
   return { nc, ch, unknown: nc == null && ch == null };
-}
-
-/**
- * 거점(拠点) 보정 — 적 거점 시설을 때렸을 때의 배율. PvE 에서만 걸린다.
- * 표기 자리·형식은 실드·국부 보정과 같다(備考 의 「拠点補正：0.1倍」).
- *
- * 70종 중 41종이 0.1배다. 「머리 발칸·타격으로는 거점을 못 깎는다」는 규칙을 수치로 적어 둔 것.
- * 무장을 고를 때 알아야 하는 값이라 토글이 아니라 무장 표의 한 칸으로 늘 보여 준다.
- */
-function baseMultOf(w) {
-  const note = (w && w.info && w.info['備考']) || '';
-  if (!/拠点補正/.test(note)) return null;                // 표기 없음
-  const m = note.match(/拠点補正\s*[：:]?\s*(等倍|[\d.]+|？|\?)\s*倍?/);
-  if (!m) return null;
-  const v = /[？?]/.test(m[1]) ? null : (m[1] === '等倍' ? 1 : Number(m[1]));
-  return { mult: v, unknown: v == null };
-}
-
-/**
- * 거점(拠点) 보정 — 적 거점 시설을 때렸을 때의 배율. PvE 에서만 걸린다.
- * 표기 자리·형식은 실드·국부 보정과 같다(備考 의 「拠点補正：0.1倍」).
- *
- * 70종 중 41종이 0.1배다. 「머리 발칸·타격으로는 거점을 못 깎는다」는 규칙을 수치로 적어 둔 것.
- * 무장을 고를 때 알아야 하는 값이라 토글이 아니라 무장 표의 한 칸으로 늘 보여 준다.
- */
-function baseMultOf(w) {
-  const note = (w && w.info && w.info['備考']) || '';
-  if (!/拠点補正/.test(note)) return null;                // 표기 없음
-  const m = note.match(/拠点補正\s*[：:]?\s*(等倍|[\d.]+|？|\?)\s*倍?/);
-  if (!m) return null;
-  const v = /[？?]/.test(m[1]) ? null : (m[1] === '等倍' ? 1 : Number(m[1]));
-  return { mult: v, unknown: v == null };
 }
 
 function applyDamagePct(dmg, pct) {
@@ -458,7 +426,7 @@ const GBO2Damage = {
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag, ATTR_BONUS,
-  shortenTime, shortenTimeText, applyDamagePct, shieldMultOf, shieldDmgPctOf, localMultOf, baseMultOf, baseMultOf
+  shortenTime, shortenTimeText, applyDamagePct, shieldMultOf, shieldDmgPctOf, localMultOf
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Damage;

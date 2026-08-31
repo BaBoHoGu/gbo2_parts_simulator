@@ -23,11 +23,12 @@ const URL = 'file:///' + FILE.replace(/\\/g, '/').replace(/ /g, '%20');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // 무장 표에서 리로드/OH 로 보이는 초 값들을 순서대로 긁는다.
+// 리로드/OH 칸은 .w-reload 로 찾는다. 예전엔 '마지막 .w-col' 로 잡았는데,
+// 무장 표에 열이 하나 늘자(국부 보정) 조용히 엉뚱한 칸을 읽었다.
 const readTimes = () => [...document.querySelectorAll('#weaponList > *')]
   .map(row => {
-    const cols = row.querySelectorAll('.w-col');
-    const last = cols[cols.length - 1];
-    return last ? last.textContent.replace(/\s+/g, ' ').trim() : null;
+    const c = row.querySelector('.w-reload');
+    return c ? c.textContent.replace(/\s+/g, ' ').trim() : null;
   })
   .filter(t => t && t !== '—');
 
