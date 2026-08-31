@@ -407,6 +407,38 @@ function localMultOf(w) {
   return { nc, ch, unknown: nc == null && ch == null };
 }
 
+/**
+ * 거점(拠点) 보정 — 적 거점 시설을 때렸을 때의 배율. PvE 에서만 걸린다.
+ * 표기 자리·형식은 실드·국부 보정과 같다(備考 의 「拠点補正：0.1倍」).
+ *
+ * 70종 중 41종이 0.1배다. 「머리 발칸·타격으로는 거점을 못 깎는다」는 규칙을 수치로 적어 둔 것.
+ * 무장을 고를 때 알아야 하는 값이라 토글이 아니라 무장 표의 한 칸으로 늘 보여 준다.
+ */
+function baseMultOf(w) {
+  const note = (w && w.info && w.info['備考']) || '';
+  if (!/拠点補正/.test(note)) return null;                // 표기 없음
+  const m = note.match(/拠点補正\s*[：:]?\s*(等倍|[\d.]+|？|\?)\s*倍?/);
+  if (!m) return null;
+  const v = /[？?]/.test(m[1]) ? null : (m[1] === '等倍' ? 1 : Number(m[1]));
+  return { mult: v, unknown: v == null };
+}
+
+/**
+ * 거점(拠点) 보정 — 적 거점 시설을 때렸을 때의 배율. PvE 에서만 걸린다.
+ * 표기 자리·형식은 실드·국부 보정과 같다(備考 의 「拠点補正：0.1倍」).
+ *
+ * 70종 중 41종이 0.1배다. 「머리 발칸·타격으로는 거점을 못 깎는다」는 규칙을 수치로 적어 둔 것.
+ * 무장을 고를 때 알아야 하는 값이라 토글이 아니라 무장 표의 한 칸으로 늘 보여 준다.
+ */
+function baseMultOf(w) {
+  const note = (w && w.info && w.info['備考']) || '';
+  if (!/拠点補正/.test(note)) return null;                // 표기 없음
+  const m = note.match(/拠点補正\s*[：:]?\s*(等倍|[\d.]+|？|\?)\s*倍?/);
+  if (!m) return null;
+  const v = /[？?]/.test(m[1]) ? null : (m[1] === '等倍' ? 1 : Number(m[1]));
+  return { mult: v, unknown: v == null };
+}
+
 function applyDamagePct(dmg, pct) {
   const arr = Array.isArray(pct) ? pct : [pct];
   return arr.reduce((d, p) => (p ? Math.max(0, Math.floor(d * (1 + p / 100))) : d), dmg);
@@ -426,7 +458,7 @@ const GBO2Damage = {
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag, ATTR_BONUS,
-  shortenTime, shortenTimeText, applyDamagePct, shieldMultOf, shieldDmgPctOf, localMultOf
+  shortenTime, shortenTimeText, applyDamagePct, shieldMultOf, shieldDmgPctOf, localMultOf, baseMultOf, baseMultOf
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Damage;
