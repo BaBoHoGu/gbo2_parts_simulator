@@ -4685,6 +4685,9 @@
   }
 
   function renderAll() {
+    // 강조색을 지금 고른 기체의 병과에 묶는다(style.css 의 html[data-role]).
+    // 도구 전체가 강습이면 붉게·범용이면 푸르게 물들어, 무엇을 만드는 중인지 늘 보인다.
+    document.documentElement.dataset.role = (state.ms && state.ms['属性']) || '';
     renderHero();
     renderFormSeg();
     renderSkillControls();
