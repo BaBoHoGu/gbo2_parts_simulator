@@ -30,3 +30,7 @@ release/
 # 하네스가 세션 중 권한 허용 규칙을 자동 추가하는 로컬 설정 (머신별 절대경로 포함) — 추적 안 함
 .claude/settings.json
 dist/ui_check/
+
+# UI 개선 착수 전 스냅샷 — 바로 열어 볼 수 있는 단일 파일(16MB).
+# 소스는 git tag ui-before-redesign 에 있으니 파일까지 커밋하지는 않는다.
+backup/
