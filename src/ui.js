@@ -1483,6 +1483,21 @@
           nm.append(c);
         }
       }
+      // 국부 보정 — 「국부에 맞힘」 을 켰을 때만. 표기 없는 무장(2,917종)엔 안 붙인다.
+      if (pietanLocal) {
+        const lm = D.localMultOf(w);
+        if (lm) {
+          const txt = lm.unknown ? '?' : (lm.nc === lm.ch ? lm.nc : lm.nc + '→' + lm.ch) + '배';
+          const lvl = lm.unknown ? '' : (lm.nc > 1 ? ' hi' : lm.nc < 1 ? ' lo' : '');
+          const c = el('span', 'w-local' + lvl, '🦵' + txt);
+          c.title = lm.unknown
+            ? '국부 보정이 위키 미확인(？倍)이라 배율을 적용하지 않는다.'
+            : '팔·다리 등 몸통이 아닌 부위에 맞았을 때 배율 — 피해 × ' + lm.nc + '배'
+              + (lm.nc !== lm.ch ? '\n집속 시 ' + lm.ch + '배' : '')
+              + '\n어디에 맞는지는 시뮬레이터가 알 수 없어, 켰을 때만 적용한다.';
+          nm.append(c);
+        }
+      }
       nm.title = w.name;
       row.append(nm);
 
@@ -3622,6 +3637,7 @@
   let pietanEnemySkills = new Set();  // 체크한 적 공격 스킬 이름들 (여러 개 조합 가능)
   let pietanEnemyDef = new Set();     // 체크한 적 방어 스킬 이름들 — 내 무장의 피해를 깎는다
   let pietanShield = false;           // 「실드로 막음」 — 실드 HP 로 받는 계산을 함께 보여 준다
+  let pietanLocal = false;            // 「국부에 맞힘」 — 팔·다리에 맞았을 때의 배율을 얹는다
   let pietanBuild = null;        // 적이 저장 빌드일 때 그 빌드(파츠 포함), 아니면 null
   let pietanVariant = 0;         // 선택한 격투 변형 인덱스 (기본/헤비어택…)
   let pietanDir = 0;             // 선택한 격투 방향 인덱스 (N격/횡격/하격…)
@@ -4093,7 +4109,15 @@
       const dmg = Math.floor(D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]) * eFactor);
       const mult = fireMult(w);
       const n = (mult.nc && mult.nc.n) || 1;
-      const per = dmg * n;                          // 전탄(동시발사) 1트리거 피해
+      // 국부에 맞히면 무장마다 0.4~1.7배로 갈린다. 표기가 없거나 불명이면 그대로 둔다.
+      let locNote = '';
+      let one = dmg;
+      if (pietanLocal) {
+        const lm = D.localMultOf(w);
+        if (lm && !lm.unknown) one = Math.floor(dmg * lm.nc);
+        else locNote = lm ? '국부 불명' : '국부 표기 없음';
+      }
+      const per = one * n;                          // 전탄(동시발사) 1트리거 피해
       // 실드로 막는 상대라면 실드부터 깨야 한다 — 같은 무장이라도 실드 보정이 5배까지 갈린다.
       let shHits = undefined, shNote = '';
       if (pietanShield && eShield) {
@@ -4103,7 +4127,7 @@
         if (sHit == null) { shHits = null; shNote = sm && sm.unknown ? '보정 불명' : '표기 없음'; }
         else shHits = Math.ceil(eShield.hp / (sHit * n));
       }
-      rows.push({ name: T.weaponName(w.name), attr, per, n, shHits, shNote,
+      rows.push({ name: T.weaponName(w.name), attr, per, n, shHits, shNote, locNote,
         hits: per > 0 ? Math.ceil(enemyEff / per) : null });
     }
     if (!rows.length) return;
@@ -4950,6 +4974,12 @@
     $('#pietanBack').onclick = () => openPietan(false);
     $('#pietanQuery').oninput = () => renderPietanLeft();
     $('#pietanCorr').oninput = () => { pietanCorr = Math.max(0, Number($('#pietanCorr').value) || 0); pietanCorrTouched = true; renderPietanResult(); };
+    $('#pietanLocal').onclick = () => {
+      pietanLocal = !pietanLocal;
+      $('#pietanLocal').classList.toggle('on', pietanLocal);
+      renderWeapons();          // 무장 표의 국부 보정 칩도 같이 켜고 끈다
+      renderPietanResult();
+    };
     $('#pietanShield').onclick = () => {
       pietanShield = !pietanShield;
       $('#pietanShield').classList.toggle('on', pietanShield);

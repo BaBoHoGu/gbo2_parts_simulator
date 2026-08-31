@@ -2038,3 +2038,12 @@ body.drawer-open .m-actionbar { display: none !important; }
   .png-preview { padding: 0 10px; }
   .png-hint { padding: 8px 10px 12px; }
 }
+
+
+/* 국부 보정 칩 — 실드 칩과 같은 자리·같은 규칙(켰을 때만 표시) */
+.w-local {
+  font-size: 10.5px; font-weight: 700; margin-left: 4px; padding: 0 5px;
+  border-radius: 999px; color: var(--muted); background: var(--panel-3); white-space: nowrap;
+}
+.w-local.hi { color: var(--ok); }
+.w-local.lo { color: var(--bad); }
