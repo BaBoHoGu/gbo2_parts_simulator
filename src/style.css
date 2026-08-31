@@ -1,9 +1,8 @@
 /* 격납고 데이터 플레이트 — 정비고 단말에서 기체 제원표를 읽는 도구.
-   1) 강조색은 장식이 아니라 '지금 고른 기체의 병과'다. 강습이면 붉게, 범용이면 푸르게,
-      지원이면 호박색으로 도구 전체가 물든다(아래 [data-role]). 게임이 이미 쓰는 색 코드라
-      화면을 보는 순간 무엇을 만들고 있는지 알 수 있다.
-   2) 숫자는 본문 서체를 쓰지 않는다(--num). 자릿수가 흔들리면 비교가 안 된다.
-   3) 색은 뜻이 있는 것만 남긴다 — 파츠 증가(초록)·스킬(보라)·감소(빨강)·거리(근/중/원). */
+   1) 강조색은 앰버 하나로 고정한다. 화면마다 색이 달라지면 같은 뜻의 요소를
+      매번 다시 알아봐야 한다 — 도구는 통일성이 먼저다.
+   2) 색은 뜻이 있는 것만 남긴다 — 파츠 증가(초록)·스킬(보라)·감소(빨강)·거리(근/중/원).
+   3) 숫자는 자릿수 폭을 고정해(tabular-nums) 위아래 값이 자리에서 맞물리게 한다. */
 :root {
   --bg: #101318;
   --panel: #171b21;
@@ -15,7 +14,7 @@
   --muted: #8b929f;
   --dim: #5c6270;
 
-  --accent: #ffc93c;        /* 기본값 — 기체를 고르면 병과 색으로 바뀐다 */
+  --accent: #ffc93c;
   --accent-ink: #23190a;    /* 강조색 위에 얹는 글자색 */
   --accent-dim: #6d5510;
   --accent-wash: #241f10;   /* 선택된 카드의 옅은 바탕 */
@@ -30,15 +29,7 @@
   --skill2: #2ee6d6;  /* 스킬을 2개 이상 겹쳐 발동했을 때 */
 
   --radius: 3px;      /* 카드가 아니라 계기판 — 모서리를 거의 세운다 */
-  /* 수치 전용 서체. 자릿수 폭이 고정돼야 위아래 값을 눈으로 견줄 수 있다.
-     오프라인 단일 파일이라 웹폰트를 못 쓴다 — 윈도우/안드로이드에 있는 것만 나열한다. */
-  --num: "Cascadia Mono", Consolas, "Roboto Mono", "DejaVu Sans Mono", ui-monospace, monospace;
 }
-
-/* 병과별 강조색 — 게임의 삼각 상성(강습>지원>범용>강습) 색을 그대로 쓴다. */
-html[data-role="強襲"] { --accent: #ff6b5e; --accent-ink: #2a0806; --accent-dim: #7d2a22; --accent-wash: #25100e; }
-html[data-role="汎用"] { --accent: #58a6ff; --accent-ink: #04162c; --accent-dim: #24507f; --accent-wash: #0e1826; }
-html[data-role="支援"] { --accent: #ffc93c; --accent-ink: #23190a; --accent-dim: #6d5510; --accent-wash: #241f10; }
 
 * { box-sizing: border-box; }
 
@@ -676,7 +667,9 @@ body.view-build  #screenSelect { display: none; }
 .dura-lb { font-size: 12px; color: var(--muted); font-weight: 600; }
 .dura-cell { display: flex; align-items: baseline; gap: 5px; }
 .dura-k { font-size: 11.5px; color: var(--dim); }
-.dura-v { font-size: 14px; font-weight: 700; color: var(--info); }
+/* 값은 전부 같은 색이다. 파랑·앰버로 갈라 두면 지표마다 중요도가 다른 것처럼 읽힌다.
+   색은 바뀐 몫(초록 증가 · 빨강 감소 · 보라 스킬)에만 쓴다. */
+.dura-v { font-size: 14px; font-weight: 700; color: var(--text); }
 .dura-up { font-size: 11px; font-weight: 700; color: var(--ok); margin-left: 3px; }  /* 방어 스킬 반영 상승률 */
 .dura-up.down { color: var(--bad); }  /* 감소(특화 프로그램 반대 속성 등) */
 .stg-head { margin-top: 2px; }
@@ -1017,7 +1010,7 @@ body.view-build  #screenSelect { display: none; }
 .pietan-stagger { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .pietan-hint { padding: 2px 16px 0; color: var(--muted); font-size: 12px; }
 /* 누적치 스킬 체크박스 (내구 지표 하단·피탄 시뮬 공통) */
-.stagger-row .dura-v { color: #e6b04a; }
+
 .stagger-detail { font-size: 11px; color: var(--muted); margin-left: 8px; }
 .stagger-skills { display: flex; flex-wrap: wrap; gap: 4px 8px; padding: 4px 0 2px; }
 .stg-chk {
@@ -2055,19 +2048,21 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 
 
-/* ============ 수치 서체 ============
-   제원표를 읽는 도구라 숫자가 주인공이다. 본문 서체를 쓰면 자릿수 폭이 흔들려
-   위아래 값을 눈으로 견줄 수 없다. 값·증가분·피해량만 고정폭으로 세운다.
-   (라벨과 한글은 그대로 둔다 — 고정폭 한글은 읽기 나쁘다) */
+/* ============ 수치 ============
+   제원표를 읽는 도구라 숫자가 주인공이다. 다만 고정폭 서체는 획이 가늘고 자간이 넓어
+   작은 크기에서 오히려 덜 읽힌다 — 서체는 본문 그대로 두고, 자릿수 폭만 고정한다.
+   숫자를 돋보이게 하는 건 다른 서체가 아니라 라벨과의 크기·밝기 차이다. */
 .stat-row .total,
 .stat-row .delta,
 .stat-row .cap,
 .dura-v, .dura-up,
-.w-dmg,
+.w-dmg, .w-col,
 .slot-bar .cnt,
 .cost-badge, .hero-cost {
-  font-family: var(--num);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -.2px;
+  font-feature-settings: "tnum" 1;
 }
-.stat-row .total { font-size: 13px; }
+/* 값은 크고 밝게, 라벨은 작고 낮게 — 눈이 값에 먼저 닿는다. */
+.stat-row .total { font-size: 15px; font-weight: 700; }
+.stat-row .label { color: var(--muted); }
+.stat-row .cap { color: var(--dim); }

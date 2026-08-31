@@ -2353,7 +2353,7 @@
           const eff = Math.round(((1 + corr / 100) * (1 + pct / 100) - 1) * 100);
           lt(lb, ax, ry + 4, '12px ' + F, CO.muted); ax += ctx.measureText(lb).width + 5;
           const v = eff.toLocaleString();
-          lt(v, ax, ry + 4, '700 13px ' + F, CO.info); ax += (draw ? ctx.measureText(v).width : 40) + 5;
+          lt(v, ax, ry + 4, '700 13px ' + F, CO.text); ax += (draw ? ctx.measureText(v).width : 40) + 5;
           if (pct !== 0) {
             const tg = '피해 ' + (pct > 0 ? '+' : '') + pct + '%';
             lt(tg, ax, ry + 4, '700 11px ' + F, pct < 0 ? CO.bad : CO.ok);
@@ -2372,7 +2372,7 @@
         lt(lb, dx, ry + 4, '12px ' + F, CO.muted); dx += ctx.measureText(lb).width + 5;
         const f = staggerDmgFactor(pngCuts, dattr);
         const v = Math.round(durabilityOf(r.total, k) / f).toLocaleString();
-        lt(v, dx, ry + 4, '700 13px ' + F, CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 5;
+        lt(v, dx, ry + 4, '700 13px ' + F, CO.text); dx += (draw ? ctx.measureText(v).width : 48) + 5;
         if (f < 1) {
           const tg = '피해 -' + Math.round((1 - f) * 100) + '%';
           lt(tg, dx, ry + 4, '700 11px ' + F, CO.ok);
@@ -4685,9 +4685,6 @@
   }
 
   function renderAll() {
-    // 강조색을 지금 고른 기체의 병과에 묶는다(style.css 의 html[data-role]).
-    // 도구 전체가 강습이면 붉게·범용이면 푸르게 물들어, 무엇을 만드는 중인지 늘 보인다.
-    document.documentElement.dataset.role = (state.ms && state.ms['属性']) || '';
     renderHero();
     renderFormSeg();
     renderSkillControls();
