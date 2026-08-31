@@ -1010,6 +1010,68 @@
       eff.append(el('div', 'd-eff-tx', desc));
       box.append(eff);
     }
+
+    box.append(equipPreview(part, isEquipped));
+  }
+
+  /**
+   * 「끼우면 어떻게 되나」 — 파츠를 실제로 장착하지 않고 결과를 보여 준다.
+   *
+   * 이게 없으면 파츠 하나를 재 볼 때마다 끼우고 → 성능을 보고 → 빼는 왕복이 생긴다.
+   * 162개 중에서 고르는 도구라 그 비용이 그대로 쌓인다.
+   *
+   * 상세는 PC 에서 마우스를 올릴 때·폰에서 탭할 때 모두 열리므로, 여기에 넣으면
+   * hover 가 없는 폰에서도 같은 이득을 본다(그래서 막대가 아니라 숫자로 적는다).
+   */
+  function equipPreview(part, isEquipped) {
+    const wrap = el('div', 'd-preview');
+    if (!state.ms) return wrap;
+
+    // 스킬 몫은 양쪽에 같은 값을 쓴다 — 차이가 온전히 이 파츠 몫이 되게.
+    const skill = skillStatBonus();
+    const now = state.equipped;
+    const then = isEquipped ? now.filter(e => e.name !== part.name) : now.concat([part]);
+    const calc = eq => C.calcStats(state.ms, eq, state.stage, state.expansion, partsByCat, fullst,
+      state.expLevel, state.form, skill);
+    const a = calc(now).total, b = calc(then).total;
+
+    wrap.append(el('div', 'd-eff-lb', isEquipped ? '해제하면' : '끼우면'));
+
+    const rows = el('div', 'dp-rows');
+    let n = 0;
+    for (const k of C.STAT_KEYS) {
+      const d = (b[k] || 0) - (a[k] || 0);
+      if (!d) continue;
+      const r = el('div', 'dp-row');
+      r.append(el('span', 'dp-k', C.STAT_LABEL[k]));
+      r.append(el('span', 'dp-v', (a[k] || 0).toLocaleString() + ' → ' + (b[k] || 0).toLocaleString()));
+      r.append(el('span', 'dp-d ' + (d > 0 ? 'up' : 'down'), (d > 0 ? '+' : '') + d.toLocaleString()));
+      rows.append(r);
+      n++;
+    }
+    if (!n) rows.append(el('div', 'dp-none', '스탯 변화 없음 — 효과는 위 특성을 보세요'));
+    wrap.append(rows);
+
+    // 슬롯 — 이 파츠가 쓰는 축만. 넘치면 왜 못 끼우는지가 여기서 드러난다.
+    const sa = C.calcSlots(state.ms, now, state.stage, fullst);
+    const sb = C.calcSlots(state.ms, then, state.stage, fullst);
+    const axes = [['close', '근접', 'maxClose'], ['mid', '중거리', 'maxMid'], ['long', '원거리', 'maxLong']];
+    const used = axes.filter(([k]) => Number(part[k] || 0) > 0);
+    if (used.length) {
+      const sr = el('div', 'dp-slots');
+      let over = false;
+      for (const [k, lb, mx] of used) {
+        const cell = el('span', 'dp-slot');
+        cell.append(el('span', 'dp-k', lb));
+        const bad = sb[k] > sb[mx];
+        if (bad) over = true;
+        cell.append(el('span', 'dp-v' + (bad ? ' over' : ''), sa[k] + '/' + sa[mx] + ' → ' + sb[k] + '/' + sb[mx]));
+        sr.append(cell);
+      }
+      sr.append(el('span', 'dp-fit' + (over ? ' over' : ''), over ? '칸 초과' : isEquipped ? '' : '들어감'));
+      wrap.append(sr);
+    }
+    return wrap;
   }
 
   /* ---------- 무장 ---------- */
