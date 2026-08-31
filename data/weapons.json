@@ -63,7 +63,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -118,7 +117,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -168,7 +166,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -421,7 +418,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -471,7 +467,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -515,7 +510,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "50%（2HIT）"
     }
    },
@@ -544,8 +538,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -651,7 +644,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "12%（9HIT）"
     }
    },
@@ -747,7 +739,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -802,7 +793,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -831,8 +821,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -902,8 +891,7 @@
      "備考": "連撃不可 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -1137,7 +1125,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -1192,7 +1179,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -1221,8 +1207,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -1356,7 +1341,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.3,
      "stagger": "10%"
     }
    },
@@ -1391,8 +1375,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -1630,7 +1613,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -1685,7 +1667,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -1714,8 +1695,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -1842,7 +1822,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1.4,
      "stagger": "10%"
     }
    },
@@ -1918,7 +1897,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.25,
      "stagger": "40% x3"
     }
    },
@@ -1961,8 +1939,7 @@
      "備考": "射撃時静止 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     }
    },
    {
@@ -1996,8 +1973,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -2165,7 +2141,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -2215,7 +2190,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -2264,8 +2238,7 @@
      "備考": "射撃時静止 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     }
    },
    {
@@ -2296,8 +2269,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -2427,7 +2399,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "9%（12HIT）"
     }
    },
@@ -2627,7 +2598,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -2677,7 +2647,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -2727,7 +2696,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -3009,7 +2977,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.5,
      "stagger": "80%"
     }
    },
@@ -3064,7 +3031,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -3325,7 +3291,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "20%"
     }
    },
@@ -3601,7 +3566,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -3651,7 +3615,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -3683,8 +3646,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -3882,7 +3844,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30% x2"
     }
    },
@@ -4050,7 +4011,6 @@
      "chargeRatio": 1.517,
      "chargeTime": 2,
      "shieldMod": 1.1,
-     "partMod": 1.3,
      "stagger": "50%（50%）"
     }
    },
@@ -4182,7 +4142,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "3%（34HIT）"
     }
    },
@@ -4217,8 +4176,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -4406,7 +4364,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -4454,7 +4411,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -4487,7 +4443,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -4516,8 +4471,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -4591,7 +4545,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.4,
      "stagger": "5%（20HIT）"
     }
    },
@@ -4624,7 +4577,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%（2HIT）"
     }
    },
@@ -4717,7 +4669,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -4772,7 +4723,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -4827,7 +4777,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -5047,7 +4996,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "6% x2"
     }
    },
@@ -5218,7 +5166,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.4,
      "stagger": "10%"
     }
    },
@@ -5300,7 +5247,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -5504,7 +5450,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -5554,7 +5499,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -5766,7 +5710,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -5821,7 +5764,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -5871,7 +5813,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -5903,8 +5844,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -6064,8 +6004,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -6157,7 +6096,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "18%（6HIT）"
     }
    },
@@ -6194,7 +6132,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "0%"
     }
    }
@@ -6311,7 +6248,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -6346,8 +6282,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -6572,7 +6507,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -6601,8 +6535,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -6806,7 +6739,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "6%（17HIT）"
     }
    },
@@ -6856,7 +6788,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -6888,8 +6819,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -7040,7 +6970,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 1,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "20%（80%）"
     }
    },
@@ -7090,7 +7019,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -7149,7 +7077,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 3.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "5%（30%）"
     }
    },
@@ -7185,7 +7112,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "70%"
     }
    },
@@ -7472,7 +7398,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -7522,7 +7447,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -7835,7 +7759,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -7890,7 +7813,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -8060,7 +7982,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4,
      "shieldMod": 0.8,
-     "partMod": 1.4,
      "stagger": "10% (30%)"
     }
    },
@@ -8110,7 +8031,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -8257,7 +8177,6 @@
      "備考": "移動射撃可 / 伏せ撃ち可 / ジャンプ撃ち可 / ひるみ有 / よろけ値：22%（5HIT） / 局部補正：1.5倍"
     },
     "mods": {
-     "partMod": 1.5,
      "stagger": "22%（5HIT）"
     }
    },
@@ -8367,7 +8286,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "5%（20HIT）"
     }
    },
@@ -8672,7 +8590,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -8722,7 +8639,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -8963,7 +8879,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -9018,7 +8933,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -9068,7 +8982,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -9334,7 +9247,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -9367,7 +9279,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -9417,7 +9328,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -9449,8 +9359,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -9589,7 +9498,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -9644,7 +9552,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -9679,8 +9586,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -9838,7 +9744,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "8% x2"
     }
    },
@@ -10009,7 +9914,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "50%（2HIT）"
     }
    },
@@ -10038,8 +9942,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -10227,7 +10130,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -10277,7 +10179,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -10461,7 +10362,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "40% x2"
     }
    },
@@ -10724,7 +10624,6 @@
     "mods": {
      "chargeRatio": 1.2,
      "chargeTime": 4,
-     "partMod": 0.8,
      "stagger": "40%（20%）"
     }
    },
@@ -10940,7 +10839,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -10988,7 +10886,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -11021,7 +10918,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -11069,7 +10965,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -11102,7 +10997,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -11131,8 +11025,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -11257,7 +11150,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -11307,7 +11199,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -11563,7 +11454,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -11613,7 +11503,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -11645,8 +11534,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -11837,7 +11725,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "40%"
     }
    },
@@ -12010,7 +11897,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -12069,7 +11955,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -12361,7 +12246,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "6%（17HIT）"
     }
    },
@@ -12632,7 +12516,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "45%（3HIT）"
     }
    },
@@ -12915,7 +12798,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -12965,7 +12847,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -13166,7 +13047,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -13199,7 +13079,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -13249,7 +13128,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -13299,7 +13177,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -13343,7 +13220,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "50%（2HIT）"
     }
    },
@@ -13372,8 +13248,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -13542,7 +13417,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -13603,7 +13477,6 @@
     },
     "mods": {
      "shieldMod": 0.15,
-     "partMod": 1,
      "stagger": "3% x2"
     }
    },
@@ -13843,7 +13716,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -13891,7 +13763,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -13924,7 +13795,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -14116,7 +13986,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.3,
      "stagger": "50%（2HIT）"
     }
    },
@@ -14166,7 +14035,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -14195,8 +14063,7 @@
      "備考": "局部補正：1.3倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1.3
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -14414,7 +14281,6 @@
     },
     "mods": {
      "shieldMod": 0.15,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -14447,7 +14313,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -14502,7 +14367,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -14691,7 +14555,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.3,
      "stagger": "40%（3HIT）"
     }
    },
@@ -14931,7 +14794,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.3,
      "stagger": "40%（3HIT）"
     }
    },
@@ -15111,7 +14973,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -15166,7 +15027,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "3%（34HIT）"
     }
    },
@@ -15201,8 +15061,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -15395,7 +15254,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -15445,7 +15303,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -15477,8 +15334,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -15685,7 +15541,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -15766,8 +15621,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -15933,8 +15787,7 @@
      "備考": "射撃時静止 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     }
    },
    {
@@ -15978,7 +15831,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "6%"
     }
    },
@@ -16093,7 +15945,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -16126,7 +15977,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -16202,7 +16052,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -16252,7 +16101,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -16281,8 +16129,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -16412,7 +16259,6 @@
     },
     "mods": {
      "shieldMod": 0.15,
-     "partMod": 1.3,
      "stagger": "4%（25HIT）"
     }
    },
@@ -16592,7 +16438,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -16642,7 +16487,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -16701,7 +16545,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -16733,8 +16576,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -16963,7 +16805,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -17018,7 +16859,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -17068,7 +16908,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -17307,7 +17146,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.25,
      "stagger": "9%（12HIT）"
     }
    },
@@ -17355,7 +17193,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -17388,7 +17225,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -17438,7 +17274,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -17467,8 +17302,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -17601,7 +17435,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "0%"
     }
    },
@@ -17651,7 +17484,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -17954,7 +17786,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "10%"
     }
    },
@@ -18004,7 +17835,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -18059,7 +17889,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -18091,8 +17920,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -18247,7 +18075,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -18295,7 +18122,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -18328,7 +18154,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -18360,8 +18185,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -18491,7 +18315,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1.3,
      "stagger": "35%（3HIT）"
     }
    },
@@ -18714,7 +18537,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "25%（4HIT）"
     }
    },
@@ -18762,7 +18584,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "9% x2"
     }
    },
@@ -18791,8 +18612,7 @@
      "備考": "格闘方向によらず強制ダウン / 局部補正：1.2倍 / シールド補正：0.7倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -18862,7 +18682,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "20% x4"
     }
    }
@@ -18916,7 +18735,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -18964,7 +18782,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -18997,7 +18814,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -19026,8 +18842,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -19133,8 +18948,7 @@
      "備考": "大よろけ有 / 格闘優先度：強 / N格：100% / 横格：75% / 下格：400% / 連撃不可 / 局部補正：1.0倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -19309,7 +19123,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -19353,7 +19166,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -19408,7 +19220,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -19437,8 +19248,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -19621,7 +19431,6 @@
     "mods": {
      "chargeTime": 3,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "35%（65%）"
     }
    },
@@ -19665,7 +19474,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -19780,7 +19588,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.3,
      "stagger": "7%（15HIT）"
     }
    },
@@ -20155,7 +19962,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.4,
      "stagger": "3%（34HIT）"
     }
    },
@@ -20190,8 +19996,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -20364,7 +20169,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -20412,7 +20216,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -20711,7 +20514,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -20759,7 +20561,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -21046,7 +20847,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1.3,
      "stagger": "35%（3HIT）"
     }
    },
@@ -21330,7 +21130,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "6%（17HIT）"
     }
    },
@@ -21381,7 +21180,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%"
     }
    },
@@ -21431,7 +21229,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -21621,7 +21418,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.3,
      "stagger": "10%"
     }
    },
@@ -21656,8 +21452,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -21727,7 +21522,6 @@
      "chargeRatio": 2.5,
      "chargeTime": 3,
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "50%（50%）"
     }
    },
@@ -21865,7 +21659,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "10%"
     }
    },
@@ -21920,7 +21713,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "6%（17HIT）"
     }
    },
@@ -21970,7 +21762,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -22112,9 +21903,7 @@
      "射程": "150m",
      "備考": "射撃時静止 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：？倍"
     },
-    "mods": {
-     "partMod": 1
-    }
+    "mods": {}
    },
    {
     "name": "コンバット・ネイル",
@@ -22321,7 +22110,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -22376,7 +22164,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -22426,7 +22213,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -22748,7 +22534,6 @@
      "chargeRatio": 1.39,
      "chargeTime": 3,
      "shieldMod": 1.2,
-     "partMod": 1.3,
      "stagger": "10%（10%）"
     }
    },
@@ -22807,7 +22592,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -22839,8 +22623,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -23035,7 +22818,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "6%"
     }
    },
@@ -23303,7 +23085,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -23353,7 +23134,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -23462,7 +23242,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -23508,7 +23287,6 @@
     "mods": {
      "chargeTime": 5,
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "10%"
     }
    },
@@ -23800,7 +23578,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -23833,7 +23610,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -23883,7 +23659,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -24164,7 +23939,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -24214,7 +23988,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -24262,7 +24035,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -24520,7 +24292,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -24549,8 +24320,7 @@
      "備考": "格闘方向に関わらず強制ダウン / 局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -24769,7 +24539,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%"
     }
    },
@@ -24824,7 +24593,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "6%（17HIT）"
     }
    },
@@ -24883,7 +24651,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -25080,7 +24847,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "4%（25HIT）"
     }
    },
@@ -25112,8 +24878,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -25557,7 +25322,6 @@
      "chargeRatio": 1.5,
      "chargeTime": 3,
      "shieldMod": 0.8,
-     "partMod": 1.4,
      "stagger": "50%（80%）"
     }
    },
@@ -25612,7 +25376,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -25662,7 +25425,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -25721,7 +25483,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -25967,7 +25728,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -26011,7 +25771,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -26043,8 +25802,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -26260,7 +26018,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "6%（17HIT）"
     }
    },
@@ -26311,7 +26068,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%"
     }
    },
@@ -26361,7 +26117,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -26530,7 +26285,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -26578,7 +26332,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -26818,7 +26571,6 @@
      "chargeRatio": 1.37,
      "chargeTime": 5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "15%（30%）"
     }
    },
@@ -26868,7 +26620,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -27019,7 +26770,6 @@
      "chargeRatio": 2.95,
      "chargeTime": 10,
      "shieldMod": 1.5,
-     "partMod": 1.5,
      "stagger": "40%（0%）"
     }
    },
@@ -27168,7 +26918,6 @@
      "chargeRatio": 4.8,
      "chargeTime": 4,
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "20% (50%)"
     }
    },
@@ -27277,7 +27026,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.5,
      "stagger": "13%（8HIT）"
     }
    },
@@ -27422,7 +27170,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -27470,7 +27217,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -27503,7 +27249,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -27532,8 +27277,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -27699,7 +27443,6 @@
      "chargeRatio": 1.37,
      "chargeTime": 5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "15%（30%）"
     }
    },
@@ -27749,7 +27492,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -27909,7 +27651,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.4,
      "stagger": "5%（20HIT）"
     }
    },
@@ -28097,7 +27838,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -28348,7 +28088,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -28398,7 +28137,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -28593,7 +28331,6 @@
      "chargeRatio": 2.5,
      "chargeTime": 1.5,
      "shieldMod": 1.3,
-     "partMod": 1.3,
      "stagger": "50%（50%）"
     }
    },
@@ -28859,7 +28596,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -28914,7 +28650,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -29103,7 +28838,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -29151,7 +28885,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -29184,7 +28917,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -29213,8 +28945,7 @@
      "備考": "格闘方向に関わらず強制ダウン / 局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -29320,7 +29051,6 @@
      "chargeRatio": 1.4,
      "chargeTime": 3.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "5%（10%）"
     }
    },
@@ -29347,7 +29077,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -29379,8 +29108,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -29537,7 +29265,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -29592,7 +29319,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -29636,7 +29362,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "10%"
     }
    },
@@ -29668,8 +29393,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -29864,7 +29588,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -29897,7 +29620,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -29956,7 +29678,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -29985,8 +29706,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -30168,7 +29888,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "4%（25HIT）"
     }
    },
@@ -30255,7 +29974,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "80%"
     }
    },
@@ -30288,7 +30006,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "25%（4HIT）"
     }
    },
@@ -30333,7 +30050,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "25%（4HIT）"
     }
    },
@@ -30367,7 +30083,6 @@
     },
     "mods": {
      "shieldMod": 0.7,
-     "partMod": 1,
      "stagger": "0%"
     }
    },
@@ -30399,8 +30114,7 @@
      "備考": "機体後方に2連発射 / 移動射撃可 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：0.7倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1
+     "shieldMod": 0.7
     }
    },
    {
@@ -30493,7 +30207,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -30543,7 +30256,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -30592,8 +30304,7 @@
      "備考": "射撃時静止 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     }
    },
    {
@@ -30624,8 +30335,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -30793,7 +30503,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -30843,7 +30552,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -30878,8 +30586,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -31108,8 +30815,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -31272,7 +30978,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30% x2"
     }
    },
@@ -31500,7 +31205,6 @@
      "chargeRatio": 1.4,
      "chargeTime": 4,
      "shieldMod": 1.25,
-     "partMod": 1,
      "stagger": "20%（35%）"
     }
    },
@@ -31759,7 +31463,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -31807,7 +31510,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -31840,7 +31542,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -31869,8 +31570,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -32160,7 +31860,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -32189,8 +31888,7 @@
      "備考": "大よろけ有 / 局部補正：1.2倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1.2
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -32252,7 +31950,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "70%"
     }
    },
@@ -32285,7 +31982,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 0.8,
      "stagger": "0%"
     }
    },
@@ -32328,8 +32024,7 @@
      "備考": "＜通常時＞射撃時静止 / ＜変形時＞移動射撃可 / 爆風なし / 大よろけ有 / 局部補正：1.5倍 / シールド補正：0.5倍"
     },
     "mods": {
-     "shieldMod": 0.5,
-     "partMod": 1.5
+     "shieldMod": 0.5
     }
    },
    {
@@ -32411,7 +32106,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1.3,
      "stagger": "10%"
     }
    },
@@ -32713,7 +32407,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -32763,7 +32456,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -32808,7 +32500,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -33012,7 +32703,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "40%"
     }
    },
@@ -33067,7 +32757,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -33273,7 +32962,6 @@
      "chargeRatio": 1.33,
      "chargeTime": 5,
      "shieldMod": 0.8,
-     "partMod": 0.8,
      "stagger": "80%（85%）"
     }
    },
@@ -33441,7 +33129,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -33720,7 +33407,6 @@
      "chargeRatio": 5.75,
      "chargeTime": 4,
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "15%（7HIT） (10%)"
     }
    },
@@ -33768,7 +33454,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -33801,7 +33486,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -33830,8 +33514,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -33917,7 +33600,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "10%（10HIT）"
     }
    },
@@ -34057,7 +33739,6 @@
      "chargeRatio": 4.4,
      "chargeTime": 3,
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "25% x5"
     }
    },
@@ -34217,7 +33898,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.2,
      "stagger": "10%（10HIT）"
     }
    },
@@ -34265,7 +33945,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -34298,7 +33977,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -34474,7 +34152,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "40%"
     }
    },
@@ -34529,7 +34206,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -34581,7 +34257,6 @@
      "chargeRatio": 2.03,
      "chargeTime": 3,
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "50%（50%）"
     }
    },
@@ -34790,7 +34465,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -35286,7 +34960,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -35341,7 +35014,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -35376,8 +35048,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -35592,7 +35263,6 @@
      "chargeRatio": 1.37,
      "chargeTime": 5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "15%（30%）"
     }
    },
@@ -35647,7 +35317,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -35697,7 +35366,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -35992,7 +35660,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -36042,7 +35709,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -36086,7 +35752,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.25,
      "stagger": "40% x3"
     }
    },
@@ -36121,8 +35786,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -36273,7 +35937,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -36328,7 +35991,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -36467,8 +36129,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -36538,8 +36199,7 @@
      "備考": "連撃不可 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -36756,7 +36416,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -36789,7 +36448,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -37224,7 +36882,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "35% x2"
     }
    },
@@ -37325,7 +36982,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "6%（17HIT）"
     }
    },
@@ -37358,7 +37014,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "50% x3"
     }
    },
@@ -37454,7 +37109,6 @@
      "chargeRatio": 2.1875,
      "chargeTime": 3,
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "10%"
     }
    },
@@ -37549,7 +37203,6 @@
     "mods": {
      "chargeTime": 4,
      "shieldMod": 1.8,
-     "partMod": 1,
      "stagger": "0%"
     }
    }
@@ -37602,8 +37255,7 @@
      "備考": "射撃時静止 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     }
    },
    {
@@ -37652,7 +37304,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -37702,7 +37353,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -37731,8 +37381,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -37794,7 +37443,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%（2HIT）"
     }
    },
@@ -37839,7 +37487,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "10%（10HIT）"
     }
    }
@@ -37893,7 +37540,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30%"
     }
    },
@@ -37928,8 +37574,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -38168,7 +37813,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "4%（25HIT）"
     }
    },
@@ -38197,8 +37841,7 @@
      "備考": "局部補正：1.3倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1.3
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -38316,7 +37959,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "25%（4HIT）"
     }
    },
@@ -38350,7 +37992,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1,
      "stagger": "10%"
     }
    },
@@ -38453,7 +38094,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -38503,7 +38143,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -38547,7 +38186,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "50%（2HIT）"
     }
    },
@@ -38579,8 +38217,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -38802,7 +38439,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -38997,7 +38633,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "25% x2"
     }
    },
@@ -39026,8 +38661,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -39106,7 +38740,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.3,
      "stagger": "10% x2"
     }
    }
@@ -39161,7 +38794,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "65%"
     }
    },
@@ -39260,7 +38892,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.1,
      "stagger": "35%（3HIT）"
     }
    },
@@ -39625,7 +39256,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -39658,7 +39288,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -39734,7 +39363,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -39784,7 +39412,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -39819,8 +39446,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -39967,7 +39593,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30%"
     }
    },
@@ -40481,7 +40106,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -40553,8 +40177,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -40640,7 +40263,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "5%（20HIT）"
     }
    },
@@ -40686,7 +40308,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.3,
      "stagger": "17%（6HIT）"
     }
    },
@@ -40804,7 +40425,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -40859,7 +40479,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -40909,7 +40528,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -40953,7 +40571,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1.2,
      "stagger": "80%"
     }
    },
@@ -41156,7 +40773,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.3,
      "stagger": "10%"
     }
    },
@@ -41191,8 +40807,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -41369,7 +40984,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -41419,7 +41033,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -41463,7 +41076,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%"
     }
    },
@@ -41715,7 +41327,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -41765,7 +41376,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -41809,7 +41419,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -42023,7 +41632,6 @@
      "chargeRatio": 1.2174,
      "chargeTime": 4.5,
      "shieldMod": 1.3,
-     "partMod": 1.3,
      "stagger": "10%（5%）"
     }
    },
@@ -42122,7 +41730,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "6%（17HIT）"
     }
    }
@@ -42176,7 +41783,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -42220,7 +41826,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -42378,7 +41983,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "5%（20HIT）"
     }
    },
@@ -42571,7 +42175,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -43008,7 +42611,6 @@
      "chargeRatio": 1.231,
      "chargeTime": 2,
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "50%（70%）"
     }
    },
@@ -43160,7 +42762,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.3,
      "stagger": "10%（10HIT）"
     }
    },
@@ -43289,7 +42890,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -43334,7 +42934,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -43384,7 +42983,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -43660,7 +43258,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "20%（5HIT）"
     }
    },
@@ -43762,7 +43359,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "80%"
     }
    },
@@ -43851,7 +43447,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "3%（34HIT）"
     }
    }
@@ -43916,7 +43511,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "5%（20HIT）"
     }
    },
@@ -44160,7 +43754,6 @@
      "chargeRatio": 1.4,
      "chargeTime": 4,
      "shieldMod": 1.25,
-     "partMod": 1,
      "stagger": "20%（35%）"
     }
    },
@@ -44232,8 +43825,7 @@
      "備考": "局部補正：1.1倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1.1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -44352,7 +43944,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 0.8,
      "stagger": "40% x2"
     }
    },
@@ -44449,7 +44040,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -44494,7 +44084,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -44861,7 +44450,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%"
     }
    },
@@ -44913,7 +44501,6 @@
      "chargeRatio": 1.19,
      "chargeTime": 1,
      "shieldMod": 1,
-     "partMod": 1.3,
      "stagger": "50%（80%）"
     }
    },
@@ -45212,7 +44799,6 @@
      "chargeRatio": 1.467,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "20% (35%)"
     }
    },
@@ -45260,7 +44846,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -45293,7 +44878,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -45325,8 +44909,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -45399,8 +44982,7 @@
      "備考": "移動射撃可 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     }
    },
    {
@@ -45432,7 +45014,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%（2HIT）"
     }
    }
@@ -45492,7 +45073,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "0%"
     }
    },
@@ -45542,7 +45122,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -46013,7 +45592,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "40%"
     }
    },
@@ -46369,7 +45947,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "8%"
     }
    },
@@ -46404,8 +45981,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -46467,7 +46043,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "45% x2"
     }
    },
@@ -46544,7 +46119,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "35%"
     }
    },
@@ -46627,7 +46201,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "30%"
     }
    },
@@ -46735,7 +46308,6 @@
      "chargeRatio": 2.27,
      "chargeTime": 3,
      "shieldMod": 0.6,
-     "partMod": 1,
      "stagger": "20% x7"
     }
    },
@@ -47112,8 +46684,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -47292,7 +46863,6 @@
      "chargeRatio": 1.714,
      "chargeTime": 3.5,
      "shieldMod": 0.6,
-     "partMod": 1.1,
      "stagger": "45%（55%）"
     }
    },
@@ -47369,7 +46939,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -47413,7 +46982,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -47485,8 +47053,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -47572,7 +47139,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "5%（20HIT）"
     }
    }
@@ -47634,7 +47200,6 @@
      "chargeRatio": 1.6,
      "chargeTime": 2,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "65%（70%）"
     }
    },
@@ -47740,7 +47305,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1.3,
      "stagger": "10%"
     }
    },
@@ -47785,7 +47349,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "35%"
     }
    },
@@ -47963,7 +47526,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -48007,7 +47569,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -48036,8 +47597,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -48201,7 +47761,6 @@
     "mods": {
      "chargeRatio": 1.6667,
      "chargeTime": 2.5,
-     "partMod": 1.2,
      "stagger": "50%（50%）"
     }
    },
@@ -48402,7 +47961,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -48692,7 +48250,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.4,
      "stagger": "4% x2"
     }
    }
@@ -48796,7 +48353,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -48825,8 +48381,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -49274,7 +48829,6 @@
      "chargeRatio": 1.4285,
      "chargeTime": 2.5,
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "20% (30%)"
     }
    },
@@ -49303,8 +48857,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -49396,7 +48949,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 0.8,
      "stagger": "25% x2"
     }
    },
@@ -49425,8 +48977,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -49567,7 +49118,6 @@
      "chargeRatio": 1.25,
      "chargeTime": 3.5,
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "50%（70%）"
     }
    },
@@ -49945,7 +49495,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -50000,7 +49549,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -50181,7 +49729,6 @@
      "chargeRatio": 1.77,
      "chargeTime": 2.5,
      "shieldMod": 1.1,
-     "partMod": 1,
      "stagger": "47%（65%）"
     }
    },
@@ -50225,7 +49772,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -50475,7 +50021,6 @@
      "chargeRatio": 1.25,
      "chargeTime": 3.5,
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "50%（70%）"
     }
    },
@@ -50771,7 +50316,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "25% x2"
     }
    }
@@ -50827,7 +50371,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -50860,7 +50403,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -50910,7 +50452,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -51074,7 +50615,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -51146,8 +50686,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -51221,7 +50760,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "3%（34HIT）"
     }
    },
@@ -51267,7 +50805,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.3,
      "stagger": "17%（6HIT）"
     }
    },
@@ -51333,7 +50870,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 0.8,
      "stagger": "20% x2"
     }
    },
@@ -51720,7 +51256,6 @@
      "chargeRatio": 1.13,
      "chargeTime": 2,
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "35% x2"
     }
    },
@@ -51746,8 +51281,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -51865,7 +51399,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "20%（5HIT）"
     }
    },
@@ -51897,7 +51430,6 @@
     "mods": {
      "chargeTime": 2.5,
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "100%"
     }
    },
@@ -51929,7 +51461,6 @@
     "mods": {
      "chargeTime": 5,
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "40%x7"
     }
    },
@@ -51960,7 +51491,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 0.8,
      "stagger": "35% x2"
     }
    },
@@ -51999,7 +51529,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "25%（4HIT）"
     }
    },
@@ -52030,7 +51559,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 0.8,
      "stagger": "35% x2"
     }
    }
@@ -52076,7 +51604,6 @@
      "chargeRatio": 4.223,
      "chargeTime": 3.5,
      "shieldMod": 1.1,
-     "partMod": 1,
      "stagger": "35%（65%）"
     }
    },
@@ -52217,7 +51744,6 @@
      "chargeRatio": 1.4,
      "chargeTime": 3.5,
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "50%（50%）"
     }
    },
@@ -52665,7 +52191,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "35% x3"
     }
    },
@@ -52694,8 +52219,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -52776,7 +52300,6 @@
     "mods": {
      "chargeTime": 2,
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "30% x3"
     }
    },
@@ -52847,7 +52370,6 @@
     },
     "mods": {
      "shieldMod": 0.7,
-     "partMod": 1,
      "stagger": "40% x4"
     }
    },
@@ -52943,7 +52465,6 @@
      "chargeRatio": 1.37,
      "chargeTime": 5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "15%（30%）"
     }
    },
@@ -52999,7 +52520,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30% x2"
     }
    },
@@ -53144,7 +52664,6 @@
     "mods": {
      "chargeTime": 3.5,
      "shieldMod": 1.8,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -53239,7 +52758,6 @@
      "chargeRatio": 1.37,
      "chargeTime": 5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "15%（30%）"
     }
    },
@@ -53289,7 +52807,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -53449,7 +52966,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.4,
      "stagger": "5%（20HIT）"
     }
    },
@@ -54692,7 +54208,6 @@
      "chargeRatio": 1.19,
      "chargeTime": 1,
      "shieldMod": 1,
-     "partMod": 1.3,
      "stagger": "50%（80%）"
     }
    },
@@ -54812,7 +54327,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "20%"
     }
    },
@@ -55929,7 +55443,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -55973,7 +55486,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%"
     }
    },
@@ -56194,7 +55706,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -56242,7 +55753,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "25%"
     }
    },
@@ -56275,7 +55785,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "65%"
     }
    },
@@ -56304,8 +55813,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -56437,7 +55945,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "17%（6HIT）"
     }
    }
@@ -56570,7 +56077,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -56817,7 +56323,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -56869,7 +56374,6 @@
      "chargeRatio": 1.37,
      "chargeTime": 5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "15%（30%）"
     }
    },
@@ -56924,7 +56428,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -57467,7 +56970,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -57539,8 +57041,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -58010,7 +57511,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.25,
      "stagger": "40% x3"
     }
    },
@@ -58065,7 +57565,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -58115,7 +57614,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -58159,7 +57657,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "10%"
     }
    },
@@ -58194,8 +57691,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -58772,7 +58268,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "25%"
     }
    },
@@ -58805,7 +58300,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "65%"
     }
    },
@@ -58834,8 +58328,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -59032,7 +58525,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "35%"
     }
    },
@@ -59187,7 +58679,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1.3,
      "stagger": "13%（8HIT）"
     }
    }
@@ -59541,7 +59032,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "5%"
     }
    },
@@ -59570,8 +59060,7 @@
      "備考": "連続ヒット攻撃 / 局部補正：1.0倍 / シールド補正：1.0倍"
     },
     "mods": {
-     "shieldMod": 1,
-     "partMod": 1
+     "shieldMod": 1
     },
     "melee": {
      "variants": [
@@ -59707,7 +59196,6 @@
     },
     "mods": {
      "shieldMod": 0.8,
-     "partMod": 1,
      "stagger": "50%"
     }
    }
@@ -60052,7 +59540,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -60100,7 +59587,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -60133,7 +59619,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -60168,8 +59653,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -60253,7 +59737,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "6%（17HIT）"
     }
    },
@@ -60280,7 +59763,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "35% x2"
     }
    },
@@ -60313,7 +59795,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "25%（4HIT）"
     }
    }
@@ -60368,7 +59849,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.25,
      "stagger": "35% x3"
     }
    },
@@ -60397,8 +59877,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -60461,7 +59940,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "35%"
     }
    },
@@ -60494,7 +59972,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "65%"
     }
    },
@@ -60527,7 +60004,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    }
@@ -60585,7 +60061,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.4,
      "stagger": "3%"
     }
    },
@@ -60614,8 +60089,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -60689,7 +60163,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -60722,7 +60195,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    }
@@ -60776,7 +60248,6 @@
      "chargeRatio": 5.43,
      "chargeTime": 2.5,
      "shieldMod": 1.1,
-     "partMod": 1,
      "stagger": "25% x4"
     }
    },
@@ -60908,7 +60379,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 0.8,
      "stagger": "40% x2"
     }
    },
@@ -60948,7 +60418,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 0.8,
      "stagger": "35% x2"
     }
    },
@@ -60979,7 +60448,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.1,
      "stagger": "50% x3"
     },
     "psycommu": true
@@ -61011,7 +60479,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.1,
      "stagger": "50%"
     },
     "psycommu": true
@@ -61049,7 +60516,6 @@
      "chargeRatio": 7.6,
      "chargeTime": 1,
      "shieldMod": 1.1,
-     "partMod": 1,
      "stagger": "25% x4"
     }
    },
@@ -61080,7 +60546,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 0.8,
      "stagger": "35% x2"
     }
    }
@@ -61174,7 +60639,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.2,
      "stagger": "10%（10HIT）"
     }
    },
@@ -61223,8 +60687,7 @@
      "備考": "射撃時静止 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     }
    },
    {
@@ -61739,7 +61202,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -61937,7 +61399,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1,
      "stagger": "65%"
     }
    },
@@ -61963,8 +61424,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -62035,7 +61495,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "35% x4"
     }
    },
@@ -62061,8 +61520,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -62349,7 +61807,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "25%"
     }
    },
@@ -62372,8 +61829,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -62464,8 +61920,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -62560,7 +62015,6 @@
      "chargeRatio": 1.33,
      "chargeTime": 3.5,
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "35%（65%）"
     }
    },
@@ -62586,8 +62040,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -62655,7 +62108,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "12% x2"
     }
    },
@@ -62695,7 +62147,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "35%（3HIT）"
     }
    },
@@ -62726,7 +62177,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "35% x2"
     }
    }
@@ -62984,7 +62434,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "20%"
     }
    },
@@ -63039,7 +62488,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -63089,7 +62537,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -63350,7 +62797,6 @@
      "chargeRatio": 1.4,
      "chargeTime": 3.5,
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "50%（50%）"
     }
    },
@@ -64604,7 +64050,6 @@
      "chargeRatio": 1.667,
      "chargeTime": 3.5,
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "35% x2"
     }
    },
@@ -64680,7 +64125,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -64752,8 +64196,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -64844,7 +64287,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "6%（17HIT）"
     }
    },
@@ -65273,7 +64715,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "10%（10HIT）"
     }
    },
@@ -65377,8 +64818,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -65498,8 +64938,7 @@
     },
     "mods": {
      "chargeTime": 2.5,
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -65907,7 +65346,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4,
      "shieldMod": 0.8,
-     "partMod": 1.4,
      "stagger": "10% (30%)"
     }
    },
@@ -65995,7 +65433,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30%"
     }
    },
@@ -66119,7 +65556,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.5,
      "stagger": "22%（5HIT）"
     }
    },
@@ -66212,7 +65648,6 @@
      "chargeRatio": 4.8,
      "chargeTime": 4,
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "20% (50%)"
     }
    },
@@ -66260,7 +65695,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%"
     }
    },
@@ -66542,7 +65976,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -66619,8 +66052,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -66905,7 +66337,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -67294,7 +66725,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.3,
      "stagger": "12%"
     }
    },
@@ -67353,7 +66783,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 0.8,
      "stagger": "20% x2"
     }
    },
@@ -67448,7 +66877,6 @@
      "chargeRatio": 4.8,
      "chargeTime": 4,
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "20% (50%)"
     }
    },
@@ -67498,7 +66926,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -67546,7 +66973,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -67579,7 +67005,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -67781,7 +67206,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30% x2"
     }
    },
@@ -67861,7 +67285,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "40%"
     }
    },
@@ -67958,8 +67381,7 @@
      "備考": "＜変形時＞使用不可 / 局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -68037,7 +67459,6 @@
      "chargeRatio": 1.33,
      "chargeTime": 3.5,
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "60%（80%）"
     }
    },
@@ -68391,7 +67812,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "10%"
     }
    },
@@ -68414,8 +67834,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -68472,7 +67891,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.1,
      "stagger": "5% x8"
     },
     "psycommu": true
@@ -68501,7 +67919,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.1,
      "stagger": "4% x8"
     },
     "psycommu": true
@@ -68530,7 +67947,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 0.8,
      "stagger": "25% x2"
     }
    },
@@ -68673,7 +68089,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -68919,7 +68334,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "17%（6HIT）"
     }
    },
@@ -68971,7 +68385,6 @@
      "chargeRatio": 4.4,
      "chargeTime": 3,
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "25% x5"
     }
    },
@@ -68994,8 +68407,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -69074,7 +68486,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.2,
      "stagger": "25%"
     }
    },
@@ -69108,7 +68519,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.5,
      "stagger": "25%"
     }
    },
@@ -69131,8 +68541,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -69341,7 +68750,6 @@
      "chargeRatio": 1.25,
      "chargeTime": 3.5,
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "50%（70%）"
     }
    },
@@ -69898,7 +69306,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    },
@@ -70014,7 +69421,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30% x2"
     }
    },
@@ -70386,7 +69792,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "6%（17HIT）"
     }
    },
@@ -70525,7 +69930,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -70554,8 +69958,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -70757,7 +70160,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -70818,8 +70220,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -70894,7 +70295,6 @@
     },
     "mods": {
      "shieldMod": 0.7,
-     "partMod": 1.5,
      "stagger": "20%"
     }
    },
@@ -70927,7 +70327,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "10% x8"
     }
    }
@@ -70994,8 +70393,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -71500,7 +70898,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -71694,7 +71091,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "35%（3HIT）"
     }
    },
@@ -71727,7 +71123,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "20% x2"
     }
    },
@@ -72143,7 +71538,6 @@
      "chargeRatio": 10,
      "chargeTime": 2,
      "shieldMod": 1,
-     "partMod": 1.5,
      "stagger": "20% x9"
     }
    },
@@ -72499,7 +71893,6 @@
      "chargeRatio": 1.917,
      "chargeTime": 2.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "50%（65%）"
     }
    },
@@ -72633,7 +72026,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    }
@@ -72675,7 +72067,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "1%"
     }
    },
@@ -72734,7 +72125,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -72881,7 +72271,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.4,
      "stagger": "7%（15HIT）"
     }
    },
@@ -72908,7 +72297,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "10% x4"
     }
    },
@@ -73023,7 +72411,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -73056,7 +72443,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -73104,7 +72490,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.25,
      "stagger": "9%（12HIT）"
     }
    },
@@ -73133,8 +72518,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -74872,7 +74256,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "20%"
     }
    },
@@ -75093,7 +74476,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -75122,8 +74504,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -75185,7 +74566,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.5,
      "stagger": "5%"
     }
    },
@@ -75218,7 +74598,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -75619,7 +74998,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "2%"
     }
    },
@@ -75669,7 +75047,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -75704,8 +75081,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -75767,7 +75143,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.2,
      "stagger": "13% x10"
     }
    },
@@ -75800,7 +75175,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    }
@@ -76108,7 +75482,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -76393,7 +75766,6 @@
      "備考": "移動射撃可 / よろけ有 / よろけ値：45% / 局部補正：0.9倍 / シールド補正：？倍 / バーザム改用B・ライフル［GN］に付属 / 武装Lvは機体Lv依存"
     },
     "mods": {
-     "partMod": 0.9,
      "stagger": "45%"
     }
    },
@@ -76437,7 +75809,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -76481,7 +75852,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -76617,7 +75987,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "2%（50HIT）"
     }
    },
@@ -76707,7 +76076,6 @@
      "chargeRatio": 1.917,
      "chargeTime": 2.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "50%（65%）"
     }
    },
@@ -76918,7 +76286,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    }
@@ -76950,7 +76317,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "3%（34HIT）"
     }
    },
@@ -76982,8 +76348,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -77036,7 +76401,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "80%"
     }
    },
@@ -77112,7 +76476,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -77160,7 +76523,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -77193,7 +76555,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -77222,8 +76583,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -77330,7 +76690,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "15%（7HIT）"
     }
    },
@@ -77416,7 +76775,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "0%"
     }
    },
@@ -77466,7 +76824,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -77516,7 +76873,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -77551,8 +76907,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -77782,7 +77137,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -77814,8 +77168,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -77899,7 +77252,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "6%（17HIT）"
     }
    },
@@ -77926,7 +77278,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "35% x2"
     }
    },
@@ -77959,7 +77310,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "25%（4HIT）"
     }
    },
@@ -78027,7 +77377,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.5,
      "stagger": "20%"
     }
    },
@@ -78062,8 +77411,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -78119,7 +77467,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    },
@@ -78146,7 +77493,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.25,
      "stagger": "40% x3"
     }
    },
@@ -78274,8 +77620,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -78356,7 +77701,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    },
@@ -78474,7 +77818,6 @@
      "chargeRatio": 1.357,
      "chargeTime": 3,
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "13% x2"
     }
    },
@@ -78507,7 +77850,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "25%"
     }
    },
@@ -78622,7 +77964,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -78667,7 +78008,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 0.8,
      "stagger": "35%"
     }
    }
@@ -78719,7 +78059,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "30%"
     }
    },
@@ -78748,8 +78087,7 @@
      "備考": "連撃不可 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -78807,8 +78145,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -78904,8 +78241,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -79037,7 +78373,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.5,
      "stagger": "50%"
     }
    },
@@ -79066,8 +78401,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -79887,7 +79221,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -79946,7 +79279,6 @@
      "chargeRatio": 4.8,
      "chargeTime": 4,
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "20% (50%)"
     }
    },
@@ -80187,7 +79519,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1.3,
      "stagger": "10%"
     }
    },
@@ -80237,7 +79568,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -80461,7 +79791,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -80595,7 +79924,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "70%"
     }
    },
@@ -81627,7 +80955,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -82172,7 +81499,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -82227,7 +81553,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -82277,7 +81602,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -84874,7 +84198,6 @@
      "chargeRatio": 1.13,
      "chargeTime": 2,
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "35% x2"
     }
    },
@@ -85296,7 +84619,6 @@
      "chargeRatio": 1.37,
      "chargeTime": 5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "15%（30%）"
     }
    },
@@ -86533,7 +85855,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "4%（25HIT）"
     }
    },
@@ -86566,7 +85887,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -86616,7 +85936,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -86645,8 +85964,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -86774,7 +86092,6 @@
      "chargeRatio": 1.37,
      "chargeTime": 2.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "20%（70%）"
     }
    },
@@ -86807,7 +86124,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    }
@@ -86897,7 +86213,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -86952,7 +86267,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -87367,7 +86681,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -87411,7 +86724,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -87459,7 +86771,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -87492,7 +86803,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -87540,7 +86850,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -87569,8 +86878,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -89141,7 +88449,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%"
     }
    }
@@ -90294,7 +89601,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -90349,7 +89655,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -90384,8 +89689,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -91078,7 +90382,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -92299,7 +91602,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "6%（17HIT）"
     }
    },
@@ -93148,7 +92450,6 @@
      "chargeRatio": 2.08,
      "chargeTime": 2.5,
      "shieldMod": 1.1,
-     "partMod": 1.5,
      "stagger": "35%（65%）"
     }
    },
@@ -93181,7 +92482,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "20%"
     }
    },
@@ -93284,7 +92584,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "5%（20HIT）"
     }
    },
@@ -93325,7 +92624,6 @@
      "chargeRatio": 1.87,
      "chargeTime": 2,
      "shieldMod": 1.5,
-     "partMod": 1.4,
      "stagger": "35%（60%）"
     }
    },
@@ -93370,7 +92668,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.1,
      "stagger": "25%（4HIT）"
     }
    },
@@ -93446,7 +92743,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.2,
      "stagger": "17%（6HIT）"
     }
    }
@@ -94057,7 +93353,6 @@
      "chargeRatio": 0.49,
      "chargeTime": 10,
      "shieldMod": 1.3,
-     "partMod": 1,
      "stagger": "80%（50% x5"
     }
    },
@@ -94080,8 +93375,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -94143,7 +93437,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "20%"
     }
    },
@@ -94176,7 +93469,6 @@
      "chargeRatio": 1.65,
      "chargeTime": 3,
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "40%（60%）"
     }
    },
@@ -94204,7 +93496,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1.1,
      "stagger": "20%"
     }
    },
@@ -94231,7 +93522,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -95202,7 +94492,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "10%（10%）"
     }
    },
@@ -95246,7 +94535,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -96262,7 +95550,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1,
      "stagger": "40%"
     }
    },
@@ -96758,7 +96045,6 @@
      "chargeRatio": 5.75,
      "chargeTime": 4,
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "15%（7HIT） (10%)"
     }
    },
@@ -96809,7 +96095,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "10%"
     }
    },
@@ -97417,7 +96702,6 @@
     },
     "mods": {
      "shieldMod": 1,
-     "partMod": 1.2,
      "stagger": "20%"
     }
    },
@@ -97446,8 +96730,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -97522,7 +96805,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.5,
      "stagger": "20%（5HIT）"
     }
    },
@@ -97562,7 +96844,6 @@
     "mods": {
      "chargeTime": 3,
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "50% x5"
     }
    },
@@ -97647,7 +96928,6 @@
     "mods": {
      "chargeTime": 1,
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "50%"
     }
    }
@@ -99035,7 +98315,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "8%（13HIT）"
     }
    },
@@ -99372,7 +98651,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -99405,7 +98683,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1,
      "stagger": "50%"
     }
    },
@@ -99434,8 +98711,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -100105,7 +99381,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -100155,7 +99430,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -100200,7 +99474,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -100220,8 +99493,7 @@
      "備考": "格闘方向によらず強制ダウン / 局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -100382,7 +99654,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.3,
      "stagger": "8%（13HIT）"
     }
    },
@@ -101299,8 +100570,7 @@
      "備考": "連撃不可 / 大よろけ有 / 局部補正：1.0倍 / シールド補正：1.8倍"
     },
     "mods": {
-     "shieldMod": 1.8,
-     "partMod": 1
+     "shieldMod": 1.8
     },
     "melee": {
      "variants": [
@@ -101968,7 +101238,6 @@
     },
     "mods": {
      "shieldMod": 1.2,
-     "partMod": 1.25,
      "stagger": "35% x3"
     }
    },
@@ -101997,8 +101266,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -102682,7 +101950,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -102764,9 +102031,7 @@
      "武装切替": "0.77秒",
      "備考": "連撃不可 / 射程：100m / 振り回し不可 / カウンター非発生 / 大よろけ有 / 命中後5秒間、レーダー妨害効果付与 / 局部補正：1.7倍"
     },
-    "mods": {
-     "partMod": 1.7
-    },
+    "mods": {},
     "melee": {
      "variants": [
       {
@@ -102832,7 +102097,6 @@
      "備考": "3発連続発射 / 移動射撃可 / よろけ値：4% x3 / 局部補正：1.3倍"
     },
     "mods": {
-     "partMod": 1.3,
      "stagger": "4% x3"
     }
    },
@@ -102864,7 +102128,6 @@
      "備考": "移動射撃可 / よろけ値：9%（12HIT） / 局部補正：1.5倍"
     },
     "mods": {
-     "partMod": 1.5,
      "stagger": "9%（12HIT）"
     }
    },
@@ -103629,7 +102892,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -104151,7 +103413,6 @@
     "mods": {
      "chargeTime": 3,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "35%（65%）"
     }
    },
@@ -104195,7 +103456,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -106231,7 +105491,6 @@
     },
     "mods": {
      "shieldMod": 1.1,
-     "partMod": 1.1,
      "stagger": "10%"
     }
    },
@@ -106286,7 +105545,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -106336,7 +105594,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -106380,7 +105637,6 @@
     },
     "mods": {
      "shieldMod": 1.3,
-     "partMod": 1.2,
      "stagger": "80%"
     }
    },
@@ -107118,7 +106374,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 1,
      "stagger": "0%"
     }
    },
@@ -107657,8 +106912,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -108872,7 +108126,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -108901,8 +108154,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.2倍"
     },
     "mods": {
-     "shieldMod": 1.2,
-     "partMod": 1
+     "shieldMod": 1.2
     },
     "melee": {
      "variants": [
@@ -109172,7 +108424,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -110052,7 +109303,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -110319,8 +109569,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -110532,7 +109781,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -111363,7 +110611,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -111879,7 +111126,6 @@
      "chargeRatio": 1.2,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.3,
      "stagger": "10%"
     }
    },
@@ -111914,8 +111160,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -112353,7 +111598,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -112820,7 +112064,6 @@
      "備考": "左右交互発射 / 移動射撃可 / ASL(自動照準補正)有 / よろけ値：10% / 局部補正：1.3倍 / シールド補正：?倍"
     },
     "mods": {
-     "partMod": 1.3,
      "stagger": "10%"
     }
    },
@@ -115301,7 +114544,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "6%（17HIT）"
     }
    },
@@ -116860,7 +116102,6 @@
      "chargeRatio": 1.6,
      "chargeTime": 2,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "65%（70%）"
     }
    },
@@ -116910,7 +116151,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -120306,7 +119546,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -120361,7 +119600,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.2,
      "stagger": "7%（15HIT）"
     }
    },
@@ -121415,7 +120653,6 @@
      "chargeRatio": 1.917,
      "chargeTime": 2.5,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "50%（65%）"
     }
    },
@@ -124022,7 +123259,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "6%（17HIT）"
     }
    },
@@ -124518,7 +123754,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -124573,7 +123808,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -125621,7 +124855,6 @@
      "chargeRatio": 1.375,
      "chargeTime": 4,
      "shieldMod": 1.1,
-     "partMod": 1.2,
      "stagger": "8% (30%)"
     }
    },
@@ -128340,7 +127573,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -128636,7 +127868,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "6%（17HIT）"
     }
    },
@@ -129012,7 +128243,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -129041,8 +128271,7 @@
      "備考": "局部補正：1.0倍 / シールド補正：1.5倍"
     },
     "mods": {
-     "shieldMod": 1.5,
-     "partMod": 1
+     "shieldMod": 1.5
     },
     "melee": {
      "variants": [
@@ -133241,7 +132470,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.2,
      "stagger": "6%（17HIT）"
     }
    },
@@ -136749,7 +135977,6 @@
     },
     "mods": {
      "shieldMod": 0.1,
-     "partMod": 1.1,
      "stagger": "7%（15HIT）"
     }
    },
@@ -136921,7 +136148,6 @@
     },
     "mods": {
      "shieldMod": 0.5,
-     "partMod": 1.2,
      "stagger": "2% x2"
     }
    },
@@ -138312,7 +137538,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -149241,7 +148466,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },
@@ -149296,7 +148520,6 @@
     },
     "mods": {
      "shieldMod": 0.3,
-     "partMod": 1.3,
      "stagger": "5%（20HIT）"
     }
    },
@@ -150107,8 +149330,7 @@
      "備考": "局部補正：1.2倍 / シールド補正：0.7倍 / 拠点補正：0.1倍"
     },
     "mods": {
-     "shieldMod": 0.7,
-     "partMod": 1.2
+     "shieldMod": 0.7
     },
     "melee": {
      "variants": [
@@ -153004,7 +152226,6 @@
      "備考": "二発同時発射 / 射撃時静止 / 空中射撃可 / よろけ値：13% x2 / 局部補正：1.2倍 / スキル「阿頼耶識システム（リミッター解除）」対応 / スキル発動中、リロード時間50%短縮 / 腕部200mm砲に付属 / 武装Lvは機体Lv依存"
     },
     "mods": {
-     "partMod": 1.2,
      "stagger": "13% x2"
     }
    },
@@ -153111,9 +152332,7 @@
      "武装切替": "0.5秒",
      "備考": "連撃不可 / 格闘方向に関わらず強制ダウン / スキル「空中格闘制御」対応 / スキル「阿頼耶識システム（リミッター解除）」対応 / スキル発動中、下格闘の性能変化 / スキル発動中、対象の耐格闘補正を30%減でダメージ計算 / 局部補正：0.5倍"
     },
-    "mods": {
-     "partMod": 0.5
-    },
+    "mods": {},
     "melee": {
      "variants": [
       {
@@ -154344,8 +153563,7 @@
      "備考": "スキル「空中格闘制御」対応 / スキル「ヘビーアタック」対応 / 集束時間：1秒 / ヘビーアタック時、吹き飛ばしダウン効果有 / ヘビーアタック時局部補正：0.4倍"
     },
     "mods": {
-     "chargeTime": 1,
-     "partMod": 0.4
+     "chargeTime": 1
     },
     "melee": {
      "variants": [
@@ -155600,7 +154818,6 @@
     },
     "mods": {
      "shieldMod": 1.5,
-     "partMod": 0.8,
      "stagger": "80%"
     }
    },

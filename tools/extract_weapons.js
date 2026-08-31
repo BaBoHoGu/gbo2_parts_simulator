@@ -264,7 +264,6 @@ function parseNote(note) {
     chargeRatio: pick(/倍率：([\d.]+)倍/),
     chargeTime: pick(/集束時間：([\d.]+)秒/),
     shieldMod: pick(/シールド補正：([\d.]+)倍/),
-    partMod: pick(/局部補正：([\d.]+)倍/),
     stagger: parseStagger(note)
   };
 }
