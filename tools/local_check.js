@@ -1,8 +1,10 @@
-// 국부 보정 실측 — 토글을 켜면 무장 표에 칩이 붙고, 피탄 시뮬 격파수가 배율만큼 바뀌는지.
+// 국부(局部) 보정 실측.
 //   node tools/local_check.js
 //
-// 어디에 맞는지는 시뮬레이터가 알 수 없다. 그래서 이 값은 켰을 때만 쓰며,
-// 켜고 끈 결과가 배율과 정확히 맞아야 한다(틀리면 조용히 과대·과소 평가가 된다).
+// 국부 보정은 **부위 파괴에만 걸린다 — 기체 HP 피해에는 영향이 없다**(2026-08-31 사용자 확인).
+// 그래서 두 가지를 본다:
+//   ① 무장 표 「국부」 열이 위키 표기대로 나오는가
+//   ② 그 값이 격파수·피해 계산에 새어 들어가지 않는가  ← 한 번 잘못 넣었던 자리다
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
@@ -34,64 +36,76 @@ const check = (label, ok, extra) => {
   await pg.evaluate(() => document.querySelector('.ms-card').click());
   await sleep(1000);
 
-  const chips = () => pg.evaluate(() => document.querySelectorAll('.w-local').length);
-  check('끄면 칩이 없다', await chips() === 0);
+  // ① 열이 제자리에 있고 값이 나오는가
+  const cols = await pg.evaluate(() => {
+    const r = document.querySelector('#weaponList > *');
+    const head = [...document.querySelectorAll('.weapon-head span')];
+    return { head: head.length, row: r ? r.children.length : 0, last: (head[head.length - 1] || {}).textContent.trim() };
+  });
+  check('머리글과 행의 칸 수가 같다', cols.head === cols.row, cols.head + ' vs ' + cols.row);
+  check('마지막 열이 「국부」 다', cols.last === '국부', cols.last);
 
-  // 피탄 시뮬을 열고 토글한다
+  const rows = await pg.evaluate(() => [...document.querySelectorAll('#weaponList > *')].map(r => ({
+    nm: ((r.querySelector('.w-nm') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+    v: ((r.querySelector('.w-base') || {}).textContent || '').trim()
+  })));
+  for (const r of rows) console.log('     ' + r.nm.padEnd(24) + '  ' + r.v);
+  check('배율이 표기된 무장이 있다', rows.some(r => /배$/.test(r.v)));
+  check('집속 표기(a→b배)를 살린다', rows.some(r => /→/.test(r.v)));
+
+  // ② 격파 계산에 새어 들어가지 않는가.
+  //    무장 표의 논차지 합계(기본+증가)와 피탄 시뮬의 피해가 같아야 한다.
+  //    국부 배율이 곱해졌다면 그만큼 어긋난다.
+  const table = await pg.evaluate(() => {
+    const out = {};
+    for (const r of document.querySelectorAll('#weaponList > *')) {
+      const nm = ((r.querySelector('.w-nm') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+      const d = r.querySelector('.w-dmg');
+      if (!nm || !d) continue;
+      const t = d.textContent.replace(/,/g, '');
+      const b = t.match(/^(\d+)/);
+      if (!b) continue;
+      let v = Number(b[1]);
+      for (const x of (t.match(/\((\+|-)\d+\)/g) || [])) v += Number(x.replace(/[()+]/g, ''));
+      out[nm] = v;
+    }
+    return out;
+  });
+
   await pg.evaluate(() => document.querySelector('#pietanBtn').click());
   await sleep(600);
   await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '자쿠'; q.dispatchEvent(new Event('input')); });
   await sleep(700);
   await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row'); if (r) r.click(); });
   await sleep(900);
-
-  // 무장 이름 → 1트리거 피해. 격파수는 올림이라 배율이 작으면 안 바뀔 수 있어 피해로 본다.
-  const readHits = () => pg.evaluate(() => {
+  const dmgs = await pg.evaluate(() => {
     const out = {};
     for (const r of document.querySelectorAll('#pietanModal .pietan-out-row')) {
-      const nm = (r.querySelector('.pietan-out-nm') || {}).textContent || '';
-      const dm = (r.querySelector('.pietan-out-dmg') || {}).textContent || '';
-      const m = dm.replace(/,/g, '').match(/(\d+)/);
-      if (nm && m) out[nm.replace(/\s+/g, ' ').trim()] = Number(m[1]);
+      const nm = ((r.querySelector('.pietan-out-nm') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+      const m = ((r.querySelector('.pietan-out-dmg') || {}).textContent || '').replace(/,/g, '').match(/(\d+)/);
+      if (nm && m) out[nm] = Number(m[1]);
     }
     return out;
   });
-  const before = await readHits();
 
-  await pg.evaluate(() => document.querySelector('#pietanLocal').click());
-  await sleep(900);
-  const after = await readHits();
-  const on = await pg.evaluate(() => document.querySelector('#pietanLocal').classList.contains('on'));
-  check('토글이 켜진다', on);
-  check('무장 표에 칩이 붙는다', await chips() > 0, '칩 ' + await chips() + '개');
-
-  const names = Object.keys(before).filter(k => after[k] != null);
-  const moved = names.filter(k => after[k] !== before[k]);
-  console.log('  피해 비교 대상 ' + names.length + '종 · 변한 것 ' + moved.length + '종');
-  for (const k of moved.slice(0, 4)) console.log('     ' + k + '  ' + before[k].toLocaleString() + ' → ' + after[k].toLocaleString());
-  // '변했다' 로는 부족하다 — 위키 표기 배율과 정확히 맞는지 본다.
-  const mults = await pg.evaluate(() => {
-    const out = {};
-    for (const c of document.querySelectorAll('.w-local')) {
-      const row = c.closest('.weapon');
-      const nm = row ? (row.querySelector('.w-nm') || {}).textContent || '' : '';
-      const m = c.textContent.match(/([\d.]+)/);
-      if (nm && m) out[nm.replace(/\s+/g, ' ').trim().replace(/[🦵🛡].*$/, '').trim()] = Number(m[1]);
+  let checked = 0; const leaked = [];
+  for (const row of rows) {
+    if (!/^[\d.]+배$/.test(row.v)) continue;             // 집속 갈림·무표기는 건너뛴다
+    const mult = Number(row.v.replace('배', ''));
+    if (mult === 1) continue;
+    const key = Object.keys(table).find(k => row.nm.startsWith(k) || k.startsWith(row.nm));
+    const hitK = Object.keys(dmgs).find(k => row.nm.startsWith(k) || k.startsWith(row.nm));
+    if (!key || !hitK) continue;
+    checked++;
+    const want = Math.floor(table[key] * mult);
+    if (Math.abs(dmgs[hitK] - want) <= 1 && Math.abs(dmgs[hitK] - table[key]) > 1) {
+      leaked.push(row.nm + ' 표 ' + table[key] + ' × ' + mult + ' → 피탄 ' + dmgs[hitK]);
     }
-    return out;
-  });
-  let exact = 0, wrong = [];
-  for (const k of moved) {
-    const key = Object.keys(mults).find(x => x.startsWith(k) || k.startsWith(x));
-    if (!key) continue;
-    const want = Math.floor(before[k] * mults[key]);
-    if (want === after[k]) exact++;
-    else wrong.push(k + ' ' + before[k] + '×' + mults[key] + ' → ' + want + ' 인데 ' + after[k]);
   }
-  console.log('  배율 대조 ' + exact + '종 일치' + (wrong.length ? ' · 불일치 ' + wrong.length : ''));
-  for (const w of wrong.slice(0, 3)) console.log('     ' + w);
-  check('국부 배율이 피해에 정확히 반영된다', names.length > 0 && exact > 0 && wrong.length === 0,
-    names.length === 0 ? '피해 행을 못 읽음' : wrong.length ? '배율과 어긋남' : '대조할 무장이 없음');
+  console.log('  격파 계산 대조 ' + checked + '종');
+  for (const l of leaked) console.log('     새어 들어감: ' + l);
+  check('국부 배율이 격파 계산에 섞이지 않는다', checked > 0 && leaked.length === 0,
+    checked === 0 ? '대조할 무장이 없음' : leaked.join(' / '));
 
   await br.close();
   console.log(fails ? '\n' + fails + '건 실패' : '\n국부 보정 실측 통과');

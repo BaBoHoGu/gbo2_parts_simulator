@@ -1483,21 +1483,6 @@
           nm.append(c);
         }
       }
-      // 국부 보정 — 「국부에 맞힘」 을 켰을 때만. 표기 없는 무장(2,917종)엔 안 붙인다.
-      if (pietanLocal) {
-        const lm = D.localMultOf(w);
-        if (lm) {
-          const txt = lm.unknown ? '?' : (lm.nc === lm.ch ? lm.nc : lm.nc + '→' + lm.ch) + '배';
-          const lvl = lm.unknown ? '' : (lm.nc > 1 ? ' hi' : lm.nc < 1 ? ' lo' : '');
-          const c = el('span', 'w-local' + lvl, '🦵' + txt);
-          c.title = lm.unknown
-            ? '국부 보정이 위키 미확인(？倍)이라 배율을 적용하지 않는다.'
-            : '팔·다리 등 몸통이 아닌 부위에 맞았을 때 배율 — 피해 × ' + lm.nc + '배'
-              + (lm.nc !== lm.ch ? '\n집속 시 ' + lm.ch + '배' : '')
-              + '\n어디에 맞는지는 시뮬레이터가 알 수 없어, 켰을 때만 적용한다.';
-          nm.append(c);
-        }
-      }
       nm.title = w.name;
       row.append(nm);
 
@@ -1600,7 +1585,7 @@
       // ⑧ 리로드 / OH복귀 — 파츠로 줄어드는 만큼을 함께 보여 준다
       const reload = f('リロード時間');
       const ohBack = f('OH復帰時間', 'OH復帰速度');
-      const last = el('span', 'w-col');
+      const last = el('span', 'w-col w-reload');   // 위치가 아니라 이름으로 찾게 한다(검사 도구가 쓴다)
       if (reload) {
         // 퀵 로더·대용량 보급 팩은 무장 종류를 가리지 않는다
         const cut = D.timeCutFor(wm, 'reloadTime', w);
@@ -1616,15 +1601,16 @@
       } else last.textContent = '—';
       row.append(last);
 
-      // ⑨ 거점 보정 — 적 거점을 때렸을 때 배율. 표기 없는 무장이 대부분이라 「—」 로 둔다.
-      const bm = D.baseMultOf(w);
-      const bcell = el('span', 'w-col w-base' + (!bm ? ' none' : bm.unknown ? '' : bm.mult < 1 ? ' lo' : bm.mult > 1 ? ' hi' : ''));
-      bcell.textContent = !bm ? '—' : bm.unknown ? '?' : bm.mult + '배';
-      bcell.title = !bm ? '거점 보정 표기가 없는 무장이다.'
-        : bm.unknown ? '거점 보정이 위키 미확인(？倍)이라 값을 적지 않는다.'
-        : '적 거점 시설에 주는 피해 × ' + bm.mult + '배 (PvE 전용, 대인전에는 영향 없음)'
-          + (bm.mult <= 0.3 ? '\n거의 안 통한다 — 거점을 깎을 무장이 아니다.' : '');
-      row.append(bcell);
+      // ⑨ 국부 보정 — 부위 파괴에만 걸린다. 기체 HP 피해와는 무관해 격파수에는 안 쓴다.
+      const lm = D.localMultOf(w);
+      const lcell = el('span', 'w-col w-base' + (!lm ? ' none' : lm.unknown ? '' : lm.nc < 1 ? ' lo' : lm.nc > 1 ? ' hi' : ''));
+      lcell.textContent = !lm ? '—' : lm.unknown ? '?' : (lm.nc === lm.ch ? lm.nc : lm.nc + '→' + lm.ch) + '배';
+      lcell.title = !lm ? '국부 보정 표기가 없는 무장이다.'
+        : lm.unknown ? '국부 보정이 위키 미확인(？倍)이라 값을 적지 않는다.'
+        : '팔·다리 등 부위에 맞았을 때 배율 × ' + lm.nc + '배'
+          + (lm.nc !== lm.ch ? '\n집속 시 ' + lm.ch + '배' : '')
+          + '\n부위 파괴에만 걸린다 — 기체 HP 피해에는 영향이 없다.';
+      row.append(lcell);
 
       // 누르면 위키 설명 전체를 펼친다
       row.onclick = () => toggleWeaponDetail(row, w, d, lv);
@@ -3647,7 +3633,6 @@
   let pietanEnemySkills = new Set();  // 체크한 적 공격 스킬 이름들 (여러 개 조합 가능)
   let pietanEnemyDef = new Set();     // 체크한 적 방어 스킬 이름들 — 내 무장의 피해를 깎는다
   let pietanShield = false;           // 「실드로 막음」 — 실드 HP 로 받는 계산을 함께 보여 준다
-  let pietanLocal = false;            // 「국부에 맞힘」 — 팔·다리에 맞았을 때의 배율을 얹는다
   let pietanBuild = null;        // 적이 저장 빌드일 때 그 빌드(파츠 포함), 아니면 null
   let pietanVariant = 0;         // 선택한 격투 변형 인덱스 (기본/헤비어택…)
   let pietanDir = 0;             // 선택한 격투 방향 인덱스 (N격/횡격/하격…)
@@ -4119,15 +4104,7 @@
       const dmg = Math.floor(D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]) * eFactor);
       const mult = fireMult(w);
       const n = (mult.nc && mult.nc.n) || 1;
-      // 국부에 맞히면 무장마다 0.4~1.7배로 갈린다. 표기가 없거나 불명이면 그대로 둔다.
-      let locNote = '';
-      let one = dmg;
-      if (pietanLocal) {
-        const lm = D.localMultOf(w);
-        if (lm && !lm.unknown) one = Math.floor(dmg * lm.nc);
-        else locNote = lm ? '국부 불명' : '국부 표기 없음';
-      }
-      const per = one * n;                          // 전탄(동시발사) 1트리거 피해
+      const per = dmg * n;                          // 전탄(동시발사) 1트리거 피해
       // 실드로 막는 상대라면 실드부터 깨야 한다 — 같은 무장이라도 실드 보정이 5배까지 갈린다.
       let shHits = undefined, shNote = '';
       if (pietanShield && eShield) {
@@ -4137,7 +4114,7 @@
         if (sHit == null) { shHits = null; shNote = sm && sm.unknown ? '보정 불명' : '표기 없음'; }
         else shHits = Math.ceil(eShield.hp / (sHit * n));
       }
-      rows.push({ name: T.weaponName(w.name), attr, per, n, shHits, shNote, locNote,
+      rows.push({ name: T.weaponName(w.name), attr, per, n, shHits, shNote,
         hits: per > 0 ? Math.ceil(enemyEff / per) : null });
     }
     if (!rows.length) return;
@@ -4984,12 +4961,6 @@
     $('#pietanBack').onclick = () => openPietan(false);
     $('#pietanQuery').oninput = () => renderPietanLeft();
     $('#pietanCorr').oninput = () => { pietanCorr = Math.max(0, Number($('#pietanCorr').value) || 0); pietanCorrTouched = true; renderPietanResult(); };
-    $('#pietanLocal').onclick = () => {
-      pietanLocal = !pietanLocal;
-      $('#pietanLocal').classList.toggle('on', pietanLocal);
-      renderWeapons();          // 무장 표의 국부 보정 칩도 같이 켜고 끈다
-      renderPietanResult();
-    };
     $('#pietanShield').onclick = () => {
       pietanShield = !pietanShield;
       $('#pietanShield').classList.toggle('on', pietanShield);

@@ -2040,16 +2040,8 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 
 
-/* 국부 보정 칩 — 실드 칩과 같은 자리·같은 규칙(켰을 때만 표시) */
-.w-local {
-  font-size: 10.5px; font-weight: 700; margin-left: 4px; padding: 0 5px;
-  border-radius: 999px; color: var(--muted); background: var(--panel-3); white-space: nowrap;
-}
-.w-local.hi { color: var(--ok); }
-.w-local.lo { color: var(--bad); }
 
-
-/* 거점 보정 칸 — 70종만 표기가 있어 대부분은 「—」 다. 있는 쪽이 눈에 띄면 된다. */
+/* 국부 보정 칸 — 865종에 표기가 있다. 부위 파괴 전용이라 값만 보여 준다. */
 .w-base { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .w-base.none { color: var(--dim); }
 .w-base.lo { color: var(--bad); font-weight: 700; }   /* 1배 미만 — 거점엔 잘 안 통한다 */
