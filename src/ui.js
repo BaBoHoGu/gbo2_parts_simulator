@@ -1447,7 +1447,11 @@
       // 고정 피해(소이 등) — 위력과 별개로 더해지는 몫이라 안 보여 주면 무장이 실제보다 약해 보인다
       const fx = fixedDamageWithParts(w, state.equipped);
       if (fx) {
-        const c = el('span', 'w-fixed', '고정 ' + fx.total.toLocaleString());
+        // 소이는 한 방에 들어가지 않고 1틱씩 나눠 들어간다. 합계만 적으면 한 번에
+        // 그만큼 맞는 것처럼 읽혀서, 1틱 피해와 히트 수를 앞에 세운다(450×6 = 2,700).
+        const c = el('span', 'w-fixed', fx.hits > 1
+          ? '고정 ' + fx.per.toLocaleString() + '×' + fx.hits + ' = ' + fx.total.toLocaleString()
+          : '고정 ' + fx.total.toLocaleString());
         if (fx.boosted) c.append(el('i', 'w-fixed-up', ' +' + (fx.total - fx.base.total).toLocaleString()));
         c.title = `명중 후 고정 피해 ${fx.total.toLocaleString()} (${fx.per}×${fx.hits}히트)\n`
           + '보정을 받지 않는 고정값이라 위력 칸과 별도로 들어간다.'
@@ -2459,7 +2463,14 @@
         dtext(wp.sec, cSec, ry, '11px ' + F, CO.muted);
         ctx.fillStyle = tc; ctx.beginPath(); ctx.arc(dotX, ry - 4, 3.5, 0, 7); ctx.fill();
         // 고정 피해·디버프는 이름 뒤에 작은 태그로. 태그 폭만큼 이름을 먼저 줄인다.
-        const tag = [wp.fx ? '고정 ' + wp.fx.total.toLocaleString() : '', ...(wp.debuffs || [])]
+        // 카드는 폭이 빠듯해 합계까지 넣으면 무장 이름이 잘린다.
+        // 나눠 들어간다는 사실이 핵심이라 1틱×히트만 싣는다(무장 표에는 합계도 함께 나온다).
+        const fxTag = wp.fx
+          ? (wp.fx.hits > 1
+            ? '고정 ' + wp.fx.per.toLocaleString() + '×' + wp.fx.hits
+            : '고정 ' + wp.fx.total.toLocaleString())
+          : '';
+        const tag = [fxTag, ...(wp.debuffs || [])]
           .filter(Boolean).join(' · ');
         ctx.font = '10px ' + F;
         const tagW = tag ? ctx.measureText(tag).width + 6 : 0;
