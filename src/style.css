@@ -2066,3 +2066,22 @@ body.drawer-open .m-actionbar { display: none !important; }
 .stat-row .total { font-size: 15px; font-weight: 700; }
 .stat-row .label { color: var(--muted); }
 .stat-row .cap { color: var(--dim); }
+
+
+/* ============ 파츠 상세 · 끼우면 어떻게 되나 ============
+   장착하지 않고 결과를 읽는 자리. PC 는 hover, 폰은 탭 — 같은 화면을 쓴다. */
+.d-preview { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.dp-rows { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.dp-row { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 8px; }
+.dp-k { font-size: 11.5px; color: var(--muted); }
+.dp-v { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+.dp-d { font-size: 12px; font-weight: 700; min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+.dp-d.up { color: var(--ok); }
+.dp-d.down { color: var(--bad); }
+.dp-none { font-size: 11.5px; color: var(--dim); }
+.dp-slots { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 7px;
+  padding-top: 6px; border-top: 1px dashed var(--line-soft); }
+.dp-slot { display: inline-flex; align-items: baseline; gap: 5px; }
+.dp-v.over { color: var(--bad); font-weight: 700; }
+.dp-fit { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--ok); }
+.dp-fit.over { color: var(--bad); }
