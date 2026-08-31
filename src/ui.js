@@ -2328,12 +2328,44 @@
       }
 
       ry += 2; rule(ry, rxi, rR); ry += 10;
+
+      // 공격 지표 — 화면 성능표와 같은 '실효 보정'(보정에 피해% 를 접은 값).
+      // 카드에 이 행이 아예 없어서, 파츠·스킬의 공격 % 효과가 이미지로는 보이지 않았다.
+      {
+        const ab = partAttackBonus(state.equipped, lv);
+        lt('공격 지표', rxi, ry + 4, '700 12px ' + F, CO.muted);
+        let ax = rxi + 78;
+        for (const [key, lb, corr] of [['shoot', '사격', r.total.shoot], ['melee', '격투', r.total.meleeCorrection]]) {
+          const mult = (1 + ab[key] / 100) * skillDmgPctList(key).reduce((s2, q) => s2 * (1 + q / 100), 1);
+          const pct = Math.round((mult - 1) * 100);
+          const eff = Math.round(((1 + corr / 100) * (1 + pct / 100) - 1) * 100);
+          lt(lb, ax, ry + 4, '12px ' + F, CO.muted); ax += ctx.measureText(lb).width + 5;
+          const v = eff.toLocaleString();
+          lt(v, ax, ry + 4, '700 13px ' + F, CO.info); ax += (draw ? ctx.measureText(v).width : 40) + 5;
+          if (pct !== 0) {
+            const tg = '피해 ' + (pct > 0 ? '+' : '') + pct + '%';
+            lt(tg, ax, ry + 4, '700 11px ' + F, pct < 0 ? CO.bad : CO.ok);
+            ax += (draw ? ctx.measureText(tg).width : 52) + 14;
+          } else ax += 14;
+        }
+        ry += 24;
+      }
+
       lt('내구 지표', rxi, ry + 4, '700 12px ' + F, CO.muted);
       let dx = rxi + 78;
-      for (const [k, lb] of [['armorRange', '내실탄'], ['armorBeam', '내빔'], ['armorMelee', '내격투']]) {
-        lt(lb, dx, ry + 4, '12px ' + F, CO.muted); dx += ctx.measureText(lb).width + 6;
-        const v = durabilityOf(r.total, k).toLocaleString();
-        lt(v, dx, ry + 4, '700 13px ' + F, CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 18;
+      // 화면과 같이 피해경감(파츠 % · 체크한 방어 스킬)을 실효 HP 에 접는다.
+      // 이게 빠져 있어서 경감 파츠를 껴도 카드의 내구 지표가 경감 전 값으로 나갔다.
+      const pngCuts = [...partDamageCuts(state.equipped, lv), ...boostBufferCuts(stg.cuts, state.equipped)];
+      for (const [k, lb, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
+        lt(lb, dx, ry + 4, '12px ' + F, CO.muted); dx += ctx.measureText(lb).width + 5;
+        const f = staggerDmgFactor(pngCuts, dattr);
+        const v = Math.round(durabilityOf(r.total, k) / f).toLocaleString();
+        lt(v, dx, ry + 4, '700 13px ' + F, CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 5;
+        if (f < 1) {
+          const tg = '피해 -' + Math.round((1 - f) * 100) + '%';
+          lt(tg, dx, ry + 4, '700 11px ' + F, CO.ok);
+          dx += (draw ? ctx.measureText(tg).width : 52) + 9;
+        } else dx += 13;
       }
       ry += 24;
       lt('누적치', rxi, ry + 4, '700 12px ' + F, CO.muted);
