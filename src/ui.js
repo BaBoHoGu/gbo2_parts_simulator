@@ -1616,6 +1616,16 @@
       } else last.textContent = '—';
       row.append(last);
 
+      // ⑨ 거점 보정 — 적 거점을 때렸을 때 배율. 표기 없는 무장이 대부분이라 「—」 로 둔다.
+      const bm = D.baseMultOf(w);
+      const bcell = el('span', 'w-col w-base' + (!bm ? ' none' : bm.unknown ? '' : bm.mult < 1 ? ' lo' : bm.mult > 1 ? ' hi' : ''));
+      bcell.textContent = !bm ? '—' : bm.unknown ? '?' : bm.mult + '배';
+      bcell.title = !bm ? '거점 보정 표기가 없는 무장이다.'
+        : bm.unknown ? '거점 보정이 위키 미확인(？倍)이라 값을 적지 않는다.'
+        : '적 거점 시설에 주는 피해 × ' + bm.mult + '배 (PvE 전용, 대인전에는 영향 없음)'
+          + (bm.mult <= 0.3 ? '\n거의 안 통한다 — 거점을 깎을 무장이 아니다.' : '');
+      row.append(bcell);
+
       // 누르면 위키 설명 전체를 펼친다
       row.onclick = () => toggleWeaponDetail(row, w, d, lv);
       box.append(row);

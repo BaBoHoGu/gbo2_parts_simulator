@@ -199,7 +199,7 @@ body.view-build  #screenSelect { display: none; }
 /* 구분 · 이름 · 논차지 · 풀차지 · 탄/히트율 · 누적치 · 사거리 · 리로드 */
 .weapon, .weapon-head {
   display: grid;
-  grid-template-columns: 50px minmax(140px, 1.5fr) 52px 105px 125px 104px 92px 88px 96px 112px;
+  grid-template-columns: 50px minmax(140px, 1.5fr) 52px 105px 125px 104px 92px 88px 96px 112px 58px;
   gap: 10px;
   align-items: center;
   padding: 7px 6px;
@@ -2047,3 +2047,10 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 .w-local.hi { color: var(--ok); }
 .w-local.lo { color: var(--bad); }
+
+
+/* 거점 보정 칸 — 70종만 표기가 있어 대부분은 「—」 다. 있는 쪽이 눈에 띄면 된다. */
+.w-base { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.w-base.none { color: var(--dim); }
+.w-base.lo { color: var(--bad); font-weight: 700; }   /* 1배 미만 — 거점엔 잘 안 통한다 */
+.w-base.hi { color: var(--ok); font-weight: 700; }    /* 1배 초과 — 거점에 강하다 */
