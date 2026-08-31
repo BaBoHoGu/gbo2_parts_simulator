@@ -27,7 +27,19 @@ Set-Location -Path $PSScriptRoot
 # 그래서 마지막에 Enter 를 기다렸다가 닫는다. (비대화형 실행 시에는 그냥 지나간다)
 function Close-Window([int]$code) {
   Write-Host ''
-  try { Read-Host '끝났습니다 — Enter 키를 누르면 이 창이 닫힙니다' | Out-Null } catch {}
+  # 더블클릭으로 연 창은 결과를 볼 새도 없이 닫히면 곤란해 Enter 를 기다린다.
+  # 다만 비대화형(스크립트·CI·백그라운드 실행)에서는 아무도 Enter 를 못 눌러
+  # 업로드까지 다 끝난 배포가 '안 끝난 것'처럼 매달려 있었다. 그때는 그냥 끝낸다.
+  # 판정 기준은 stdin 이 콘솔인가다. UserInteractive 는 도구·서비스에서도 true 라 소용없고,
+  # 실제 증상은 '입력이 리다이렉트돼 Read-Host 가 끝나지 않는 것'이었다.
+  $piped = $true
+  try { $piped = [Console]::IsInputRedirected } catch { $piped = $true }
+  $interactive = (-not $piped) -and (-not $env:CI) -and (-not $env:GBO2_NONINTERACTIVE)
+  if ($interactive) {
+    try { Read-Host '끝났습니다 — Enter 키를 누르면 이 창이 닫힙니다' | Out-Null } catch {}
+  } else {
+    Write-Host '끝났습니다.'
+  }
   exit $code
 }
 
