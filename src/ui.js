@@ -1783,7 +1783,7 @@
       ['운용', ['쿨타임', '무장 전환', '전환 시간', '발사 간격', '발사 속도', 'DPS']],
       ['탄약·열', ['탄수', '리로드 시간', '히트율', '히트율(논차지)', '히트율(풀차지)',
         'OH까지 발수', 'OH 복귀 시간', 'OH 복귀 속도']],
-      ['방어·보정', ['실드 HP', 'HP', '크기', '사거리', '국부 보정', '실드 보정']]
+      ['방어·보정', ['실드 HP', 'HP', '크기', '사거리', '실드 보정']]
     ];
 
     // 표시할 값을 한곳에 모은 뒤 그룹으로 나눈다
@@ -1797,7 +1797,6 @@
     set('집속 시간', m.chargeTime ? m.chargeTime + '초' : null);
     set('집속 배율', m.chargeRatio ? m.chargeRatio + '배' : null);
     set('누적치', m.stagger);
-    set('국부 보정', m.partMod ? m.partMod + '배' : null);
     set('실드 보정', m.shieldMod ? m.shieldMod + '배' : null);
 
     for (const [title, keys] of groups) {
