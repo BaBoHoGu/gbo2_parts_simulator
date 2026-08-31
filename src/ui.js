@@ -1601,17 +1601,6 @@
       } else last.textContent = '—';
       row.append(last);
 
-      // ⑨ 국부 보정 — 부위 파괴에만 걸린다. 기체 HP 피해와는 무관해 격파수에는 안 쓴다.
-      const lm = D.localMultOf(w);
-      const lcell = el('span', 'w-col w-base' + (!lm ? ' none' : lm.unknown ? '' : lm.nc < 1 ? ' lo' : lm.nc > 1 ? ' hi' : ''));
-      lcell.textContent = !lm ? '—' : lm.unknown ? '?' : (lm.nc === lm.ch ? lm.nc : lm.nc + '→' + lm.ch) + '배';
-      lcell.title = !lm ? '국부 보정 표기가 없는 무장이다.'
-        : lm.unknown ? '국부 보정이 위키 미확인(？倍)이라 값을 적지 않는다.'
-        : '팔·다리 등 부위에 맞았을 때 배율 × ' + lm.nc + '배'
-          + (lm.nc !== lm.ch ? '\n집속 시 ' + lm.ch + '배' : '')
-          + '\n부위 파괴에만 걸린다 — 기체 HP 피해에는 영향이 없다.';
-      row.append(lcell);
-
       // 누르면 위키 설명 전체를 펼친다
       row.onclick = () => toggleWeaponDetail(row, w, d, lv);
       box.append(row);
