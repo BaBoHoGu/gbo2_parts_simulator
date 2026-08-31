@@ -1,25 +1,16 @@
-/* 격납고 데이터 플레이트 — 정비고 단말에서 기체 제원표를 읽는 도구.
-   1) 강조색은 앰버 하나로 고정한다. 화면마다 색이 달라지면 같은 뜻의 요소를
-      매번 다시 알아봐야 한다 — 도구는 통일성이 먼저다.
-   2) 색은 뜻이 있는 것만 남긴다 — 파츠 증가(초록)·스킬(보라)·감소(빨강)·거리(근/중/원).
-   3) 숫자는 자릿수 폭을 고정해(tabular-nums) 위아래 값이 자리에서 맞물리게 한다. */
 :root {
-  --bg: #101318;
-  --panel: #171b21;
-  --panel-2: #1d222a;
-  --panel-3: #252b34;
-  --line: #2a303a;
-  --line-soft: #21262e;
-  --text: #e7eaef;
-  --muted: #8b929f;
-  --dim: #5c6270;
-
+  --bg: #0f1013;
+  --panel: #17191f;
+  --panel-2: #1e2129;
+  --panel-3: #262a34;
+  --line: #2e323d;
+  --line-soft: #23262e;
+  --text: #e8eaef;
+  --muted: #8a91a0;
+  --dim: #5a6070;
   --accent: #ffc93c;
-  --accent-ink: #23190a;    /* 강조색 위에 얹는 글자색 */
-  --accent-dim: #6d5510;
-  --accent-wash: #241f10;   /* 선택된 카드의 옅은 바탕 */
-
-  --info: #58a6ff;
+  --accent-dim: #7a5f11;
+  --info: #4aa3ff;
   --ok: #4ec97f;
   --bad: #ff6b6b;
   --close: #ff8a5b;
@@ -27,8 +18,7 @@
   --long: #b78bff;
   --skill: #c08bff;   /* 기체 스킬 발동분 — 초록(파츠)·빨강(감소)·노랑(UI)과 겹치지 않게 */
   --skill2: #2ee6d6;  /* 스킬을 2개 이상 겹쳐 발동했을 때 */
-
-  --radius: 3px;      /* 카드가 아니라 계기판 — 모서리를 거의 세운다 */
+  --radius: 10px;
 }
 
 * { box-sizing: border-box; }
@@ -40,7 +30,6 @@ body {
   background: var(--bg);
   color: var(--text);
   font: 14px/1.5 "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  font-variant-numeric: tabular-nums;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -58,7 +47,7 @@ button, input, select {
   color: inherit;
   background: var(--panel-2);
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: 8px;
   padding: 6px 10px;
 }
 
@@ -67,7 +56,7 @@ button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: .4; cursor: default; }
 input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent-dim); outline-offset: 1px; }
 
-.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.btn-primary { background: var(--accent); color: #241c00; border-color: var(--accent); font-weight: 700; }
 .btn-primary:hover:not(:disabled) { background: #ffd968; }
 .btn-ghost { background: transparent; }
 
@@ -393,22 +382,22 @@ body.view-build  #screenSelect { display: none; }
 .d-name { font-size: 16px; font-weight: 700; line-height: 1.3; word-break: keep-all; }
 .d-cat { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-.d-status { padding: 7px 10px; border-radius: 3px; font-size: 12.5px; font-weight: 600; text-align: center; }
+.d-status { padding: 7px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; text-align: center; }
 .d-status.clickable { cursor: pointer; }
 .d-status.clickable:hover { filter: brightness(1.15); }
 .d-status.ok  { background: #14261a; color: var(--ok); border: 1px solid #2f6039; }
-.d-status.on  { background: var(--accent-wash); color: var(--accent); border: 1px solid var(--accent-dim); }
+.d-status.on  { background: #2a2617; color: var(--accent); border: 1px solid var(--accent-dim); }
 .d-status.bad { background: #2a1616; color: var(--bad); border: 1px solid #6b2f2f; }
 
 .d-slots { display: flex; gap: 8px; }
 .d-slot {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 8px 4px; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--line-soft);
+  padding: 8px 4px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line-soft);
 }
 .d-slot .k { font-size: 11px; color: var(--muted); }
 .d-slot .v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.d-eff { background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 3px; padding: 10px 12px; }
+.d-eff { background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 8px; padding: 10px 12px; }
 .d-eff-lb { font-size: 11px; color: var(--dim); letter-spacing: .5px; margin-bottom: 4px; }
 .d-eff-tx { font-size: 12.5px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
 
@@ -429,12 +418,11 @@ body.view-build  #screenSelect { display: none; }
 
 .panel > h2 {
   margin: 0;
-  padding: 7px 11px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.4px;   /* 제원표의 항목 머리처럼 — 크기 대신 자간으로 구분한다 */
+  padding: 6px 11px;
+  font-size: 12px;
+  letter-spacing: .5px;
   color: var(--muted);
-  background: transparent;
+  background: var(--panel-2);
   border-bottom: 1px solid var(--line);
   border-radius: var(--radius) var(--radius) 0 0;
   display: flex;
@@ -461,7 +449,7 @@ body.view-build  #screenSelect { display: none; }
   color: var(--muted);
 }
 
-.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: #241c00; font-weight: 700; }
 .chip.attr-汎用.on { background: #4aa3ff; border-color: #4aa3ff; color: #04182c; }
 .chip.attr-強襲.on { background: #ff7a7a; border-color: #ff7a7a; color: #2c0606; }
 .chip.attr-支援.on { background: #6bd98a; border-color: #6bd98a; color: #052c12; }
@@ -490,11 +478,11 @@ body.view-build  #screenSelect { display: none; }
 .ms-fav.on { color: var(--accent); }
 
 .ms-card:hover { background: var(--panel-2); border-color: var(--line); }
-.ms-card.sel { background: var(--accent-wash); border-color: var(--accent); }
+.ms-card.sel { background: #2a2617; border-color: var(--accent); }
 
 .ms-card img {
   width: 56px; height: 56px;
-  border-radius: 3px;
+  border-radius: 8px;
   object-fit: cover;
   background: #0b0d10;
   flex-shrink: 0;
@@ -557,7 +545,7 @@ body.view-build  #screenSelect { display: none; }
 .hero .h-controls select { padding: 4px 8px; font-size: 12.5px; }
 
 /* 강화 세그먼트 컨트롤 */
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg-btn {
   padding: 5px 12px;
   font-size: 12.5px;
@@ -569,7 +557,7 @@ body.view-build  #screenSelect { display: none; }
 }
 .seg-btn:first-child { border-left: none; }
 .seg-btn:hover:not(.on) { background: var(--panel-3); border-color: var(--line); }
-.seg-btn.on { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.seg-btn.on { background: var(--accent); color: #241c00; font-weight: 700; }
 
 /* ============ 슬롯 게이지 ============ */
 
@@ -667,9 +655,7 @@ body.view-build  #screenSelect { display: none; }
 .dura-lb { font-size: 12px; color: var(--muted); font-weight: 600; }
 .dura-cell { display: flex; align-items: baseline; gap: 5px; }
 .dura-k { font-size: 11.5px; color: var(--dim); }
-/* 값은 전부 같은 색이다. 파랑·앰버로 갈라 두면 지표마다 중요도가 다른 것처럼 읽힌다.
-   색은 바뀐 몫(초록 증가 · 빨강 감소 · 보라 스킬)에만 쓴다. */
-.dura-v { font-size: 14px; font-weight: 700; color: var(--text); }
+.dura-v { font-size: 14px; font-weight: 700; color: var(--info); }
 .dura-up { font-size: 11px; font-weight: 700; color: var(--ok); margin-left: 3px; }  /* 방어 스킬 반영 상승률 */
 .dura-up.down { color: var(--bad); }  /* 감소(특화 프로그램 반대 속성 등) */
 .stg-head { margin-top: 2px; }
@@ -700,11 +686,10 @@ body.view-build  #screenSelect { display: none; }
 .meter { flex: 1; height: 11px; background: #1b1f28; border: 1px solid var(--line-soft); border-radius: 4px; overflow: hidden; display: flex; }
 .meter > i { height: 100%; }
 /* 소체분을 선명한 청록으로 채워 '얼마나 찼는지'가 한눈에 (gbo2 그래프처럼). 증가분은 초록·스킬은 보라 오버레이 */
-/* 소체는 강철색, 늘어난 몫만 색을 쓴다 — 어디까지가 기체 본래 값인지 한눈에 갈린다. */
-.meter > i.base { background: #4a5462; }
-.meter > i.gain { background: var(--ok); }
-.meter > i.gain.capped { background: var(--accent); }
-.meter > i.gain.over { background: var(--close); }
+.meter > i.base { background: linear-gradient(180deg, #3fb6c4, #2f97a6); }
+.meter > i.gain { background: linear-gradient(180deg, #57d977, #3fbf60); }
+.meter > i.gain.capped { background: linear-gradient(180deg, #ffd24d, var(--accent)); }
+.meter > i.gain.over { background: linear-gradient(180deg, #ff9a6b, var(--close)); }
 .meter > i.skill { background: var(--skill); }
 .meter > i.skill.multi { background: var(--skill2); }
 
@@ -755,7 +740,7 @@ body.view-build  #screenSelect { display: none; }
   align-items: center;
   gap: 2px;
   padding: 5px 4px 4px;
-  border-radius: 3px;
+  border-radius: 9px;
   cursor: pointer;
   border: 1px solid var(--line-soft);
   background: var(--panel-2);
@@ -856,7 +841,7 @@ body.view-build  #screenSelect { display: none; }
 /* 자동 구성 후보 카드 */
 .auto-results { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
 .auto-cand {
-  padding: 8px 10px; border: 1px solid var(--line); border-radius: 3px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--panel); cursor: pointer; transition: border-color .12s, background .12s;
 }
 .auto-cand:hover { border-color: var(--muted); }
@@ -1010,7 +995,7 @@ body.view-build  #screenSelect { display: none; }
 .pietan-stagger { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .pietan-hint { padding: 2px 16px 0; color: var(--muted); font-size: 12px; }
 /* 누적치 스킬 체크박스 (내구 지표 하단·피탄 시뮬 공통) */
-
+.stagger-row .dura-v { color: #e6b04a; }
 .stagger-detail { font-size: 11px; color: var(--muted); margin-left: 8px; }
 .stagger-skills { display: flex; flex-wrap: wrap; gap: 4px 8px; padding: 4px 0 2px; }
 .stg-chk {
@@ -1181,7 +1166,7 @@ body.view-build  #screenSelect { display: none; }
   transform: translate(-50%, 14px);
   background: var(--panel-3);
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: 8px;
   padding: 9px 16px;
   font-size: 13px;
   z-index: 60;
@@ -1405,41 +1390,48 @@ button:not(:disabled):active, .chip:active, .seg-btn:active, .ms-card:active,
 
 /* 깊이감 — 평평한 검정 대신 상단에서 은은히 떨어지는 빛 */
 body {
-  /* 광채(radial glow)를 걷었다 — 데이터를 읽는 화면에서 바탕의 밝기 기울기는
-     같은 값이 위치에 따라 달라 보이게 만든다. 바탕은 끝까지 판판해야 한다. */
   background-color: var(--bg);
+  background-image:
+    radial-gradient(1100px 480px at 50% -10%, rgba(92, 122, 178, .10), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, .012), transparent 140px);
+  background-attachment: fixed;
 }
 
-/* 툴바 — 아래에 병과색 1px 실선. 지금 고른 기체가 강습인지 범용인지 늘 보인다. */
+/* 툴바 — 하단 앰버 헤어라인(앱의 시그니처) */
 .topbar {
-  background: var(--panel);
-  border-bottom: 1px solid var(--accent);
-  box-shadow: none;
+  background: linear-gradient(180deg, #191c24, #121419);
+  box-shadow: 0 1px 0 rgba(255, 202, 58, .16), 0 6px 18px rgba(0, 0, 0, .35);
 }
 
 /* 패널 — 미세 그림자로 표면을 띄운다 */
 .panel { box-shadow: var(--elev-1); }
 .build-stats > .panel, .build-detail > .panel, .build-parts > .panel { box-shadow: var(--elev-2); }
 
-/* 섹션 헤더 — 색 막대와 그라데이션을 걷고 자간만 남긴다.
-   제원표의 항목 머리는 크기나 색이 아니라 자간과 여백으로 구분된다. */
+/* 섹션 헤더(성능·커스텀 파츠 등) — 앰버 틱 마커 + 트래킹으로 HUD 느낌 */
 .panel > h2 {
-  color: var(--muted);
-  font-weight: 600;
-  letter-spacing: 1.4px;
-  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: .7px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+}
+.panel > h2::before {
+  content: "";
+  width: 3px; height: 12px;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 7px rgba(255, 202, 58, .55);
 }
 
 /* 큰 제목 — 더 단단하게 (한글은 단어 중간에서 끊지 않는다) */
 .select-title h1 { font-weight: 800; letter-spacing: -.2px; word-break: keep-all; }
 
 /* 활성 칩 — 은은한 발광으로 '켜짐'을 강조 */
-.chip.on { box-shadow: none; }
+.chip.on { box-shadow: 0 0 0 1px rgba(255, 202, 58, .30), 0 2px 9px rgba(255, 202, 58, .20); }
 
 /* 리디자인 2차 — 카드/썸네일 마감 */
 .ms-card img, .part-tile img, .eq img { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
-.ms-card.sel { box-shadow: inset 2px 0 0 var(--accent); }
-.ms-fav.on { text-shadow: none; }
+.ms-card.sel { box-shadow: 0 0 0 1px var(--accent), 0 6px 18px rgba(255, 202, 58, .16); }
+.ms-fav.on { text-shadow: 0 0 8px rgba(255, 202, 58, .55); }
 .cost-badge { background: rgba(255, 202, 58, .10); padding: 0 6px; border-radius: 999px; }
 
 /* ============================================================
@@ -1460,7 +1452,7 @@ body {
 }
 
 /* 속성 도트 — 색 조율 + 은은한 발광으로 한눈에 구분 */
-.dot { box-shadow: none; }
+.dot { box-shadow: 0 0 5px currentColor; }
 .dot.強襲 { background: var(--attr-assault); color: var(--attr-assault); }
 .dot.汎用 { background: var(--attr-general); color: var(--attr-general); }
 .dot.支援 { background: var(--attr-support); color: var(--attr-support); }
@@ -1495,7 +1487,7 @@ input:focus, select:focus, textarea:focus {
 .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ffdd78, #ffd04a); }
 
 /* 스텝 활성 번호 — 은은한 발광 */
-.stepper li[data-step].on i { box-shadow: none; }
+.stepper li[data-step].on i { box-shadow: 0 0 10px rgba(255, 202, 58, .45); }
 
 /* ============================================================
    밝은 톤업 (더 과감하게) — near-black → 슬레이트 + 밝은 강조로 '가볍고 밝은' 느낌
@@ -1627,7 +1619,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   }
   body.view-build .m-actionbar { display: flex; }
   .m-actionbar button { flex: 1; min-height: 48px; font-weight: 700; font-size: 13px; }
-  .m-actionbar button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); box-shadow: none; }
+  .m-actionbar button.on { background: var(--accent); color: #241c00; border-color: var(--accent); box-shadow: 0 0 12px rgba(255, 202, 58, .4); }
 
   /* 메인 스크롤이 액션바에 가리지 않게 */
   .screen-build { padding-bottom: 78px; }
@@ -2046,42 +2038,3 @@ body.drawer-open .m-actionbar { display: none !important; }
   .png-preview { padding: 0 10px; }
   .png-hint { padding: 8px 10px 12px; }
 }
-
-
-/* ============ 수치 ============
-   제원표를 읽는 도구라 숫자가 주인공이다. 다만 고정폭 서체는 획이 가늘고 자간이 넓어
-   작은 크기에서 오히려 덜 읽힌다 — 서체는 본문 그대로 두고, 자릿수 폭만 고정한다.
-   숫자를 돋보이게 하는 건 다른 서체가 아니라 라벨과의 크기·밝기 차이다. */
-.stat-row .total,
-.stat-row .delta,
-.stat-row .cap,
-.dura-v, .dura-up,
-.w-dmg, .w-col,
-.slot-bar .cnt,
-.cost-badge, .hero-cost {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-/* 값은 크고 밝게, 라벨은 작고 낮게 — 눈이 값에 먼저 닿는다. */
-.stat-row .total { font-size: 15px; font-weight: 700; }
-.stat-row .label { color: var(--muted); }
-.stat-row .cap { color: var(--dim); }
-
-
-/* ============ 파츠 상세 · 끼우면 어떻게 되나 ============
-   장착하지 않고 결과를 읽는 자리. PC 는 hover, 폰은 탭 — 같은 화면을 쓴다. */
-.d-preview { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
-.dp-rows { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
-.dp-row { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 8px; }
-.dp-k { font-size: 11.5px; color: var(--muted); }
-.dp-v { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
-.dp-d { font-size: 12px; font-weight: 700; min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
-.dp-d.up { color: var(--ok); }
-.dp-d.down { color: var(--bad); }
-.dp-none { font-size: 11.5px; color: var(--dim); }
-.dp-slots { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 7px;
-  padding-top: 6px; border-top: 1px dashed var(--line-soft); }
-.dp-slot { display: inline-flex; align-items: baseline; gap: 5px; }
-.dp-v.over { color: var(--bad); font-weight: 700; }
-.dp-fit { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--ok); }
-.dp-fit.over { color: var(--bad); }
