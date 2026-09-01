@@ -52,6 +52,28 @@ const fullst = readJson('data', 'fullst.json');
 const weapons = readJson('data', 'weapons.json');
 const skills = readJson('data', 'skills.json');
 
+// 위키 5891 실측표 — 특수 연소제를 꼈을 때 실제로 재 본 1틱·히트.
+// 소이 히트 수는 계산으로 한 값을 못 낸다(지속÷간격 내림이라 두 정수에 걸린다).
+// 실측이 있는 무장만 그 값을 쓰고, 나머지는 앱이 범위로 낸다.
+// 기본값이 지금 데이터와 다르면 붙이지 않는다 — 밸런스 패치로 위력이 바뀌면
+// 옛 실측을 그대로 쓰는 게 더 나쁘기 때문이다.
+{
+  const ov = fs.existsSync(path.join(ROOT, 'data', 'burn.override.json'))
+    ? readJson('data', 'burn.override.json') : {};
+  let n = 0, stale = 0;
+  for (const [key, v] of Object.entries(ov)) {
+    const i = key.indexOf('|');
+    const page = weapons[key.slice(0, i)];
+    const w = page && (page.weapons || []).find(x => x.name === key.slice(i + 1));
+    if (!w) continue;
+    const m = ((w.info && w.info['備考']) || '').match(/(\d+)\s*固定ダメージ\s*[（(]\s*(\d+)\s*[x×ｘ]\s*(\d+)\s*HIT/i);
+    if (!m || Number(m[2]) !== v.base[0] || Number(m[3]) !== v.base[1]) { stale++; continue; }
+    (w.mods = w.mods || {}).burnSoi = v.soi;
+    n++;
+  }
+  if (n || stale) console.log(`소이 실측 반영: ${n}종` + (stale ? ` · 기본값이 달라 건너뜀 ${stale}종` : ''));
+}
+
 // 사이코뮤 태깅 오버라이드 — 록온 자동 태깅의 오탐/누락을 빌드 시 교정.
 // (작은 override 파일만 배포해 재빌드하면 패치됨 — extract 재수신 불필요, update 후에도 유지)
 {

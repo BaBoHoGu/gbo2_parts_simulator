@@ -326,6 +326,7 @@ async function detectPatch(msList) {
     run('extract_weapons.js', ['--merge']);
     run('extract_ms_skills.js', ['--merge']);   // 기체 스킬 목록·설명 (무장 헤더 '스킬' 버튼)
     run('find_buff_skills.js', ['--ui', '--merge']);
+    run('extract_burn.js');       // 위키 5891 소이 실측표 (무장 갱신 뒤에 돌려야 매핑이 맞는다)
     run('build_weapon_i18n.js');
     // 위키 스탯·슬롯이 gbo2.jp 와 다르면(gbo2 가 아직 패치 미반영) 위키 값으로 교정한다.
     if (targetIds.length) run('extract_ms_wiki.js', ['--pages=' + targetIds.join(',')]);
