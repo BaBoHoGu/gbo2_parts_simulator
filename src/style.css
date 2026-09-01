@@ -223,7 +223,11 @@ body.view-build  #screenSelect { display: none; }
   background: var(--panel-3); color: var(--muted);
 }
 .w-sec.main { background: var(--accent-dim); color: var(--accent); }
-.w-nm { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 이름 칸은 두 줄 — 윗줄 이름, 아랫줄 고정 피해. 한 줄에 몰면 이름이 잘린다. */
+.w-nm { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
+.w-nm-top { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 100%; }
+.w-nm-sub { display: flex; align-items: center; gap: 6px; white-space: nowrap; max-width: 100%; }
 .w-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .w-dot.shooting { background: var(--mid); }
 .w-dot.melee { background: var(--close); }
@@ -268,7 +272,7 @@ body.view-build  #screenSelect { display: none; }
 
 /* 모든 열: 헤더·내용 가운데 정렬 (열마다 헤더와 값이 세로로 정렬되게) */
 .weapon > *, .weapon-head > span { text-align: center; }
-.w-nm { justify-content: center; }
+.w-nm { align-items: center; }   /* 가운데 정렬 화면에서는 두 줄을 가운데로 */
 
 /* 무장을 누르면 펼쳐지는 상세 */
 .weapon-detail {
