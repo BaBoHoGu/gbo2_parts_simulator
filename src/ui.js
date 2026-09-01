@@ -1260,12 +1260,20 @@
     // 여기에 지속 배율을 곱하면 결과가 두 정수에 걸친다. 그래서 한 값으로 찍지 않고
     // 범위로 낸다 — 위키 5891 실측 36건이 이 모델에 전건 부합한다.
     // (예전엔 round(h×배율) 로 찍었는데 36건 중 27건만 맞았다)
-    const hits = Math.floor((fx.hits - 1) * b.dur) + 1;          // 최소
-    const hitsMax = Math.floor((fx.hits - 1e-9) * b.dur) + 1;    // 최대
-    return { base: fx, per, hits, hitsMax,
-      total: per * hits, totalMax: per * hitsMax,
-      ranged: hitsMax > hits,
-      boosted: per !== fx.per || hitsMax !== fx.hits };
+    let hits = Math.floor((fx.hits - 1) * b.dur) + 1;          // 최소
+    let hitsMax = Math.floor((fx.hits - 1e-9) * b.dur) + 1;    // 최대
+    let per2 = per, measured = false;
+    // 위키 5891 에 **실제로 재 본 값**이 있고, 지금 낀 소이 파츠가 특수 연소제 하나뿐이면
+    // 추정 대신 그 값을 쓴다(배율이 딱 dmg 1.25 · dur 1.1 이면 연소제 단독이다).
+    // 그 표는 연소제 단독 열만 조건이 분명해서, 다른 조합에는 쓰지 않는다.
+    const meas = w && w.mods && w.mods.burnSoi;
+    if (meas && Math.abs(b.dmg - 1.25) < 1e-9 && Math.abs(b.dur - 1.1) < 1e-9) {
+      per2 = meas[0]; hits = hitsMax = meas[1]; measured = true;
+    }
+    return { base: fx, per: per2, hits, hitsMax,
+      total: per2 * hits, totalMax: per2 * hitsMax,
+      ranged: hitsMax > hits, measured,
+      boosted: per2 !== fx.per || hitsMax !== fx.hits };
   }
 
   /**
@@ -1474,6 +1482,7 @@
         c.title = `명중 후 고정 피해 ${totTx} (${fx.per}×${hitTx}히트)\n`
           + '보정을 받지 않는 고정값이라 위력 칸과 별도로 들어간다.'
           + (fx.boosted ? `\n\n파츠 미장착 시 ${fx.base.total.toLocaleString()} (${fx.base.per}×${fx.base.hits}히트)` : '')
+          + (fx.measured ? `\n\n※ 위키에 실제로 재 본 값이 있어 그대로 썼다(5891 실측표).` : '')
           + (fx.ranged
             ? `\n\n※ 히트 수가 두 값에 걸친다. 게임은 지속시간을 틱 간격으로 나눠 내림하는데`
               + `\n   (히트 = floor(지속÷간격)+1), 무장별 지속시간이 위키에 없어 어느 쪽인지`
