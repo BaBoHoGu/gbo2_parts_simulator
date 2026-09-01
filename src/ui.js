@@ -1254,8 +1254,18 @@
     if (!fx) return null;
     const b = burnBoostOf(equipped);
     const per = Math.floor(fx.per * b.dmg);
-    const hits = Math.round(fx.hits * b.dur);
-    return { base: fx, per, hits, total: per * hits, boosted: per !== fx.per || hits !== fx.hits };
+    // 히트 수는 배율로 정해지지 않는다. 게임은 지속시간을 틱 간격으로 나눠 **내림**한다.
+    //     히트 = floor(지속 ÷ 간격) + 1
+    // 기본 히트가 h 라는 사실이 알려 주는 건 '지속÷간격 ∈ [h-1, h)' 구간뿐이라,
+    // 여기에 지속 배율을 곱하면 결과가 두 정수에 걸친다. 그래서 한 값으로 찍지 않고
+    // 범위로 낸다 — 위키 5891 실측 36건이 이 모델에 전건 부합한다.
+    // (예전엔 round(h×배율) 로 찍었는데 36건 중 27건만 맞았다)
+    const hits = Math.floor((fx.hits - 1) * b.dur) + 1;          // 최소
+    const hitsMax = Math.floor((fx.hits - 1e-9) * b.dur) + 1;    // 최대
+    return { base: fx, per, hits, hitsMax,
+      total: per * hits, totalMax: per * hitsMax,
+      ranged: hitsMax > hits,
+      boosted: per !== fx.per || hitsMax !== fx.hits };
   }
 
   /**
@@ -1438,34 +1448,44 @@
 
       // ② 이름 (격투/사격 점으로 구분)
       const mult = fireMult(w);              // 조사·산탄·동시발사 배수 (모드별)
+      // 이름 칸은 두 줄이다 — 윗줄에 이름, 아랫줄에 고정 피해.
+      // 한 줄에 다 붙이면 이름이 밀려 잘린다(소이 무장은 표기가 길다).
       const nm = el('span', 'w-nm');
-      nm.append(el('i', 'w-dot ' + w.type));
-      nm.append(document.createTextNode(T.weaponName(w.name)));
+      const nmTop = el('span', 'w-nm-top');
+      nmTop.append(el('i', 'w-dot ' + w.type));
+      nmTop.append(document.createTextNode(T.weaponName(w.name)));
       // 이름 옆 칩: 두 모드가 같으면 하나, 다르면 있는 쪽 (각 칸의 '전탄'이 정확히 보여 준다)
       const chip = (mult.nc && mult.ch && mult.nc.n === mult.ch.n) ? mult.nc : (mult.nc || mult.ch);
-      if (chip) nm.append(el('span', 'w-mult', chip.label));
-      // 고정 피해(소이 등) — 위력과 별개로 더해지는 몫이라 안 보여 주면 무장이 실제보다 약해 보인다
+      if (chip) nmTop.append(el('span', 'w-mult', chip.label));
+      nm.append(nmTop);
+      // 고정 피해(소이 등) — 위력과 별개로 더해지는 몫이라 안 보여 주면 무장이 실제보다 약해 보인다.
+      // 소이는 한 방에 들어가지 않고 1틱씩 나눠 들어가므로 「1틱×히트 = 합계」 로 적는다.
       const fx = fixedDamageWithParts(w, state.equipped);
       if (fx) {
-        // 소이는 한 방에 들어가지 않고 1틱씩 나눠 들어간다. 합계만 적으면 한 번에
-        // 그만큼 맞는 것처럼 읽혀서, 1틱 피해와 히트 수를 앞에 세운다(450×6 = 2,700).
-        const c = el('span', 'w-fixed', fx.hits > 1
-          ? '고정 ' + fx.per.toLocaleString() + '×' + fx.hits + ' = ' + fx.total.toLocaleString()
-          : '고정 ' + fx.total.toLocaleString());
+        const hitTx = fx.ranged ? fx.hits + '~' + fx.hitsMax : String(fx.hits);
+        const totTx = fx.ranged
+          ? fx.total.toLocaleString() + '~' + fx.totalMax.toLocaleString()
+          : fx.total.toLocaleString();
+        const sub = el('span', 'w-nm-sub');
+        const c = el('span', 'w-fixed', fx.hitsMax > 1
+          ? '고정 ' + fx.per.toLocaleString() + '×' + hitTx + ' = ' + totTx
+          : '고정 ' + totTx);
         if (fx.boosted) c.append(el('i', 'w-fixed-up', ' +' + (fx.total - fx.base.total).toLocaleString()));
-        c.title = `명중 후 고정 피해 ${fx.total.toLocaleString()} (${fx.per}×${fx.hits}히트)\n`
+        c.title = `명중 후 고정 피해 ${totTx} (${fx.per}×${hitTx}히트)\n`
           + '보정을 받지 않는 고정값이라 위력 칸과 별도로 들어간다.'
           + (fx.boosted ? `\n\n파츠 미장착 시 ${fx.base.total.toLocaleString()} (${fx.base.per}×${fx.base.hits}히트)` : '')
-          + (fx.hits !== fx.base.hits
-            ? `\n※ 히트 수는 지속시간에 따라 늘기도 안 늘기도 한다(위키도 要検証).`
-              + `\n   안 늘면 ${(fx.per * fx.base.hits).toLocaleString()} (${fx.per}×${fx.base.hits}히트).`
+          + (fx.ranged
+            ? `\n\n※ 히트 수가 두 값에 걸친다. 게임은 지속시간을 틱 간격으로 나눠 내림하는데`
+              + `\n   (히트 = floor(지속÷간격)+1), 무장별 지속시간이 위키에 없어 어느 쪽인지`
+              + `\n   확정할 수 없다. 위키 실측 36건이 이 범위 안에 전부 들어온다.`
             : '');
-        nm.append(c);
+        sub.append(c);
+        nm.append(sub);
       }
       for (const d of debuffsOf(w)) {
         const c = el('span', 'w-debuff', d);
         c.title = '이 무장이 거는 디버프 — 효과량이 위키에 수치로 없어 표시만 한다.';
-        nm.append(c);
+        nmTop.append(c);
       }
       // 실드 보정 — 피탄 시뮬의 「실드로 막음」 을 켰을 때만 붙인다.
       // 표기가 아예 없는 무장(2,666종)엔 칩을 안 붙여 목록이 지저분해지지 않게 한다.
@@ -1474,13 +1494,13 @@
         if (sm) {
           const txt = sm.unknown ? '?' : (sm.nc === sm.ch ? sm.nc : sm.nc + '→' + sm.ch) + '배';
           const lvl = sm.unknown ? '' : (sm.nc >= 1.2 ? ' hi' : sm.nc < 1 ? ' lo' : '');
-          const c = el('span', 'w-shield' + lvl, '🛡' + txt);
+          const c = el('span', 'w-shield' + lvl, '🛡' + txt);   // 윗줄(이름 옆)
           c.title = sm.unknown
             ? '실드 보정이 위키 미확인(？倍)이라 실드 계산을 하지 않는다.'
             : '실드에 맞았을 때 배율 — 실드 피해 = 기체에 줄 피해 × ' + sm.nc + '배'
               + (sm.nc !== sm.ch ? '\n집속 시 ' + sm.ch + '배' : '')
               + '\n실드로 받은 공격은 기체 HP 피해를 막는다(위키 83).';
-          nm.append(c);
+          nmTop.append(c);
         }
       }
       nm.title = w.name;
@@ -2474,8 +2494,8 @@
         // 카드는 폭이 빠듯해 합계까지 넣으면 무장 이름이 잘린다.
         // 나눠 들어간다는 사실이 핵심이라 1틱×히트만 싣는다(무장 표에는 합계도 함께 나온다).
         const fxTag = wp.fx
-          ? (wp.fx.hits > 1
-            ? '고정 ' + wp.fx.per.toLocaleString() + '×' + wp.fx.hits
+          ? (wp.fx.hitsMax > 1
+            ? '고정 ' + wp.fx.per.toLocaleString() + '×' + (wp.fx.ranged ? wp.fx.hits + '~' + wp.fx.hitsMax : wp.fx.hits)
             : '고정 ' + wp.fx.total.toLocaleString())
           : '';
         const tag = [fxTag, ...(wp.debuffs || [])]
