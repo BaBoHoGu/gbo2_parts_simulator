@@ -142,6 +142,14 @@ const isEpackMag = w => {
 
 function isBeamWeapon(w) {
   const name = (w && w.name) || '';
+  // 위키가 속성을 빔이라고 적어 뒀으면 그걸 믿는다. 이름 규칙은 그 다음이다.
+  // 이 규칙이 만들어질 당시엔 weapons.json 에 속성 열이 없어 이름으로만 판정했고,
+  // 접미사 없는 「射撃出力リミッター解除」 가 스킬 이름으로 보여 비-빔 예외에 들어가 있었다.
+  // 그 바람에 빔 OH 단축 파츠(보조 제네레이터 등)가 이 무장에만 안 걸렸다 —
+  // 2단 집속을 여는 것뿐이라 OH 는 본 무장과 같아야 하는데도(사용자 지적).
+  // 반대 방향(속성이 빔이 아니면 비-빔)으로는 쓰지 않는다. 빔 사벨은 속성이 격투지만
+  // 열 게이지를 쓰므로 빔 OH 파츠가 걸리는 게 맞다.
+  if (w && w.attr === 'beam') return true;
   if (BEAM_NAME.test(name)) return true;
   if (NON_BEAM_HEAT.test(name)) return false;
   return weaponColumns(w).some(k => /OH復帰|ヒート率/.test(k));  // 열식·E팩 모두 에너지(빔)로 본다
