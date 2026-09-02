@@ -512,10 +512,38 @@
 
   /* ---------- 검색 색인 ---------- */
 
+  /**
+   * 검색 색인용 글자 접기 — 키보드로 못 치는 글자를 라틴·숫자로 바꿔 함께 담는다.
+   * **표시 이름은 그대로 둔다.** 「ν 건담」 을 「v 건담」 으로 쓰지는 않는다.
+   *
+   * 전각 그리스 ν·β·Ξ 와 로마숫자 Ⅱ·Ⅲ 은 자판에 없어서, 그대로 두면 찾을 방법이 없다.
+   * 실제로 「zz」 로는 ZZ 건담이 안 나왔고 「v건담」 은 0건이었다.
+   * 로마숫자는 숫자꼴과 알파벳꼴을 둘 다 만든다 — 「스나이퍼2」 와 「스나이퍼ii」 가 모두 걸리게.
+   */
+  const FOLD_NUM = { 'ν': 'v', 'Ζ': 'z', 'β': 'b', 'α': 'a', 'Ξ': 'xi', 'Δ': 'd',
+    'Ⅰ': '1', 'Ⅱ': '2', 'Ⅲ': '3', 'Ⅳ': '4', 'Ⅴ': '5', 'ー': '' };
+  const FOLD_ROM = { ...FOLD_NUM, 'Ⅰ': 'i', 'Ⅱ': 'ii', 'Ⅲ': 'iii', 'Ⅳ': 'iv', 'Ⅴ': 'v' };
+  const FOLD_RE = /[νΖβαΞΔーⅠⅡⅢⅣⅤ]/g;
+  const fold = (s, tbl) => s.replace(FOLD_RE, c => tbl[c] != null ? tbl[c] : c);
+  /**
+   * 원문 + 접은 꼴 + 공백 뺀 꼴을 한 줄에 담아 색인으로 쓴다.
+   * 공백 뺀 꼴이 없으면 「v건담」·「스나이퍼2」·「제크아인」 처럼 붙여 친 검색이 안 걸린다
+   * (표시 이름이 「ν 건담」·「제크 아인」 이라 공백이 남기 때문).
+   */
+  const searchIndex = s => {
+    const t = T.norm(s);
+    const out = new Set();
+    for (const v of [t, fold(t, FOLD_NUM), fold(t, FOLD_ROM)]) {
+      out.add(v);
+      out.add(v.replace(/\s+/g, ''));
+    }
+    return [...out].join(' ').toLowerCase();
+  };
+
   const msSearchText = new Map(msData.map(m =>
-    [m, T.norm(T.msName(m.MS名) + ' ' + m.MS名).toLowerCase()]));
+    [m, searchIndex(T.msName(m.MS名) + ' ' + m.MS名)]));
   const partSearchText = new Map(allParts.map(p => [p,
-    T.norm(T.partName(p.name) + ' ' + p.name + ' ' + T.partDesc(p.name, p.description)).toLowerCase()]));
+    searchIndex(T.partName(p.name) + ' ' + p.name + ' ' + T.partDesc(p.name, p.description))]));
 
   const EQUIP_REASON = {
     equipped: () => '이미 장착됨',
