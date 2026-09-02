@@ -353,6 +353,9 @@ async function detectPatch(msList) {
   run('auto_translate.js');
   run('translate_skills.js');   // 신규 스킬 효과·설명 온라인 번역(캐시 증분)
   run('translate_notes.js');    // 신규 무장 備考 온라인 번역(캐시 증분)
+  // 공식 한글 사이트의 새 공지(10일치)로 우리 이름이 공식과 어긋나지 않는지 본다.
+  // 공식 표기가 위키·커뮤니티 자료보다 우선이다 — 게임 안에서 보이는 이름이다.
+  run('extract_official_kr.js');
   run('build.js');
 
   // (f) 번들(계산 로직)이 바뀌었으면 원본 계산과 대조해, 아직 이식 안 된 새 규칙이 있는지 본다.
