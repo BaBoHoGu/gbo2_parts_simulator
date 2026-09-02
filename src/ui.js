@@ -540,6 +540,12 @@
     return [...out].join(' ').toLowerCase();
   };
 
+  /**
+   * 검색어도 공백을 무시하고 맞춘다 — 색인에 공백 뺀 꼴이 들어 있으므로,
+   * 「자쿠 Ⅱ」 처럼 띄어 쳐도 「자쿠Ⅱ」 를 찾게 된다(표기를 붙여 쓰기로 바꾼 뒤 필요해졌다).
+   */
+  const matches = (idx, q) => idx.includes(q) || (/\s/.test(q) && idx.includes(q.replace(/\s+/g, '')));
+
   const msSearchText = new Map(msData.map(m =>
     [m, searchIndex(T.msName(m.MS名) + ' ' + m.MS名)]));
   const partSearchText = new Map(allParts.map(p => [p,
@@ -713,7 +719,7 @@
 
     if (state.msRarity !== 'all') list = list.filter(m => msRarity(m) === state.msRarity);
 
-    if (q) list = list.filter(m => msSearchText.get(m).includes(q));
+    if (q) list = list.filter(m => matches(msSearchText.get(m), q));
 
     // 최근 보기는 사용 순서를 유지한다 (아래 표준 정렬을 건너뛴다)
     if (state.msView === 'recent') return list;
@@ -2658,7 +2664,7 @@
   function visibleParts() {
     const q = state.partQuery.trim().toLowerCase();
     let list = state.partTab === C.CATEGORY_ALL ? allParts : partsByCat[state.partTab];
-    if (q) list = list.filter(p => partSearchText.get(p).includes(q));
+    if (q) list = list.filter(p => matches(partSearchText.get(p), q));
 
     const s = slots();
     const rowOf = p => {
@@ -3622,7 +3628,7 @@
     box.innerHTML = '';
     for (const cat of C.CATEGORIES) {
       let list = partsByCat[cat] || [];
-      if (q) list = list.filter(p => partSearchText.get(p).includes(q));
+      if (q) list = list.filter(p => matches(partSearchText.get(p), q));
       if (!list.length) continue;
       box.append(el('div', 'owned-cat', PART_CAT_KO[cat] || cat));
       const grid = el('div', 'owned-tiles');
