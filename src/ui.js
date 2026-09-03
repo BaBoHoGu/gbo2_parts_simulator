@@ -2880,8 +2880,11 @@
   /* ---------- 자동 구성 ---------- */
 
   // 파생 지표 목표 — 공격=실효 보정, 내구=실효 내성(armor 단위). % 파츠를 반영한 "체감 스탯"을 원시 스탯과 같은 단위로 목표 지정.
-  const DERIVED_KEYS = ['effShoot', 'effMelee', 'durSolid', 'durBeam', 'durMelee'];
-  const DERIVED_LABEL = { effShoot: '공격 사격', effMelee: '공격 격투', durSolid: '내구 실탄', durBeam: '내구 빔', durMelee: '내구 격투' };
+  const DERIVED_KEYS = ['effShoot', 'effMelee', 'durSolid', 'durBeam', 'durMelee',
+    'ehpSolid', 'ehpBeam', 'ehpMelee'];
+  const DERIVED_LABEL = { effShoot: '공격 사격', effMelee: '공격 격투',
+    durSolid: '내구 실탄', durBeam: '내구 빔', durMelee: '내구 격투',
+    ehpSolid: '실효 HP 실탄', ehpBeam: '실효 HP 빔', ehpMelee: '실효 HP 격투' };
 
   /** 파츠 집합의 파생 지표(공격 지표·내구 지표) — 성능표와 동일 계산. */
   function derivedMetrics(equipped, total) {
@@ -2898,9 +2901,14 @@
       const a = Math.min(total[key] || 0, 99);
       return Math.round(100 * (1 - (1 - a / 100) * staggerDmgFactor(cuts, dattr)));
     };
+    // 실효 HP — 피탄 시뮬이 재는 것과 같은 값(HP ÷ (1−실효내성)). 「N발 버티기」 목표가 쓴다.
+    // 내구 지표(dur*)는 '내성' 단위라 HP 와 따로 놀아, 발수 조건을 그대로 담지 못한다.
+    const ehp = key => Math.round((total.hp || 0) / (1 - Math.min(dur(key.k, key.a), 99) / 100));
     return {
       effShoot: eff(total.shoot, 'shoot'), effMelee: eff(total.meleeCorrection, 'melee'),
-      durSolid: dur('armorRange', 'solid'), durBeam: dur('armorBeam', 'beam'), durMelee: dur('armorMelee', 'melee')
+      durSolid: dur('armorRange', 'solid'), durBeam: dur('armorBeam', 'beam'), durMelee: dur('armorMelee', 'melee'),
+      ehpSolid: ehp({ k: 'armorRange', a: 'solid' }), ehpBeam: ehp({ k: 'armorBeam', a: 'beam' }),
+      ehpMelee: ehp({ k: 'armorMelee', a: 'melee' })
     };
   }
 
@@ -2940,7 +2948,7 @@
     }
 
     // 파생 지표 목표 (가중치 없음, 하한/상한만) — 공격 지표(실효 보정)·내구 지표(실효 HP)
-    box.append(el('div', 'auto-sep', '실효 지표 목표 — 공격=실효 보정 · 내구=실효 내성 (% 파츠 반영, 스탯과 같은 단위)'));
+    box.append(el('div', 'auto-sep', '실효 지표 목표 — 공격=실효 보정 · 내구=실효 내성 · 실효 HP=버티는 총량 (% 파츠 반영)'));
     for (const k of DERIVED_KEYS) {
       box.append(el('div', 'lb', DERIVED_LABEL[k]));
       box.append(el('div', 'lb dim', '—'));               // 가중치 없음
@@ -3708,6 +3716,47 @@
   //   격파까지 = 실효HP[속성] ÷ 무장 위력,  경직까지 = 임계 ÷ よろけ値
   // 를 보여 준다. (1히트 근사 — 국부보정·경직값 시간 감쇠는 미반영)
   const PIETAN_ARMOR = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee', shield: 'armorMelee' };
+  // 「이 무장 N발 버티기」 를 자동 구성 목표로 넘길 때 쓰는 축
+  const PIETAN_EHP = { solid: 'ehpSolid', beam: 'ehpBeam', melee: 'ehpMelee', shield: 'ehpMelee' };
+
+  let pietanGoalHits = 0;   // 목표 발수 (0 이면 '현재 +1' 을 기본값으로 쓴다)
+
+  /**
+   * 「이 무장 N발 버티기」 → 자동 구성 하한 목표.
+   * 필요한 실효 HP = 1히트 피해 × N. 자동 구성의 ehp* 축이 같은 값을 재므로 그대로 넘긴다.
+   * (내구 지표 dur* 는 '내성' 단위라 HP 와 따로 놀아 발수 조건을 담지 못한다)
+   */
+  function pietanGoalRow(w, dmg, hits) {
+    const wrap = el('div', 'pietan-goal');
+    wrap.append(el('span', 'pietan-ctrl-lb', '버티기 목표'));
+    const inp = el('input');
+    inp.type = 'number'; inp.min = '1'; inp.max = '99';
+    inp.value = String(pietanGoalHits || hits + 1);
+    inp.oninput = () => { pietanGoalHits = Math.max(1, Number(inp.value) || 1); note(); };
+    wrap.append(inp);
+    wrap.append(el('span', 'pietan-ctrl-lb', '발'));
+
+    const btn = el('button', 'btn-primary small', '자동 구성 목표로');
+    btn.onclick = () => {
+      const n = Math.max(1, Number(inp.value) || hits + 1);
+      const key = PIETAN_EHP[w.attr] || 'ehpSolid';
+      state.minimums[key] = dmg * n;
+      renderAutoGrid();
+      openPietan(false);
+      openDrawer(true);
+      toast(`${DERIVED_LABEL[key]} 하한 ${(dmg * n).toLocaleString()} 으로 걸었습니다 — ${n}발 버티기`);
+    };
+    wrap.append(btn);
+
+    const nt = el('span', 'pietan-mnote');
+    const note = () => {
+      const n = Math.max(1, Number(inp.value) || hits + 1);
+      nt.textContent = '필요 실효 HP ' + (dmg * n).toLocaleString() + ' (1히트 ' + dmg.toLocaleString() + ' × ' + n + ')';
+    };
+    note();
+    wrap.append(nt);
+    return wrap;
+  }
   let pietanMs = null;           // 선택한 적 기체 (LV 엔트리)
   let pietanMsBase = '';         // 그 기체의 base 이름
   let pietanMsLv = 1;            // 선택한 적 기체 LV
@@ -4130,6 +4179,10 @@
     const dirTxt = dirs ? ` · ${varTxt}${mLabel(dirs[pietanDir].label)} ${dirs[pietanDir].raw}` : '';
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
       `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}${dirTxt}${cutTxt}`));
+    // 여기서 나온 「몇 발 버티나」 를 그대로 자동 구성 목표로 넘긴다.
+    // 이게 없으면 사용자가 실효 HP 를 손으로 계산해 목표 칸에 옮겨 적어야 했다 —
+    // 관통·폭풍 경감 장갑 같은 조건부 파츠는 이 목표를 걸어야 비로소 제값으로 뽑힌다.
+    if (hits != null && dmg > 0) box.append(pietanGoalRow(w, dmg, hits));
     if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
     // 감소 스킬을 감소 큰 순으로 하나씩 곱하며 매번 내림한 과정 표기 (6% ×0.8 ×0.5 내림)
     const stepTxt = stg.mults.length ? ` (${w.stagger}%${stg.mults.map(m => ' ×' + m).join('')} 내림)` : '';
