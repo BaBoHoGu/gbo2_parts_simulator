@@ -228,6 +228,11 @@
       <b>가중치</b>는 상대적 중요도, <b>하한 목표</b>는 반드시 넘겨야 할 최소 수치입니다.
       🔒 로 잠근 파츠는 항상 유지하고, 목록에서 우클릭한 파츠는 후보에서 제외합니다.
     </div>
+    <!-- 목표는 기체마다 뜻이 다른 절댓값이라 한 번에 비울 수단이 필요하다 -->
+    <div class="row mt auto-tgt-bar">
+      <span class="note grow" id="autoTargetNote"></span>
+      <button id="clearTargets" class="btn-ghost small">목표 지우기</button>
+    </div>
     <div class="auto-grid mt" id="autoGrid"></div>
   </div>
   <div class="drawer-foot">

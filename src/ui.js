@@ -413,6 +413,22 @@
     autoApplied: 0         // 지금 적용해 강조 중인 후보 인덱스
   };
 
+  /**
+   * 하한·상한 목표를 비운다.
+   * 목표는 「HP 12000 이상」처럼 **그 기체에서만 뜻이 있는 절댓값**이라, 다른 기체로 옮기면
+   * 남아 있어도 도움이 안 되고 어떤 구성으로도 못 맞춰 계속 「하한 미달」만 나온다.
+   * (특히 피탄 시뮬의 「N발 버티기」는 실효 HP 를 큰 절댓값으로 박아 넣는다)
+   * @returns {number} 지운 목표 수 — 알려 줄지 판단하는 데 쓴다
+   */
+  function clearTargets() {
+    const n = Object.keys(state.minimums).length + Object.keys(state.maximums).length;
+    state.minimums = {};
+    state.maximums = {};
+    pietanGoalHits = 0;
+    if (document.getElementById('autoGrid')) renderAutoGrid();
+    return n;
+  }
+
   /** 기체가 바뀌면 이전 자동 구성 후보는 무효라 지운다. */
   function clearAutoResults() {
     state.autoCandidates = null;
@@ -856,6 +872,7 @@
     // 마뉴버아머 등)이 다른 기체에서 저절로 켜진 채로 내구 지표·피탄 수치를 바꿔 버린다.
     state.staggerOn.clear();
     clearAutoResults();
+    clearTargets();             // 목표는 그 기체의 절댓값이라 다른 기체로 가져가면 못 맞춘다
     resetEnhance();             // 다른 기체를 고르면 확장·강화 설정을 초기값으로 되돌린다
     renderAll();
     setView('build');           // 기체를 고르면 곧바로 파츠 적용 단계로
@@ -2954,14 +2971,24 @@
     };
   }
 
+  /** 지금 걸려 있는 목표 수를 알리고, 없으면 「목표 지우기」를 숨긴다. */
+  function renderTargetBar() {
+    const n = Object.keys(state.minimums).length + Object.keys(state.maximums).length;
+    const note = $('#autoTargetNote'), btn = $('#clearTargets');
+    if (note) note.textContent = n ? `걸어 둔 목표 ${n}개` : '걸어 둔 목표 없음';
+    if (btn) btn.hidden = !n;
+  }
+
   function renderAutoGrid() {
     const box = $('#autoGrid');
     box.innerHTML = '';
+    renderTargetBar();
     box.append(el('div', 'hd', '스탯'), el('div', 'hd', '가중치'), el('div', 'hd', '하한 목표'), el('div', 'hd', '상한 목표'));
 
     // 하한·상한 목표 입력 한 칸을 만든다 (store = state.minimums / state.maximums)
     const targetInput = (store, k) => {
-      const m = el('input');
+      // 클래스로 표시해 둔다 — 가중치 칸과 생김새가 같아, 점검 도구가 자리로만 찾으면 섞인다
+      const m = el('input', 'auto-tgt');
       m.type = 'number'; m.placeholder = '—';
       m.value = store[k] ?? '';
       m.oninput = () => {
@@ -2969,6 +2996,7 @@
         if (m.value === '' || isNaN(v)) delete store[k];
         else store[k] = v;
         state.weightsTouched = true;
+        renderTargetBar();
       };
       return m;
     };
@@ -3241,7 +3269,9 @@
       ...Object.entries(state.maximums).filter(([, v]) => v != null && v !== '').map(([k, v]) => ({ k, v: +v, kind: 'max' }))
     ];
     const tLabel = k => DERIVED_KEYS.includes(k) ? DERIVED_LABEL[k] : C.STAT_LABEL[k];
-    const effShort = k => DERIVED_LABEL[k].replace(/^(공격|내구)\s*/, '');   // '내구 빔'→'빔'
+    // '내구 빔'→'빔', '실효 HP 빔'→'HP 빔' — 뒤에 '실효 ' 를 붙여 쓰므로 접두를 뗀다
+    // ('실효 HP 빔' 을 그냥 두면 '실효 실효 HP 빔' 이 된다)
+    const effShort = k => DERIVED_LABEL[k].replace(/^(공격|내구|실효)\s*/, '');
 
     const out = c.parts.map(p => {
       const without = c.parts.filter(q => q.name !== p.name);
@@ -3254,7 +3284,13 @@
       // 역할: 정규화 기여가 가장 큰 군 (원시 없으면 실효로 판정)
       const roleScore = {};
       for (const { k, d } of rawDiffs) { const r = CONTRIB_ROLE[k]; if (r) roleScore[r] = (roleScore[r] || 0) + d / (O.UNIT[k] || 1); }
-      if (!rawDiffs.length) for (const { k, d } of effDiffs) { const r = k.indexOf('dur') === 0 ? 'def' : 'atk'; roleScore[r] = (roleScore[r] || 0) + d; }
+      // 실효 지표의 역할군 — 공격(eff*)만 atk, 내구(dur*)와 실효 HP(ehp*)는 def.
+      // 'dur' 로 시작하는지만 보던 때는 ehp* 가 공격으로 분류돼, 피해경감 전용 파츠에
+      // '공격' 태그가 붙었다.
+      if (!rawDiffs.length) for (const { k, d } of effDiffs) {
+        const r = k.indexOf('eff') === 0 ? 'atk' : 'def';
+        roleScore[r] = (roleScore[r] || 0) + d;
+      }
       let roleCls = null, best = 0;
       for (const r in roleScore) if (roleScore[r] > best) { best = roleScore[r]; roleCls = r; }
       // 목표 필수: 이 파츠를 빼면 (전체는 만족하던) 목표가 미달로 뒤집히는가
@@ -3827,7 +3863,7 @@
 
   /**
    * 「이 무장 N발 버티기」 → 자동 구성 하한 목표.
-   * 필요한 실효 HP = 1히트 피해 × N. 자동 구성의 ehp* 축이 같은 값을 재므로 그대로 넘긴다.
+   * 필요한 실효 HP = 1발(전탄 명중) 피해 × N. 자동 구성의 ehp* 축이 같은 값을 재므로 그대로 넘긴다.
    * (내구 지표 dur* 는 '내성' 단위라 HP 와 따로 놀아 발수 조건을 담지 못한다)
    */
   function pietanGoalRow(w, dmg, hits) {
@@ -3855,7 +3891,7 @@
     const nt = el('span', 'pietan-mnote');
     const note = () => {
       const n = Math.max(1, Number(inp.value) || hits + 1);
-      nt.textContent = '필요 실효 HP ' + (dmg * n).toLocaleString() + ' (1히트 ' + dmg.toLocaleString() + ' × ' + n + ')';
+      nt.textContent = '필요 실효 HP ' + (dmg * n).toLocaleString() + ' (1발 ' + dmg.toLocaleString() + ' × ' + n + ')';
     };
     note();
     wrap.append(nt);
@@ -3955,8 +3991,9 @@
       // 격투 변형(기본/헤비어택 등)·방향별 배율(N격/횡격/하격…) — meleeDamage 의 ccd 로 적용
       const variants = (w.melee && w.melee.variants && w.melee.variants.length) ? w.melee.variants : null;
       // note·psycommu·type 은 조건부 파츠 경감(관통 경감 장갑·폭풍 경감 장갑) 판정에 쓴다.
+      // mods 도 함께 넘긴다 — 고정 피해(소이)의 위키 실측값(mods.burnSoi)이 여기 들어 있다
       out.push({ name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets, react, variants,
-        note, psycommu: !!w.psycommu, type: w.type });
+        note, psycommu: !!w.psycommu, type: w.type, mods: w.mods });
     }
     return out;
   }
@@ -4213,10 +4250,26 @@
         ? D.meleeDamage(base, eCorr, { attr: pietanAttr, attrBonus: eAttrBonus, ccd: ccd || [1] })
         : D.shootingDamage(base, eCorr, { attr: pietanAttr, attrBonus: eAttrBonus }), ePartPct) * eMul * dmgFactor)
       : 0;
-    const dmg = perHit(w.power || w.charged, meleeCcd);
+    // 동시발사·산탄은 방아쇠 한 번에 여러 발이 맞는다. 1히트만 세면 「격파까지 N발」이
+    // 실은 N '히트' 라, 산탄 무장 앞에서 실제보다 훨씬 버티는 것처럼 보였다
+    // (누적치에 ×배수가 붙은 무장이 883/3,779종). 아래 경직 줄은 이미 발 수로 환산하고 있어
+    // 같은 화면의 두 '발' 이 서로 다른 뜻이기도 했다.
+    // 무장 표의 '전탄'·내 무장→적 쪽과 같은 fireMult 를 써서 기준을 하나로 맞춘다.
+    const eMult = fireMult({ type: w.type, info: { '備考': w.note || '' } });
+    const nNc = (eMult.nc && eMult.nc.n) || 1;
+    const nCh = (eMult.ch && eMult.ch.n) || nNc;
+    const oneHit = perHit(w.power || w.charged, meleeCcd);
+    // 고정 피해(소이)는 위력과 별개로 더 들어간다. 내 무장→적(아래)은 이미 더하고 있는데
+    // 받는 쪽만 빼 두어, 같은 모달에서 방향마다 규칙이 달랐다. 히트 수가 범위인 경우는
+    // 적은 쪽을 써서 과대평가하지 않는다(내 무장 쪽과 같은 규칙).
+    // 보정을 안 받는 고정값이라 위 피해 경감(dmgFactor)은 걸지 않는다 — 이 역시 내 무장 쪽과 같다.
+    const inFx = fixedDamageWithParts({ info: { '備考': w.note || '' }, mods: w.mods }, eEq);
+    const fxAdd = inFx ? inFx.total : 0;
+    const dmg = oneHit * nNc + fxAdd;            // 방아쇠 한 번(전탄 명중) 피해
     const hits = dmg > 0 ? Math.ceil(eff / dmg) : null;
     // 사격의 powerCharged = 집속 (멜리 헤비어택은 위 변형으로 처리)
-    const chgDmg = (!isMelee && w.charged && w.charged !== w.power) ? perHit(w.charged, [1]) : 0;
+    const chgOne = (!isMelee && w.charged && w.charged !== w.power) ? perHit(w.charged, [1]) : 0;
+    const chgDmg = chgOne ? chgOne * nCh + fxAdd : 0;
     const chgHits = chgDmg > 0 ? Math.ceil(eff / chgDmg) : null;
     // 경직 = 임계 ÷ 히트당 누적치. 감소 스킬은 감소 큰 순으로 하나씩 곱하고 매번 소수점 이하 내림.
     const perHitStagger = w.stagger > 0 ? staggerPerHit(w.stagger, stg.mults) : 0;
@@ -4226,11 +4279,12 @@
     hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
     hd.append(el('b', 'pietan-rnm', T.weaponName(w.name)));
     if (w.react) hd.append(el('span', 'pietan-react' + (w.react === '강경직' ? ' strong' : ''), w.react));
-    // 상대 무장의 고정 피해·디버프 — 직격 피해와 별개라 격파 수만 봐서는 놓친다
-    const inFx = fixedDamageOf({ info: { '備考': w.note } });
+    // 상대 무장의 고정 피해·디버프 — 직격과 별개로 더 들어가는 몫
     if (inFx) {
       const c = el('span', 'w-fixed', '고정 ' + inFx.total.toLocaleString());
-      c.title = `직격과 별도로 고정 피해 ${inFx.total.toLocaleString()} (${inFx.per}×${inFx.hits}히트)\n보정을 받지 않아 아래 격파 수에는 포함돼 있지 않다.`;
+      c.title = `직격과 별도로 고정 피해 ${inFx.total.toLocaleString()} (${inFx.per}×${inFx.hits}히트)\n`
+        + '보정을 받지 않는 고정값이며, 아래 격파 수에 포함돼 있다.'
+        + (inFx.ranged ? '\n※ 히트 수가 범위라 적은 쪽(안전한 쪽)을 썼다.' : '');
       hd.append(c);
     }
     for (const d of debuffsOf({ info: { '備考': w.note } })) hd.append(el('span', 'w-debuff', d));
@@ -4281,8 +4335,11 @@
     const cutTxt = dmgFactor < 1 ? ` · 경감 ×${+dmgFactor.toFixed(3)}${condTxt}` : '';
     const varTxt = variants && variants.length > 1 ? `${variants[pietanVariant].label} ` : '';
     const dirTxt = dirs ? ` · ${varTxt}${mLabel(dirs[pietanDir].label)} ${dirs[pietanDir].raw}` : '';
+    // 전탄 배수가 있으면 '1발' 이 몇 히트인지 함께 밝힌다(무장 표의 '전탄' 표기와 같은 뜻)
+    const nTxt = nNc > 1 ? ` (1발 = ${oneHit.toLocaleString()} × ${eMult.nc.label})` : '';
+    const fxTxt = fxAdd ? ` + 고정 ${fxAdd.toLocaleString()}` : '';
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
-      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1히트 ${dmg.toLocaleString()}${dirTxt}${cutTxt}`));
+      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1발 ${dmg.toLocaleString()}${nTxt}${fxTxt}${dirTxt}${cutTxt}`));
     // 여기서 나온 「몇 발 버티나」 를 그대로 자동 구성 목표로 넘긴다.
     // 이게 없으면 사용자가 실효 HP 를 손으로 계산해 목표 칸에 옮겨 적어야 했다 —
     // 관통·폭풍 경감 장갑 같은 조건부 파츠는 이 목표를 걸어야 비로소 제값으로 뽑힌다.
@@ -4648,6 +4705,7 @@
     state.skillPicks.clear();
     state.staggerOn.clear();    // 불러온 구성도 방어 스킬 체크는 새로 시작한다(이전 기체 것이 남지 않게)
     clearAutoResults();         // 이전 기체의 자동 구성 후보가 남아 잘못 적용되지 않게 지운다
+    clearTargets();             // 목표도 마찬가지 — 이전 기체 기준 절댓값이라 그대로 두면 못 맞춘다
     // expLevel 이 없던 시절의 저장본은 앱 기본값(최대 레벨)으로 맞춘다
     state.expLevel = Number(obj.expLevel) || C.MAX_EXPANSION_LEVEL;
     // 손상되거나 다른 기체·단계의 저장본이 들어와도 규칙(슬롯·중복·8개)을 지키도록,
@@ -4743,9 +4801,12 @@
     state.skillPicks.clear();
     state.locked.clear();
     clearAutoResults();
+    // LV 이 바뀌면 HP·내성이 통째로 달라져 목표 절댓값도 뜻을 잃는다
+    const cleared = clearTargets();
     resetEnhance();             // 레벨이 바뀌면 슬롯도 바뀌므로 확장 스킬도 초기화한다
     renderAll();
-    if (had) toast('레벨을 변경해 장착 파츠를 초기화했습니다');
+    if (had || cleared) toast('레벨을 변경해 장착 파츠'
+      + (cleared ? '·자동 구성 목표' : '') + '를 초기화했습니다');
   }
 
   /** 현재 기체에 LV2 이상 변형이 있으면 이름 위에 레벨 전환 세그먼트를 그린다. */
@@ -4821,9 +4882,13 @@
     return { num: num.join(' · ') || '—', how };
   }
 
+  // 보정값은 damage.js 의 ETC_ATTACK 에서 그대로 가져온다 — 손으로 적어 두었더니
+  // 실제 계산(+5%/+10%)과 라벨(+10%/+15%)이 갈려, 화면이 앱 자신과 다른 숫자를 말했다.
+  const etcPct = v => '+' + Math.round(v * 100) + '%';
   const POSTURES = [['stand', '선 자세', '보정 없음'],
-                    ['crouch', '앉기·정지', '사격 피해 +10% · 이동 불가'],
-                    ['prone', '엎드리기', '사격 피해 +15% · 이동 불가']];
+                    ['crouch', '앉기·정지', '사격 피해 ' + etcPct(D.ETC_ATTACK.crouch) + ' · 이동 불가'],
+                    ['prone', '엎드리기', '사격 피해 ' + etcPct(D.ETC_ATTACK.prone) + ' · 이동 불가']];
+  const SCOPE_TXT = '사격 피해 ' + etcPct(D.ETC_ATTACK.scope);
 
   /** 「자세 ▾」 버튼 라벨 — 기본(선 자세·스코프 꺼짐)이 아니면 켜진 색으로 보여 준다. */
   function updatePostureButton() {
@@ -4831,7 +4896,7 @@
     const on = state.posture !== 'stand' || state.scope;
     $('#postureBtnText').textContent = cur[1] + (state.scope ? ' · 스코프' : '');
     $('#postureBox').classList.toggle('on', on);
-    $('#postureBtn').title = cur[1] + ' — ' + cur[2] + (state.scope ? '\n스코프 조준 — 사격 피해 +5%' : '');
+    $('#postureBtn').title = cur[1] + ' — ' + cur[2] + (state.scope ? '\n스코프 조준 — ' + SCOPE_TXT : '');
   }
 
   /** 안전 영역(상태바·노치) 높이 — body 패딩으로 들어가 있다. fixed 메뉴를 그 아래로 밀 때 쓴다. */
@@ -4864,7 +4929,7 @@
       }));
     }
     menu.append(el('div', 'skill-sep'));
-    menu.append(mk('checkbox', null, state.scope, '스코프', '사격 피해 +5% (자세와 겹쳐 적용)', inp => {
+    menu.append(mk('checkbox', null, state.scope, '스코프', SCOPE_TXT + ' (자세와 겹쳐 적용)', inp => {
       state.scope = inp.checked;
       updatePostureButton();
       renderWeapons();
@@ -5107,6 +5172,10 @@
     $('#closeAuto').onclick = () => openDrawer(false);
     $('#drawerBack').onclick = () => openDrawer(false);
     $('#runAuto').onclick = runAuto;
+    $('#clearTargets').onclick = () => {
+      const n = clearTargets();
+      if (n) toast(`목표 ${n}개를 지웠습니다`);
+    };
     // 결과 모달 — 더보기(최대 10개)·닫기·배경 클릭
     $('#autoMore').onclick = () => {
       state.autoShown = Math.min(10, (state.autoCandidates || []).length);

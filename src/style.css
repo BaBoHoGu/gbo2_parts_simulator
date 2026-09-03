@@ -930,6 +930,10 @@ body.view-build  #screenSelect { display: none; }
 }
 .am-head b { font-size: 15px; }
 
+/* 자동 구성 — 걸어 둔 목표 알림 + 한 번에 지우기 */
+.auto-tgt-bar { align-items: center; gap: 8px; }
+.auto-tgt-bar .btn-ghost.small { padding: 2px 9px; font-size: 11.5px; }
+
 /* 빌드 비교 (2~4칸) */
 .compare-modal { width: min(880px, 96vw); }
 .compare-modal.wide { width: min(1180px, 96vw); }   /* 3칸부터는 넓게 */
