@@ -3,6 +3,8 @@ package com.gbo2.sim;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -143,11 +145,32 @@ public class MainActivity extends Activity {
             @JavascriptInterface
             public void saveImage(String data, String filename) {
                 try {
-                    String b64 = data;
-                    int comma = data.indexOf(',');
-                    if (data.startsWith("data:") && comma >= 0) b64 = data.substring(comma + 1);
-                    writeImageToDownloads(Base64.decode(b64, Base64.DEFAULT), filename);
+                    writeImageToDownloads(decodeDataUrl(data), filename);
                 } catch (Exception e) { toastUi("이미지 저장에 실패했습니다"); }
+            }
+
+            /**
+             * 성능 카드를 클립보드로. WebView 는 navigator.clipboard 의 이미지 쓰기를
+             * 구현하지 않아 웹 쪽 복사가 늘 실패했다(저장만 됐던 이유).
+             * 클립보드는 content:// URI 만 받으므로 캐시에 쓰고 ImageProvider 로 넘긴다.
+             * 저장과 달리 Download 에 파일을 남기지 않는다.
+             */
+            @JavascriptInterface
+            public void copyImage(String data, String filename) {
+                try {
+                    String name = (filename == null || filename.isEmpty()) ? "gbo2.png" : filename;
+                    if (!name.toLowerCase().endsWith(".png")) name += ".png";
+                    name = name.replaceAll("[\\\\/:*?\"<>|]", "_");
+                    java.io.File f = new java.io.File(ImageProvider.shareDir(MainActivity.this), name);
+                    java.io.FileOutputStream os = new java.io.FileOutputStream(f);
+                    os.write(decodeDataUrl(data));
+                    os.close();
+                    Uri uri = ImageProvider.uriFor(name);
+                    ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newUri(getContentResolver(), "성능 카드", uri);
+                    cm.setPrimaryClip(clip);
+                    toastUi("이미지를 복사했습니다 — 붙여넣기로 바로 쓸 수 있습니다");
+                } catch (Exception e) { toastUi("이미지 복사에 실패했습니다"); }
             }
         }, "AndroidBridge");
 
@@ -309,6 +332,14 @@ public class MainActivity extends Activity {
     }
 
     /** PNG 바이트를 기기 Download 폴더에 저장한다(Q+ 는 MediaStore, 그 이하는 권한 후 직접 쓰기). */
+    /** 「data:image/png;base64,…」 에서 바이트만 꺼낸다. */
+    private static byte[] decodeDataUrl(String data) {
+        String b64 = data;
+        int comma = data.indexOf(',');
+        if (data.startsWith("data:") && comma >= 0) b64 = data.substring(comma + 1);
+        return Base64.decode(b64, Base64.DEFAULT);
+    }
+
     private void writeImageToDownloads(byte[] bytes, String filename) {
         if (filename == null || filename.isEmpty()) filename = "gbo2.png";
         if (!filename.toLowerCase().endsWith(".png")) filename += ".png";
