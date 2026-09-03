@@ -1384,9 +1384,16 @@
     const mag = magazineOf(w, d), reload = reloadSecOf(w, d);
     const sustained = (mag && reload) ? (per * mag) / (mag * t + reload) : burst;
     const sub = el('span', 'w-sub w-dps', '⚡DPS ' + Math.round(sustained).toLocaleString());
+    // 소이 등 고정 피해는 DPS 에 넣지 않는다. 이 무장들은 0.15~0.3초 간격으로 쏘는데
+    // 소이는 몇 초에 걸쳐 들어가, 트리거마다 더하면 실제보다 몇 배로 부풀려진다.
+    // 겹치는지 갱신되는지가 자료에 없어 추정으로 숫자를 만들지 않고, 빠졌다는 사실만 밝힌다.
+    // (한 발당 총 피해는 「위력순」 정렬에 반영돼 있고, 무장 표에 별도 줄로도 나온다)
+    const fxDps = fixedDamageWithParts(w, state.equipped);
     sub.title = `순간 ${Math.round(burst).toLocaleString()} · 지속 ${Math.round(sustained).toLocaleString()}`
       + (mag && reload ? ` (탄창 ${mag}발 · ${+t.toFixed(2)}초/발 · 리로드 ${reload}초)` : ` (${+t.toFixed(2)}초/발)`)
-      + ' · 기본 위력 기준(파츠·스킬 미반영)';
+      + ' · 기본 위력 기준(파츠·스킬 미반영)'
+      + (fxDps ? `\n※ 고정 피해 ${fxDps.total.toLocaleString()} 는 DPS 에 안 들어간다 —`
+        + `\n   연사 간격보다 지속이 길어 겹침·갱신 여부가 자료에 없다.` : '');
     cell.append(sub);
   }
 
@@ -1397,7 +1404,10 @@
     const mult = fireMult(w);
     const pellets = (mult.nc && mult.nc.n) || (mult.ch && mult.ch.n) || 1;
     if (metric === 'stagger') { const s = parseStagger(w); return (s.pct || 0) * (s.pellets || 1); }
-    const power = Math.max(d.power || 0, d.powerCharged || 0) * pellets;
+    // 소이 등 고정 피해는 위력과 별개로 더 들어간다. 이걸 빼면 소이 무장이 실제보다
+    // 약한 것으로 정렬돼 뒤로 밀린다(견부11연장 미사일[소이]은 고정 2,250 이 통째로 빠졌다).
+    const fxSort = fixedDamageOf(w);
+    const power = Math.max(d.power || 0, d.powerCharged || 0) * pellets + (fxSort ? fxSort.total : 0);
     if (metric === 'power') return power;
     if (metric === 'dps') {
       if (w.type === 'shield' || w.type === 'melee' || w.attr === 'melee') return 0;
