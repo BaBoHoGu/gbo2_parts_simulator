@@ -2616,7 +2616,8 @@
     img.alt = name;
     box.append(img);
     $('#pngNote').textContent = name + '.png · ' + cvs.width + '×' + cvs.height;
-    $('#pngCopy').hidden = !(navigator.clipboard && window.ClipboardItem);
+    $('#pngCopy').hidden = !((window.AndroidBridge && window.AndroidBridge.copyImage)
+      || (navigator.clipboard && window.ClipboardItem));
     openPngModal(true);
   }
 
@@ -2642,7 +2643,15 @@
 
   /** 클립보드로 — 채팅창에 바로 붙여넣을 수 있다. 지원 안 하면 버튼 자체를 숨긴다. */
   function copyPngShot() {
-    if (!pngShot || !navigator.clipboard || !window.ClipboardItem) return;
+    if (!pngShot) return;
+    // 안드로이드 앱(WebView)은 navigator.clipboard 의 **이미지** 쓰기를 구현하지 않아
+    // 웹 방식이 늘 실패했다(저장만 되던 이유). 앱에서는 네이티브 브리지를 쓴다.
+    if (window.AndroidBridge && typeof window.AndroidBridge.copyImage === 'function') {
+      try { window.AndroidBridge.copyImage(pngShot.cvs.toDataURL('image/png'), pngShot.name + '.png'); }
+      catch (e) { toast('이미지 복사에 실패했습니다'); }
+      return;
+    }
+    if (!navigator.clipboard || !window.ClipboardItem) { toast('이 브라우저는 이미지 복사를 지원하지 않습니다'); return; }
     pngShot.cvs.toBlob(async blob => {
       if (!blob) { toast('이미지 생성에 실패했습니다'); return; }
       try {

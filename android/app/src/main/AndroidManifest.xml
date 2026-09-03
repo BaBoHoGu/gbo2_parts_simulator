@@ -25,5 +25,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 성능 카드 PNG 를 클립보드로 넘기기 위한 제공자.
+             클립보드는 이미지를 직접 못 담고 content:// URI 만 받는다.
+             exported=false + grantUriPermissions=true 라, 우리가 클립에 담아 준 URI 만
+             받는 앱이 읽을 수 있다(폴더를 통째로 여는 게 아니다). -->
+        <provider
+            android:name=".ImageProvider"
+            android:authorities="com.gbo2.sim.images"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 </manifest>
