@@ -254,14 +254,12 @@
 <div class="auto-modal compare-modal" id="compareModal" hidden role="dialog" aria-label="빌드 비교">
   <div class="am-head">
     <b>⚖ 빌드 비교</b>
-    <span class="am-note">두 구성의 스탯·내구를 나란히</span>
+    <span class="am-note">최대 4개 구성을 나란히</span>
     <span class="grow"></span>
     <button id="compareModalClose" class="btn-ghost">닫기</button>
   </div>
-  <div class="compare-pick">
-    <label>A <select id="cmpA"></select></label>
-    <label>B <select id="cmpB"></select></label>
-  </div>
+  <!-- 비교 칸은 2~4개로 늘었다 (JS 가 채운다) -->
+  <div class="compare-pick" id="comparePick"></div>
   <div class="compare-body" id="compareBody"></div>
 </div>
 
