@@ -3527,12 +3527,59 @@
     return opts;
   };
 
+  // 비교 칸에 올라간 구성 id 들. 2개가 기본, 4개까지 늘린다.
+  // (파츠 한 장 차이를 두 개씩 짝지어 보는 것보다, 후보 3~4개를 한 화면에 놓는 편이 고르기 쉽다)
+  let cmpIds = [];
+  const CMP_MAX = 4;
+  const CMP_TAG = ['A', 'B', 'C', 'D'];
+
+  /** 구성 선택 줄 — 칸마다 select, 3번째부터는 빼기, 4칸 미만이면 더하기. */
+  function renderComparePick() {
+    const box = $('#comparePick'); if (!box) return;
+    box.innerHTML = '';
+    cmpIds.forEach((id, i) => {
+      const lb = el('label', 'cmp-pick' + i);
+      lb.append(el('span', 'cmp-tag t' + i, CMP_TAG[i]));
+      const sel = el('select');
+      for (const o of compareOpts) { const op = el('option', '', o.label); op.value = o.id; sel.append(op); }
+      sel.value = id;
+      sel.onchange = () => { cmpIds[i] = sel.value; renderCompare(); };
+      lb.append(sel);
+      if (i >= 2) {                       // A·B 는 항상 남긴다
+        const x = el('button', 'cmp-drop', '×');
+        x.title = '이 칸 빼기';
+        x.onclick = () => { cmpIds.splice(i, 1); renderComparePick(); renderCompare(); };
+        lb.append(x);
+      }
+      box.append(lb);
+    });
+    if (cmpIds.length < CMP_MAX && compareOpts.length) {
+      const add = el('button', 'btn-ghost small cmp-add', '＋ 구성 추가');
+      add.onclick = () => {
+        const used = new Set(cmpIds);
+        const next = compareOpts.find(o => !used.has(o.id)) || compareOpts[0];
+        cmpIds.push(next.id); renderComparePick(); renderCompare();
+      };
+      box.append(add);
+    }
+  }
+
   function renderCompare() {
     const box = $('#compareBody'); if (!box) return;
     box.innerHTML = '';
     const bldOf = id => (compareOpts.find(o => o.id === id) || {}).bld;
-    const A = statsForBuild(bldOf($('#cmpA').value)), B = statsForBuild(bldOf($('#cmpB').value));
-    if (!A || !B) { box.append(el('div', 'pietan-empty', '비교할 두 구성을 선택하세요.')); return; }
+    const cols = cmpIds.map(id => statsForBuild(bldOf(id))).filter(Boolean);
+    if (cols.length < 2) { box.append(el('div', 'pietan-empty', '비교할 두 구성을 선택하세요.')); return; }
+
+    // 칸이 3개 이상이면 Δ 열은 뜻이 흐려진다(무엇에서 뺀 값인지가 모호). 대신 행마다 최고값을 표시한다.
+    const n = cols.length, showDelta = n === 2;
+    box.classList.toggle('no-delta', !showDelta);
+    box.style.setProperty('--cmp-n', n);
+    // 2칸은 예전처럼 폭에 맞춰 줄어든다. 3칸부터만 최소 너비를 걸어 표 안에서 가로로 스크롤시킨다
+    // (2칸에도 최소 너비를 걸면 폰에서 멀쩡하던 화면이 공연히 옆으로 밀린다)
+    box.style.setProperty('--cmp-min', showDelta ? '0px' : (130 + n * 96) + 'px');
+    const modal = $('#compareModal');
+    if (modal) modal.classList.toggle('wide', n > 2);
 
     // 헤더 — 각 빌드의 기체·코스트·강화·확장
     const idcell = (s, cls) => {
@@ -3552,25 +3599,35 @@
     };
     const head = el('div', 'cmp-head');
     head.append(el('span', 'cmp-lb', ''));
-    head.append(idcell(A, 'a')); head.append(idcell(B, 'b')); head.append(el('span', 'cmp-d', 'Δ(B−A)'));
+    cols.forEach((s, i) => head.append(idcell(s, 'c' + i)));
+    if (showDelta) head.append(el('span', 'cmp-d', 'Δ(B−A)'));
     box.append(head);
 
     const table = el('div', 'cmp-table');
-    // opt.fmt: 값 포맷, opt.lowerBetter: 낮을수록 개선(리로드 등)
-    const mkRow = (label, av, bv, opt = {}) => {
+    // vals: 칸 수만큼의 값 배열. opt.fmt: 값 포맷, opt.lowerBetter: 낮을수록 개선(리로드 등)
+    const mkRow = (label, vals, opt = {}) => {
       const fmt = opt.fmt || (v => v.toLocaleString());
       const row = el('div', 'cmp-row' + (opt.cls ? ' ' + opt.cls : ''));
       row.append(el('span', 'cmp-lb', label));
-      const show = v => v == null ? '—' : fmt(v);
-      row.append(el('span', 'cmp-a', show(av)));
-      row.append(el('span', 'cmp-b', show(bv)));
-      const d = (av != null && bv != null) ? Math.round((bv - av) * 100) / 100 : null;
-      const good = d == null ? 0 : (opt.lowerBetter ? -d : d);
-      row.append(el('span', 'cmp-d' + (good > 0 ? ' up' : good < 0 ? ' down' : ''),
-        d == null ? '' : d === 0 ? '·' : (d > 0 ? '+' : '') + fmt(d)));
+      // 최고값 표시 — Δ 열이 없는 3~4칸에서 어느 구성이 앞서는지 눈으로 잡아 준다
+      const nums = vals.filter(v => v != null);
+      const best = !showDelta && nums.length > 1
+        ? (opt.lowerBetter ? Math.min(...nums) : Math.max(...nums)) : null;
+      const tie = best != null && nums.every(v => v === best);
+      vals.forEach(v => row.append(el('span',
+        'cmp-v' + (!tie && best != null && v === best ? ' best' : ''),
+        v == null ? '—' : fmt(v))));
+      if (showDelta) {
+        const [av, bv] = vals;
+        const d = (av != null && bv != null) ? Math.round((bv - av) * 100) / 100 : null;
+        const good = d == null ? 0 : (opt.lowerBetter ? -d : d);
+        row.append(el('span', 'cmp-d' + (good > 0 ? ' up' : good < 0 ? ' down' : ''),
+          d == null ? '' : d === 0 ? '·' : (d > 0 ? '+' : '') + fmt(d)));
+      }
       table.append(row);
     };
-    for (const k of C.STAT_KEYS) mkRow(C.STAT_LABEL[k], A.r.total[k], B.r.total[k]);
+    const each = fn => cols.map(fn);
+    for (const k of C.STAT_KEYS) mkRow(C.STAT_LABEL[k], each(s => s.r.total[k]));
 
     // 공격 지표 (실효 보정 = 보정에 피해% 접음)
     table.append(el('div', 'cmp-sec', '공격 지표 (실효 보정)'));
@@ -3579,8 +3636,8 @@
       const pct = partAttackBonus(s.equipped, C.msLevel(s.ms.MS名))[key];   // 빌드엔 스킬 없음 → 파츠만
       return Math.round(((1 + corr / 100) * (1 + pct / 100) - 1) * 100);
     };
-    mkRow('사격', effCorr(A, 'shoot'), effCorr(B, 'shoot'));
-    mkRow('격투', effCorr(A, 'melee'), effCorr(B, 'melee'));
+    mkRow('사격', each(s => effCorr(s, 'shoot')));
+    mkRow('격투', each(s => effCorr(s, 'melee')));
 
     // 내구 지표 — 성능표와 같은 계산: 실효 HP 에 파츠 피해경감(신형완충재·오버튠 등)까지 접는다.
     // (이걸 빼면 피해경감 파츠를 넣은 구성이 안 넣은 구성과 같은 값으로 나온다)
@@ -3594,32 +3651,35 @@
     };
     table.append(el('div', 'cmp-sec', '내구 지표 (실효 HP · 파츠 피해경감 반영)'));
     for (const [k, lb, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
-      const ca = duraCut(A, dattr), cb = duraCut(B, dattr);
-      const tag = (ca || cb) ? ` (피해 -${ca}% / -${cb}%)` : '';
-      mkRow(lb + tag, dura(A, k, dattr), dura(B, k, dattr));
+      const cuts = each(s => duraCut(s, dattr));
+      const tag = cuts.some(c => c) ? ` (피해 ${cuts.map(c => '-' + c + '%').join(' / ')})` : '';
+      mkRow(lb + tag, each(s => dura(s, k, dattr)));
     }
 
     // 무장 (파츠·보정 반영). 이름으로 맞춰 논차지·집속·리로드/OH 비교(다른 기체면 대부분 —).
-    const wA = buildWeaponDamage(A), wB = buildWeaponDamage(B);
-    if (wA.length || wB.length) {
+    const wl = cols.map(buildWeaponDamage);
+    if (wl.some(x => x.length)) {
       table.append(el('div', 'cmp-sec', '무장 위력 (파츠 반영 · 전탄·고정 피해 포함)'));
-      const mapA = new Map(wA.map(x => [x.name, x])), mapB = new Map(wB.map(x => [x.name, x]));
-      const names = [...wA.map(x => x.name), ...wB.filter(x => !mapA.has(x.name)).map(x => x.name)];
+      const maps = wl.map(x => new Map(x.map(y => [y.name, y])));
+      const names = [];
+      for (const list of wl) for (const x of list) if (!names.includes(x.name)) names.push(x.name);
       const sec = v => v == null ? '—' : v + '초';
+      const pick = (nm, f) => maps.map(m => { const x = m.get(nm); return x ? f(x) : null; });
+      const any = vals => vals.some(v => v != null);
       for (const nm of names) {
-        const a = mapA.get(nm), b = mapB.get(nm), w = a || b;
-        mkRow(w.ko, a ? a.nc : null, b ? b.nc : null, { cls: 'cmp-wstart' });        // 논차지 (무장 시작)
-        if ((a && a.ncAll != null) || (b && b.ncAll != null))
-          mkRow('└ 전탄', a ? a.ncAll : null, b ? b.ncAll : null, { cls: 'cmp-wsub' });
-        if ((a && a.ch != null) || (b && b.ch != null))
-          mkRow('└ 집속', a ? a.ch : null, b ? b.ch : null, { cls: 'cmp-wsub' });
-        if ((a && a.chAll != null) || (b && b.chAll != null))
-          mkRow('└ 집속 전탄', a ? a.chAll : null, b ? b.chAll : null, { cls: 'cmp-wsub' });
-        if ((a && a.fx != null) || (b && b.fx != null))
-          mkRow('└ 고정 피해', a ? a.fx : null, b ? b.fx : null, { cls: 'cmp-wsub' });
-        if ((a && a.reload != null) || (b && b.reload != null))
-          mkRow('└ ' + ((a && a.reloadKind) || (b && b.reloadKind) || '리로드'),
-            a ? a.reload : null, b ? b.reload : null, { fmt: sec, lowerBetter: true, cls: 'cmp-wsub' });
+        const w = maps.map(m => m.get(nm)).find(Boolean);
+        mkRow(w.ko, pick(nm, x => x.nc), { cls: 'cmp-wstart' });        // 논차지 (무장 시작)
+        for (const [lb, f] of [['└ 전탄', x => x.ncAll], ['└ 집속', x => x.ch],
+          ['└ 집속 전탄', x => x.chAll], ['└ 고정 피해', x => x.fx]]) {
+          const vals = pick(nm, f);
+          if (any(vals)) mkRow(lb, vals, { cls: 'cmp-wsub' });
+        }
+        const rl = pick(nm, x => x.reload);
+        if (any(rl)) {
+          const kind = maps.map(m => m.get(nm)).find(x => x && x.reloadKind);
+          mkRow('└ ' + ((kind && kind.reloadKind) || '리로드'), rl,
+            { fmt: sec, lowerBetter: true, cls: 'cmp-wsub' });
+        }
       }
     }
     box.append(table);
@@ -3631,12 +3691,14 @@
     if (b) b.hidden = !open;
     if (!open) return;
     compareOpts = compareOptions();
-    const fill = sel => { sel.innerHTML = ''; for (const o of compareOpts) { const op = el('option', '', o.label); op.value = o.id; sel.append(op); } };
-    fill($('#cmpA')); fill($('#cmpB'));
-    if (compareOpts.length) {
-      $('#cmpA').value = compareOpts[0].id;
-      $('#cmpB').value = (compareOpts[1] || compareOpts[0]).id;
+    const ids = new Set(compareOpts.map(o => o.id));
+    cmpIds = cmpIds.filter(id => ids.has(id));          // 지워진 구성이 남아 있지 않도록
+    while (cmpIds.length < 2 && compareOpts.length) {
+      const used = new Set(cmpIds);
+      const next = compareOpts.find(o => !used.has(o.id)) || compareOpts[0];
+      cmpIds.push(next.id);
     }
+    renderComparePick();
     renderCompare();
   }
 
@@ -5028,8 +5090,7 @@
     $('#compareBtn').onclick = () => { if (!state.ms && !loadBuilds().length) { toast('먼저 기체를 고르거나 구성을 저장하세요'); return; } openCompareModal(true); };
     $('#compareModalClose').onclick = () => openCompareModal(false);
     $('#compareModalBack').onclick = () => openCompareModal(false);
-    $('#cmpA').onchange = renderCompare;
-    $('#cmpB').onchange = renderCompare;
+    // 비교 칸의 select 는 개수가 바뀌므로 renderComparePick 이 그때그때 연결한다
 
     // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명 (무장 칸 안에서 토글)
     $('#skillListBtn').onclick = () => {
