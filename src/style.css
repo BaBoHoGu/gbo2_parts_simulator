@@ -2043,3 +2043,11 @@ body.drawer-open .m-actionbar { display: none !important; }
   .png-hint { padding: 8px 10px 12px; }
 }
 
+
+
+/* 피탄 시뮬 — 「N발 버티기」 를 자동 구성 목표로 넘기는 줄 */
+.pietan-goal { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px;
+  padding-top: 6px; border-top: 1px dashed var(--line-soft); }
+.pietan-goal input { width: 58px; text-align: right; }
+.pietan-goal .btn-primary.small { padding: 3px 10px; font-size: 12px; }
+.pietan-goal .pietan-mnote { flex: 1 1 100%; }
