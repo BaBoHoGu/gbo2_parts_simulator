@@ -1132,6 +1132,34 @@
     return null;
   }
 
+  // 오버로드·사이코뮤 증폭장치는 '효과가 끝나면' 무장 OH 복귀가 2배가 된다.
+  //   「※効果終了後、対象の全兵装は2倍のOH復帰時間が発生」
+  // 스킬 이름이 아니라 이 문구로 잡는다 — 같은 오버로드라도 LV3(하이젠슬레이Ⅱ·라·양산형
+  // 사이코 건담)은 2배 문구가 없어 해당되지 않는다.
+  const OH_X2_RE = /効果終了後[^\/]*?2倍のOH復帰時間/;
+
+  /**
+   * 이 기체 LV 에서 '효과 후 OH 2배' 가 걸리는 스킬. 없으면 null.
+   * psycommuOnly: 대상이 사이코뮤 무장뿐인 스킬(사이코뮤 증폭장치)인가.
+   *   — 오버로드는 「全兵装のヒートゲージが全回復」 이라 전 무장,
+   *     사이코뮤 증폭장치는 「発動中はサイコミュ兵装が強化される」 라 사이코뮤 무장만이다.
+   */
+  function weaponOhX2Of(ms, lv) {
+    if (!ms) return null;
+    const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || []);
+    const byName = new Map();
+    for (const mo of modes) for (const sk of (mo.skills || [])) {
+      if (!OH_X2_RE.test(String(sk.desc || ''))) continue;
+      if (!byName.has(sk.name)) byName.set(sk.name, []);
+      byName.get(sk.name).push(sk);
+    }
+    for (const [name, cands] of byName) {
+      const sk = pickByMsLv(cands, lv);
+      if (sk) return { ko: skTr(name), psycommuOnly: /サイコミュ兵装/.test(String(sk.eff || '')) };
+    }
+    return null;
+  }
+
   /** 스러스터 관련 파츠 효과 — 회복속도%·OH단축%·소비경감%(초기/이동중). 모두 가산 중복. */
   function thrusterPartFx(equipped) {
     let recover = 0, oh = 0, cutInit = 0, cutRate = 0;
@@ -1459,6 +1487,8 @@
     // 효과마다 걸리는 무장 범위가 달라 무장별로 다시 뽑아 쓴다.
     const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1,
       state.ms && state.ms.属性, state.expansion);
+    // 오버로드류 스킬을 쓴 뒤 무장 OH 가 2배가 되는 기체인가 (기체당 한 번만 판정)
+    const ohX2 = weaponOhX2Of(state.ms, state.ms ? msLevel(state.ms) : 1);
 
     // 자세·스코프 보정 — 사격 판정 무장에만 (격투 판정이면 attr==melee 라 제외), (1+etcA) 로 곱해진다
     const postureEtcA = w => {
@@ -1671,6 +1701,18 @@
         last.append(document.createTextNode(jaUnits(D.shortenTimeText(ohBack, cut))));
         if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
         last.append(el('span', 'w-sub', isEpack ? '리로드' : 'OH복귀'));
+        // 오버로드·사이코뮤 증폭장치를 쓴 뒤에는 이 값이 2배가 된다. 발동 중에만 걸리는
+        // 사후 대가라 표의 값을 갈아치우지 않고, 스러스터 OH 처럼 옆에 따로 적는다.
+        // (E팩 탄창식 빔은 「残弾式ビーム兵装非対応」 — 여기선 애초에 '리로드'로 나온다)
+        if (!isEpack && ohX2 && (!ohX2.psycommuOnly || w.psycommu)) {
+          const n = Number((String(ohBack).match(/([\d.]+)/) || [])[1]);
+          const x2 = n ? Math.round(D.shortenTime(n, cut) * 2 * 10) / 10 : null;
+          const tag = el('span', 'w-sub w-ohx2', ohX2.ko + ' 후 ' + (x2 != null ? x2 + '초' : '×2'));
+          tag.title = ohX2.ko + ' 효과가 끝난 직후에는 이 무장의 OH 복귀가 2배가 됩니다.'
+            + '\n(스킬 설명의 「효과 종료 후, 대상의 전 무장은 2배의 OH 복귀 시간이 발생」)'
+            + (cut ? '\n※ 파츠 단축을 적용한 값의 2배로 적었습니다 — 단축이 이 2배에도 걸리는지는 자료에 없습니다.' : '');
+          last.append(tag);
+        }
       } else last.textContent = '—';
       row.append(last);
 

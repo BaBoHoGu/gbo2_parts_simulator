@@ -239,6 +239,8 @@ body.view-build  #screenSelect { display: none; }
 .w-gain { color: var(--ok); font-weight: 700; }   /* 파츠 표기와 같은 초록 */
 .w-loss { color: var(--bad); font-weight: 700; }  /* 특화 프로그램의 반대쪽 감소분 */
 .w-sub { display: block; font-size: 10.5px; color: var(--dim); font-weight: 400; }
+/* 오버로드류 스킬이 끝난 뒤의 OH 2배 — 대가라서 눈에 띄되 표의 값과 헷갈리지 않게 */
+.w-ohx2 { color: var(--warn, #ffb454); }
 /* 조사·산탄·동시발사 배지 (무장명 옆) */
 .w-mult {
   flex-shrink: 0; font-size: 10px; font-weight: 700; line-height: 1.5;
