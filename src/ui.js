@@ -2533,23 +2533,25 @@
           : wp.attr === 'shield' ? CO.long : wp.attr === 'solid' ? CO.accent : CO.mid;
         dtext(wp.sec, cSec, ry, '11px ' + F, CO.muted);
         ctx.fillStyle = tc; ctx.beginPath(); ctx.arc(dotX, ry - 4, 3.5, 0, 7); ctx.fill();
-        // 고정 피해·디버프는 이름 뒤에 작은 태그로. 태그 폭만큼 이름을 먼저 줄인다.
-        // 카드는 폭이 빠듯해 합계까지 넣으면 무장 이름이 잘린다.
-        // 나눠 들어간다는 사실이 핵심이라 1틱×히트만 싣는다(무장 표에는 합계도 함께 나온다).
-        const fxTag = wp.fx
-          ? (wp.fx.hitsMax > 1
-            ? '고정 ' + wp.fx.per.toLocaleString() + '×' + (wp.fx.ranged ? wp.fx.hits + '~' + wp.fx.hitsMax : wp.fx.hits)
-            : '고정 ' + wp.fx.total.toLocaleString())
-          : '';
-        const tag = [fxTag, ...(wp.debuffs || [])]
-          .filter(Boolean).join(' · ');
+        // 디버프는 이름 옆에, **고정 피해는 아랫줄에** — 화면 무장 표와 같은 배치다.
+        // 예전엔 카드에서만 이름 옆에 붙여 두어, 소이 무장은 표기가 길어 이름이 잘렸다.
+        const dbTag = (wp.debuffs || []).join(' · ');
         ctx.font = '10px ' + F;
-        const tagW = tag ? ctx.measureText(tag).width + 6 : 0;
+        const tagW = dbTag ? ctx.measureText(dbTag).width + 6 : 0;
         const nmTxt = dclip(wp.name, cType - cName - 10 - tagW, vf);
         dtext(nmTxt, cName, ry, vf, CO.text);
-        if (tag) {
+        if (dbTag) {
           ctx.font = vf;
-          dtext(tag, cName + ctx.measureText(nmTxt).width + 6, ry, '10px ' + F, CO.close);
+          dtext(dbTag, cName + ctx.measureText(nmTxt).width + 6, ry, '10px ' + F, CO.close);
+        }
+        if (wp.fx) {
+          const hitTx = wp.fx.ranged ? wp.fx.hits + '~' + wp.fx.hitsMax : String(wp.fx.hits);
+          const totTx = wp.fx.ranged
+            ? wp.fx.total.toLocaleString() + '~' + wp.fx.totalMax.toLocaleString()
+            : wp.fx.total.toLocaleString();
+          dtext(wp.fx.hitsMax > 1
+            ? '고정 ' + wp.fx.per.toLocaleString() + '×' + hitTx + ' = ' + totTx
+            : '고정 ' + totTx, cName, ry + 12, '10px ' + F, CO.close);
         }
         dtext(wp.kind, cType, ry, vf, tc);
         // 피해 칸 — 화면 무장 표와 같이 「기본 (+파츠) (+스킬)」 로 쪼개 오른쪽 정렬로 쌓는다.
@@ -3471,13 +3473,21 @@
       const nc = fin(d.power);
       const ch = (d.powerCharged != null && d.powerCharged !== d.power) ? fin(d.powerCharged) : null;
       if (nc == null && ch == null) continue;
+      // 조사·산탄·동시발사(연속 폭발 포함)는 1히트 값만으로는 세기를 못 잰다.
+      // 무장 표와 같은 배수를 써서 '전탄' 값을 함께 낸다.
+      const fm = fireMult(w);
+      const nN = (fm.nc && fm.nc.n) || 1, nC = (fm.ch && fm.ch.n) || (fm.nc && fm.nc.n) || 1;
+      const fxC = fixedDamageWithParts(w, bs.equipped);
       // 리로드 / OH복귀 — 파츠 단축 반영(초 단위)
       const secOf = (raw, key) => { const m = raw && String(raw).match(/([\d.]+)/); return m ? D.shortenTime(Number(m[1]), D.timeCutFor(wm, key, w)) : null; };
       const reloadRaw = wField(d, info, 'リロード時間'), ohRaw = wField(d, info, 'OH復帰時間', 'OH復帰速度');
       let reload = null, reloadKind = '';
       if (reloadRaw) { reload = secOf(reloadRaw, 'reloadTime'); reloadKind = '리로드'; }
       else if (ohRaw) { const ep = D.isEpackMag(w); reload = secOf(ohRaw, ep ? 'reloadTime' : 'weaponOH'); reloadKind = ep ? '리로드' : 'OH'; }
-      out.push({ name: w.name, ko: T.weaponName(w.name), attr: weaponAttr(w), nc, ch, reload, reloadKind });
+      out.push({ name: w.name, ko: T.weaponName(w.name), attr: weaponAttr(w), nc, ch, reload, reloadKind,
+        ncAll: nc != null && nN > 1 ? nc * nN : null,        // 전탄
+        chAll: ch != null && nC > 1 ? ch * nC : null,
+        fx: fxC ? fxC.total : null });
     }
     return out;
   }
@@ -3565,15 +3575,21 @@
     // 무장 (파츠·보정 반영). 이름으로 맞춰 논차지·집속·리로드/OH 비교(다른 기체면 대부분 —).
     const wA = buildWeaponDamage(A), wB = buildWeaponDamage(B);
     if (wA.length || wB.length) {
-      table.append(el('div', 'cmp-sec', '무장 위력 (1히트 · 파츠 반영)'));
+      table.append(el('div', 'cmp-sec', '무장 위력 (파츠 반영 · 전탄·고정 피해 포함)'));
       const mapA = new Map(wA.map(x => [x.name, x])), mapB = new Map(wB.map(x => [x.name, x]));
       const names = [...wA.map(x => x.name), ...wB.filter(x => !mapA.has(x.name)).map(x => x.name)];
       const sec = v => v == null ? '—' : v + '초';
       for (const nm of names) {
         const a = mapA.get(nm), b = mapB.get(nm), w = a || b;
         mkRow(w.ko, a ? a.nc : null, b ? b.nc : null, { cls: 'cmp-wstart' });        // 논차지 (무장 시작)
+        if ((a && a.ncAll != null) || (b && b.ncAll != null))
+          mkRow('└ 전탄', a ? a.ncAll : null, b ? b.ncAll : null, { cls: 'cmp-wsub' });
         if ((a && a.ch != null) || (b && b.ch != null))
           mkRow('└ 집속', a ? a.ch : null, b ? b.ch : null, { cls: 'cmp-wsub' });
+        if ((a && a.chAll != null) || (b && b.chAll != null))
+          mkRow('└ 집속 전탄', a ? a.chAll : null, b ? b.chAll : null, { cls: 'cmp-wsub' });
+        if ((a && a.fx != null) || (b && b.fx != null))
+          mkRow('└ 고정 피해', a ? a.fx : null, b ? b.fx : null, { cls: 'cmp-wsub' });
         if ((a && a.reload != null) || (b && b.reload != null))
           mkRow('└ ' + ((a && a.reloadKind) || (b && b.reloadKind) || '리로드'),
             a ? a.reload : null, b ? b.reload : null, { fmt: sec, lowerBetter: true, cls: 'cmp-wsub' });
@@ -4155,7 +4171,11 @@
       const dmg = Math.floor(D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]) * eFactor);
       const mult = fireMult(w);
       const n = (mult.nc && mult.nc.n) || 1;
-      const per = dmg * n;                          // 전탄(동시발사) 1트리거 피해
+      let per = dmg * n;                            // 전탄(동시발사) 1트리거 피해
+      // 소이 등 고정 피해는 위력과 **별개로** 더 들어간다. 이걸 빼면 격파수가 실제보다
+      // 많게 나온다. 히트 수가 범위인 경우는 적은 쪽을 써서 과대평가하지 않는다.
+      const fxHit = fixedDamageWithParts(w, state.equipped);
+      if (fxHit) per += fxHit.total;
       // 실드로 막는 상대라면 실드부터 깨야 한다 — 같은 무장이라도 실드 보정이 5배까지 갈린다.
       let shHits = undefined, shNote = '';
       if (pietanShield && eShield) {
