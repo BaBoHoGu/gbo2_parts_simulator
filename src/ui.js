@@ -425,6 +425,7 @@
     state.minimums = {};
     state.maximums = {};
     pietanGoalHits = 0;
+    goalWeapon = null;
     if (document.getElementById('autoGrid')) renderAutoGrid();
     return n;
   }
@@ -442,6 +443,11 @@
     if (note) note.textContent = '';
     openResultModal(false);
   }
+
+  // 「N발 버티기」 목표를 건 적 무장. 실효 HP(ehp*) 축을 이 무장 기준으로 재려고 들고 있는다 —
+  // 관통·폭풍 경감처럼 **상대 무장의 성질에 따라서만** 걸리는 파츠 경감이 있기 때문이다.
+  // 목표를 지우면 같이 비운다(clearTargets).
+  let goalWeapon = null;
 
   /**
    * 자동 구성 결과를 '커스텀 파츠와 무장 사이' 전체폭 밴드로 토글한다 (모달 오버레이가 아니라
@@ -2965,14 +2971,23 @@
       const a = Math.min(total[key] || 0, 99);
       return Math.round(100 * (1 - (1 - a / 100) * staggerDmgFactor(cuts, dattr)));
     };
-    // 실효 HP — 피탄 시뮬이 재는 것과 같은 값(HP ÷ (1−실효내성)). 「N발 버티기」 목표가 쓴다.
+    // 실효 HP — 피탄 시뮬이 재는 것과 같은 값. 「N발 버티기」 목표가 쓴다.
     // 내구 지표(dur*)는 '내성' 단위라 HP 와 따로 놀아, 발수 조건을 그대로 담지 못한다.
-    const ehp = key => Math.round((total.hp || 0) / (1 - Math.min(dur(key.k, key.a), 99) / 100));
+    //
+    // 목표를 건 적 무장(goalWeapon)이 있으면 **그 무장에만 걸리는** 파츠 경감(관통·폭풍)까지
+    // 함께 접는다. 피탄 시뮬은 「격파까지」를 낼 때 이미 그것을 넣고 있는데 여기서 빠져 있어,
+    // 사용자가 본 숫자와 자동 구성이 재는 자가 서로 달랐다 — 관통 경감 장갑(−20%)·폭풍 경감
+    // 장갑(−15%)이 목표 달성에 한 푼도 기여하지 않아, 정작 그 파츠를 뽑으라고 만든 기능이
+    // 그 파츠를 뽑지 않았다.
+    // dur* 는 무장을 특정하지 않는 지표라 그대로 둔다 — 조건부 경감은 ehp* 축에만 넣는다.
+    const ehpCuts = goalWeapon ? [...cuts, ...conditionalPartCuts(equipped, goalWeapon)] : cuts;
+    // 피탄이 나누는 값과 같은 식: 실효HP(내성만) ÷ 피해경감 배수.
+    const ehp = (key, dattr) => Math.round(durabilityOf(total, key) / staggerDmgFactor(ehpCuts, dattr));
     return {
       effShoot: eff(total.shoot, 'shoot'), effMelee: eff(total.meleeCorrection, 'melee'),
       durSolid: dur('armorRange', 'solid'), durBeam: dur('armorBeam', 'beam'), durMelee: dur('armorMelee', 'melee'),
-      ehpSolid: ehp({ k: 'armorRange', a: 'solid' }), ehpBeam: ehp({ k: 'armorBeam', a: 'beam' }),
-      ehpMelee: ehp({ k: 'armorMelee', a: 'melee' })
+      ehpSolid: ehp('armorRange', 'solid'), ehpBeam: ehp('armorBeam', 'beam'),
+      ehpMelee: ehp('armorMelee', 'melee')
     };
   }
 
@@ -2980,7 +2995,9 @@
   function renderTargetBar() {
     const n = Object.keys(state.minimums).length + Object.keys(state.maximums).length;
     const note = $('#autoTargetNote'), btn = $('#clearTargets');
-    if (note) note.textContent = n ? `걸어 둔 목표 ${n}개` : '걸어 둔 목표 없음';
+    // 실효 HP 목표는 '어느 무장 기준인가' 로 값이 달라진다(관통·폭풍 경감) — 그 무장을 밝힌다
+    if (note) note.textContent = !n ? '걸어 둔 목표 없음'
+      : `걸어 둔 목표 ${n}개` + (goalWeapon ? ` · 실효 HP 는 「${T.weaponName(goalWeapon.name)}」 기준` : '');
     if (btn) btn.hidden = !n;
   }
 
@@ -3886,10 +3903,13 @@
       const n = Math.max(1, Number(inp.value) || hits + 1);
       const key = PIETAN_EHP[w.attr] || 'ehpSolid';
       state.minimums[key] = dmg * n;
+      // 어느 무장 기준인지 기억한다 — 관통·폭풍 경감처럼 그 무장에만 걸리는 파츠 경감을
+      // 자동 구성도 같은 조건으로 재야 사용자가 본 숫자와 자를 맞출 수 있다.
+      goalWeapon = w;
       renderAutoGrid();
       openPietan(false);
       openDrawer(true);
-      toast(`${DERIVED_LABEL[key]} 하한 ${(dmg * n).toLocaleString()} 으로 걸었습니다 — ${n}발 버티기`);
+      toast(`${DERIVED_LABEL[key]} 하한 ${(dmg * n).toLocaleString()} 으로 걸었습니다 — ${T.weaponName(w.name)} ${n}발 버티기`);
     };
     wrap.append(btn);
 
@@ -4070,9 +4090,11 @@
       if (e.melee) tags.push('격투+' + e.melee);
       if (e.shootPct) tags.push('사격+' + e.shootPct + '%');
       if (e.meleePct) tags.push('격투+' + e.meleePct + '%');
+      // else 로 묶으면 안 된다 — enemyAttackEffect 는 dmgAny 와 dmgShoot/dmgMelee 를 **더하는데**,
+      // 배지는 앞의 것 하나만 보여 주어 표기와 계산이 갈렸다. (내 기체 쪽 skillSummary 는 셋 다 적는다)
       if (e.dmgAny) tags.push('피해+' + e.dmgAny + '%');
-      else if (e.dmgShoot) tags.push('사격피해+' + e.dmgShoot + '%');
-      else if (e.dmgMelee) tags.push('격투피해+' + e.dmgMelee + '%');
+      if (e.dmgShoot) tags.push('사격피해+' + e.dmgShoot + '%');
+      if (e.dmgMelee) tags.push('격투피해+' + e.dmgMelee + '%');
       const lab = el('label', 'stg-chk' + (pietanEnemySkills.has(sk.name) ? ' on' : ''));
       const cb = el('input'); cb.type = 'checkbox'; cb.checked = pietanEnemySkills.has(sk.name);
       cb.onchange = () => { cb.checked ? pietanEnemySkills.add(sk.name) : pietanEnemySkills.delete(sk.name); renderPietanResult(); };
