@@ -403,16 +403,24 @@ function applyDamagePct(dmg, pct) {
 const shortenTime = (sec, pct) =>
   Math.round(Number(sec) * (1 - Number(pct) / 100) * 100) / 100;
 
-/** 「5秒」「17.5秒」처럼 단위가 붙은 표기에 단축을 적용한다. 숫자가 없으면 그대로 둔다. */
+/**
+ * 「5秒」「17.5秒」처럼 단위가 붙은 표기에 단축을 적용한다. 숫자가 없으면 그대로 둔다.
+ * 위키 표기에는 「20秒(600fps)」 처럼 프레임 수가 함께 적힌 것이 52건 있다. 예전엔 맨 앞
+ * 숫자 하나만 바꿔서 「17초(600fps)」 처럼 초와 프레임이 서로 안 맞는 표기가 나왔다.
+ * 초와 프레임은 같은 시간을 다르게 적은 것이므로 같은 비율로 함께 줄인다(프레임은 정수).
+ */
 function shortenTimeText(text, pct) {
   if (!pct || !text) return text;
-  return String(text).replace(/(\d+(?:\.\d+)?)/, n => String(shortenTime(n, pct)));
+  return String(text).replace(/(\d+(?:\.\d+)?)\s*(秒|초|fps|F)/gi, (m, n, unit) => {
+    const v = shortenTime(n, pct);
+    return (/fps|F/i.test(unit) ? Math.round(v) : v) + (m.slice(String(n).length).startsWith(' ') ? ' ' : '') + unit;
+  });
 }
 
 const GBO2Damage = {
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
-  weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag, ATTR_BONUS,
+  weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag,
   shortenTime, shortenTimeText, applyDamagePct, shieldMultOf, shieldDmgPctOf
 };
 

@@ -153,7 +153,8 @@ public class MainActivity extends Activity {
              * 성능 카드를 클립보드로. WebView 는 navigator.clipboard 의 이미지 쓰기를
              * 구현하지 않아 웹 쪽 복사가 늘 실패했다(저장만 됐던 이유).
              * 클립보드는 content:// URI 만 받으므로 캐시에 쓰고 ImageProvider 로 넘긴다.
-             * 저장과 달리 Download 에 파일을 남기지 않는다.
+             * 저장과 달리 Download 폴더에는 남기지 않는다 — 다만 붙여넣는 쪽이 읽어 갈 수 있게
+             * 캐시에는 한 장이 남는다(다음 복사 때 지난 것을 치운다).
              */
             @JavascriptInterface
             public void copyImage(String data, String filename) {
@@ -161,6 +162,7 @@ public class MainActivity extends Activity {
                     String name = (filename == null || filename.isEmpty()) ? "gbo2.png" : filename;
                     if (!name.toLowerCase().endsWith(".png")) name += ".png";
                     name = name.replaceAll("[\\\\/:*?\"<>|]", "_");
+                    ImageProvider.clearShareDir(MainActivity.this, name);   // 지난 복사본은 치운다
                     java.io.File f = new java.io.File(ImageProvider.shareDir(MainActivity.this), name);
                     java.io.FileOutputStream os = new java.io.FileOutputStream(f);
                     os.write(decodeDataUrl(data));

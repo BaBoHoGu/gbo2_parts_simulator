@@ -32,6 +32,18 @@ public class ImageProvider extends ContentProvider {
         return d;
     }
 
+    /**
+     * 지난 번 복사본을 지운다 — 새로 복사하기 직전에 부른다.
+     * 클립보드에 올린 파일은 붙여넣는 쪽이 읽어 갈 때까지 남아 있어야 해서 바로는 못 지운다.
+     * 그래서 '다음 복사 때 지난 것을 치우는' 방식으로 한 장만 남긴다.
+     * (지우지 않으면 카드를 복사할 때마다 캐시에 파일이 쌓인다)
+     */
+    public static void clearShareDir(android.content.Context c, String keep) {
+        File[] old = shareDir(c).listFiles();
+        if (old == null) return;
+        for (File f : old) if (f.isFile() && !f.getName().equals(keep)) f.delete();
+    }
+
     public static Uri uriFor(String name) {
         return Uri.parse("content://" + AUTHORITY + "/" + Uri.encode(name));
     }
