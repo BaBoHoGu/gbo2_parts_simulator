@@ -5,6 +5,7 @@
 #   .\update.ps1 -Rebuild   인터넷 없이 dist + APK 만 다시 만든다 (오버라이드 패치 적용용)
 #   .\update.ps1 -NoApk     APK 빌드를 건너뛰고 웹(dist)만 갱신
 #   .\update.ps1 -NoUiCheck 배포 전 UI 회귀 점검을 건너뛴다(권장하지 않음)
+#   .\update.ps1 -NoSmoke   배포 전 데이터·번역 점검을 건너뛴다(권장하지 않음)
 #   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
 #   .\update.ps1 -Publish   폰 OTA(data) + PC 배포본 ZIP 을 GitHub 에 올려 링크로 배포
 #
@@ -12,7 +13,7 @@
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$Release, [switch]$Publish)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -225,6 +226,22 @@ if (-not $Check) {
   # 배포용이면 실제 Chrome 으로 화면을 훑어 회귀를 먼저 잡는다.
   # (여기 있는 항목은 전부 예전에 배포까지 나갔던 것들 — 닫힌 모달이 앱을 덮음,
   #  가로 폰이 데스크톱으로 뜸, 상단이 상태바에 먹힘, 안 눌리는 버튼, 가로 스크롤)
+  # 데이터·번역 점검 — UI 점검보다 먼저(빠르고, 잡는 것이 다르다).
+  # 「파츠/기체 사전 전수 번역」·「화면에 일본어 잔존 없음」이 여기 있는데 배포 게이트에는
+  # 걸려 있지 않아, 자동 번역이 반쪽으로 만든 이름(「緊急修復모주루」)이 그대로 배포됐다.
+  if (($Release -or $Publish) -and -not $NoSmoke) {
+    Write-Host "`n데이터·번역 점검 중… (smoke)" -ForegroundColor Cyan
+    $prevEap3 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    & $node (Join-Path $PSScriptRoot 'tools\smoke.js')
+    $smokeCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap3
+    if ($smokeCode -ne 0) {
+      Write-Host "`n데이터·번역 점검에 걸려 배포를 중단합니다. (위 FAIL 항목 확인)" -ForegroundColor Red
+      Write-Host '  번역이 덜 된 이름은 data/i18n/ms.json · parts.json 에 넣어 주세요.' -ForegroundColor Yellow
+      Write-Host '  그래도 배포하려면 -NoSmoke 를 붙이세요.' -ForegroundColor Yellow
+      Close-Window 1
+    }
+  }
   if (($Release -or $Publish) -and -not $NoUiCheck) {
     Write-Host "`nUI 회귀 점검 중… (실제 Chrome, 4개 화면 크기)" -ForegroundColor Cyan
     $prevEap2 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'

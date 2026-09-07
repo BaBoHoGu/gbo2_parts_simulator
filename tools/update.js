@@ -389,7 +389,19 @@ async function detectPatch(msList) {
   const partNeed = Object.values(rdJson('data', 'parts.json')).flat()
     .map(p => p.name).filter(n => !partDict[n]);
   if (partNeed.length) {
-    console.log(`\n※ 새 파츠 ${partNeed.length}종은 한글 사전(data/i18n/parts.json)에 없어 일본어로 표시됩니다:`);
+    console.log(`\n※ 새 파츠 ${partNeed.length}종은 한글 사전(data/i18n/parts.json)에 없습니다`);
+    console.log('   (자동 번역이 성공했으면 그 값으로, 실패했으면 일본어로 표시됩니다):');
     partNeed.forEach(n => console.log(`     "${n}": { "n": "", "d": "" },`));
   }
+  // 공식 한글 사이트와 어긋난 이름 — 파이프라인 한가운데 로그는 그냥 흘러가 버려서
+  // (「긴급 수복 모듈」 을 정확히 짚어 줬는데도 못 보고 배포가 나갔다) 마지막에 다시 띄운다.
+  // 사용자가 일부러 공식과 다르게 정한 이름도 있으므로 중단시키지는 않는다 — 눈에 띄게만 한다.
+  try {
+    const off = rdJson('data', 'official_kr.json');
+    const bad = off && off.불일치;
+    if (bad && bad.length) {
+      console.log(`\n※ 공식 한글 표기와 다른 이름 ${bad.length}건 — 공식이 우선입니다. 사전을 확인하세요:`);
+      bad.forEach(x => console.log(`     공식 「${x.공식}」   (${x.출처})`));
+    }
+  } catch { /* 파일이 없으면 넘어간다 */ }
 })().catch(e => { console.error('\n✗ 업데이트 실패:', e.message); process.exit(1); });

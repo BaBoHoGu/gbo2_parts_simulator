@@ -2756,9 +2756,14 @@
       return { p, isEquipped, chk, banned, blocked: !isEquipped && !chk.ok };
     };
 
-    const key = state.partTab + ' ' + q + ' ' + (state.ms ? state.ms.MS名 : '');
+    // 캐시 키의 구분자는 보통 문자로 둔다 — 예전엔 NUL(U+0000) 이 박혀 있어
+    // ui.js 가 '바이너리' 로 취급돼 grep 이 이 파일을 줄 단위로 못 뒤졌다.
+    // 강화 단계도 키에 넣는다 — 단계를 내리면 슬롯이 줄어 장착 가능/불가가 뒤집히는데,
+    // 순서를 그대로 두면 「장착 가능 먼저」 정렬이 무너져 불가 타일이 앞에 남는다.
+    // (순서 고정은 '장착/해제 중에 타일이 움직이지 않게' 하려는 것이라, 단계까지 붙들 이유는 없다)
+    const key = [state.partTab, q, state.ms ? state.ms.MS名 : '', state.stage].join('|');
     if (key !== partOrderKey) {
-      // 필터/기체가 바뀔 때만 '장착 가능→장착 중→불가' 로 정렬해 순서를 고정한다.
+      // 필터/기체/강화가 바뀔 때만 '장착 가능→장착 중→불가' 로 정렬해 순서를 고정한다.
       const rank = r => (r.isEquipped ? 1 : r.chk.ok ? 0 : 2);
       partOrder = list.map(rowOf).sort((a, b) => rank(a) - rank(b)).map(r => r.p);
       partOrderKey = key;
@@ -4805,8 +4810,9 @@
     const cleared = clearTargets();
     resetEnhance();             // 레벨이 바뀌면 슬롯도 바뀌므로 확장 스킬도 초기화한다
     renderAll();
-    if (had || cleared) toast('레벨을 변경해 장착 파츠'
-      + (cleared ? '·자동 구성 목표' : '') + '를 초기화했습니다');
+    // 실제로 지운 것만 말한다 — 파츠가 없었는데 「장착 파츠를 초기화했습니다」 라고 하면 거짓말이다
+    const wiped = [had && '장착 파츠', cleared && '자동 구성 목표'].filter(Boolean);
+    if (wiped.length) toast('레벨을 변경해 ' + wiped.join('·') + '를 초기화했습니다');
   }
 
   /** 현재 기체에 LV2 이상 변형이 있으면 이름 위에 레벨 전환 세그먼트를 그린다. */
