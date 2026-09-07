@@ -89,7 +89,12 @@
   // 자동 배타 대신 라벨만 보여 주고 사용자가 양립 가능한 것만 고르게 한다.
   function staggerCond(blob) {
     if (/機体HPへのダメージと[^。]*への負荷/.test(blob)) return '부위피격';   // 脚部/頭部… 특수완충재(그 부위 피격 시)
-    if (/[^、。/]{2,12}へ攻撃を受けた際/.test(blob)) return '부위피격';        // 「A・アーマーDEへ攻撃を受けた際」 등 부위 피격형
+    // 「〜へ攻撃を受けた際」 와 「〜に攻撃を受けた際」 — 조사만 다르고 뜻은 같다.
+    // へ 만 보다가 に 를 쓰는 3건(바이아란 커스텀 2호기 양팔부 장갑 등)이 '상시' 로 새어,
+    // 부위에 맞았을 때만 걸리는 경감이 기체 전체 내구 지표를 30% 올려 버렸다.
+    // 단 「停止射撃中に攻撃を受けた際」 처럼 바로 앞이 「中」 이면 부위가 아니라 '상태' 다 —
+    // 그건 아래 정지중·이동중 규칙이 잡아야 한다(크로스본 X2 개량형 最大出力(Z) 가 그 자리).
+    if (/[^、。/]{1,11}[^、。/中][へに]攻撃を受けた際/.test(blob)) return '부위피격';   // 「A・アーマーDEへ攻撃を受けた際」 등 부위 피격형
     if (/動作開始|判定発生|格闘攻撃中/.test(blob)) return '격투중';   // 헤비어택 등 — 「空中で使用可」 언급보다 우선
     if (/静止|停止/.test(blob)) return '정지중';
     if (/空中|落下|滑空|ジャンプ/.test(blob)) return '공중';
@@ -141,7 +146,11 @@
       const gm = seg && seg.match(GEN_BASE);
       if (gm) {
         const attrTxt = /(?:実弾|ビーム|格闘|射撃)(?:属性|射撃|攻撃)*被ダメージ/.test(sk.desc || '') ? (sk.desc || '') : (sk.eff || '');
-        extra = { cuts: cuts.slice(), cond: staggerCond(attrTxt) };   // 조건부(속성) 몫
+        // 추가분의 조건은 속성 문장만 보면 안 된다 — 「양팔 장갑에 맞았을 때…, 게다가 빔이면 더」 처럼
+        // 발동 조건은 앞 문장에 있고 뒤 문장엔 속성만 적힌 경우가 있어, 거기서 조건을 못 찾으면
+        // 스킬 전체(blob)의 조건을 물려받는다. (안 그러면 부위 한정인데 '상시' 로 나온다)
+        const xCond = staggerCond(attrTxt);
+        extra = { cuts: cuts.slice(), cond: xCond === '상시' ? staggerCond(blob) : xCond };   // 조건부(속성) 몫
         cuts.length = 0;
         cuts.push({ scope: scopeOf(seg), pct: Number(gm[1]) });       // 기본 몫
       }
