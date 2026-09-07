@@ -337,6 +337,42 @@
     return f;
   }
 
+  const ARMOR_KEY = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee', shield: 'armorMelee' };
+
+  /**
+   * 이 구성에 걸리는 피해경감 목록. 화면마다 무엇까지 세는지가 달라 인자로 받는다.
+   *   lv       기체 LV (오버튠처럼 LV 로 커지는 파츠에 쓴다). 없으면 지금 기체.
+   *   skillMs  방어 스킬을 셀 기체 — 체크 UI 가 있는 화면만 넘긴다(저장 구성·비교엔 없다).
+   *   skills   체크 Set (기본 state.staggerOn)
+   *   weapon   상대 무장 — 관통·폭풍처럼 **그 무장에만** 걸리는 경감까지 셀 때
+   */
+  function damageCutsOf(equipped, opt = {}) {
+    const lv = opt.lv != null ? opt.lv : (state.ms ? msLevel(state.ms) : 1);
+    const cuts = partDamageCuts(equipped, lv);
+    if (opt.skillMs) cuts.push(...boostBufferCuts(activeStaggerMods(opt.skillMs, lv, opt.skills).cuts, equipped));
+    if (opt.weapon) cuts.push(...conditionalPartCuts(equipped, opt.weapon));
+    return cuts;
+  }
+
+  /**
+   * 내구 지표 — 「이 구성이 이 속성 공격에 실제로 얼마나 버티나」.
+   *   HP ÷ (1 − 내성) 에 피해경감을 접은 값.
+   * 이 계산이 성능표·카드·비교·피탄·저장 목록에 각각 흩어져 있었고, 그중 둘은 경감을
+   * 아예 빼먹어 같은 이름의 지표가 24,572 와 22,115 로 갈렸다. 화면을 더 붙여도
+   * 어긋나지 않도록 여기 하나만 쓴다 — 무엇까지 셀지는 damageCutsOf 로 정한다.
+   */
+  const enduranceOf = (total, attr, cuts) =>
+    Math.round(durabilityOf(total, ARMOR_KEY[attr] || 'armorRange') / staggerDmgFactor(cuts, attr));
+
+  /** 화면에 함께 적는 「피해 -N%」 — 경감이 없으면 0. */
+  const cutPctOf = (cuts, attr) => {
+    const f = staggerDmgFactor(cuts, attr);
+    return f < 1 ? Math.round((1 - f) * 100) : 0;
+  };
+
+  // 세 속성을 한 번에 도는 자리가 많아 목록으로 둔다 (라벨은 화면마다 조금씩 다르다)
+  const DURA_ATTRS = [['solid', '내실탄', '실탄'], ['beam', '내빔', '빔'], ['melee', '내격투', '격투']];
+
   /** 누적치 스킬 체크박스 묶음 (내구 지표·피탄 시뮬 공통). onChange 는 상태 반영 후 콜백.
    *  각 스킬의 발동 조건을 라벨로 보여 주고, 동시 발동 가능한 것만 사용자가 자유롭게 체크한다. */
   function staggerCheckList(ms, lv, onChange, sel, form) {
@@ -1448,8 +1484,31 @@
     cell.append(sub);
   }
 
-  /** 무장 정렬 키 — 위력(전탄)·지속DPS·누적치. 값이 클수록 앞에 온다. (기본 위력·기본 계산 기준) */
-  function weaponSortKey(w, metric) {
+  /**
+   * 무장 한 발의 최종 피해 — 보정 → 자세·스코프 → 파츠 % → 스킬 %.
+   * 무장 표·PNG 카드·정렬이 모두 이 함수를 쓴다. 예전엔 같은 계산이 세 곳에 따로 있어
+   * 카드가 피해경감을 빼먹거나 정렬이 파츠를 통째로 무시하는 식으로 조용히 어긋났다.
+   * @param {number|null} base 무장 표의 위력(논차지·집속)
+   * @param {number} corr 사격/격투 보정
+   * @param {object} wm D.weaponModsOf 결과
+   * @param {number[]} [pcts] 곱연산으로 따로 얹을 피해 %(스킬 몫)
+   * @param {number} [etc] 자세·스코프 등 ETCa
+   */
+  function weaponHitDamage(w, base, corr, wm, pcts, etc) {
+    if (base == null) return null;
+    // 실드(태클 등)의 피해는 고정 — 사격·격투 보정을 받지 않는다
+    if (w.attr === 'shield' || w.type === 'shield') return base;
+    const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
+    const raw = w.type === 'melee'
+      ? D.meleeDamage(base, corr, { etcA: etc || 0 })
+      : D.shootingDamage(base, corr, { etcA: etc || 0 });
+    return D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...(pcts || [])]);
+  }
+
+  /** 무장 정렬 키 — 위력(전탄)·지속DPS·누적치. 값이 클수록 앞에 온다.
+   *  ctx 를 주면 표에 **보이는 값**(파츠·스킬·자세 반영)으로 줄을 세운다. 예전엔 늘 기본 위력으로
+   *  세워서, 실탄만 올려 주는 파츠를 끼우면 화면에 2,439 가 2,845 위에 놓이는 일이 있었다. */
+  function weaponSortKey(w, metric, ctx) {
     const lv = weaponLevel(w), d = lv ? w.levels[lv] : null;
     if (!d) return -1;
     const mult = fireMult(w);
@@ -1457,8 +1516,14 @@
     if (metric === 'stagger') { const s = parseStagger(w); return (s.pct || 0) * (s.pellets || 1); }
     // 소이 등 고정 피해는 위력과 별개로 더 들어간다. 이걸 빼면 소이 무장이 실제보다
     // 약한 것으로 정렬돼 뒤로 밀린다(견부11연장 미사일[소이]은 고정 2,250 이 통째로 빠졌다).
-    const fxSort = fixedDamageOf(w);
-    const power = Math.max(d.power || 0, d.powerCharged || 0) * pellets + (fxSort ? fxSort.total : 0);
+    const fxSort = ctx ? fixedDamageWithParts(w, state.equipped) : fixedDamageOf(w);
+    const hit = base => {
+      if (base == null) return 0;
+      if (!ctx) return base;
+      const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
+      return weaponHitDamage(w, base, ctx.corr[kind], ctx.wm, ctx.skPcts(kind), ctx.etc(w)) || 0;
+    };
+    const power = Math.max(hit(d.power), hit(d.powerCharged)) * pellets + (fxSort ? fxSort.total : 0);
     if (metric === 'power') return power;
     if (metric === 'dps') {
       if (w.type === 'shield' || w.type === 'melee' || w.attr === 'melee') return 0;
@@ -1486,12 +1551,10 @@
   function renderWeapons() {
     const box = $('#weaponList');
     box.innerHTML = '';
-    let list = msWeapons();       // 무장은 모드로 나누지 않고 전부 보여 준다(보기 편하게)
-    if (state.weaponSort && state.weaponSort !== 'default')   // 선택한 기준으로 내림차순 랭킹
-      list = [...list].sort((a, b) => weaponSortKey(b, state.weaponSort) - weaponSortKey(a, state.weaponSort));
-    $('#weaponCount').textContent = list.length ? `${list.length}종` : '';
+    const list0 = msWeapons();    // 무장은 모드로 나누지 않고 전부 보여 준다(보기 편하게)
+    $('#weaponCount').textContent = list0.length ? `${list0.length}종` : '';
 
-    if (!list.length) {
+    if (!list0.length) {
       box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
       return;
     }
@@ -1525,6 +1588,17 @@
     // 고정밀 포격 스킬 — 앉기·정지에서만 사격 피해 +N% (스킬 몫이라 보라로 나온다)
     const skEtcOf = w => (dmgKey(w) === 'shooting' && sk && sk.crouchPct && state.posture === 'crouch')
       ? sk.crouchPct / 100 : 0;
+
+    // 정렬은 보정·파츠·스킬이 다 정해진 뒤에 한다 — 표에 **보이는 값**으로 줄을 세우기 위해서다
+    const sortCtx = {
+      corr: { shoot: corr.shooting, melee: corr.melee },
+      wm,
+      skPcts: kind => skillDmgPctList(kind),
+      etc: w => postureEtcA(w) + skEtcOf(w)
+    };
+    const list = (state.weaponSort && state.weaponSort !== 'default')
+      ? [...list0].sort((a, b) => weaponSortKey(b, state.weaponSort, sortCtx) - weaponSortKey(a, state.weaponSort, sortCtx))
+      : list0;
 
     for (const w of list) {
       const lv = weaponLevel(w);
@@ -1626,16 +1700,11 @@
           return cell;
         }
         const kind = dmgKey(w) === 'melee' ? 'melee' : 'shoot';   // 격투 판정이면 격투 피해 % 적용
-        const pct = D.damagePctFor(wm, w, kind);   // 파츠 피해 % (한 배율로 합산)
-        const skPcts = skillDmgPctList(kind);      // 스킬 피해 % — 스킬별 별도 곱연산 배율
         const baseEtc = postureEtcA(w);         // 자세·스코프 (스킬과 무관, 초록에 포함)
         const skEtc = skEtcOf(w);               // 고정밀 포격 (스킬 몫)
-        const raw = (corrOf, etc) => (w.type === 'melee'
-          ? D.meleeDamage(base, corrOf, { etcA: etc })
-          : D.shootingDamage(base, corrOf, { etcA: etc }));
-        // 파츠 %는 한 배율, 스킬 %는 각각 곱연산으로 얹는다
-        const withoutSkill = D.applyDamagePct(raw(aBare, baseEtc), pct);
-        const withSkill = D.applyDamagePct(raw(a, baseEtc + skEtc), [pct, ...skPcts]);
+        // 파츠 %는 weaponHitDamage 안에서, 스킬 %는 곱연산으로 따로 얹는다
+        const withoutSkill = weaponHitDamage(w, base, aBare, wm, [], baseEtc);
+        const withSkill = weaponHitDamage(w, base, a, wm, skillDmgPctList(kind), baseEtc + skEtc);
         const gain = withoutSkill - base;
         const skillGain = withSkill - withoutSkill;
 
@@ -2127,22 +2196,19 @@
 
     // 내구 지표 — 스탯 행들과 같은 흐름(마지막 행). 체크한 방어 스킬(피해경감)만큼 실효 HP 가 오른다.
     const stg = activeStaggerMods(state.ms, lv);
-    const partCuts = partDamageCuts(state.equipped, lv);   // 장착 파츠의 % 피해경감(항상 적용)
+    const duraCuts = damageCutsOf(state.equipped, { lv, skillMs: state.ms });
     const du = el('div', 'dura-row');
     du.append(el('span', 'dura-lb', '내구 지표'));
-    for (const [k, label, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
-      const base = durabilityOf(r.total, k), f = staggerDmgFactor([...partCuts, ...boostBufferCuts(stg.cuts, state.equipped)], dattr);
+    for (const [dattr, label] of DURA_ATTRS) {
       const cell = el('span', 'dura-cell');
       cell.append(el('span', 'dura-k', label));
-      if (f < 1) {
-        const cellV = el('span', 'dura-v', Math.round(base / f).toLocaleString());
-        cell.append(cellV);
+      cell.append(el('span', 'dura-v', enduranceOf(r.total, dattr, duraCuts).toLocaleString()));
+      const pctCut = cutPctOf(duraCuts, dattr);
+      if (pctCut) {
         // 태그는 실효HP 상승률이 아니라 '피해 감소율'(파츠·스킬의 실제 경감)을 보여 준다.
-        const cut = el('span', 'dura-up', '피해 -' + Math.round((1 - f) * 100) + '%');
-        cut.title = `실효 HP ×${(1 / f).toFixed(3)} (피해 ${Math.round((1 - f) * 100)}% 경감)`;
+        const cut = el('span', 'dura-up', '피해 -' + pctCut + '%');
+        cut.title = `실효 HP ×${(1 / staggerDmgFactor(duraCuts, dattr)).toFixed(3)} (피해 ${pctCut}% 경감)`;
         cell.append(cut);
-      } else {
-        cell.append(el('span', 'dura-v', base.toLocaleString()));
       }
       du.append(cell);
     }
@@ -2244,13 +2310,9 @@
         const n = m ? m.n : 1;
         if (w.attr === 'shield' || w.type === 'shield') return { base, one: base, n, gain: 0, skillGain: 0, total: base * n };
         const kind = dmgKey(w) === 'melee' ? 'melee' : 'shoot';
-        const pct = D.damagePctFor(wm, w, kind);
-        const skPcts = skillDmgPctList(kind);
-        const raw = (corrOf, etc) => (w.type === 'melee'
-          ? D.meleeDamage(base, corrOf, { etcA: etc })
-          : D.shootingDamage(base, corrOf, { etcA: etc }));
-        const withoutSkill = D.applyDamagePct(raw(corrBare[dmgKey(w)] || 0, postureEtc(w)), pct);
-        const one = D.applyDamagePct(raw(corr[dmgKey(w)] || 0, postureEtc(w) + skEtc(w)), [pct, ...skPcts]);
+        // 무장 표(dmgCell)와 **같은 함수**를 쓴다 — 따로 구현해 두었다가 카드만 어긋난 적이 있다
+        const withoutSkill = weaponHitDamage(w, base, corrBare[dmgKey(w)] || 0, wm, [], postureEtc(w));
+        const one = weaponHitDamage(w, base, corr[dmgKey(w)] || 0, wm, skillDmgPctList(kind), postureEtc(w) + skEtc(w));
         return { base, one, n, gain: withoutSkill - base, skillGain: one - withoutSkill, total: one * n };
       };
       // ⑤ 쿨타임 / 발사간격
@@ -2504,14 +2566,14 @@
       let dx = rxi + 78;
       // 화면과 같이 피해경감(파츠 % · 체크한 방어 스킬)을 실효 HP 에 접는다.
       // 이게 빠져 있어서 경감 파츠를 껴도 카드의 내구 지표가 경감 전 값으로 나갔다.
-      const pngCuts = [...partDamageCuts(state.equipped, lv), ...boostBufferCuts(stg.cuts, state.equipped)];
-      for (const [k, lb, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
+      const pngCuts = damageCutsOf(state.equipped, { lv, skillMs: m });
+      for (const [dattr, lb] of DURA_ATTRS) {
         lt(lb, dx, ry + 4, '12px ' + F, CO.muted); dx += ctx.measureText(lb).width + 5;
-        const f = staggerDmgFactor(pngCuts, dattr);
-        const v = Math.round(durabilityOf(r.total, k) / f).toLocaleString();
+        const cutPct = cutPctOf(pngCuts, dattr);
+        const v = enduranceOf(r.total, dattr, pngCuts).toLocaleString();
         lt(v, dx, ry + 4, '700 13px ' + F, CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 5;
-        if (f < 1) {
-          const tg = '피해 -' + Math.round((1 - f) * 100) + '%';
+        if (cutPct) {
+          const tg = '피해 -' + cutPct + '%';
           lt(tg, dx, ry + 4, '700 11px ' + F, CO.ok);
           dx += (draw ? ctx.measureText(tg).width : 52) + 9;
         } else dx += 13;
@@ -2964,7 +3026,7 @@
       const mul = (1 + atkB[key] / 100) * skillDmgPctList(key).reduce((m, p) => m * (1 + p / 100), 1);
       return Math.round(((1 + corr / 100) * mul - 1) * 100);
     };
-    const cuts = [...partDamageCuts(equipped, lv), ...boostBufferCuts(activeStaggerMods(state.ms, lv).cuts, equipped)];
+    const cuts = damageCutsOf(equipped, { lv, skillMs: state.ms });
     // 내구 지표 = 실효 내성(armor 단위). 내성값과 피해경감 %를 합쳐 "체감 내성"으로 환산한다.
     // 예: armor 40 + 피해경감 10% → 100×(1 − 0.6×0.9) = 46. 목표 '50'을 armor처럼 지정.
     const dur = (key, dattr) => {
@@ -2981,13 +3043,11 @@
     // 그 파츠를 뽑지 않았다.
     // dur* 는 무장을 특정하지 않는 지표라 그대로 둔다 — 조건부 경감은 ehp* 축에만 넣는다.
     const ehpCuts = goalWeapon ? [...cuts, ...conditionalPartCuts(equipped, goalWeapon)] : cuts;
-    // 피탄이 나누는 값과 같은 식: 실효HP(내성만) ÷ 피해경감 배수.
-    const ehp = (key, dattr) => Math.round(durabilityOf(total, key) / staggerDmgFactor(ehpCuts, dattr));
     return {
       effShoot: eff(total.shoot, 'shoot'), effMelee: eff(total.meleeCorrection, 'melee'),
       durSolid: dur('armorRange', 'solid'), durBeam: dur('armorBeam', 'beam'), durMelee: dur('armorMelee', 'melee'),
-      ehpSolid: ehp('armorRange', 'solid'), ehpBeam: ehp('armorBeam', 'beam'),
-      ehpMelee: ehp('armorMelee', 'melee')
+      ehpSolid: enduranceOf(total, 'solid', ehpCuts), ehpBeam: enduranceOf(total, 'beam', ehpCuts),
+      ehpMelee: enduranceOf(total, 'melee', ehpCuts)
     };
   }
 
@@ -3073,6 +3133,7 @@
       locked: [...state.locked],
       banned: [...state.banned],   // 기본 제외한 파츠는 자동 구성에서도 빠진다
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
+      form: state.form,             // 변형 화면을 보고 있으면 변형 수치로 최적화한다
       restarts: 1
     };
     // 파생 지표(공격 지표·내구 지표) 목표가 하나라도 있으면 계산 훅을 넘긴다 (없으면 오버헤드 0).
@@ -3129,7 +3190,7 @@
         let bestAbs = -1e9;
         for (const e of expList) {
           if (isPer(e)) continue;
-          const st = C.calcStats(state.ms, base.parts, state.stage, e, partsByCat, fullst, expLevel, null, opts.skill);
+          const st = C.calcStats(state.ms, base.parts, state.stage, e, partsByCat, fullst, expLevel, opts.form, opts.skill);
           const a = absScore(st.total, obj.weights);
           if (a > bestAbs) { bestAbs = a; exp = e; }
         }
@@ -3297,7 +3358,8 @@
 
     const out = c.parts.map(p => {
       const without = c.parts.filter(q => q.name !== p.name);
-      const st = C.calcStats(state.ms, without, state.stage, exp, partsByCat, fullst, expLv, null, skill).total;
+      // 자동 구성과 같은 모드로 재야 기여도가 맞는다 (변형 화면이면 변형 수치)
+      const st = C.calcStats(state.ms, without, state.stage, exp, partsByCat, fullst, expLv, state.form, skill).total;
       const woDv = derivedMetrics(without, st);
       // 원시 스탯 상승분
       const rawDiffs = C.STAT_KEYS.map(k => ({ k, d: (full[k] || 0) - (st[k] || 0) })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
@@ -3741,19 +3803,13 @@
 
     // 내구 지표 — 성능표와 같은 계산: 실효 HP 에 파츠 피해경감(신형완충재·오버튠 등)까지 접는다.
     // (이걸 빼면 피해경감 파츠를 넣은 구성이 안 넣은 구성과 같은 값으로 나온다)
-    const dura = (s, k, dattr) => {
-      const cuts = partDamageCuts(s.equipped, C.msLevel(s.ms.MS名));   // 빌드엔 스킬 체크 없음 → 파츠만
-      return Math.round(durabilityOf(s.r.total, k) / staggerDmgFactor(cuts, dattr));
-    };
-    const duraCut = (s, dattr) => {
-      const f = staggerDmgFactor(partDamageCuts(s.equipped, C.msLevel(s.ms.MS名)), dattr);
-      return f < 1 ? Math.round((1 - f) * 100) : 0;
-    };
+    // 저장 구성엔 방어 스킬 체크 UI 가 없다 → 파츠 경감만 센다(skillMs 를 안 넘긴다)
+    const cutsOf = s => damageCutsOf(s.equipped, { lv: C.msLevel(s.ms.MS名) });
     table.append(el('div', 'cmp-sec', '내구 지표 (실효 HP · 파츠 피해경감 반영)'));
-    for (const [k, lb, dattr] of [['armorRange', '내실탄', 'solid'], ['armorBeam', '내빔', 'beam'], ['armorMelee', '내격투', 'melee']]) {
-      const cuts = each(s => duraCut(s, dattr));
-      const tag = cuts.some(c => c) ? ` (피해 ${cuts.map(c => '-' + c + '%').join(' / ')})` : '';
-      mkRow(lb + tag, each(s => dura(s, k, dattr)));
+    for (const [dattr, lb] of DURA_ATTRS) {
+      const pcts = each(s => cutPctOf(cutsOf(s), dattr));
+      const tag = pcts.some(c => c) ? ` (피해 ${pcts.map(c => '-' + c + '%').join(' / ')})` : '';
+      mkRow(lb + tag, each(s => enduranceOf(s.r.total, dattr, cutsOf(s))));
     }
 
     // 무장 (파츠·보정 반영). 이름으로 맞춰 논차지·집속·리로드/OH 비교(다른 기체면 대부분 —).
@@ -3877,7 +3933,7 @@
   // 내구 지표(실효 HP)를 실전 감각으로 확장 — 적 무장 하나를 골라
   //   격파까지 = 실효HP[속성] ÷ 무장 위력,  경직까지 = 임계 ÷ よろけ値
   // 를 보여 준다. (1히트 근사 — 국부보정·경직값 시간 감쇠는 미반영)
-  const PIETAN_ARMOR = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee', shield: 'armorMelee' };
+  // 속성 → 내성 스탯 키는 ARMOR_KEY 하나로 쓴다 (예전엔 여기 같은 표가 하나 더 있었다)
   // 「이 무장 N발 버티기」 를 자동 구성 목표로 넘길 때 쓰는 축
   const PIETAN_EHP = { solid: 'ehpSolid', beam: 'ehpBeam', melee: 'ehpMelee', shield: 'ehpMelee' };
 
@@ -4116,11 +4172,14 @@
     const r = stats();
     box.innerHTML = '';
     box.append(el('span', 'pietan-dura-lb', '내구 지표 (실효 HP)'));
-    for (const [lb, key] of [['실탄', 'armorRange'], ['빔', 'armorBeam'], ['격투', 'armorMelee']]) {
+    // 성능표와 같은 계산을 쓴다 — 예전엔 경감을 빼고 그려서, 같은 이름의 지표가
+    // 성능 24,572 · 여기 22,115 로 갈렸다(격파 발수는 피해 쪽에서 경감해 맞았지만 표시가 달랐다).
+    const cuts = damageCutsOf(state.equipped, { skillMs: state.ms });
+    for (const [dattr, , lb] of DURA_ATTRS) {
       const cell = el('span', 'pietan-dura-cell');
-      cell.append(el('i', 'pietan-dot ' + key));
+      cell.append(el('i', 'pietan-dot ' + ARMOR_KEY[dattr]));
       cell.append(el('span', 'pietan-dura-t', lb));
-      cell.append(el('span', 'pietan-dura-v', durabilityOf(r.total, key).toLocaleString()));
+      cell.append(el('span', 'pietan-dura-v', enduranceOf(r.total, dattr, cuts).toLocaleString()));
       box.append(cell);
     }
   }
@@ -4249,7 +4308,7 @@
   /** 상대 무장 → 나 (받는 피해·격파·경직). */
   function renderPietanIncoming(box) {
     const w = pietanPick, r = stats();
-    const key = PIETAN_ARMOR[w.attr] || 'armorRange';
+    const key = ARMOR_KEY[w.attr] || 'armorRange';
     const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
     const stg = activeStaggerMods(state.ms, state.ms ? msLevel(state.ms) : 1);   // 내 누적치 스킬
     const condCuts = conditionalPartCuts(state.equipped, w);   // 이 무장에만 걸리는 파츠 경감(관통·폭풍)
@@ -4417,7 +4476,7 @@
       const lv = weaponLevel(w), d = lv ? w.levels[lv] : null;
       if (!d || !d.power) continue;
       const attr = weaponAttr(w);
-      const enemyEff = durabilityOf(enemyTot, PIETAN_ARMOR[attr] || 'armorRange');
+      const enemyEff = durabilityOf(enemyTot, ARMOR_KEY[attr] || 'armorRange');
       // 조건부 파츠 경감(관통·폭풍)은 무장의 備考 를 보므로 피탄 쪽과 같은 모양으로 맞춰 넘긴다.
       const wc = { name: w.name, attr, type: w.type, psycommu: !!w.psycommu, note: (w.info && w.info['備考']) || '' };
       const eFactor = staggerDmgFactor([...eCuts, ...conditionalPartCuts(eEq, wc)], attr);
@@ -4686,13 +4745,15 @@
         }
         card.append(stats);
 
-        // 내구 지표 — 피해 종류별 실효 HP (내성은 상한 반영된 값)
+        // 내구 지표 — 피해 종류별 실효 HP. 파츠 피해경감까지 접는다(비교 화면과 같은 규칙).
+        // 예전엔 경감을 빼고 그려서 성능표보다 낮은 숫자가 나왔다 — 보정해 주는 곳이 없어 그냥 틀린 값이었다.
+        const scCuts = damageCutsOf(parts, { lv: C.msLevel(ms.MS名) });
         const du = el('div', 'sc-dura');
         du.append(el('span', 'sc-dura-lb', '내구 지표'));
-        for (const [k, label] of [['armorRange', '실탄'], ['armorBeam', '빔'], ['armorMelee', '격투']]) {
+        for (const [dattr, , label] of DURA_ATTRS) {
           const cell = el('span', 'ac-stat');
           cell.append(el('span', 'ac-k', label));
-          cell.append(el('span', 'ac-v', durabilityOf(r.total, k).toLocaleString()));
+          cell.append(el('span', 'ac-v', enduranceOf(r.total, dattr, scCuts).toLocaleString()));
           du.append(cell);
         }
         card.append(du);
