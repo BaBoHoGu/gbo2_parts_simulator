@@ -1433,10 +1433,18 @@
   // 위력 칸 아래에 초당 피해를 보여 준다. 기본 위력 기준(파츠·스킬 미반영)의 무장 비교용.
   //   순간 DPS = 1트리거 피해 ÷ 발사간격,  지속 DPS = 탄창분 피해 ÷ (탄창 소진 + 리로드/OH복귀)
 
-  /** 발사간격(초/발). 「N秒」 또는 「N発/分」(RPM), 없으면 쿨타임. 못 읽으면 0. */
+  /**
+   * 「쿨/발사」 칸에 쓸 항목 순서. 격투는 쿨타임이, 사격은 발사 간격이 실제 주기다.
+   * 표시와 DPS 계산이 **같은 목록**을 봐야 한다 — 예전엔 표는 쿨타임을, DPS 는 발사 간격을
+   * 먼저 보아, 둘 다 있는 무장에서 화면에 적힌 값과 DPS 의 근거가 서로 달랐다.
+   */
+  const intervalFields = w => ((w.type === 'melee' || w.attr === 'melee')
+    ? ['クールタイム', '発射間隔', '発射速度', '発射間', '照射時間']
+    : ['発射間隔', '発射速度', '発射間', 'クールタイム', '照射時間']);
+
+  /** 발사간격(초/발). 「N秒」 또는 「N発/分」(RPM). 못 읽으면 0. */
   function shotInterval(w, d) {
-    const info = w.info || {}, raw = (d && d.raw) || {};
-    const src = raw['発射間隔'] || info['発射間隔'] || info['発射 間隔'] || info['発射速度'] || info['クールタイム'] || '';
+    const src = wField(d, w.info || {}, ...intervalFields(w)) || '';
     const rpm = String(src).match(/([\d.]+)\s*発\s*[\/／]\s*分/);
     if (rpm && Number(rpm[1])) return 60 / Number(rpm[1]);
     const sec = String(src).match(/([\d.]+)\s*秒/);
@@ -1743,8 +1751,8 @@
       // ⑤ 쿨타임 — 격투는 クールタイム, 사격은 같은 자리에 발사 간격을 보여 준다
       //    (위키가 「発射 間隔」처럼 공백을 넣기도 해 표기 변형을 모두 받는다)
       //    조사(照射) 무장은 두 항목이 다 없어 조사 시간으로 대신한다
-      row.append(el('span', 'w-col',
-        jaUnits(f('クールタイム') || f('発射間隔', '発射速度', '発射間', '照射時間') || '—')));
+      //    항목 순서는 DPS 계산(shotInterval)과 같은 목록을 쓴다
+      row.append(el('span', 'w-col', jaUnits(f(...intervalFields(w)) || '—')));
 
       // ⑥ 탄 / 히트율 — 실탄은 탄수, 열무기는 히트율, 실드는 HP·크기
       // E팩 탄창식 빔(히트율 없이 OH復帰만)은 OHまでの弾数 가 곧 탄창 크기다.
@@ -2316,7 +2324,7 @@
         return { base, one, n, gain: withoutSkill - base, skillGain: one - withoutSkill, total: one * n };
       };
       // ⑤ 쿨타임 / 발사간격
-      const cool = f('クールタイム') || f('発射間隔', '発射速度', '発射間', '照射時間');
+      const cool = f(...intervalFields(w));   // 무장 표·DPS 와 같은 항목 순서
       // ⑥ 탄 / 히트율 (renderWeapons 와 동일 규칙)
       const ammo = f('弾数'), heat = f('ヒート率', 'ヒート率/フル', 'ヒート率/ノン'), ohShots = f('OHまでの弾数');
       const isEpack = D.isEpackMag(w), shieldHp = f('シールドHP', 'HP'), shieldSize = f('サイズ');
@@ -2425,6 +2433,9 @@
     function content(ctx, draw) {
       const lt = (t, x, y, font, color, align) => { if (draw) { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || 'left'; ctx.fillText(t, x, y); ctx.textAlign = 'left'; } };
       const rt = (t, xR, y, font, color) => lt(t, xR, y, font, color, 'right');
+      // 높이만 재는 1패스에서는 lt 가 폰트를 안 걸어, 그대로 measureText 하면 직전 폰트로 잰다.
+      // 가로 배치에만 쓰여 결과는 같았지만, 나중에 세로 계산에 쓰면 조용히 어긋난다 — 여기서 막는다.
+      const textW = (t, font, fallback) => { if (!draw) return fallback; ctx.font = font; return ctx.measureText(t).width; };
       const rule = (y, x0, x1) => { if (draw) { ctx.strokeStyle = CO.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, y + 0.5); ctx.lineTo(x1, y + 0.5); ctx.stroke(); } };
       const rrect = (x, y, w, h, rad) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, rad); else ctx.rect(x, y, w, h); };
       const box = (x, y, w, h, rad) => { if (draw) { ctx.fillStyle = CO.panel2; rrect(x, y, w, h, rad); ctx.fill(); ctx.strokeStyle = CO.line; ctx.lineWidth = 1; rrect(x + 0.5, y + 0.5, w, h, rad); ctx.stroke(); } };
@@ -2550,7 +2561,7 @@
           const mult = (1 + ab[key] / 100) * skillDmgPctList(key).reduce((s2, q) => s2 * (1 + q / 100), 1);
           const pct = Math.round((mult - 1) * 100);
           const eff = Math.round(((1 + corr / 100) * (1 + pct / 100) - 1) * 100);
-          lt(lb, ax, ry + 4, '12px ' + F, CO.muted); ax += ctx.measureText(lb).width + 5;
+          lt(lb, ax, ry + 4, '12px ' + F, CO.muted); ax += textW(lb, '12px ' + F, 26) + 5;
           const v = eff.toLocaleString();
           lt(v, ax, ry + 4, '700 13px ' + F, CO.info); ax += (draw ? ctx.measureText(v).width : 40) + 5;
           if (pct !== 0) {
@@ -2568,7 +2579,7 @@
       // 이게 빠져 있어서 경감 파츠를 껴도 카드의 내구 지표가 경감 전 값으로 나갔다.
       const pngCuts = damageCutsOf(state.equipped, { lv, skillMs: m });
       for (const [dattr, lb] of DURA_ATTRS) {
-        lt(lb, dx, ry + 4, '12px ' + F, CO.muted); dx += ctx.measureText(lb).width + 5;
+        lt(lb, dx, ry + 4, '12px ' + F, CO.muted); dx += textW(lb, '12px ' + F, 30) + 5;
         const cutPct = cutPctOf(pngCuts, dattr);
         const v = enduranceOf(r.total, dattr, pngCuts).toLocaleString();
         lt(v, dx, ry + 4, '700 13px ' + F, CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 5;
@@ -2844,7 +2855,7 @@
     return partOrder.map(rowOf);
   }
 
-  // 파츠 타일은 159개로 고정이라 한 번 만들어 두고 상태만 갱신한다.
+  // 파츠 타일은 파츠 수만큼만 만들어 두고(현재 163개, 갱신 때마다 늘어난다) 상태만 갱신한다.
   // (매 장착마다 DOM·이미지를 새로 만들지 않아 깜빡임과 재로딩이 없다)
   const tileCache = new Map();
 
@@ -2986,7 +2997,7 @@
     let fit = 0, nextTop = null, rows = 0;
     const MAX_ROWS = 3;   // 파츠 목록은 최대 3행만 보이고, 그 이상은 스크롤
     for (const [top, bottom] of [...rowBottom].sort((a, b) => a[0] - b[0])) {
-      if (rows >= MAX_ROWS || bottom + padBottom > budget) { nextTop = top; break; }   // 2행 넘거나 예산 초과면 끊는다
+      if (rows >= MAX_ROWS || bottom + padBottom > budget) { nextTop = top; break; }   // MAX_ROWS 넘거나 예산 초과면 끊는다
       fit = bottom; rows++;
     }
     if (!fit) return;
@@ -3653,12 +3664,9 @@
       if (!d) continue;
       const info = w.info || {};
       const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
-      const fin = base => {
-        if (base == null) return null;
-        if (w.attr === 'shield') return base;
-        const raw = w.type === 'melee' ? D.meleeDamage(base, corr.melee, {}) : D.shootingDamage(base, corr.shooting, {});
-        return D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind)]);
-      };
+      // 무장 표·PNG 카드와 같은 함수를 쓴다. 자세·스킬은 '구성'이 아니라 그때의 화면 상태라
+      // 여기선 넣지 않는다(그래서 pcts·etc 가 비어 있다) — 표 아래 라벨에 그렇게 밝힌다.
+      const fin = base => weaponHitDamage(w, base, kind === 'melee' ? corr.melee : corr.shooting, wm, [], 0);
       const nc = fin(d.power);
       const ch = (d.powerCharged != null && d.powerCharged !== d.power) ? fin(d.powerCharged) : null;
       if (nc == null && ch == null) continue;
@@ -3731,7 +3739,13 @@
     box.innerHTML = '';
     const bldOf = id => (compareOpts.find(o => o.id === id) || {}).bld;
     const cols = cmpIds.map(id => statsForBuild(bldOf(id))).filter(Boolean);
-    if (cols.length < 2) { box.append(el('div', 'pietan-empty', '비교할 두 구성을 선택하세요.')); return; }
+    if (cols.length < 2) {
+      // 4칸까지 폈다가 구성이 사라진 경우 — 넓힘·Δ 없음 표시를 되돌리지 않으면 그대로 남는다
+      box.classList.remove('no-delta');
+      const m0 = $('#compareModal'); if (m0) m0.classList.remove('wide');
+      box.append(el('div', 'pietan-empty', '비교할 두 구성을 선택하세요.'));
+      return;
+    }
 
     // 칸이 3개 이상이면 Δ 열은 뜻이 흐려진다(무엇에서 뺀 값인지가 모호). 대신 행마다 최고값을 표시한다.
     const n = cols.length, showDelta = n === 2;
@@ -3815,7 +3829,8 @@
     // 무장 (파츠·보정 반영). 이름으로 맞춰 논차지·집속·리로드/OH 비교(다른 기체면 대부분 —).
     const wl = cols.map(buildWeaponDamage);
     if (wl.some(x => x.length)) {
-      table.append(el('div', 'cmp-sec', '무장 위력 (파츠 반영 · 전탄·고정 피해 포함)'));
+      // 자세·스킬은 '구성'이 아니라 화면 상태라 비교에서는 빼고 잰다 — 무장 표와 값이 달라지므로 밝힌다
+      table.append(el('div', 'cmp-sec', '무장 위력 (파츠 반영 · 자세·스킬 제외 · 전탄·고정 피해 포함)'));
       const maps = wl.map(x => new Map(x.map(y => [y.name, y])));
       const names = [];
       for (const list of wl) for (const x of list) if (!names.includes(x.name)) names.push(x.name);
@@ -3937,7 +3952,10 @@
   // 「이 무장 N발 버티기」 를 자동 구성 목표로 넘길 때 쓰는 축
   const PIETAN_EHP = { solid: 'ehpSolid', beam: 'ehpBeam', melee: 'ehpMelee', shield: 'ehpMelee' };
 
-  let pietanGoalHits = 0;   // 목표 발수 (0 이면 '현재 +1' 을 기본값으로 쓴다)
+  // 목표 발수 (0 이면 '지금 버티는 발수 +1' 을 기본값으로 쓴다).
+  // 무장·적 기체를 바꾸면 비운다 — 다른 무장에 치던 발수가 그대로 남아 있으면
+  // 새 무장의 기본값(현재 +1)이 안 나온다.
+  let pietanGoalHits = 0;
 
   /**
    * 「이 무장 N발 버티기」 → 자동 구성 하한 목표.
@@ -3962,6 +3980,8 @@
       // 어느 무장 기준인지 기억한다 — 관통·폭풍 경감처럼 그 무장에만 걸리는 파츠 경감을
       // 자동 구성도 같은 조건으로 재야 사용자가 본 숫자와 자를 맞출 수 있다.
       goalWeapon = w;
+      // 손으로 목표 칸을 채운 것과 같은 취급 — 자동 구성이 「내 가중치」 를 1순위로 쓰게 한다
+      state.weightsTouched = true;
       renderAutoGrid();
       openPietan(false);
       openDrawer(true);
@@ -4194,7 +4214,7 @@
     pietanCorrTouched = false;                    // 새 기체는 공격보정 다시 자동
     pietanAttrTouched = false; pietanAutoAttr();  // 상성도 다시 자동
     pietanEnemySkills.clear(); pietanEnemyDef.clear();
-    pietanVariant = 0; pietanDir = 0;
+    pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
     renderPietanChecks(); renderPietanLeft(); renderPietanResult();
   }
 
@@ -4206,7 +4226,7 @@
     pietanBuild = bld; pietanPick = null;
     pietanCorrTouched = false; pietanAttrTouched = false; pietanAutoAttr();
     pietanEnemySkills.clear(); pietanEnemyDef.clear();
-    pietanVariant = 0; pietanDir = 0;
+    pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
     renderPietanChecks(); renderPietanLeft(); renderPietanResult();
   }
 
@@ -4262,7 +4282,7 @@
       for (const m of arr) {
         const lv = msLevel(m);
         const b = el('button', 'seg-btn' + (m === pietanMs ? ' on' : ''), 'LV' + lv);
-        b.onclick = () => { pietanMs = m; pietanMsLv = lv; pietanPick = null; pietanEnemyDef.clear();
+        b.onclick = () => { pietanMs = m; pietanMsLv = lv; pietanPick = null; pietanGoalHits = 0; pietanEnemyDef.clear();
           renderPietanChecks(); renderPietanLeft(); renderPietanResult(); };
         seg.append(b);
       }
@@ -4275,7 +4295,7 @@
       row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
       row.append(el('span', 'pietan-wn', T.weaponName(w.name)));
       row.append(el('span', 'pietan-wp', (w.power || w.charged).toLocaleString()));
-      row.onclick = () => { pietanPick = w; pietanVariant = 0; pietanDir = 0; pietanAutoCorr(); renderPietanLeft(); renderPietanResult(); };
+      row.onclick = () => { pietanPick = w; pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0; pietanAutoCorr(); renderPietanLeft(); renderPietanResult(); };
       box.append(row);
     }
     if (!wl.length) box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
