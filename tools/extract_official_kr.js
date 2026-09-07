@@ -81,7 +81,9 @@ const okName = s => s && s.length <= 34 && /[가-힣A-Za-z]/.test(s) && !NOT_NAM
   let prev = { 이름: [] };
   try { prev = JSON.parse(fs.readFileSync(DEST, 'utf8')); } catch { /* 처음 */ }
   const merged = [...new Set([...(prev.이름 || []), ...names])].sort();
-  fs.writeFileSync(DEST, JSON.stringify({ 확인일: new Date().toISOString().slice(0, 10), 이름: merged }, null, 1) + '\n');
+  const save = extra => fs.writeFileSync(DEST,
+    JSON.stringify({ 확인일: new Date().toISOString().slice(0, 10), 이름: merged, ...extra }, null, 1) + '\n');
+  save({ 불일치: [] });
   console.log('이번에 본 이름 ' + names.length + '개 (누적 ' + merged.length + ') → data/official_kr.json');
 
   // ── 우리 사전과 대조 ────────────────────────────────────────────────
@@ -113,6 +115,10 @@ const okName = s => s && s.length <= 34 && /[가-힣A-Za-z]/.test(s) && !NOT_NAM
   }
   console.log('  일치 — 기체 ' + okMs + ' · 파츠 ' + okPart + ' · 무장(대조 안 함) ' + weapon);
   if (!miss.length) { console.log('  공식과 다른 이름 없음.'); return; }
+  // 파일에도 남긴다 — 이 로그는 갱신 파이프라인 한가운데서 나와 그대로 흘러가 버린다.
+  // (실제로 「긴급 수복 모듈」 을 정확히 짚어 줬는데도 못 보고 배포가 나갔다)
+  // update.js 가 마지막 요약에서 이걸 다시 띄운다.
+  save({ 불일치: miss.map(n => ({ 공식: n, 출처: found.get(n) })) });
   console.log('\n  ⚠ 공식 표기와 다른 이름 ' + miss.length + '건 — 사전을 손볼 것');
   for (const n of miss) console.log('     공식 「' + n + '」   (' + found.get(n) + ')');
 })().catch(e => { console.error('실패:', e.message); process.exit(1); });
