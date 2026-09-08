@@ -893,18 +893,24 @@
 
   /* ---------- 화면 전환 ---------- */
 
+  // 화면은 셋이다 — 기체 선택 · 파츠 적용 · 공유 갤러리.
+  // 갤러리는 단계(stepper)에 넣지 않는다. 흐름의 한 단계가 아니라 언제든 다녀오는 곳이라,
+  // 들어오기 전 화면을 기억해 두고 「돌아가기」로 그리로 되돌린다.
+  let viewBefore = 'select';
+
   function setView(view) {
     const changed = state.view !== view;
+    if (view === 'gallery' && changed) viewBefore = state.view;
     state.view = view;
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
     if (view === 'select' && changed) { renderMsList(); renderViewChips(); }
-    document.body.classList.toggle('view-select', view === 'select');
-    document.body.classList.toggle('view-build', view === 'build');
+    for (const v of ['select', 'build', 'gallery'])
+      document.body.classList.toggle('view-' + v, view === v);
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
       li.classList.toggle('on', li.dataset.step === view));
     // 화면 전환 시 스크롤을 위로 되돌린다
-    const scr = view === 'build' ? $('#screenBuild') : $('#screenSelect');
+    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery') }[view] || $('#screenSelect');
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
@@ -3639,6 +3645,8 @@
 
   const S = window.GBO2Share;
   let galleryList = [];      // 서버(또는 캐시)에서 받아 둔 목록
+  let gallerySort = 'new';   // 'new' 최신순 | 'ms' 기체순
+  let galleryAttr = '';      // '' 전체 | 強襲 | 汎用 | 支援
   let galleryLoading = false;
 
   const relTime = ms => {
@@ -3663,10 +3671,16 @@
       const idx = searchIndex((ms ? T.msName(ms.MS名) : b.ms) + ' ' + b.ms + ' ' + b.name);
       return matches(idx, q);
     });
-    if ($('#gallerySort').value === 'ms') {
+    if (gallerySort === 'ms') {
       list = [...list].sort((a, b) => {
         const an = T.msName(a.ms), bn = T.msName(b.ms);
         return an.localeCompare(bn, 'ko') || b.at - a.at;
+      });
+    }
+    if (galleryAttr) {
+      list = list.filter(b => {
+        const ms = msData.find(m => m.MS名 === b.ms);
+        return ms && ms.属性 === galleryAttr;
       });
     }
     note.textContent = galleryList.length ? `${list.length} / ${galleryList.length}개` : '';
@@ -3709,10 +3723,8 @@
   }
 
   function openGallery(open) {
-    const m = $('#galleryModal'), b = $('#galleryBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
-    if (!open) return;
+    if (!open) { setView(viewBefore === 'gallery' ? 'select' : viewBefore); return; }
+    setView('gallery');
     // 캐시가 있으면 먼저 보여 주고(오프라인에서도 열린다) 새로 받아 온다
     if (!galleryList.length && S) galleryList = S.readCache();
     renderGallery();
@@ -5435,14 +5447,34 @@
     // 저장: 이름을 지정해 목록에 담는다 / 불러오기: 저장 목록을 카드로 연다
     $('#save').onclick = saveCurrentBuild;
     $('#load').onclick = () => openSavedModal(true);
-    // 공유 갤러리
+    // 공유 갤러리 (전체 화면)
     $('#galleryBtn').onclick = () => openGallery(true);
-    $('#galleryClose').onclick = () => openGallery(false);
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
     $('#galleryUpload').onclick = uploadCurrent;
     $('#galleryQuery').oninput = () => renderGallery();
-    $('#gallerySort').onchange = () => renderGallery();
+    // 정렬·속성은 기체 선택 화면과 같은 칩으로 (버튼 모양·조작을 통일한다)
+    const galChips = (boxSel, items, get, set) => {
+      const box = $(boxSel);
+      for (const it of items) {
+        const chip = el('button', 'chip' + (get() === it.v ? ' on' : '') + (it.cls ? ' ' + it.cls : ''), it.label);
+        chip.onclick = () => {
+          set(it.v);
+          [...box.children].forEach(c => c.classList.remove('on'));
+          chip.classList.add('on');
+          renderGallery();
+        };
+        box.append(chip);
+      }
+    };
+    galChips('#gallerySortChips', [{ label: '최신순', v: 'new' }, { label: '기체순', v: 'ms' }],
+      () => gallerySort, v => { gallerySort = v; });
+    galChips('#galleryAttrChips',
+      [{ label: '전체', v: '' },
+       { label: T.attrName('強襲'), v: '強襲', cls: 'attr-強襲' },
+       { label: T.attrName('汎用'), v: '汎用', cls: 'attr-汎用' },
+       { label: T.attrName('支援'), v: '支援', cls: 'attr-支援' }],
+      () => galleryAttr, v => { galleryAttr = v; });
     $('#savedModalClose').onclick = () => openSavedModal(false);
     $('#savedModalBack').onclick = () => openSavedModal(false);
     // 빌드 A/B 비교
@@ -5561,7 +5593,7 @@
       if (ev.key !== 'Escape') return;
       if (mobileSheetOpen()) { closeMobileSheets(); return; }   // 모바일 슬라이드 시트 먼저 닫기
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
-      if (!$('#galleryModal').hidden) { openGallery(false); return; }
+      if (state.view === 'gallery') { openGallery(false); return; }
       if (!$('#pietanModal').hidden) { openPietan(false); return; }
       if (!$('#compareModal').hidden) { openCompareModal(false); return; }
       if (!$('#ownedModal').hidden) { openOwnedModal(false); return; }

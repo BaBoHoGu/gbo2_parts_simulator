@@ -56,7 +56,10 @@ const check = (label, ok, extra) => {
   await pg.evaluate(t => { window.prompt = () => t; }, title);
   await pg.evaluate(() => document.querySelector('#galleryBtn').click());
   await sleep(1200);
-  check('갤러리 화면이 열린다', await pg.evaluate(() => !document.querySelector('#galleryModal').hidden));
+  check('갤러리가 전체 화면으로 열린다', await pg.evaluate(() =>
+    document.body.classList.contains('view-gallery') && !!document.querySelector('#screenGallery')));
+  check('모달이 아니라 화면이다 (배경 덮개 없음)', await pg.evaluate(() =>
+    !document.querySelector('.auto-modal-back:not([hidden])')));
 
   await pg.evaluate(() => document.querySelector('#galleryUpload').click());
   await sleep(9000);
@@ -77,8 +80,10 @@ const check = (label, ok, extra) => {
     dura: (c.querySelector('.sc-dura') || {}).textContent || ''
   })));
   check('목록에 카드가 뜬다', cards.length > 0, '0개');
-  if (cards.length) {
-    const c = cards[0];
+  // 파츠가 0개인 구성도 올라올 수 있어, 요약 검사는 '파츠가 있는' 카드로 한다
+  const idx = cards.findIndex(c => c.thumbs > 0);
+  if (cards.length && idx >= 0) {
+    const c = cards[idx];
     console.log('   첫 카드: ' + c.name + ' | ' + c.ms + ' | ' + c.sub);
     console.log('           파츠 ' + c.thumbs + '개 · 스탯 ' + c.stats + '칸 · ' + c.dura.replace(/\s+/g, ' ').slice(0, 60));
     check('저장 목록처럼 요약이 보인다 (스탯 10칸 + 내구 지표)', c.stats === 10 && /내구 지표/.test(c.dura));
@@ -86,16 +91,17 @@ const check = (label, ok, extra) => {
     check('올린 시각·데이터 버전이 보인다', /전|방금/.test(c.sub) && /데이터/.test(c.sub), c.sub);
   }
 
-  // 눌러서 내 구성으로 가져오기
-  await pg.evaluate(() => { document.querySelector('#galleryResults .auto-cand').click(); });
+  // 눌러서 내 구성으로 가져오기 — 파츠가 실린 카드로 확인한다
+  await pg.evaluate(i => { document.querySelectorAll('#galleryResults .auto-cand')[i].click(); }, Math.max(0, idx));
   await sleep(1800);
   const after = await pg.evaluate(() => ({
-    closed: document.querySelector('#galleryModal').hidden,
+    closed: !document.body.classList.contains('view-gallery'),
     toast: (document.querySelector('#toast') || {}).textContent || '',
     equipped: document.querySelectorAll('#equipped .eq:not(.empty)').length,
-    ms: (document.querySelector('#heroName') || {}).textContent || ''
+    ms: (document.querySelector('#heroName') || {}).textContent || '',
+    view: ['select','build','gallery'].find(v => document.body.classList.contains('view-' + v)) || '?'
   }));
-  check('가져오면 갤러리가 닫힌다', after.closed);
+  check('가져오면 파츠 화면으로 돌아간다', after.closed && after.view === 'build', '지금 화면: ' + after.view);
   check('구성이 실제로 장착된다', after.equipped > 0, '장착 ' + after.equipped + '개');
   console.log('   ' + after.ms + ' · 파츠 ' + after.equipped + '개 · ' + after.toast);
 
@@ -107,6 +113,26 @@ const check = (label, ok, extra) => {
   await sleep(600);
   const filtered = await pg.evaluate(() => document.querySelectorAll('#galleryResults .auto-cand').length);
   check('검색이 걸러 낸다', before > 0 && filtered === 0, `${before} → ${filtered}`);
+
+  // 「돌아가기」 로 들어오기 전 화면으로 되돌아가는가
+  await pg.evaluate(() => document.querySelector('#galleryBack').click());
+  await sleep(700);
+  check('돌아가기가 이전 화면으로 되돌린다',
+    await pg.evaluate(() => document.body.classList.contains('view-build')));
+
+  // 속성 칩 필터
+  await pg.evaluate(() => document.querySelector('#galleryBtn').click());
+  await sleep(2500);
+  const chipRes = await pg.evaluate(async () => {
+    const all = document.querySelectorAll('#galleryResults .auto-cand').length;
+    const chip = [...document.querySelectorAll('#galleryAttrChips .chip')].find(c => c.textContent !== '전체');
+    if (!chip) return null;
+    chip.click();
+    await new Promise(r => setTimeout(r, 400));
+    return { all, after: document.querySelectorAll('#galleryResults .auto-cand').length, label: chip.textContent };
+  });
+  check('속성 칩이 목록을 거른다', !!chipRes && chipRes.after <= chipRes.all,
+    chipRes ? `${chipRes.label}: ${chipRes.all} → ${chipRes.after}` : '칩 없음');
 
   check('스크립트 오류 없음', errs.length === 0, errs.join(' / '));
   await br.close();
