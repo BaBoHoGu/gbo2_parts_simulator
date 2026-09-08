@@ -5,19 +5,15 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const read = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
 const readJson = (...p) => JSON.parse(read(...p));
+const D = require('./lib/dataset.js');
 
 const msData = readJson('data', 'msData.json');
 // 공식 미러(gbo2.jp)에 아직 없는 기체(예: 갓 추가된 LV — 위키엔 있으나 미러 반영 전)를 보탠다.
-// 이미 같은 MS名 이 있으면 건너뛴다 → 나중에 공식에 반영되면 이 추가분은 자동 무시된다.
+// 병합 규칙은 tools/lib/dataset.js 한 곳에만 둔다 — 공유 갤러리 사전도 같은 목록을 써야 하는데,
+// 예전엔 여기만 병합해서 앱에는 있고 사전에는 없는 기체가 생겼다(업로드가 조용히 거부됨).
 {
-  const addPath = path.join(ROOT, 'data', 'msData.additions.json');
-  if (fs.existsSync(addPath)) {
-    const adds = JSON.parse(fs.readFileSync(addPath, 'utf8'));
-    const have = new Set(msData.map(m => m.MS名));
-    let n = 0;
-    for (const m of adds) if (!have.has(m.MS名)) { msData.push(m); n++; }
-    if (n) console.log(`추가 기체 병합: ${n}기 (msData.additions.json)`);
-  }
+  const n = D.mergeMsAdditions(ROOT, msData);
+  if (n) console.log(`추가 기체 병합: ${n}기 (msData.additions.json)`);
 }
 // gbo2.jp 가 아직 반영 못 한 스탯·슬롯은 위키 값으로 교정한다 (extract_ms_wiki.js 가 만든 목록).
 const overridePath = path.join(ROOT, 'data', 'msData.override.json');
@@ -32,20 +28,8 @@ if (fs.existsSync(overridePath)) {
 }
 const parts = readJson('data', 'parts.json');
 // 미러(gbo2.jp)에 아직 없는 파츠를 위키에서 보강한다 — 기체의 msData.additions.json 과 같은 역할.
-// 미러에 같은 이름이 생기면 그쪽이 이기고 추가분은 자동으로 빠진다(중복 걱정 없음).
 {
-  const add = readJson('data', 'parts.additions.json');
-  let n = 0;
-  for (const [cat, list] of Object.entries(add)) {
-    if (cat.startsWith('_') || !Array.isArray(list)) continue;   // _주석 같은 메타 키는 건너뛴다
-    if (!parts[cat]) parts[cat] = [];
-    const have = new Set(parts[cat].map(x => x.name));
-    for (const it of list) {
-      if (!it || typeof it !== 'object' || !it.name) continue;    // 문자열 등 잘못된 항목 방어
-      if (have.has(it.name)) continue;
-      parts[cat].push(it); n++;
-    }
-  }
+  const n = D.mergePartAdditions(ROOT, parts);
   if (n) console.log(`파츠 보강: ${n}개 (parts.additions.json)`);
 }
 const fullst = readJson('data', 'fullst.json');
@@ -131,8 +115,14 @@ if (fs.existsSync(IMG_SRC)) {
 }
 
 // 데이터 신선도 배지용 — 빌드 시각과 총량을 앱에 주입한다.
+// stamp 는 분 단위(로컬) — 배포 스탬프의 **원본**이다. update.ps1 이 이 값을 읽어
+// APK versionName·OTA version.json·릴리스 노트에 그대로 쓴다. 예전엔 배포 때 Get-Date 로
+// 따로 찍어서, 앱이 아는 값과 배포된 값이 서로 달랐다(같은 날 재배포를 PC 가 못 잡던 원인).
+const pad = n => String(n).padStart(2, '0');
+const now = new Date();
 const buildMeta = {
   date: new Date().toISOString().slice(0, 10),
+  stamp: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`,
   ms: msData.length,
   parts: Object.values(parts).reduce((a, b) => a + b.length, 0),
   weapons: Object.values(weapons).reduce((a, p) => a + p.weapons.length, 0)

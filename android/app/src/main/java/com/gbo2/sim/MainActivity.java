@@ -73,6 +73,11 @@ public class MainActivity extends Activity {
     private View splashView;
     private TextView splashMsg;
     private boolean opened = false;
+    // 시작 갱신과 「업데이트 확인」이 겹치지 않게 한다. 시작 다운로드가 SPLASH_MAX_MS 를
+    // 넘기면 앱이 먼저 열리고, 그 사이 사용자가 버튼을 누를 수 있다 — 예전엔 두 스레드가
+    // 같은 임시 파일에 써서 받은 것이 버려졌다.
+    private final java.util.concurrent.atomic.AtomicBoolean updating =
+        new java.util.concurrent.atomic.AtomicBoolean(false);
     /** 시작 화면을 붙들어 둘 최대 시간 — 이걸 넘기면 갱신을 못 마쳤어도 앱을 연다. */
     private static final long SPLASH_MAX_MS = 20000;
     private byte[] pendingImg;      // pre-Q 저장 권한 대기 중인 이미지
@@ -238,6 +243,10 @@ public class MainActivity extends Activity {
      * (시작 때는 조용히 넘어가도 되지만, 눌렀는데 아무 반응이 없으면 고장으로 보인다).
      */
     private void manualUpdate() {
+        if (!updating.compareAndSet(false, true)) {
+            toastUi("이미 업데이트를 확인하는 중입니다");
+            return;
+        }
         try {
             String vj = httpGet(OTA_VERSION, 6000, 6000);
             if (vj == null) { toastUi("연결하지 못했습니다 — 잠시 후 다시 시도하세요"); return; }
@@ -250,7 +259,7 @@ public class MainActivity extends Activity {
                 return;
             }
             toastUi("업데이트 받는 중… " + remote);
-            File tmp = new File(getFilesDir(), "ota_index.tmp");
+            File tmp = new File(getFilesDir(), "ota_index.manual.tmp");
             boolean got = httpDownload(OTA_HTML, tmp, 8000, 60000);
             if (!got || tmp.length() < 100000 || !htmlLooksComplete(tmp)) {
                 tmp.delete();
@@ -278,6 +287,8 @@ public class MainActivity extends Activity {
             });
         } catch (Exception e) {
             toastUi("업데이트를 확인하지 못했습니다");
+        } finally {
+            updating.set(false);
         }
     }
 
@@ -332,6 +343,7 @@ public class MainActivity extends Activity {
      * 어느 쪽이든 실패하면 기존 버전으로 연다 — 갱신 때문에 앱을 못 쓰는 일은 없어야 한다.
      */
     private void startupUpdate() {
+        if (!updating.compareAndSet(false, true)) { openApp(); return; }
         try {
             String vj = httpGet(OTA_VERSION, 4000, 4000);
             if (vj == null) { splashSay("오프라인 — 저장된 버전으로 시작합니다"); openApp(); return; }
@@ -360,6 +372,8 @@ public class MainActivity extends Activity {
             openApp();
         } catch (Exception e) {
             openApp();   // 어떤 예외에도 앱은 열려야 한다
+        } finally {
+            updating.set(false);
         }
     }
 

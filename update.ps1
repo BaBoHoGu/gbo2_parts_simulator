@@ -132,10 +132,19 @@ function Publish-Ota {
   $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
   & $gh release upload data $vj $html --repo $OtaRepo --clobber
   $up = $LASTEXITCODE
-  $ErrorActionPreference = $prevEap
   if ($up -eq 0) {
-    Write-Host "OTA 게시 완료 — 폰 앱이 실행 시 자동으로 최신 데이터를 받습니다." -ForegroundColor Green
+    # 릴리스 노트에 스탬프를 남긴다. PC 판은 file:// 라 릴리스 '자산' 을 CORS 로 못 읽지만
+    # api.github.com 은 통과하고, 그 응답에 이 노트(body)가 들어 있다. 자산 업로드 시각
+    # (updated_at)은 날짜까지만 쓸 수 있어 같은 날 재배포를 못 잡았다.
+    # (아직 Continue 구간이다 — gh 가 stderr 로 뭘 내보내도 배포가 죽지 않게)
+    & $gh release edit data --repo $OtaRepo --notes "데이터 $stamp" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host '  릴리스 노트에 스탬프를 남기지 못했습니다 — PC 판이 같은 날 재배포를 못 잡습니다.' -ForegroundColor Yellow
+    }
+    $ErrorActionPreference = $prevEap
+    Write-Host "OTA 게시 완료 ($stamp) — 폰 앱이 실행 시 자동으로 최신 데이터를 받습니다." -ForegroundColor Green
   } else {
+    $ErrorActionPreference = $prevEap
     Write-Host "OTA 게시 실패 (위 로그 확인). release 'data' 채널이 있는지 확인하세요." -ForegroundColor Red
   }
 }
@@ -219,7 +228,10 @@ function Set-DictKey {
 
 function Publish-Dict {
   # 사전을 먼저 만든다 — 데이터가 안 바뀌었으면 내용도 그대로다.
+  # node 가 stderr 로 뭘 내보내도 배포가 죽지 않게 이 구간만 Continue 로 둔다.
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
   & $node (Join-Path $PSScriptRoot 'tools\make_share_dict.js') '--dict' | Out-Null
+  $ErrorActionPreference = $prevEap
   $src = Join-Path $PSScriptRoot 'dist\firebase-dict.json'
   if (-not (Test-Path $src)) { Write-Host '사전을 만들지 못해 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
 
@@ -235,13 +247,23 @@ function Publish-Dict {
     return
   }
 
-  $lines = Get-Content $DictCred
-  $env:GBO2_DICT_EMAIL = $lines[0]
-  # DPAPI 로 풀어 프로세스 환경 변수로만 넘긴다 — 디스크에 평문이 남지 않는다.
-  $sec = ConvertTo-SecureString $lines[1]
-  $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
-  try { $env:GBO2_DICT_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
-  finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+  # 자격 증명이 깨져 있으면(잘린 파일, 다른 PC 에서 복사해 온 것 — DPAPI 는 안 풀린다)
+  # ConvertTo-SecureString 이 던진다. 이 스크립트는 ErrorActionPreference='Stop' 이라
+  # 그대로 두면 **배포 전체가 여기서 죽는다**. 사전은 배포의 곁가지이므로 경고만 하고 넘어간다.
+  try {
+    $lines = @(Get-Content $DictCred)
+    if ($lines.Count -lt 2) { throw '파일 형식이 올바르지 않습니다' }
+    $env:GBO2_DICT_EMAIL = $lines[0]
+    # DPAPI 로 풀어 프로세스 환경 변수로만 넘긴다 — 디스크에 평문이 남지 않는다.
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR((ConvertTo-SecureString $lines[1]))
+    try { $env:GBO2_DICT_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+  } catch {
+    $env:GBO2_DICT_PASSWORD = $null
+    Write-Host "`n사전 계정을 읽지 못했습니다 — 게시를 건너뜁니다. ($($_.Exception.Message))" -ForegroundColor Yellow
+    Write-Host '  .\update.ps1 -SetDictKey 로 다시 등록하세요 (다른 PC 의 자격 증명은 풀리지 않습니다).' -ForegroundColor Yellow
+    return
+  }
 
   Write-Host "`n공유 갤러리 사전 게시 중…" -ForegroundColor Cyan
   $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
@@ -301,8 +323,23 @@ if ($code -ne 0) {
 }
 
 if (-not $Check) {
-  # 이번 빌드의 버전 스탬프(분 단위) — APK versionName 과 OTA version.json 이 같은 값을 쓰게 한다.
-  $script:VerStamp = Get-Date -Format 'yyyy-MM-dd-HHmm'
+  # 이번 빌드의 버전 스탬프(분 단위) — APK versionName·OTA version.json·릴리스 노트가 같은 값을 쓴다.
+  # **빌드된 HTML 안의 값을 읽어 온다.** 여기서 Get-Date 로 따로 찍으면 빌드와 몇 초 차이로
+  # 분(심하면 날짜)이 어긋나, 앱이 아는 자기 버전과 배포된 버전이 달라진다.
+  $script:VerStamp = $null
+  $distHtmlPath = Join-Path $PSScriptRoot 'dist\gbo2-simulator.html'
+  if (Test-Path $distHtmlPath) {
+    # 앞부분만 읽는다 — GBO2_BUILD 는 문서 앞쪽에 있고, 15MB 를 통째로 올릴 이유가 없다.
+    $sr = New-Object System.IO.StreamReader($distHtmlPath, [System.Text.Encoding]::UTF8)
+    try {
+      $buf = New-Object char[] 200000
+      $n = $sr.Read($buf, 0, $buf.Length)
+      $head = New-Object string($buf, 0, $n)
+    } finally { $sr.Dispose() }
+    $m = [regex]::Match($head, '"stamp"\s*:\s*"(\d{4}-\d{2}-\d{2}-\d{4})"')
+    if ($m.Success) { $script:VerStamp = $m.Groups[1].Value }
+  }
+  if (-not $script:VerStamp) { $script:VerStamp = Get-Date -Format 'yyyy-MM-dd-HHmm' }
   Write-Host "`n최신 결과물: dist\gbo2-simulator.html (브라우저에서 새로고침 하세요)" -ForegroundColor Green
   # 데이터가 갱신됐으면 APK 도 함께 최신화 (‑NoApk 로 건너뛸 수 있음)
   if (-not $NoApk) { Build-Apk }
