@@ -354,6 +354,8 @@ if (-not $Check) {
     if ($LASTEXITCODE -ne 0) { Write-Host '경량판 생성 실패 (위 로그 확인).' -ForegroundColor Red }
   }
   # -Publish: 폰 자동 갱신용 데이터(OTA) + PC 배포본 ZIP 을 GitHub 에 올린다
-  if ($Publish) { Publish-Ota; Publish-Pc; Publish-Dict }
+  # 사전을 먼저 올린다. 순서가 반대면, OTA 를 받은 사람이 새 기체로 구성을 만들었는데
+  # 사전이 아직 낡아서 업로드가 거부되는 창이 잠깐 생긴다.
+  if ($Publish) { Publish-Dict; Publish-Ota; Publish-Pc }
 }
 Close-Window 0
