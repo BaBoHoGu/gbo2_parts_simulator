@@ -188,6 +188,34 @@ const check = (label, ok, extra) => {
   });
   check('앱에 비밀번호가 들어 있지 않다', !leak);
 
+  // 관리자 로그인 UI — 비밀번호가 가려지는지
+  const pwUi = await pg.evaluate(async () => {
+    document.querySelector('#galleryAdmin').click();
+    await new Promise(r => setTimeout(r, 300));
+    const box = document.querySelector('#galleryAdminBox');
+    const pw = document.querySelector('#adminPw');
+    return { open: box && !box.hidden, type: pw && pw.type, email: !!document.querySelector('#adminEmail') };
+  });
+  check('관리자 버튼이 로그인 칸을 편다', pwUi.open);
+  check('비밀번호가 가려진다 (type=password)', pwUi.type === 'password', '실제: ' + pwUi.type);
+  check('이메일 칸이 있다', pwUi.email);
+
+  // 아무 계정으로나 시도해도 관리자가 되지 않는다
+  const bad = await pg.evaluate(async () => {
+    document.querySelector('#adminEmail').value = 'nobody@example.com';
+    document.querySelector('#adminPw').value = 'wrongpassword';
+    document.querySelector('#adminGo').click();
+    await new Promise(r => setTimeout(r, 6000));
+    return {
+      toast: (document.querySelector('#toast') || {}).textContent || '',
+      admin: !!(window.GBO2Share && window.GBO2Share.isAdmin()),
+      pwCleared: document.querySelector('#adminPw').value === ''
+    };
+  });
+  check('잘못된 계정으로는 관리자가 안 된다', !bad.admin, bad.toast);
+  check('실패해도 비밀번호를 화면에 남기지 않는다', bad.pwCleared);
+
+
   check('스크립트 오류 없음', errs.length === 0, errs.join(' / '));
   await br.close();
   console.log(fails ? '\n' + fails + '건 실패' : '\n갤러리 실측 통과');

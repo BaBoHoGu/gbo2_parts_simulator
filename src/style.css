@@ -2096,3 +2096,9 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* 올린 시각·데이터 버전 — 제목 옆에 흐리게 */
 .sc-sub { font-size: 10.5px; color: var(--dim); margin-left: 8px; white-space: nowrap; }
 #galleryUpload.small, #galleryReload.small { padding: 3px 10px; font-size: 12px; }
+
+/* 관리자 로그인 줄 — 갤러리 머리 아래에 접혀 있다가 펴진다 */
+.gallery-admin { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.gallery-admin input { padding: 6px 10px; max-width: 220px; }
+.gallery-admin .small { padding: 4px 12px; font-size: 12px; }
+#galleryAdmin.on { color: var(--ok); border-color: var(--ok); }

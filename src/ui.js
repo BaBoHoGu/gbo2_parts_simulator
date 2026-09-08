@@ -3757,16 +3757,31 @@
     if (!S) return;
     if (S.isAdmin()) {
       if (!confirm('관리자에서 로그아웃할까요?')) return;
-      S.adminLogout(); renderGallery(); updateAdminBtn(); toast('로그아웃했습니다');
+      S.adminLogout(); $('#galleryAdminBox').hidden = true; renderGallery(); updateAdminBtn(); toast('로그아웃했습니다');
       return;
     }
-    const email = (prompt('관리자 이메일') || '').trim();
-    if (!email) return;
-    const pw = (prompt('비밀번호') || '');
-    if (!pw) return;
+    // 입력칸을 펴고, 실제 로그인은 adminSubmit 이 한다
+    const box = $('#galleryAdminBox');
+    box.hidden = !box.hidden;
+    if (!box.hidden) $('#adminEmail').focus();
+  }
+
+  async function adminSubmit() {
+    if (!S) return;
+    const email = ($('#adminEmail').value || '').trim();
+    const pw = $('#adminPw').value || '';
+    if (!email || !pw) { toast('이메일과 비밀번호를 입력하세요'); return; }
+    const btn = $('#adminGo');
+    btn.disabled = true; btn.textContent = '확인 중…';
     const r = await S.adminLogin(email, pw);
+    btn.disabled = false; btn.textContent = '로그인';
     toast(r.msg);
-    if (r.ok) { renderGallery(); updateAdminBtn(); }
+    $('#adminPw').value = '';                 // 비밀번호는 화면에 남기지 않는다
+    if (r.ok) {
+      $('#adminEmail').value = '';
+      $('#galleryAdminBox').hidden = true;
+      renderGallery(); updateAdminBtn();
+    }
   }
 
   function updateAdminBtn() {
@@ -5526,6 +5541,10 @@
     galChips('#galleryLvChips', LEVEL_CHIPS, () => galleryLv, v => { galleryLv = v; });
     galChips('#galleryRarityChips', RARITY_CHIPS, () => galleryRarity, v => { galleryRarity = v; });
     $('#galleryAdmin').onclick = adminSignIn;
+    $('#adminGo').onclick = adminSubmit;
+    $('#adminCancel').onclick = () => { $('#galleryAdminBox').hidden = true; $('#adminPw').value = ''; };
+    // 비밀번호 칸에서 Enter 로 바로 로그인
+    $('#adminPw').onkeydown = ev => { if (ev.key === 'Enter') adminSubmit(); };
     $('#savedModalClose').onclick = () => openSavedModal(false);
     $('#savedModalBack').onclick = () => openSavedModal(false);
     // 빌드 A/B 비교
