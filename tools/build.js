@@ -150,9 +150,10 @@ const html = read('src', 'index.html')
   .replace('/*__I18N__*/', () => read('src', 'i18n.js'))
   .replace('/*__OPT__*/', () => read('src', 'optimizer.js'))
   .replace('/*__DAMAGE__*/', () => read('src', 'damage.js'))
+  .replace('/*__SHARE__*/', () => read('src', 'share.js'))
   .replace('/*__UI__*/', () => read('src', 'ui.js'));
 
-for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__UI__']) {
+for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__SHARE__', '__UI__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 

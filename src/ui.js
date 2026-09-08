@@ -3631,6 +3631,107 @@
     toast('「' + name + '」 저장했습니다');
   }
 
+  /* ---------- 공유 갤러리 ---------- */
+  // 다른 사람이 올린 구성을 둘러보고 그대로 가져온다.
+  // 통신은 전부 share.js 가 맡고, 여기서는 화면만 그린다.
+  // 서버가 올라온 값을 이미 검증하지만(기체·파츠 이름 화이트리스트), 그래도 여기서
+  // deserialize 가 장착 규칙을 다시 검사한다 — 내 강화 단계에서 안 맞는 파츠는 빠진다.
+
+  const S = window.GBO2Share;
+  let galleryList = [];      // 서버(또는 캐시)에서 받아 둔 목록
+  let galleryLoading = false;
+
+  const relTime = ms => {
+    if (!ms) return '';
+    const d = Math.floor((Date.now() - ms) / 60000);
+    if (d < 1) return '방금';
+    if (d < 60) return d + '분 전';
+    if (d < 1440) return Math.floor(d / 60) + '시간 전';
+    return Math.floor(d / 1440) + '일 전';
+  };
+
+  function renderGallery() {
+    const box = $('#galleryResults'), note = $('#galleryNote');
+    if (!box) return;
+    box.innerHTML = '';
+    if (galleryLoading) { box.append(el('div', 'detail-empty', '불러오는 중…')); return; }
+
+    const q = ($('#galleryQuery').value || '').trim().toLowerCase();
+    let list = galleryList;
+    if (q) list = list.filter(b => {
+      const ms = msData.find(m => m.MS名 === b.ms);
+      const idx = searchIndex((ms ? T.msName(ms.MS名) : b.ms) + ' ' + b.ms + ' ' + b.name);
+      return matches(idx, q);
+    });
+    if ($('#gallerySort').value === 'ms') {
+      list = [...list].sort((a, b) => {
+        const an = T.msName(a.ms), bn = T.msName(b.ms);
+        return an.localeCompare(bn, 'ko') || b.at - a.at;
+      });
+    }
+    note.textContent = galleryList.length ? `${list.length} / ${galleryList.length}개` : '';
+
+    if (!list.length) {
+      box.append(el('div', 'detail-empty', galleryList.length
+        ? '검색 결과가 없습니다.'
+        : '아직 올라온 구성이 없습니다.\n상단 「↑ 내 구성 올리기」로 첫 구성을 올려 보세요.'));
+      return;
+    }
+    for (const bld of list) {
+      // 올린 날짜와 그때의 데이터 버전을 함께 보여 준다 — 오래된 구성은 파츠가 빠질 수 있다
+      const sub = [relTime(bld.at), bld.ver && ('데이터 ' + bld.ver)].filter(Boolean).join(' · ');
+      box.append(buildSummaryCard(bld, {
+        sub,
+        onOpen: () => {
+          const r = deserialize(bld);
+          openGallery(false);
+          toast(r.ok
+            ? ('「' + bld.name + '」 가져왔습니다' + (r.missing ? ` — 알 수 없는 파츠 ${r.missing}개 제외` : ''))
+            : '이 구성의 기체가 내 데이터에 없습니다');
+        }
+      }));
+    }
+  }
+
+  async function loadGallery() {
+    if (!S) return;
+    galleryLoading = true;
+    renderGallery();
+    const r = await S.list();
+    galleryList = r.list || [];
+    galleryLoading = false;
+    renderGallery();
+    if (!r.ok) {
+      toast(galleryList.length
+        ? '목록을 받지 못해 마지막으로 받아 둔 것을 보여 줍니다'
+        : '갤러리에 연결하지 못했습니다 — 인터넷 연결을 확인하세요');
+    }
+  }
+
+  function openGallery(open) {
+    const m = $('#galleryModal'), b = $('#galleryBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (!open) return;
+    // 캐시가 있으면 먼저 보여 주고(오프라인에서도 열린다) 새로 받아 온다
+    if (!galleryList.length && S) galleryList = S.readCache();
+    renderGallery();
+    loadGallery();
+  }
+
+  async function uploadCurrent() {
+    if (!S) return;
+    if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
+    const title = (prompt('갤러리에 올릴 제목을 입력하세요 (20자 이내)', '') || '').trim();
+    if (!title) return;                      // 취소하거나 비워 두면 올리지 않는다
+    const btn = $('#galleryUpload');
+    if (btn) { btn.disabled = true; btn.textContent = '올리는 중…'; }
+    const r = await S.upload(serialize(), title);
+    if (btn) { btn.disabled = false; btn.textContent = '↑ 내 구성 올리기'; }
+    toast(r.msg);
+    if (r.ok) { galleryList = []; loadGallery(); }
+  }
+
   function openSavedModal(open) {
     const m = document.getElementById('savedModal'), b = document.getElementById('savedModalBack');
     if (m) m.hidden = !open;
@@ -4713,6 +4814,95 @@
   }
 
   /** 저장한 구성을 자동 구성 카드처럼 파츠 아이콘·스탯 요약으로 보여 준다. */
+  /**
+   * 구성 요약 카드 — 저장 목록과 공유 갤러리가 **같은 렌더러**를 쓴다.
+   * (둘이 따로 그리면 한쪽만 지표가 어긋나는 일이 생긴다 — 실제로 그런 버그를 여러 번 고쳤다)
+   * @param {object} bld  {name, ms, parts[], stage, expansion, expLevel}
+   * @param {object} opt
+   *   onOpen()          카드를 눌렀을 때
+   *   onRename() onDel() 있으면 제목 클릭·✕ 버튼을 단다 (저장 목록 전용)
+   *   sub               제목 아래 한 줄 (갤러리의 올린 날짜 등)
+   */
+  function buildSummaryCard(bld, opt = {}) {
+    const ms = msData.find(m => m.MS名 === bld.ms);
+    const parts = (bld.parts || []).map(n => partByName.get(n)).filter(Boolean);
+    const card = el('div', 'auto-cand saved-card');
+
+    const head = el('div', 'ac-head');
+    const nm = el('span', 'ac-rank sc-name', bld.name);
+    if (opt.onRename) {
+      nm.title = '클릭해서 이름 변경';
+      nm.onclick = ev => { ev.stopPropagation(); opt.onRename(); };
+    }
+    head.append(nm);
+    if (opt.sub) head.append(el('span', 'sc-sub', opt.sub));
+    if (opt.onDel) {
+      const del = el('button', 'sc-del', '✕');
+      del.title = '이 구성 삭제';
+      del.onclick = ev => { ev.stopPropagation(); opt.onDel(); };
+      head.append(del);
+    }
+    card.append(head);
+
+    // 기체 한 줄 (썸네일 + 이름 · 강화 · 확장)
+    const msLine = el('div', 'sc-ms');
+    msLine.append(img(msImg(bld.ms), 'ms', bld.ms));
+    const meta = el('div', 'sc-meta');
+    meta.append(el('span', 'sc-msname', ms ? T.msName(ms.MS名) : bld.ms));
+    const tags = [STAGE_LABEL[bld.stage] || ''];
+    if (bld.expansion && bld.expansion !== C.EXPANSION_NONE) tags.push(expShort(bld.expansion));
+    meta.append(el('span', 'sc-tags', tags.filter(Boolean).join(' · ')));
+    msLine.append(meta);
+    card.append(msLine);
+
+    // 파츠 아이콘
+    const thumbs = el('div', 'ac-thumbs');
+    for (const part of parts) {
+      const th = el('div', 'ac-thumb');
+      th.append(img(partImg(part.name), 'parts', part.name));
+      const lv = lvOf(part.name);
+      if (lv) th.append(el('span', 'ac-lv', lv));
+      th.title = T.partName(part.name);
+      thumbs.append(th);
+    }
+    card.append(thumbs);
+
+    // 스탯 요약 (저장된 강화·확장으로 실제 계산) — gbo2.jp 성능표처럼 핵심 스탯 + 내구 지표
+    if (ms) {
+      const r = C.calcStats(ms, parts, bld.stage, bld.expansion, partsByCat, fullst, bld.expLevel);
+      const stats = el('div', 'ac-stats');
+      for (const k of SUMMARY_STAT_KEYS) {
+        const cell = el('span', 'ac-stat');
+        cell.append(el('span', 'ac-k', C.STAT_LABEL[k]));
+        cell.append(el('span', 'ac-v', (r.total[k] ?? 0).toLocaleString()));
+        stats.append(cell);
+      }
+      card.append(stats);
+
+      // 내구 지표 — 파츠 피해경감까지 접는다(성능표·비교와 같은 규칙)
+      const scCuts = damageCutsOf(parts, { lv: C.msLevel(ms.MS名) });
+      const du = el('div', 'sc-dura');
+      du.append(el('span', 'sc-dura-lb', '내구 지표'));
+      for (const [dattr, , label] of DURA_ATTRS) {
+        const cell = el('span', 'ac-stat');
+        cell.append(el('span', 'ac-k', label));
+        cell.append(el('span', 'ac-v', enduranceOf(r.total, dattr, scCuts).toLocaleString()));
+        du.append(cell);
+      }
+      card.append(du);
+    } else {
+      card.append(el('div', 'ac-warn', '이 기체 데이터를 찾을 수 없습니다'));
+    }
+
+    // 내 데이터에 없는 파츠(밸런스 패치로 빠졌거나 상대가 더 최신 데이터일 때)를 밝힌다
+    const lost = (bld.parts || []).length - parts.length;
+    card.append(el('div', 'ac-parts', `파츠 ${parts.length}개` + (lost ? ` (없는 파츠 ${lost}개 제외)` : '')));
+
+    card.title = '클릭해서 이 구성 불러오기';
+    card.onclick = () => opt.onOpen && opt.onOpen();
+    return card;
+  }
+
   function renderSavedBuilds() {
     const box = $('#savedResults');
     box.innerHTML = '';
@@ -4723,85 +4913,17 @@
       return;
     }
     for (const bld of list) {
-      const ms = msData.find(m => m.MS名 === bld.ms);
-      const parts = (bld.parts || []).map(n => partByName.get(n)).filter(Boolean);
-      const card = el('div', 'auto-cand saved-card');
-
-      const head = el('div', 'ac-head');
-      const nm = el('span', 'ac-rank sc-name', bld.name);
-      nm.title = '클릭해서 이름 변경';
-      nm.onclick = ev => { ev.stopPropagation(); renameBuild(bld.id); };
-      head.append(nm);
-      const del = el('button', 'sc-del', '✕');
-      del.title = '이 구성 삭제';
-      del.onclick = ev => { ev.stopPropagation(); deleteBuild(bld.id); };
-      head.append(del);
-      card.append(head);
-
-      // 기체 한 줄 (썸네일 + 이름 · 강화 · 확장)
-      const msLine = el('div', 'sc-ms');
-      msLine.append(img(msImg(bld.ms), 'ms', bld.ms));
-      const meta = el('div', 'sc-meta');
-      meta.append(el('span', 'sc-msname', ms ? T.msName(ms.MS名) : bld.ms));
-      const tags = [STAGE_LABEL[bld.stage] || ''];
-      if (bld.expansion && bld.expansion !== C.EXPANSION_NONE) tags.push(expShort(bld.expansion));
-      meta.append(el('span', 'sc-tags', tags.filter(Boolean).join(' · ')));
-      msLine.append(meta);
-      card.append(msLine);
-
-      // 파츠 아이콘
-      const thumbs = el('div', 'ac-thumbs');
-      for (const part of parts) {
-        const th = el('div', 'ac-thumb');
-        th.append(img(partImg(part.name), 'parts', part.name));
-        const lv = lvOf(part.name);
-        if (lv) th.append(el('span', 'ac-lv', lv));
-        th.title = T.partName(part.name);
-        thumbs.append(th);
-      }
-      card.append(thumbs);
-
-      // 스탯 요약 (저장된 강화·확장으로 실제 계산) — gbo2.jp 성능표처럼 핵심 스탯 + 내구 지표
-      if (ms) {
-        const r = C.calcStats(ms, parts, bld.stage, bld.expansion, partsByCat, fullst, bld.expLevel);
-        // 자동 구성 결과와 같은 핵심 스탯 10종 (선회는 지상만)
-        const stats = el('div', 'ac-stats');
-        for (const k of SUMMARY_STAT_KEYS) {
-          const cell = el('span', 'ac-stat');
-          cell.append(el('span', 'ac-k', C.STAT_LABEL[k]));
-          cell.append(el('span', 'ac-v', (r.total[k] ?? 0).toLocaleString()));
-          stats.append(cell);
+      box.append(buildSummaryCard(bld, {
+        onRename: () => renameBuild(bld.id),
+        onDel: () => deleteBuild(bld.id),
+        onOpen: () => {
+          const r = deserialize(bld);
+          openSavedModal(false);
+          toast(r.ok
+            ? ('「' + bld.name + '」 불러왔습니다' + (r.missing ? ` — 알 수 없는 파츠 ${r.missing}개 제외` : ''))
+            : '이 구성의 기체를 찾을 수 없습니다');
         }
-        card.append(stats);
-
-        // 내구 지표 — 피해 종류별 실효 HP. 파츠 피해경감까지 접는다(비교 화면과 같은 규칙).
-        // 예전엔 경감을 빼고 그려서 성능표보다 낮은 숫자가 나왔다 — 보정해 주는 곳이 없어 그냥 틀린 값이었다.
-        const scCuts = damageCutsOf(parts, { lv: C.msLevel(ms.MS名) });
-        const du = el('div', 'sc-dura');
-        du.append(el('span', 'sc-dura-lb', '내구 지표'));
-        for (const [dattr, , label] of DURA_ATTRS) {
-          const cell = el('span', 'ac-stat');
-          cell.append(el('span', 'ac-k', label));
-          cell.append(el('span', 'ac-v', enduranceOf(r.total, dattr, scCuts).toLocaleString()));
-          du.append(cell);
-        }
-        card.append(du);
-      } else {
-        card.append(el('div', 'ac-warn', '이 기체 데이터를 찾을 수 없습니다'));
-      }
-
-      const lost = (bld.parts || []).length - parts.length;
-      card.append(el('div', 'ac-parts', `파츠 ${parts.length}개` + (lost ? ` (없는 파츠 ${lost}개 제외)` : '')));
-
-      card.title = '클릭해서 이 구성 불러오기';
-      card.onclick = () => {
-        const r = deserialize(bld);
-        openSavedModal(false);
-        toast(r.ok
-          ? ('「' + bld.name + '」 불러왔습니다' + (r.missing ? ` — 알 수 없는 파츠 ${r.missing}개 제외` : ''))
-          : '이 구성의 기체를 찾을 수 없습니다');
-      };
-      box.append(card);
+      }));
     }
   }
 
@@ -5313,6 +5435,14 @@
     // 저장: 이름을 지정해 목록에 담는다 / 불러오기: 저장 목록을 카드로 연다
     $('#save').onclick = saveCurrentBuild;
     $('#load').onclick = () => openSavedModal(true);
+    // 공유 갤러리
+    $('#galleryBtn').onclick = () => openGallery(true);
+    $('#galleryClose').onclick = () => openGallery(false);
+    $('#galleryBack').onclick = () => openGallery(false);
+    $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
+    $('#galleryUpload').onclick = uploadCurrent;
+    $('#galleryQuery').oninput = () => renderGallery();
+    $('#gallerySort').onchange = () => renderGallery();
     $('#savedModalClose').onclick = () => openSavedModal(false);
     $('#savedModalBack').onclick = () => openSavedModal(false);
     // 빌드 A/B 비교
@@ -5431,6 +5561,7 @@
       if (ev.key !== 'Escape') return;
       if (mobileSheetOpen()) { closeMobileSheets(); return; }   // 모바일 슬라이드 시트 먼저 닫기
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
+      if (!$('#galleryModal').hidden) { openGallery(false); return; }
       if (!$('#pietanModal').hidden) { openPietan(false); return; }
       if (!$('#compareModal').hidden) { openCompareModal(false); return; }
       if (!$('#ownedModal').hidden) { openOwnedModal(false); return; }
@@ -5460,7 +5591,7 @@
   /** 모바일 상단바 — 버튼 9개가 390px 폭에 1,211px 로 깔려 가로 스크롤로만 닿았다.
    *  자주 쓰는 것(피탄 시뮬·자동 구성)만 남기고 나머지는 「⋯」 메뉴로 접는다.
    *  메뉴 항목은 원래 버튼을 그대로 click() 하므로 동작·상태는 한 벌만 유지된다. */
-  const TOPBAR_MORE = ['#save', '#load', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn'];
+  const TOPBAR_MORE = ['#save', '#load', '#galleryBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn'];
   function setupTopbarOverflow() {
     const bar = document.querySelector('.topbar'); if (!bar) return;
     for (const sel of TOPBAR_MORE) { const b = $(sel); if (b) b.classList.add('in-more'); }
