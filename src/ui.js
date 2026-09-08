@@ -3647,6 +3647,10 @@
   let galleryList = [];      // 서버(또는 캐시)에서 받아 둔 목록
   let gallerySort = 'new';   // 'new' 최신순 | 'ms' 기체순
   let galleryAttr = '';      // '' 전체 | 強襲 | 汎用 | 支援
+  // 기체 선택 화면과 같은 축으로 거른다 — 갤러리가 커지면 이게 없으면 못 찾는다
+  let galleryCost = 'all';   // 'all' | 750… | 'low'(≤250)
+  let galleryLv = 'all';     // 'all' | 1 | 2 | 3 | '4+'
+  let galleryRarity = 'all'; // 'all' | 1~5
   let galleryLoading = false;
 
   const relTime = ms => {
@@ -3677,10 +3681,18 @@
         return an.localeCompare(bn, 'ko') || b.at - a.at;
       });
     }
-    if (galleryAttr) {
+    // 기체 기준 필터들 — 카드의 기체를 찾아 한 번에 거른다
+    if (galleryAttr || galleryCost !== 'all' || galleryLv !== 'all' || galleryRarity !== 'all') {
       list = list.filter(b => {
         const ms = msData.find(m => m.MS名 === b.ms);
-        return ms && ms.属性 === galleryAttr;
+        if (!ms) return false;
+        if (galleryAttr && ms.属性 !== galleryAttr) return false;
+        if (galleryCost === 'low') { if (ms.コスト > 250) return false; }
+        else if (galleryCost !== 'all' && ms.コスト !== galleryCost) return false;
+        if (galleryLv === '4+') { if (msLevel(ms) < 4) return false; }
+        else if (galleryLv !== 'all' && msLevel(ms) !== galleryLv) return false;
+        if (galleryRarity !== 'all' && msRarity(ms) !== galleryRarity) return false;
+        return true;
       });
     }
     note.textContent = galleryList.length ? `${list.length} / ${galleryList.length}개` : '';
@@ -3696,6 +3708,14 @@
       const sub = [relTime(bld.at), bld.ver && ('데이터 ' + bld.ver)].filter(Boolean).join(' · ');
       box.append(buildSummaryCard(bld, {
         sub,
+        // 관리자로 로그인했을 때만 ✕ 가 붙는다. 서버 규칙이 admins 목록으로 다시 확인하므로
+        // 버튼이 보인다고 지워지는 게 아니라, 실제 권한이 있어야 지워진다.
+        onDel: (S && S.isAdmin()) ? async () => {
+          if (!confirm(`「${bld.name}」 구성을 갤러리에서 지울까요?`)) return;
+          const r = await S.remove(bld.id);
+          toast(r.msg);
+          if (r.ok) { galleryList = galleryList.filter(x => x.id !== bld.id); renderGallery(); }
+        } : null,
         onOpen: () => {
           const r = deserialize(bld);
           openGallery(false);
@@ -3727,8 +3747,34 @@
     setView('gallery');
     // 캐시가 있으면 먼저 보여 주고(오프라인에서도 열린다) 새로 받아 온다
     if (!galleryList.length && S) galleryList = S.readCache();
+    updateAdminBtn();
     renderGallery();
     loadGallery();
+  }
+
+  /** 관리자 로그인 — 비밀번호는 앱에 없다. 관리자가 직접 입력해 Firebase 에 로그인한다. */
+  async function adminSignIn() {
+    if (!S) return;
+    if (S.isAdmin()) {
+      if (!confirm('관리자에서 로그아웃할까요?')) return;
+      S.adminLogout(); renderGallery(); updateAdminBtn(); toast('로그아웃했습니다');
+      return;
+    }
+    const email = (prompt('관리자 이메일') || '').trim();
+    if (!email) return;
+    const pw = (prompt('비밀번호') || '');
+    if (!pw) return;
+    const r = await S.adminLogin(email, pw);
+    toast(r.msg);
+    if (r.ok) { renderGallery(); updateAdminBtn(); }
+  }
+
+  function updateAdminBtn() {
+    const b = $('#galleryAdmin');
+    if (!b) return;
+    const on = !!(S && S.isAdmin());
+    b.textContent = on ? '관리자 ✓' : '관리자';
+    b.classList.toggle('on', on);
   }
 
   async function uploadCurrent() {
@@ -5475,6 +5521,11 @@
        { label: T.attrName('汎用'), v: '汎用', cls: 'attr-汎用' },
        { label: T.attrName('支援'), v: '支援', cls: 'attr-支援' }],
       () => galleryAttr, v => { galleryAttr = v; });
+    // 코스트·레벨·등급은 기체 선택 화면과 **같은 목록**을 쓴다(따로 두면 어긋난다)
+    galChips('#galleryCostChips', COST_CHIPS, () => galleryCost, v => { galleryCost = v; });
+    galChips('#galleryLvChips', LEVEL_CHIPS, () => galleryLv, v => { galleryLv = v; });
+    galChips('#galleryRarityChips', RARITY_CHIPS, () => galleryRarity, v => { galleryRarity = v; });
+    $('#galleryAdmin').onclick = adminSignIn;
     $('#savedModalClose').onclick = () => openSavedModal(false);
     $('#savedModalBack').onclick = () => openSavedModal(false);
     // 빌드 A/B 비교

@@ -20,6 +20,11 @@
     // 숨길 글 목록. 앱이 읽어서 걸러 낸다. 쓰기는 콘솔에서만.
     "blocked": { ".read": true, ".write": false },
 
+    // 관리자 uid 목록. 콘솔에서만 추가한다 (admins/<uid>: true).
+    // 비밀번호는 앱에 넣지 않는다 — 관리자가 직접 로그인하고 규칙은 그 결과 uid 만 본다.
+    // 그래서 이 목록이 공개돼도 위험하지 않다. 관리자를 늘려도 규칙은 안 고쳐도 된다.
+    "admins": { ".read": true, ".write": false },
+
     // 속도 제한 — 업로드 직전에 여기를 먼저 찍게 한다.
     // 60초가 안 지났으면 이 쓰기가 거부되고, 그러면 아래 builds 쓰기도 통과하지 못한다.
     "throttle": {
@@ -36,10 +41,11 @@
 
       // $fp = 구성 지문(같은 조합이면 같은 키) → 중복 업로드가 키 충돌로 자동 거절된다.
       "$fp": {
-        // 새 글만. 수정·삭제 불가(지우는 것은 콘솔에서).
-        // throttle 을 방금(15초 내) 찍은 사람만 쓸 수 있다 → 1분 1건이 강제된다.
-        ".write": "auth != null && !data.exists() && root.child('throttle').child(auth.uid).val() > now - 15000",
-        ".validate": "newData.hasChildren(['ms','stage','exp','expLv','at','uid','ver'])",
+        // 일반 사용자: 새 글만(수정·삭제 불가). throttle 을 방금(15초 내) 찍은 사람만 → 1분 1건.
+        // 관리자: 지우기 위해 쓰기를 연다. (삭제는 newData 가 없으므로 아래 validate 를 타지 않는다)
+        ".write": "auth != null && ( root.child('admins').child(auth.uid).exists() || (!data.exists() && root.child('throttle').child(auth.uid).val() > now - 15000) )",
+        // p0 를 필수로 둔다 — 파츠가 하나도 없는 구성은 공유할 내용이 없다.
+        ".validate": "newData.hasChildren(['ms','p0','stage','exp','expLv','at','uid','ver'])",
 
         "ms":    { ".validate": "root.child('dict/ms').child(newData.val()).exists()" },
         "p0":    { ".validate": "root.child('dict/parts').child(newData.val()).exists()" },

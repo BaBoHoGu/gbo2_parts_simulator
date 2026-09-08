@@ -16,6 +16,10 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.view.KeyEvent;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
@@ -65,6 +69,12 @@ public class MainActivity extends Activity {
 
     private static final int REQ_WRITE = 1001;
     private WebView web;
+    private FrameLayout splashRoot;
+    private View splashView;
+    private TextView splashMsg;
+    private boolean opened = false;
+    /** 시작 화면을 붙들어 둘 최대 시간 — 이걸 넘기면 갱신을 못 마쳤어도 앱을 연다. */
+    private static final long SPLASH_MAX_MS = 20000;
     private byte[] pendingImg;      // pre-Q 저장 권한 대기 중인 이미지
     private String pendingName;
 
@@ -176,11 +186,17 @@ public class MainActivity extends Activity {
             }
         }, "AndroidBridge");
 
-        setContentView(web);
-        web.loadUrl(APP_URL);
+        // 시작 화면 위에 앱을 올린다. 갱신을 먼저 마치고 열어야 '받아 놓고 다음 실행부터'
+        // 라는 어정쩡한 상태가 없어진다(예전엔 쓰던 중에 물어봐서 작업이 초기화됐다).
+        splashRoot = new FrameLayout(this);
+        splashRoot.addView(web);
+        splashRoot.addView(buildSplash());
+        setContentView(splashRoot);
 
-        // 백그라운드로 최신 데이터 확인·수신 (실패/오프라인이면 조용히 무시)
-        new Thread(this::checkOta).start();
+        // 시작할 때 갱신을 확인하고, 있으면 받아서 **적용한 뒤** 앱을 연다.
+        // 오프라인이거나 오래 걸리면 기다리지 않고 기존 버전으로 연다(아래 감시 타이머).
+        new Thread(this::startupUpdate).start();
+        splashRoot.postDelayed(this::openApp, SPLASH_MAX_MS);   // 무슨 일이 있어도 이만큼은 넘기지 않는다
     }
 
     /** 앱 HTML 응답 — OTA 로 받은 내부 파일이 있으면 그걸, 실패하거나 없으면 번들 asset 을 서빙(폴백). */
@@ -207,36 +223,85 @@ public class MainActivity extends Activity {
         catch (Exception e) { return ""; }
     }
 
-    /** version.json 을 확인해 더 최신이면 HTML 을 받아 다음 실행부터 적용한다. */
-    private void checkOta() {
+    /** 시작 화면 — 앱과 같은 배경색이라 열릴 때 깜빡이지 않는다. */
+    private View buildSplash() {
+        LinearLayout v = new LinearLayout(this);
+        v.setOrientation(LinearLayout.VERTICAL);
+        v.setGravity(android.view.Gravity.CENTER);
+        v.setBackgroundColor(Color.parseColor("#0f1013"));
+        v.setClickable(true);   // 뒤 WebView 로 터치가 새지 않게
+
+        TextView t = new TextView(this);
+        t.setText("GBO2 커스텀 파츠");
+        t.setTextColor(Color.parseColor("#e8eaef"));
+        t.setTextSize(20);
+        t.setGravity(android.view.Gravity.CENTER);
+        v.addView(t);
+
+        splashMsg = new TextView(this);
+        splashMsg.setText("최신 데이터 확인 중…");
+        splashMsg.setTextColor(Color.parseColor("#8a91a0"));
+        splashMsg.setTextSize(13);
+        splashMsg.setGravity(android.view.Gravity.CENTER);
+        splashMsg.setPadding(0, 24, 0, 0);
+        v.addView(splashMsg);
+
+        splashView = v;
+        return v;
+    }
+
+    private void splashSay(final String msg) {
+        runOnUiThread(() -> { if (splashMsg != null) splashMsg.setText(msg); });
+    }
+
+    /** 앱을 연다(한 번만). 갱신을 마쳤든 시간이 다 됐든 여기로 모인다. */
+    private void openApp() {
+        runOnUiThread(() -> {
+            if (opened || isFinishing() || isDestroyed()) return;
+            opened = true;
+            web.loadUrl(APP_URL);   // 이 시점에 OTA 파일이 있으면 그게 서빙된다
+            // 문서가 그려질 틈을 조금 주고 시작 화면을 걷는다
+            splashRoot.postDelayed(() -> {
+                if (splashView != null && splashRoot != null) splashRoot.removeView(splashView);
+            }, 700);
+        });
+    }
+
+    /**
+     * 시작할 때의 갱신 절차.
+     *   ① version.json(작다) 을 빠르게 확인 → 최신이면 곧바로 앱을 연다
+     *   ② 새 버전이 있으면 받아서 적용한 뒤 연다. 받는 동안 진행률을 보여 준다.
+     * 어느 쪽이든 실패하면 기존 버전으로 연다 — 갱신 때문에 앱을 못 쓰는 일은 없어야 한다.
+     */
+    private void startupUpdate() {
         try {
-            String vj = httpGet(OTA_VERSION, 6000, 6000);
-            if (vj == null) return;
+            String vj = httpGet(OTA_VERSION, 4000, 4000);
+            if (vj == null) { splashSay("오프라인 — 저장된 버전으로 시작합니다"); openApp(); return; }
             vj = vj.trim();
-            if (vj.length() > 0 && vj.charAt(0) == '﻿') vj = vj.substring(1);   // UTF-8 BOM 방어
+            if (vj.length() > 0 && vj.charAt(0) == '﻿') vj = vj.substring(1);
             String remote = new JSONObject(vj).optString("date", "");
-            if (remote.isEmpty()) return;
-            // yyyy-MM-dd 는 사전식 비교가 곧 날짜 비교
-            if (remote.compareTo(servedDate()) <= 0) return;   // 이미 최신
+            if (remote.isEmpty() || remote.compareTo(servedDate()) <= 0) { openApp(); return; }
 
+            splashSay("업데이트 받는 중… " + remote);
             File tmp = new File(getFilesDir(), "ota_index.tmp");
-            if (!httpDownload(OTA_HTML, tmp, 8000, 60000)) { tmp.delete(); return; }
-            // 무결성: 잘린 업로드/오류 페이지를 걸러 낸다 — 최소 크기 + 문서 끝 태그 확인.
-            // (통과한 것만 교체하므로, 손상본이 저장돼 앱이 깨진 채 남는 일이 없다.)
-            if (tmp.length() < 100000 || !htmlLooksComplete(tmp)) { tmp.delete(); return; }
-
+            boolean got = httpDownload(OTA_HTML, tmp, 8000, 60000);
+            if (!got || tmp.length() < 100000 || !htmlLooksComplete(tmp)) {
+                tmp.delete();
+                splashSay("업데이트를 받지 못했습니다 — 저장된 버전으로 시작합니다");
+                openApp();
+                return;
+            }
             File dst = otaFile();
             dst.delete();
             if (tmp.renameTo(dst)) {
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_DATE, remote).apply();
-                // 받아만 두면 사용자는 새 버전이 온 줄 모른 채 다음 실행까지 옛 화면을 쓴다
-                // (실제로 "고쳤다는데 그대로다" 문의로 이어졌다). 물어보고 바로 적용한다.
-                promptApplyOta(remote);
+                splashSay("업데이트 완료 — " + remote);
             } else {
                 tmp.delete();
             }
-        } catch (Exception ignored) {
-            // 오프라인·네트워크 오류 등은 조용히 무시 (앱은 기존 데이터로 정상 동작)
+            openApp();
+        } catch (Exception e) {
+            openApp();   // 어떤 예외에도 앱은 열려야 한다
         }
     }
 
@@ -308,25 +373,6 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    /** OTA 를 받았을 때 바로 적용할지 묻는다 — 「지금 적용」이면 새로고침해 그 자리에서 새 버전이 된다.
-     *  (거절해도 다음 실행부터는 새 버전이 서빙되므로 어느 쪽이든 옛 버전에 갇히지 않는다) */
-    private void promptApplyOta(final String date) {
-        runOnUiThread(() -> {
-            if (isFinishing() || isDestroyed()) return;
-            try {
-                new AlertDialog.Builder(this)
-                    .setTitle("새 버전 준비 완료")
-                    .setMessage("업데이트(" + date + ")를 받았습니다.\n지금 적용할까요?\n\n※ 작업 중인 파츠 구성은 초기화됩니다.")
-                    .setPositiveButton("지금 적용", (d, w) -> { if (web != null) web.loadUrl(APP_URL); })
-                    .setNegativeButton("나중에", null)
-                    .setCancelable(true)
-                    .show();
-            } catch (Exception e) {
-                toastUi("새 버전을 받았습니다 — 앱을 완전히 종료 후 다시 켜 주세요");
-            }
-        });
     }
 
     private void toastUi(final String msg) {
