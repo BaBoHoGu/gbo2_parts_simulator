@@ -98,6 +98,8 @@ function fingerprint(b) {
 async function upload(bld, title) {
   if (!bld || !bld.ms) return { ok: false, code: 'noms', msg: '먼저 기체를 선택하세요' };
   const parts = (bld.parts || []).filter(Boolean);
+  // 파츠가 없는 구성은 공유할 내용이 없다. 서버 규칙도 p0 를 필수로 두어 이중으로 막는다.
+  if (!parts.length) return { ok: false, code: 'parts', msg: '파츠를 하나 이상 장착한 뒤 올려 주세요' };
   if (parts.length > 8) return { ok: false, code: 'parts', msg: '파츠가 8개를 넘습니다' };
   if (!title || !title.trim()) return { ok: false, code: 'title', msg: '제목을 입력하세요' };
   const t = title.trim();
@@ -196,6 +198,38 @@ function writeCache(list) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(list.slice(0, CFG.limit))); } catch { /* 저장 실패는 무시 */ }
 }
 
-window.GBO2Share = { upload, list, fingerprint, readCache, CFG };
+/* ---------- 관리자 ---------- */
+// 비밀번호는 **앱에 들어가지 않는다.** 관리자가 직접 입력해 Firebase 에 로그인하고,
+// 규칙은 그 결과로 나온 uid 가 admins/ 에 있는지만 본다.
+// 그래서 이 파일이 공개돼도(단일 HTML 이라 어차피 다 보인다) 아무 위험이 없다.
+
+let admin = null;   // { token, uid, email, at }
+
+/** 관리자 로그인. 성공하면 그 세션 동안 삭제 버튼이 보인다(저장하지 않는다). */
+async function adminLogin(email, password) {
+  const r = await req(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${CFG.key}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, returnSecureToken: true })
+  });
+  if (!r.ok || !r.json || !r.json.idToken) return { ok: false, msg: '로그인하지 못했습니다' };
+  const cand = { token: r.json.idToken, uid: r.json.localId, email, at: Date.now() };
+  // 로그인은 됐지만 관리자로 등록된 계정인지 확인한다(admins 는 공개 읽기).
+  const a = await req(`${CFG.db}/admins/${cand.uid}.json`);
+  if (!a.ok || a.json !== true) return { ok: false, msg: '이 계정은 관리자가 아닙니다' };
+  admin = cand;
+  return { ok: true, msg: '관리자로 로그인했습니다' };
+}
+
+function adminLogout() { admin = null; }
+const isAdmin = () => !!(admin && Date.now() - admin.at < 50 * 60 * 1000);
+
+/** 구성 하나 삭제 (관리자만). 규칙이 admins 목록으로 다시 확인한다. */
+async function remove(id) {
+  if (!isAdmin()) return { ok: false, msg: '관리자만 지울 수 있습니다' };
+  const r = await req(`${CFG.db}/builds/${id}.json?auth=${admin.token}`, { method: 'DELETE' });
+  return r.ok ? { ok: true, msg: '삭제했습니다' } : { ok: false, msg: '삭제하지 못했습니다' };
+}
+
+window.GBO2Share = { upload, list, fingerprint, readCache, CFG, adminLogin, adminLogout, isAdmin, remove };
 
 })();

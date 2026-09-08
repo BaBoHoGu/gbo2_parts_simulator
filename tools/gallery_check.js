@@ -134,6 +134,60 @@ const check = (label, ok, extra) => {
   check('속성 칩이 목록을 거른다', !!chipRes && chipRes.after <= chipRes.all,
     chipRes ? `${chipRes.label}: ${chipRes.all} → ${chipRes.after}` : '칩 없음');
 
+  // ── 파츠 0개 업로드 차단 ────────────────────────────────────────
+  await pg.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find(x => /돌아가기/.test(x.textContent));
+    if (b) b.click();
+  });
+  await sleep(700);
+  await pg.evaluate(() => { const c = document.querySelector('#clearParts'); if (c) c.click(); });
+  await sleep(700);
+  await pg.evaluate(() => { window.prompt = () => '파츠없음시험'; });
+  await pg.evaluate(() => document.querySelector('#galleryBtn').click());
+  await sleep(1500);
+  await pg.evaluate(() => document.querySelector('#galleryUpload').click());
+  await sleep(2500);
+  const zero = await pg.evaluate(() => (document.querySelector('#toast') || {}).textContent || '');
+  check('파츠 0개는 올릴 수 없다', /파츠를 하나 이상/.test(zero), zero);
+
+  // ── 코스트·레벨·등급 칩이 있고 걸러 내는가 ──────────────────────
+  const chips = await pg.evaluate(() => ({
+    cost: document.querySelectorAll('#galleryCostChips .chip').length,
+    lv: document.querySelectorAll('#galleryLvChips .chip').length,
+    rarity: document.querySelectorAll('#galleryRarityChips .chip').length
+  }));
+  check('코스트·레벨·등급 칩이 있다', chips.cost > 5 && chips.lv === 5 && chips.rarity === 6,
+    JSON.stringify(chips));
+  const lvFilter = await pg.evaluate(async () => {
+    const all = document.querySelectorAll('#galleryResults .auto-cand').length;
+    const chip = [...document.querySelectorAll('#galleryLvChips .chip')].find(c => c.textContent === 'LV1');
+    chip.click();
+    await new Promise(r => setTimeout(r, 400));
+    return { all, after: document.querySelectorAll('#galleryResults .auto-cand').length };
+  });
+  check('레벨 칩이 목록을 거른다', lvFilter.after <= lvFilter.all, `${lvFilter.all} → ${lvFilter.after}`);
+
+  // ── 관리자: 로그인 전에는 삭제 버튼이 없어야 한다 ────────────────
+  await pg.evaluate(() => {
+    const chip = [...document.querySelectorAll('#galleryLvChips .chip')].find(c => c.textContent === '전체');
+    if (chip) chip.click();
+  });
+  await sleep(500);
+  const adm = await pg.evaluate(() => ({
+    btn: !!document.querySelector('#galleryAdmin'),
+    del: document.querySelectorAll('#galleryResults .sc-del').length,
+    api: !!(window.GBO2Share && window.GBO2Share.adminLogin && window.GBO2Share.remove)
+  }));
+  check('관리자 버튼이 있다', adm.btn);
+  check('로그인 전에는 삭제 버튼이 없다', adm.del === 0, '삭제 버튼 ' + adm.del + '개');
+  check('관리자 API 가 노출돼 있다', adm.api);
+  // 비밀번호가 앱 안에 박혀 있지 않은지 (가장 중요한 확인)
+  const leak = await pg.evaluate(() => {
+    const src = document.documentElement.innerHTML;
+    return /password\s*[:=]\s*['"][^'"]{3,}/i.test(src);
+  });
+  check('앱에 비밀번호가 들어 있지 않다', !leak);
+
   check('스크립트 오류 없음', errs.length === 0, errs.join(' / '));
   await br.close();
   console.log(fails ? '\n' + fails + '건 실패' : '\n갤러리 실측 통과');
