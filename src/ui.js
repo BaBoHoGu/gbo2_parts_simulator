@@ -25,7 +25,15 @@
   // data URI 라 file:// 에서도 캔버스 오염 없이 PNG 카드에 그릴 수 있다. 없으면 _default 로 폴백.
   // 파일명은 NFC로 통일돼 있다(원본에 결합문자 NFD 이름이 섞여 있어 정규화 필요).
   const IMG_MAP = window.GBO2_IMAGES || {};
-  const imgUrl = key => IMG_MAP[key] || IMG_MAP[key.replace(/\/[^/]+$/, '/_default.webp')] || '';
+  // 사이트판(build.js --web)은 이미지를 인라인하지 않고 images/ 폴더로 따로 낸다.
+  // 그러면 img 의 loading="lazy" 가 살아나 첫 화면에 보이는 것만 받고(6.00MB → 0.7MB),
+  // 재배포해도 이미지는 브라우저 캐시에 남아 본체(0.58MB)만 다시 받는다.
+  // file:// 에서는 외부 이미지가 캔버스를 오염시켜 PNG 카드가 깨지므로, 오프라인용
+  // 단일 파일은 지금처럼 인라인을 유지한다 — 아래 분기가 그 둘을 가른다.
+  const IMG_BASE = Object.keys(IMG_MAP).length ? null : 'images/';
+  const imgUrl = key => IMG_BASE
+    ? IMG_BASE + key
+    : (IMG_MAP[key] || IMG_MAP[key.replace(/\/[^/]+$/, '/_default.webp')] || '');
   const msImg = name => imgUrl(`ms/${baseName(name).normalize('NFC')}.webp`);
   const partImg = name => imgUrl(`parts/${name.normalize('NFC')}.webp`);
   const defaultImg = dir => imgUrl(`${dir}/_default.webp`);
@@ -2414,10 +2422,23 @@
     const leftX = PAD, leftW = 396, rightX = PAD + leftW + GAP, rightW = W - PAD - rightX, panelTop = PAD;
 
     // 이미지 미리 로드 (data URI → onload 즉시지만 비동기라 await)
-    const load = src => new Promise(res => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
-    const heroImg = await load(msImg(m.MS名));
+    // 사이트판은 파일을 따로 받으므로 없는 이미지가 404 가 된다 — 화면의 <img> 와 똑같이
+    // 기본 이미지로 한 번 되짚는다(그러지 않으면 그 자리만 빈 채로 카드가 나간다).
+    const load = (src, dir) => new Promise(res => {
+      if (!src) return res(null);
+      const im = new Image();
+      im.onload = () => res(im);
+      im.onerror = () => {
+        const fb = dir && defaultImg(dir);
+        if (!fb || fb === src) return res(null);
+        const im2 = new Image();
+        im2.onload = () => res(im2); im2.onerror = () => res(null); im2.src = fb;
+      };
+      im.src = src;
+    });
+    const heroImg = await load(msImg(m.MS名), 'ms');
     const partItems = await Promise.all(state.equipped.map(async p => ({
-      im: await load(partImg(p.name)), name: T.partName(p.name),
+      im: await load(partImg(p.name), 'parts'), name: T.partName(p.name),
       lv: (String(p.name).match(/LV\s*(\d+)/i) || [])[1] || ''
     })));
 
