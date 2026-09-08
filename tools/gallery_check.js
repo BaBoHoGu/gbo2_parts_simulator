@@ -53,7 +53,6 @@ const check = (label, ok, extra) => {
   // 업로드 — 제목은 매번 다르게 해도 '구성'이 같으면 서버가 중복으로 막는다.
   // 그래서 파츠 조합을 시각으로 흔들지 않고, 실패해도 그 사유를 확인한다.
   const title = 'AUTOTEST ' + new Date().toISOString().slice(11, 19).replace(/:/g, '');
-  await pg.evaluate(t => { window.prompt = () => t; }, title);
   await pg.evaluate(() => document.querySelector('#galleryBtn').click());
   await sleep(1200);
   check('갤러리가 전체 화면으로 열린다', await pg.evaluate(() =>
@@ -61,9 +60,34 @@ const check = (label, ok, extra) => {
   check('모달이 아니라 화면이다 (배경 덮개 없음)', await pg.evaluate(() =>
     !document.querySelector('.auto-modal-back:not([hidden])')));
 
+  // 올리기 팝업 — 무엇이 올라가는지 보여 줘야 한다(갤러리 화면엔 파츠가 안 보이므로)
   await pg.evaluate(() => document.querySelector('#galleryUpload').click());
+  await sleep(700);
+  const upBox = await pg.evaluate(() => ({
+    open: !document.querySelector('#uploadModal').hidden,
+    target: (document.querySelector('#uploadTarget') || {}).textContent || '',
+    thumbs: document.querySelectorAll('#uploadTarget .ac-thumb').length,
+    hasDesc: !!document.querySelector('#uploadDesc')
+  }));
+  check('올리기 팝업이 열린다', upBox.open);
+  check('무엇을 올리는지 보여 준다 (기체·파츠)', upBox.thumbs > 0 && /파츠 \d+개/.test(upBox.target),
+    upBox.target.replace(/\s+/g, ' ').slice(0, 60));
+  check('설명 칸이 있다', upBox.hasDesc);
+  await pg.evaluate((t, d) => {
+    document.querySelector('#uploadTitle').value = t;
+    document.querySelector('#uploadTitle').dispatchEvent(new Event('input'));
+    document.querySelector('#uploadDesc').value = d;
+    document.querySelector('#uploadDesc').dispatchEvent(new Event('input'));
+    document.querySelector('#uploadGo').click();
+  }, title, '자동 시험용 설명입니다');
   await sleep(9000);
-  const up = await pg.evaluate(() => (document.querySelector('#toast') || {}).textContent || '');
+  // 실패 사유는 팝업 안(#uploadMsg)에 남고, 성공하면 팝업이 닫히며 토스트가 뜬다.
+  // 토스트에는 직전 동작(파츠 장착 등)이 남아 있을 수 있어 팝업 쪽을 먼저 본다.
+  const up = await pg.evaluate(() => {
+    const m = (document.querySelector('#uploadMsg') || {}).textContent || '';
+    if (m) return m;
+    return (document.querySelector('#toast') || {}).textContent || '';
+  });
   console.log('   업로드 결과: ' + up);
   const uploaded = /올렸습니다/.test(up);
   const dup = /이미 같은 구성/.test(up);
@@ -142,13 +166,20 @@ const check = (label, ok, extra) => {
   await sleep(700);
   await pg.evaluate(() => { const c = document.querySelector('#clearParts'); if (c) c.click(); });
   await sleep(700);
-  await pg.evaluate(() => { window.prompt = () => '파츠없음시험'; });
   await pg.evaluate(() => document.querySelector('#galleryBtn').click());
   await sleep(1500);
   await pg.evaluate(() => document.querySelector('#galleryUpload').click());
-  await sleep(2500);
-  const zero = await pg.evaluate(() => (document.querySelector('#toast') || {}).textContent || '');
-  check('파츠 0개는 올릴 수 없다', /파츠를 하나 이상/.test(zero), zero);
+  await sleep(900);
+  // 팝업이 미리 막는다 — 서버까지 갈 것도 없이 버튼이 잠기고 이유를 보여 준다
+  const zero = await pg.evaluate(() => ({
+    msg: (document.querySelector('#uploadTarget') || {}).textContent || '',
+    disabled: document.querySelector('#uploadGo').disabled
+  }));
+  check('파츠 0개는 올릴 수 없다 (버튼 잠김)', zero.disabled, '버튼이 눌림');
+  check('파츠 0개일 때 이유를 보여 준다', /파츠를 하나 이상|파츠가 없습니다/.test(zero.msg),
+    zero.msg.replace(/\s+/g, ' ').slice(0, 60));
+  await pg.evaluate(() => document.querySelector('#uploadCancel').click());
+  await sleep(400);
 
   // ── 코스트·레벨·등급 칩이 있고 걸러 내는가 ──────────────────────
   const chips = await pg.evaluate(() => ({
@@ -230,6 +261,21 @@ const check = (label, ok, extra) => {
   });
   check('닫으면 입력이 지워진다', closed.hidden && !closed.email && !closed.pw);
 
+
+  // ── 수동 업데이트 확인 ─────────────────────────────────────────
+  const upd = await pg.evaluate(() => {
+    const b = document.querySelector('#updateBtn');
+    return { exists: !!b, inMore: b && b.classList.contains('in-more'), text: b && b.textContent };
+  });
+  check('업데이트 확인 버튼이 있다', upd.exists, JSON.stringify(upd));
+  check('모바일 ⋯ 메뉴에 들어간다', upd.inMore);
+  const updRes = await pg.evaluate(async () => {
+    document.querySelector('#updateBtn').click();
+    await new Promise(r => setTimeout(r, 9000));
+    return (document.querySelector('#toast') || {}).textContent || '';
+  });
+  check('업데이트 확인이 결과를 알려 준다', /최신|새 데이터|받지 못|확인/.test(updRes), updRes);
+  console.log('   업데이트 확인 결과: ' + updRes);
 
   check('스크립트 오류 없음', errs.length === 0, errs.join(' / '));
   await br.close();

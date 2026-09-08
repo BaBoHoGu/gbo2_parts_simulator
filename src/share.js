@@ -95,7 +95,7 @@ function fingerprint(b) {
  * @param {string} title 사용자가 적은 제목
  * @returns {Promise<{ok:boolean, code?:string, msg:string}>}
  */
-async function upload(bld, title) {
+async function upload(bld, title, desc) {
   if (!bld || !bld.ms) return { ok: false, code: 'noms', msg: '먼저 기체를 선택하세요' };
   const parts = (bld.parts || []).filter(Boolean);
   // 파츠가 없는 구성은 공유할 내용이 없다. 서버 규칙도 p0 를 필수로 두어 이중으로 막는다.
@@ -107,6 +107,10 @@ async function upload(bld, title) {
   // 서버 규칙과 같은 문자 범위 — 여기서 걸러 주면 사용자가 이유를 바로 안다
   if (!/^[가-힣ㄱ-ㅎA-Za-z0-9 ·\-_.,!?()[\]]*$/.test(t))
     return { ok: false, code: 'title', msg: '제목에 쓸 수 없는 문자가 있습니다' };
+  const d = (desc || '').trim();
+  if (d.length > 60) return { ok: false, code: 'desc', msg: '설명은 60자까지입니다' };
+  if (d && !/^[가-힣ㄱ-ㅎA-Za-z0-9 ·\-_.,!?()[\]/+~]*$/.test(d))
+    return { ok: false, code: 'desc', msg: '설명에 쓸 수 없는 문자가 있습니다' };
 
   const u = await signIn();
   if (!u) return { ok: false, code: 'net', msg: '연결하지 못했습니다 — 잠시 후 다시 시도하세요' };
@@ -131,6 +135,7 @@ async function upload(bld, title) {
     uid: u.uid,
     ver: (window.GBO2_BUILD && window.GBO2_BUILD.date) || ''
   };
+  if (d) body.desc = d;   // 비어 있으면 아예 안 보낸다(규칙이 정의 안 한 필드를 막으므로 null 도 안 된다)
   parts.forEach((n, i) => { body['p' + i] = toKey(n); });
 
   const fp = fingerprint({ ms: bld.ms, stage: bld.stage, exp: bld.expansion, expLv: bld.expLevel, parts });
@@ -159,6 +164,7 @@ function toBuild(id, v) {
     stage: Number(v.stage),
     expansion: fromKey(v.exp),
     expLevel: Number(v.expLv) || 1,
+    desc: v.desc || '',
     at: Number(v.at) || 0,
     ver: v.ver || '',
     uid: v.uid || ''
@@ -234,6 +240,25 @@ async function remove(id) {
   return r.ok ? { ok: true, msg: '삭제했습니다' } : { ok: false, msg: '삭제하지 못했습니다' };
 }
 
-window.GBO2Share = { upload, list, fingerprint, readCache, CFG, adminLogin, adminLogout, isAdmin, remove };
+/* ---------- 업데이트 확인 (PC) ---------- */
+// APK 는 네이티브가 직접 확인한다(AndroidBridge.checkUpdate). 여기는 PC 전용이다.
+// 배포 자산이 있는 releases/download 는 file:// 에서 CORS 로 막히지만,
+// GitHub API 는 통과한다 — 자산의 갱신 시각으로 새 버전 여부를 안다.
+const RELEASE_API = 'https://api.github.com/repos/BaBoHoGu/gbo2_parts_simulator/releases/tags/data';
+
+async function checkUpdate() {
+  const mine = (window.GBO2_BUILD && window.GBO2_BUILD.date) || '';
+  const r = await req(RELEASE_API);
+  if (!r.ok || !r.json) return { ok: false, msg: '업데이트 정보를 받지 못했습니다 — 연결을 확인하세요' };
+  const asset = (r.json.assets || []).find(a => a.name === 'gbo2-simulator.html');
+  if (!asset) return { ok: false, msg: '업데이트 정보를 찾지 못했습니다' };
+  const latest = String(asset.updated_at || '').slice(0, 10);   // yyyy-MM-dd
+  if (!latest) return { ok: false, msg: '업데이트 정보를 읽지 못했습니다' };
+  // yyyy-MM-dd 는 사전식 비교가 곧 날짜 비교
+  const newer = mine && latest > mine;
+  return { ok: true, newer, latest, mine };
+}
+
+window.GBO2Share = { upload, list, fingerprint, readCache, CFG, adminLogin, adminLogout, isAdmin, remove, checkUpdate };
 
 })();

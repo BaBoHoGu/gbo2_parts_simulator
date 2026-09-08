@@ -152,6 +152,16 @@ public class MainActivity extends Activity {
 
         // 이미지 저장 브리지 — WebView 는 blob 다운로드가 안 되므로 base64 를 받아 Download 폴더에 쓴다.
         web.addJavascriptInterface(new Object() {
+            /**
+             * 앱에서 「업데이트 확인」을 눌렀을 때. 시작 시 자동 갱신이 드물게 실패하는데
+             * (네트워크가 늦게 붙는 등) 그때 사용자가 직접 다시 시도할 손잡이가 필요하다.
+             * 시작 때와 같은 절차를 쓰되, 이미 앱이 떠 있으므로 받은 뒤 새로고침할지 묻는다.
+             */
+            @JavascriptInterface
+            public void checkUpdate() {
+                new Thread(() -> manualUpdate()).start();
+            }
+
             @JavascriptInterface
             public void saveImage(String data, String filename) {
                 try {
@@ -221,6 +231,54 @@ public class MainActivity extends Activity {
         if (d != null) return d;
         try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
         catch (Exception e) { return ""; }
+    }
+
+    /**
+     * 손으로 누른 업데이트 확인. startupUpdate 와 같은 절차지만 결과를 반드시 알려 준다
+     * (시작 때는 조용히 넘어가도 되지만, 눌렀는데 아무 반응이 없으면 고장으로 보인다).
+     */
+    private void manualUpdate() {
+        try {
+            String vj = httpGet(OTA_VERSION, 6000, 6000);
+            if (vj == null) { toastUi("연결하지 못했습니다 — 잠시 후 다시 시도하세요"); return; }
+            vj = vj.trim();
+            if (vj.length() > 0 && vj.charAt(0) == '\ufeff') vj = vj.substring(1);
+            String remote = new JSONObject(vj).optString("date", "");
+            if (remote.isEmpty()) { toastUi("업데이트 정보를 읽지 못했습니다"); return; }
+            if (remote.compareTo(servedDate()) <= 0) {
+                toastUi("최신입니다 (데이터 " + servedDate() + ")");
+                return;
+            }
+            toastUi("업데이트 받는 중… " + remote);
+            File tmp = new File(getFilesDir(), "ota_index.tmp");
+            boolean got = httpDownload(OTA_HTML, tmp, 8000, 60000);
+            if (!got || tmp.length() < 100000 || !htmlLooksComplete(tmp)) {
+                tmp.delete();
+                toastUi("업데이트를 받지 못했습니다 — 잠시 후 다시 시도하세요");
+                return;
+            }
+            File dst = otaFile();
+            dst.delete();
+            if (!tmp.renameTo(dst)) { tmp.delete(); toastUi("업데이트 적용에 실패했습니다"); return; }
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_DATE, remote).apply();
+            // 이미 앱이 떠 있으므로 새로고침해야 반영된다 — 작업 중일 수 있어 물어본다.
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                try {
+                    new AlertDialog.Builder(this)
+                        .setTitle("업데이트 완료")
+                        .setMessage("새 데이터(" + remote + ")를 받았습니다.\n지금 적용할까요?"
+                            + "\n\n※ 작업 중인 파츠 구성은 초기화됩니다. 나중에 적용해도 다음 실행부터 반영됩니다.")
+                        .setPositiveButton("지금 적용", (d, w) -> { if (web != null) web.loadUrl(APP_URL); })
+                        .setNegativeButton("나중에", null)
+                        .show();
+                } catch (Exception e) {
+                    toastUi("업데이트를 받았습니다 — 앱을 다시 켜면 적용됩니다");
+                }
+            });
+        } catch (Exception e) {
+            toastUi("업데이트를 확인하지 못했습니다");
+        }
     }
 
     /** 시작 화면 — 앱과 같은 배경색이라 열릴 때 깜빡이지 않는다. */
