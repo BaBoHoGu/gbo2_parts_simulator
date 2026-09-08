@@ -2072,3 +2072,12 @@ body.drawer-open .m-actionbar { display: none !important; }
 .pietan-goal input { width: 58px; text-align: right; }
 .pietan-goal .btn-primary.small { padding: 3px 10px; font-size: 12px; }
 .pietan-goal .pietan-mnote { flex: 1 1 100%; }
+
+/* 공유 갤러리 — 저장 목록과 같은 카드를 쓰고, 머리줄만 다르다 */
+.gallery-filter { padding: 10px 16px 0; gap: 8px; }
+.gallery-filter input[type="search"] { min-width: 0; }
+.gallery-filter select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+  border-radius: 7px; padding: 6px 8px; font-size: 12.5px; }
+/* 올린 시각·데이터 버전 — 제목 옆에 흐리게 */
+.sc-sub { font-size: 10.5px; color: var(--dim); margin-left: 8px; white-space: nowrap; }
+#galleryUpload.small { padding: 3px 10px; font-size: 12px; }
