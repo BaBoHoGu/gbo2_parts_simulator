@@ -86,14 +86,7 @@
       <div class="filter-group"><span class="filter-lb">등급</span><div class="chips" id="galleryRarityChips"></div></div>
     </div>
     <input type="search" id="galleryQuery" placeholder="기체·제목 검색 (자쿠 / 사격 지원…)">
-    <!-- 관리자 로그인 — 비밀번호는 앱에 없다. 여기서 입력해 Firebase 에 로그인한다.
-         prompt() 를 쓰면 PC·APK 모두 비밀번호가 화면에 그대로 보여서 입력칸으로 둔다. -->
-    <div class="gallery-admin" id="galleryAdminBox" hidden>
-      <input type="email" id="adminEmail" placeholder="관리자 이메일" autocomplete="username">
-      <input type="password" id="adminPw" placeholder="비밀번호" autocomplete="current-password">
-      <button id="adminGo" class="btn-primary small">로그인</button>
-      <button id="adminCancel" class="btn-ghost small">취소</button>
-    </div>
+
   </div>
   <div class="gallery-grid" id="galleryResults"></div>
 </section>
@@ -281,6 +274,27 @@
 </aside>
 
 <!-- ========== 저장한 구성 (화면 중앙) ========== -->
+<!-- 관리자 로그인 팝업 — 비밀번호는 앱에 없다. 여기서 입력해 Firebase 에 로그인한다.
+     prompt() 는 PC·APK 모두 입력한 비밀번호가 그대로 보여서 쓰지 않는다. -->
+<div class="auto-modal-back" id="adminBack" hidden></div>
+<div class="auto-modal admin-modal" id="adminModal" hidden role="dialog" aria-label="관리자 로그인">
+  <div class="am-head">
+    <b>🔑 관리자 로그인</b>
+    <span class="grow"></span>
+    <button id="adminCancel" class="btn-ghost">닫기</button>
+  </div>
+  <div class="admin-body">
+    <p class="note">부적절한 구성을 지울 수 있습니다. 비밀번호는 앱에 저장되지 않고, 이 창을 닫으면 사라집니다.</p>
+    <label>이메일<input type="email" id="adminEmail" autocomplete="username" placeholder="admin@example.com"></label>
+    <label>비밀번호<input type="password" id="adminPw" autocomplete="current-password" placeholder="••••••••"></label>
+    <div class="admin-foot">
+      <span class="note" id="adminMsg"></span>
+      <span class="grow"></span>
+      <button id="adminGo" class="btn-primary">로그인</button>
+    </div>
+  </div>
+</div>
+
 <div class="auto-modal-back" id="savedModalBack" hidden></div>
 <div class="auto-modal" id="savedModal" hidden role="dialog" aria-label="저장한 구성">
   <div class="am-head">

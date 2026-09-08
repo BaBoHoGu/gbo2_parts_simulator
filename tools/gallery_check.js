@@ -192,11 +192,14 @@ const check = (label, ok, extra) => {
   const pwUi = await pg.evaluate(async () => {
     document.querySelector('#galleryAdmin').click();
     await new Promise(r => setTimeout(r, 300));
-    const box = document.querySelector('#galleryAdminBox');
+    const m = document.querySelector('#adminModal');
+    const back = document.querySelector('#adminBack');
     const pw = document.querySelector('#adminPw');
-    return { open: box && !box.hidden, type: pw && pw.type, email: !!document.querySelector('#adminEmail') };
+    return { open: m && !m.hidden, back: back && !back.hidden,
+             type: pw && pw.type, email: !!document.querySelector('#adminEmail') };
   });
-  check('관리자 버튼이 로그인 칸을 편다', pwUi.open);
+  check('관리자 버튼이 로그인 팝업을 연다', pwUi.open);
+  check('팝업에 배경 덮개가 있다', pwUi.back);
   check('비밀번호가 가려진다 (type=password)', pwUi.type === 'password', '실제: ' + pwUi.type);
   check('이메일 칸이 있다', pwUi.email);
 
@@ -207,13 +210,25 @@ const check = (label, ok, extra) => {
     document.querySelector('#adminGo').click();
     await new Promise(r => setTimeout(r, 6000));
     return {
-      toast: (document.querySelector('#toast') || {}).textContent || '',
+      msg: (document.querySelector('#adminMsg') || {}).textContent || '',
       admin: !!(window.GBO2Share && window.GBO2Share.isAdmin()),
-      pwCleared: document.querySelector('#adminPw').value === ''
+      pwCleared: document.querySelector('#adminPw').value === '',
+      stillOpen: !document.querySelector('#adminModal').hidden
     };
   });
-  check('잘못된 계정으로는 관리자가 안 된다', !bad.admin, bad.toast);
+  check('잘못된 계정으로는 관리자가 안 된다', !bad.admin, bad.msg);
+  check('실패 사유가 팝업 안에 보인다', /관리자|로그인/.test(bad.msg), bad.msg);
+  check('실패하면 팝업이 열린 채 남는다', bad.stillOpen);
   check('실패해도 비밀번호를 화면에 남기지 않는다', bad.pwCleared);
+  // 닫으면 입력이 모두 지워져야 한다
+  const closed = await pg.evaluate(async () => {
+    document.querySelector('#adminCancel').click();
+    await new Promise(r => setTimeout(r, 200));
+    return { hidden: document.querySelector('#adminModal').hidden,
+             email: document.querySelector('#adminEmail').value,
+             pw: document.querySelector('#adminPw').value };
+  });
+  check('닫으면 입력이 지워진다', closed.hidden && !closed.email && !closed.pw);
 
 
   check('스크립트 오류 없음', errs.length === 0, errs.join(' / '));

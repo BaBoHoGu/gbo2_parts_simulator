@@ -214,8 +214,12 @@ async function adminLogin(email, password) {
   if (!r.ok || !r.json || !r.json.idToken) return { ok: false, msg: '로그인하지 못했습니다' };
   const cand = { token: r.json.idToken, uid: r.json.localId, email, at: Date.now() };
   // 로그인은 됐지만 관리자로 등록된 계정인지 확인한다(admins 는 공개 읽기).
+  // 값의 타입은 따지지 않는다 — 콘솔에서 true(불리언)로 넣든 "true"(문자열)로 넣든 통과해야 한다.
+  // 서버 규칙도 exists() 라 타입을 안 본다. 여기서만 엄격하면 사람이 콘솔에서 실수했을 때
+  // 「관리자가 아닙니다」 라는 엉뚱한 이유로 막힌다.
   const a = await req(`${CFG.db}/admins/${cand.uid}.json`);
-  if (!a.ok || a.json !== true) return { ok: false, msg: '이 계정은 관리자가 아닙니다' };
+  if (!a.ok || a.json === null || a.json === undefined || a.json === false)
+    return { ok: false, msg: '이 계정은 관리자가 아닙니다' };
   admin = cand;
   return { ok: true, msg: '관리자로 로그인했습니다' };
 }
