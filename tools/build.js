@@ -94,6 +94,14 @@ const i18n = {
 const inline = (name, value) =>
   `window.${name}=` + JSON.stringify(value).replace(/<\/script/gi, '<\\/script') + ';';
 
+// --web : 사이트용 산출물(dist/web). 이미지를 인라인하지 않고 images/ 로 따로 낸다.
+//   왜 나누나 — 인라인은 file:// 에서 캔버스 오염을 피하려고 한 것이라 오프라인판에는 필수지만,
+//   사이트에서는 손해만 남는다. base64 가 압축을 방해해 전송량이 0.58MB → 6.00MB 로 불고,
+//   img 의 loading="lazy" 도 무력화돼(이미 HTML 안에 있으니) 첫 화면에 안 보이는 736장까지 받는다.
+//   분리하면 첫 방문 1.17MB · 재배포 후 0.58MB 가 된다.
+// 기본(플래그 없음) 산출물은 예전 그대로다 — APK·경량판·완전판이 그 파일을 쓴다.
+const WEB = process.argv.includes('--web');
+
 // 이미지를 data URI 로 인라인 — 진짜 단일 파일이 되고, file:// 에서도 캔버스 오염 없이
 // PNG 카드에 기체·파츠 이미지를 그릴 수 있다. 키는 '<dir>/<NFC파일명>.webp'.
 const IMG_SRC = path.join(ROOT, 'assets', 'images');
@@ -106,7 +114,8 @@ if (fs.existsSync(IMG_SRC)) {
     for (const f of fs.readdirSync(dp)) {
       if (!/\.webp$/i.test(f)) continue;
       const buf = fs.readFileSync(path.join(dp, f));
-      images[dir + '/' + f.normalize('NFC')] = 'data:image/webp;base64,' + buf.toString('base64');
+      // 사이트판은 경로만 알면 되므로 내용을 담지 않는다(HTML 이 8.47MB → 0.58MB 압축).
+      if (!WEB) images[dir + '/' + f.normalize('NFC')] = 'data:image/webp;base64,' + buf.toString('base64');
       imgCount++; imgBytes += buf.length;
     }
   }
@@ -147,14 +156,15 @@ for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPO
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 
-const DIST = path.join(ROOT, 'dist');
+const DIST = WEB ? path.join(ROOT, 'dist', 'web') : path.join(ROOT, 'dist');
 fs.mkdirSync(DIST, { recursive: true });
 
-// 이미지는 이제 HTML 에 data URI 로 인라인된다 → dist/images 폴더는 더 이상 필요 없다(진짜 단일 파일).
+// 오프라인판은 이미지가 HTML 안에 있어 dist/images 가 필요 없다(진짜 단일 파일).
 // 이전 빌드가 남긴 폴더가 있으면 지워 배포 크기를 줄인다.
+// 사이트판은 반대로 여기에 이미지를 깐다 — 지웠다 다시 깔아 지워진 이미지가 남지 않게 한다.
 fs.rmSync(path.join(DIST, 'images'), { recursive: true, force: true });
-
-const out = path.join(DIST, 'gbo2-simulator.html');
+if (WEB && fs.existsSync(IMG_SRC)) fs.cpSync(IMG_SRC, path.join(DIST, 'images'), { recursive: true });
+const out = path.join(DIST, WEB ? 'index.html' : 'gbo2-simulator.html');
 fs.writeFileSync(out, html);
 console.log('built', out, (Buffer.byteLength(html) / 1024 / 1024).toFixed(2) + ' MB',
   '| 이미지', imgCount + '개 ' + (imgBytes / 1024 / 1024).toFixed(2) + ' MB',
