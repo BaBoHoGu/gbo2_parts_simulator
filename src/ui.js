@@ -3757,13 +3757,20 @@
     if (!S) return;
     if (S.isAdmin()) {
       if (!confirm('관리자에서 로그아웃할까요?')) return;
-      S.adminLogout(); $('#galleryAdminBox').hidden = true; renderGallery(); updateAdminBtn(); toast('로그아웃했습니다');
+      S.adminLogout(); renderGallery(); updateAdminBtn(); toast('로그아웃했습니다');
       return;
     }
-    // 입력칸을 펴고, 실제 로그인은 adminSubmit 이 한다
-    const box = $('#galleryAdminBox');
-    box.hidden = !box.hidden;
-    if (!box.hidden) $('#adminEmail').focus();
+    openAdmin(true);
+  }
+
+  /** 관리자 로그인 팝업 여닫기. 닫을 때 입력을 지운다 — 비밀번호를 화면에 남기지 않는다. */
+  function openAdmin(open) {
+    const m = $('#adminModal'), b = $('#adminBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    $('#adminMsg').textContent = '';
+    if (open) { $('#adminPw').value = ''; setTimeout(() => $('#adminEmail').focus(), 30); }
+    else { $('#adminEmail').value = ''; $('#adminPw').value = ''; }
   }
 
   async function adminSubmit() {
@@ -3773,14 +3780,17 @@
     if (!email || !pw) { toast('이메일과 비밀번호를 입력하세요'); return; }
     const btn = $('#adminGo');
     btn.disabled = true; btn.textContent = '확인 중…';
+    $('#adminMsg').textContent = '';
     const r = await S.adminLogin(email, pw);
     btn.disabled = false; btn.textContent = '로그인';
-    toast(r.msg);
     $('#adminPw').value = '';                 // 비밀번호는 화면에 남기지 않는다
     if (r.ok) {
-      $('#adminEmail').value = '';
-      $('#galleryAdminBox').hidden = true;
+      openAdmin(false);
+      toast(r.msg);
       renderGallery(); updateAdminBtn();
+    } else {
+      // 실패는 팝업 안에 남긴다 — 토스트는 팝업에 가려 잘 안 보인다
+      $('#adminMsg').textContent = r.msg;
     }
   }
 
@@ -5542,7 +5552,9 @@
     galChips('#galleryRarityChips', RARITY_CHIPS, () => galleryRarity, v => { galleryRarity = v; });
     $('#galleryAdmin').onclick = adminSignIn;
     $('#adminGo').onclick = adminSubmit;
-    $('#adminCancel').onclick = () => { $('#galleryAdminBox').hidden = true; $('#adminPw').value = ''; };
+    $('#adminCancel').onclick = () => openAdmin(false);
+    $('#adminBack').onclick = () => openAdmin(false);
+    $('#adminEmail').onkeydown = ev => { if (ev.key === 'Enter') $('#adminPw').focus(); };
     // 비밀번호 칸에서 Enter 로 바로 로그인
     $('#adminPw').onkeydown = ev => { if (ev.key === 'Enter') adminSubmit(); };
     $('#savedModalClose').onclick = () => openSavedModal(false);
@@ -5663,6 +5675,7 @@
       if (ev.key !== 'Escape') return;
       if (mobileSheetOpen()) { closeMobileSheets(); return; }   // 모바일 슬라이드 시트 먼저 닫기
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
+      if (!$('#adminModal').hidden) { openAdmin(false); return; }
       if (state.view === 'gallery') { openGallery(false); return; }
       if (!$('#pietanModal').hidden) { openPietan(false); return; }
       if (!$('#compareModal').hidden) { openCompareModal(false); return; }
