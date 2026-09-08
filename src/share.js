@@ -246,17 +246,28 @@ async function remove(id) {
 // GitHub API 는 통과한다 — 자산의 갱신 시각으로 새 버전 여부를 안다.
 const RELEASE_API = 'https://api.github.com/repos/BaBoHoGu/gbo2_parts_simulator/releases/tags/data';
 
+const STAMP_RE = /\d{4}-\d{2}-\d{2}-\d{4}/;
+
 async function checkUpdate() {
-  const mine = (window.GBO2_BUILD && window.GBO2_BUILD.date) || '';
+  const B = window.GBO2_BUILD || {};
   const r = await req(RELEASE_API);
   if (!r.ok || !r.json) return { ok: false, msg: '업데이트 정보를 받지 못했습니다 — 연결을 확인하세요' };
+
+  // ① 분 단위 스탬프끼리 비교한다(권장 경로). 배포가 릴리스 노트에 남긴 값이다.
+  //    같은 날 두 번 배포해도 잡힌다 — 날짜만 비교하던 시절엔 못 잡았다.
+  const remote = (String(r.json.body || '').match(STAMP_RE) || [])[0];
+  if (remote && B.stamp) {
+    // yyyy-MM-dd-HHmm 은 자리수가 고정이라 사전식 비교가 곧 시각 비교
+    return { ok: true, newer: remote > B.stamp, latest: remote, mine: B.stamp };
+  }
+
+  // ② 예전 빌드(스탬프가 없다)이거나 노트가 비어 있으면 날짜까지만 비교한다.
+  //    이때는 같은 날 재배포를 알 수 없다 — 그래도 '모르는 것보다는 낫다'.
+  const mine = B.date || '';
   const asset = (r.json.assets || []).find(a => a.name === 'gbo2-simulator.html');
-  if (!asset) return { ok: false, msg: '업데이트 정보를 찾지 못했습니다' };
-  const latest = String(asset.updated_at || '').slice(0, 10);   // yyyy-MM-dd
+  const latest = asset ? String(asset.updated_at || '').slice(0, 10) : (remote || '').slice(0, 10);
   if (!latest) return { ok: false, msg: '업데이트 정보를 읽지 못했습니다' };
-  // yyyy-MM-dd 는 사전식 비교가 곧 날짜 비교
-  const newer = mine && latest > mine;
-  return { ok: true, newer, latest, mine };
+  return { ok: true, newer: !!(mine && latest > mine), latest, mine };
 }
 
 window.GBO2Share = { upload, list, fingerprint, readCache, CFG, adminLogin, adminLogout, isAdmin, remove, checkUpdate };

@@ -3721,7 +3721,7 @@
           const r = deserialize(bld);
           openGallery(false);
           toast(r.ok
-            ? ('「' + bld.name + '」 가져왔습니다' + (r.missing ? ` — 알 수 없는 파츠 ${r.missing}개 제외` : ''))
+            ? ('「' + bld.name + '」 가져왔습니다' + loadNote(r))
             : '이 구성의 기체가 내 데이터에 없습니다');
         }
       }));
@@ -5079,7 +5079,7 @@
           const r = deserialize(bld);
           openSavedModal(false);
           toast(r.ok
-            ? ('「' + bld.name + '」 불러왔습니다' + (r.missing ? ` — 알 수 없는 파츠 ${r.missing}개 제외` : ''))
+            ? ('「' + bld.name + '」 불러왔습니다' + loadNote(r))
             : '이 구성의 기체를 찾을 수 없습니다');
         }
       }));
@@ -5110,14 +5110,17 @@
     // 저장 순서대로 실제 장착 판정을 통과하는 파츠만 받는다.
     const wanted = obj.parts || [];
     state.equipped = [];
+    // 빠진 이유를 나눠 센다 — 「기본 제외」는 본인이 해 둔 설정인데 예전엔 이것까지
+    // '알 수 없는 파츠' 로 뭉뚱그려서, 데이터가 잘못된 것처럼 읽혔다.
+    let banned = 0;
     for (const n of wanted) {
       const p = partByName.get(n);
-      if (p && !state.banned.has(n)   // 기본 제외한 파츠는 불러온 구성에서도 빼둔다
-        && C.checkEquip(p, ms, state.equipped, C.calcSlots(ms, state.equipped, state.stage, fullst)).ok) {
+      if (p && state.banned.has(n)) { banned++; continue; }   // 기본 제외한 파츠는 불러온 구성에서도 빼둔다
+      if (p && C.checkEquip(p, ms, state.equipped, C.calcSlots(ms, state.equipped, state.stage, fullst)).ok) {
         state.equipped.push(p);
       }
     }
-    const missing = wanted.length - state.equipped.length;
+    const missing = wanted.length - state.equipped.length - banned;
     state.locked.clear();
     syncStageSeg();
     $('#expansion').value = state.expansion;
@@ -5126,7 +5129,15 @@
     expLv.disabled = state.expansion === C.EXPANSION_NONE;
     renderAll();
     setView('build');
-    return { ok: true, missing };
+    return { ok: true, missing, banned };
+  }
+
+  /** 불러오기 결과에 덧붙일 안내. 빠진 이유를 구분해 준다 — 원인이 다르면 할 일도 다르다. */
+  function loadNote(r) {
+    const parts = [];
+    if (r.missing) parts.push(`알 수 없는 파츠 ${r.missing}개`);
+    if (r.banned) parts.push(`기본 제외한 파츠 ${r.banned}개`);
+    return parts.length ? ' — ' + parts.join(' · ') + ' 제외' : '';
   }
 
   function syncStageSeg() {
@@ -5668,9 +5679,7 @@
     };
 
     // 불러오기 결과 안내 — 제외된 파츠가 있으면 조용히 넘기지 않는다 (가져오기에서 사용)
-    const loadedMsg = (r, okText) => r.missing
-      ? `${okText} — 알 수 없는 파츠 ${r.missing}개는 제외했습니다`
-      : okText;
+    const loadedMsg = (r, okText) => okText + loadNote(r);
     $('#share').onclick = () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
       const code = encodeShare();

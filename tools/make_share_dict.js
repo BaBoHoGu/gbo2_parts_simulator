@@ -17,8 +17,14 @@ const rd = (...p) => JSON.parse(fs.readFileSync(path.join(ROOT, ...p), 'utf8'));
 /** RTDB 키로 쓸 수 있게 바꾼다. 앱도 같은 함수를 쓴다. */
 const toKey = n => String(n).replace(/\[/g, '(').replace(/\]/g, ')');
 
+// 앱(build.js)과 **똑같은 목록**이어야 한다. 미러에 아직 없는 기체·파츠를 앱은 additions
+// 에서 보태 넣으므로, 여기서 안 보태면 그 기체 구성은 서버가 거부한다(가브스레이 LV4 사례).
+const D = require('./lib/dataset.js');
 const msData = rd('data', 'msData.json');
-const parts = [].concat(...Object.values(rd('data', 'parts.json')));
+D.mergeMsAdditions(ROOT, msData);
+const partsByCat = rd('data', 'parts.json');
+D.mergePartAdditions(ROOT, partsByCat);
+const parts = [].concat(...Object.values(partsByCat));
 
 const dict = { ms: {}, parts: {}, exp: {} };
 for (const m of msData) dict.ms[toKey(m.MS名)] = true;
