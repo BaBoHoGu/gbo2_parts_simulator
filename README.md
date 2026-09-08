@@ -175,6 +175,23 @@ node tools/build_release.js   # release/<이름>/ 폴더 + 같은 이름 .zip
   `update.ps1` 은 동봉된 `node\node.exe` 를 먼저 쓰고, 없으면 시스템 `node` 로 넘어간다.
 - 사용자는 `dist\gbo2-simulator.html` 을 연다. 폴더 구성은 그대로 두어야 한다.
 
+### 개발 PC 를 옮길 때
+
+저장소만 옮기면 되는 게 아니다. **저장소에 없는 것**이 세 가지 있다 — 셋 다 비밀값이라
+공개 저장소에 둘 수 없어 일부러 PC 에 묶어 뒀다.
+
+| 무엇 | 어디에 | 없으면 |
+|---|---|---|
+| `gh` CLI 로그인 | `gh auth login` | OTA·PC 배포본이 안 올라감 |
+| 공유 갤러리 사전 계정 | `%LOCALAPPDATA%\gbo2-sim\dict.cred` | 새 기체 구성을 아무도 못 올림 |
+| JDK / Android SDK | `JAVA_HOME` 또는 Android Studio JBR | APK 를 못 만듦 |
+
+`dict.cred` 는 DPAPI 로 **그 Windows 사용자에게** 암호화돼 있어서 복사해 가도 안 풀린다.
+새 PC 에서 `.\update.ps1 -SetDictKey` 로 다시 등록한다(등록 직후 로그인·권한까지 확인해 준다).
+
+같은 폴더의 `dict.sha` 도 안 따라오므로, 새 PC 의 첫 배포는 사전을 한 번 더 올린다.
+같은 내용을 다시 쓰는 것이라 문제는 없다.
+
 ## 알려진 차이
 
 - 슬롯 보너스는 원본과 동일하게, 강화 단계(4/6)와 무관하게 강화리스트 전체를 더한다
