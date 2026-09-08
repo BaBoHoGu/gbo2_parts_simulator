@@ -3719,7 +3719,9 @@
         } : null,
         onOpen: () => {
           const r = deserialize(bld);
-          openGallery(false);
+          // 성공하면 deserialize 가 이미 파츠 적용 화면을 띄웠다 — 여기서 화면을 또
+          // 옮기면 「들어오기 전 화면」으로 돌아가 버린다. 실패했을 때만 갤러리에 남는다.
+          if (!r.ok) openGallery(false);
           toast(r.ok
             ? ('「' + bld.name + '」 가져왔습니다' + loadNote(r))
             : '이 구성의 기체가 내 데이터에 없습니다');
@@ -3883,7 +3885,8 @@
       openUpload(false);
       $('#uploadTitle').value = ''; $('#uploadDesc').value = '';
       toast(r.msg);
-      galleryList = []; loadGallery();
+      galleryList = [];
+      if (state.view === 'gallery') loadGallery();   // 안 보이는 목록을 그릴 이유가 없다
     } else {
       $('#uploadMsg').textContent = r.msg;   // 팝업 안에 남긴다(토스트는 가려진다)
     }
@@ -5610,6 +5613,7 @@
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
     $('#galleryUpload').onclick = uploadCurrent;
+    $('#uploadBtn').onclick = uploadCurrent;
     $('#uploadGo').onclick = uploadSubmit;
     $('#uploadCancel').onclick = () => openUpload(false);
     $('#uploadBack').onclick = () => openUpload(false);
@@ -5805,7 +5809,7 @@
   /** 모바일 상단바 — 버튼 9개가 390px 폭에 1,211px 로 깔려 가로 스크롤로만 닿았다.
    *  자주 쓰는 것(피탄 시뮬·자동 구성)만 남기고 나머지는 「⋯」 메뉴로 접는다.
    *  메뉴 항목은 원래 버튼을 그대로 click() 하므로 동작·상태는 한 벌만 유지된다. */
-  const TOPBAR_MORE = ['#save', '#load', '#galleryBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn', '#updateBtn'];
+  const TOPBAR_MORE = ['#save', '#load', '#galleryBtn', '#uploadBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn', '#updateBtn'];
   function setupTopbarOverflow() {
     const bar = document.querySelector('.topbar'); if (!bar) return;
     for (const sel of TOPBAR_MORE) { const b = $(sel); if (b) b.classList.add('in-more'); }
