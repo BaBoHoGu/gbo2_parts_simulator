@@ -1,14 +1,1 @@
-{
- "_backuptest": {
-  "at": 1788836893626,
-  "desc": "백업 워크플로 push 권한 확인용",
-  "exp": "拡張スキル無し",
-  "expLv": 5,
-  "ms": "ジム・スナイパー_LV1",
-  "p0": "強化フレーム_LV1",
-  "stage": 6,
-  "title": "백업시험 지워주세요",
-  "uid": "E97uroGVvJZBJG1ww8Y9qjtUCoa2",
-  "ver": "2026-09-08"
- }
-}
+{}
