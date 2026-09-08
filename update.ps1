@@ -8,12 +8,13 @@
 #   .\update.ps1 -NoSmoke   배포 전 데이터·번역 점검을 건너뛴다(권장하지 않음)
 #   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
 #   .\update.ps1 -Publish   폰 OTA(data) + PC 배포본 ZIP 을 GitHub 에 올려 링크로 배포
+#   .\update.ps1 -SetDictKey  공유 갤러리 사전 계정을 이 PC 에 등록 (최초 1회, 이후 자동)
 #
 # gbo2.jp 최신 데이터·일본 위키(밸런스 패치 목록 포함)에서 변경분만 가져와
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$SetDictKey)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -178,6 +179,87 @@ function Publish-Pc {
   $ErrorActionPreference = $prevEap
 }
 
+# ── 공유 갤러리 사전(dict) 자동 게시 ────────────────────────────────────────
+# 보안 규칙이 기체·파츠 이름을 사전과 대조하므로, 데이터가 갱신되면 사전도 같이 올려야 한다.
+# 안 올리면 새 기체로 만든 구성은 업로드가 조용히 거부되고, 사용자 눈에는 이유가 안 보인다.
+# 그래서 배포에 묶는다. 자격 증명은 저장소가 공개라 파일에 못 넣고, DPAPI 로 암호화해
+# 이 PC·이 계정에서만 풀리는 형태로 %LOCALAPPDATA% 에 둔다 (-SetDictKey 로 최초 1회 등록).
+$DictDir  = Join-Path $env:LOCALAPPDATA 'gbo2-sim'
+$DictCred = Join-Path $DictDir 'dict.cred'
+$DictHash = Join-Path $DictDir 'dict.sha'
+
+function Set-DictKey {
+  Write-Host '공유 갤러리 사전 계정을 이 PC 에 등록합니다.' -ForegroundColor Cyan
+  Write-Host '  (Firebase Authentication 에 만든 전용 계정 — 관리자 계정과 달라야 합니다)' -ForegroundColor DarkGray
+  $email = Read-Host '이메일'
+  if (-not $email) { Write-Host '취소했습니다.' -ForegroundColor Yellow; return }
+  $pw = Read-Host '비밀번호' -AsSecureString
+  New-Item -ItemType Directory -Force $DictDir | Out-Null
+  # ConvertFrom-SecureString 은 DPAPI 로 현재 Windows 사용자에게 묶어 암호화한다.
+  # 이 파일을 복사해 가도 다른 PC·다른 계정에서는 풀리지 않는다.
+  Set-Content -Path $DictCred -Encoding utf8 -Value @($email, (ConvertFrom-SecureString $pw))
+  Write-Host "등록했습니다 → $DictCred" -ForegroundColor Green
+
+  # 바로 확인한다 — 오타나 권한 누락을 몇 주 뒤 배포 때 알게 되면 늦다.
+  $env:GBO2_DICT_EMAIL = $email
+  $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($pw)
+  try { $env:GBO2_DICT_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+  finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & $node (Join-Path $PSScriptRoot 'tools\push_dict.js') '--check'
+  $rc = $LASTEXITCODE
+  $ErrorActionPreference = $prevEap
+  $env:GBO2_DICT_PASSWORD = $null
+  if ($rc -eq 0) {
+    Write-Host '이제 -Publish 할 때마다 사전이 바뀌었으면 자동으로 올라갑니다.' -ForegroundColor Green
+  } else {
+    Write-Host '등록은 됐지만 위 확인에 실패했습니다 — 이대로는 사전이 안 올라갑니다.' -ForegroundColor Red
+  }
+}
+
+function Publish-Dict {
+  # 사전을 먼저 만든다 — 데이터가 안 바뀌었으면 내용도 그대로다.
+  & $node (Join-Path $PSScriptRoot 'tools\make_share_dict.js') '--dict' | Out-Null
+  $src = Join-Path $PSScriptRoot 'dist\firebase-dict.json'
+  if (-not (Test-Path $src)) { Write-Host '사전을 만들지 못해 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
+
+  # 안 바뀌었으면 올리지 않는다 (매 배포마다 75KB 를 밀어 넣을 이유가 없다)
+  $now = (Get-FileHash $src -Algorithm SHA256).Hash
+  $was = if (Test-Path $DictHash) { (Get-Content $DictHash -Raw).Trim() } else { '' }
+  if ($now -eq $was) { Write-Host '공유 갤러리 사전: 변경 없음 — 건너뜁니다.' -ForegroundColor DarkGray; return }
+
+  if (-not (Test-Path $DictCred)) {
+    Write-Host "`n공유 갤러리 사전이 바뀌었는데 계정이 등록돼 있지 않습니다." -ForegroundColor Yellow
+    Write-Host '  이대로 두면 새로 추가된 기체로 만든 구성은 갤러리에 올릴 수 없습니다.' -ForegroundColor Yellow
+    Write-Host '  .\update.ps1 -SetDictKey 로 한 번만 등록하면 이후로는 자동입니다.' -ForegroundColor Yellow
+    return
+  }
+
+  $lines = Get-Content $DictCred
+  $env:GBO2_DICT_EMAIL = $lines[0]
+  # DPAPI 로 풀어 프로세스 환경 변수로만 넘긴다 — 디스크에 평문이 남지 않는다.
+  $sec = ConvertTo-SecureString $lines[1]
+  $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+  try { $env:GBO2_DICT_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+  finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+
+  Write-Host "`n공유 갤러리 사전 게시 중…" -ForegroundColor Cyan
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & $node (Join-Path $PSScriptRoot 'tools\push_dict.js')
+  $rc = $LASTEXITCODE
+  $ErrorActionPreference = $prevEap
+  $env:GBO2_DICT_PASSWORD = $null
+
+  if ($rc -eq 0) {
+    New-Item -ItemType Directory -Force $DictDir | Out-Null
+    Set-Content -Path $DictHash -Encoding utf8 -Value $now
+  } else {
+    # 해시를 남기지 않는다 → 다음 배포에서 다시 시도한다.
+    Write-Host '  사전 게시에 실패했습니다. 새 기체 구성은 아직 갤러리에 올릴 수 없습니다.' -ForegroundColor Red
+    Write-Host '  (다음 배포에서 자동으로 다시 시도합니다)' -ForegroundColor Yellow
+  }
+}
+
 # node 결정 — 폴더에 동봉한 node\node.exe 를 먼저 쓰고, 없으면 시스템 node 를 쓴다.
 $bundled = Join-Path $PSScriptRoot 'node\node.exe'
 if (Test-Path $bundled) {
@@ -192,6 +274,9 @@ if (Test-Path $bundled) {
   }
   $node = $sys.Source
 }
+
+# 사전 계정 등록은 여기서 끝난다 — 데이터 수신·빌드를 할 이유가 없다.
+if ($SetDictKey) { Set-DictKey; Close-Window 0 }
 
 # -Rebuild: 데이터 재수신 없이 build.js 만 실행 (psycommu.override.json 등 오버라이드 패치 적용)
 if ($Rebuild) {
@@ -269,6 +354,6 @@ if (-not $Check) {
     if ($LASTEXITCODE -ne 0) { Write-Host '경량판 생성 실패 (위 로그 확인).' -ForegroundColor Red }
   }
   # -Publish: 폰 자동 갱신용 데이터(OTA) + PC 배포본 ZIP 을 GitHub 에 올린다
-  if ($Publish) { Publish-Ota; Publish-Pc }
+  if ($Publish) { Publish-Ota; Publish-Pc; Publish-Dict }
 }
 Close-Window 0
