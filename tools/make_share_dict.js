@@ -42,5 +42,5 @@ console.log(`${name} 생성 — 기체 ${Object.keys(dict.ms).length} · 파츠 
   + ` · 확장 ${Object.keys(dict.exp).length} · ${kb} KB`);
 console.log('  ' + dest);
 console.log(onlyDict
-  ? '  → 콘솔에서 dict 노드를 열고 「JSON 가져오기」'
+  ? '  → 게시는 push_dict.js 가 한다 (update.ps1 -Publish 에 묶여 있음)'
   : '  → 콘솔 Realtime Database 루트에서 「JSON 가져오기」 (처음 한 번만)');
