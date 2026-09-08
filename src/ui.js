@@ -3708,6 +3708,7 @@
       const sub = [relTime(bld.at), bld.ver && ('데이터 ' + bld.ver)].filter(Boolean).join(' · ');
       box.append(buildSummaryCard(bld, {
         sub,
+        desc: bld.desc,
         // 관리자로 로그인했을 때만 ✕ 가 붙는다. 서버 규칙이 admins 목록으로 다시 확인하므로
         // 버튼이 보인다고 지워지는 게 아니라, 실제 권한이 있어야 지워진다.
         onDel: (S && S.isAdmin()) ? async () => {
@@ -3802,17 +3803,90 @@
     b.classList.toggle('on', on);
   }
 
-  async function uploadCurrent() {
+  /**
+   * 수동 업데이트 확인.
+   *   APK — 네이티브가 직접 받고 적용한다(자동 갱신이 실패했을 때의 손잡이).
+   *   PC  — 배포 자산은 file:// 에서 CORS 로 막히므로 GitHub API 로 날짜만 보고 안내한다.
+   *         PC 는 앱이 스스로 갱신할 수 없다 — 업데이트.bat / update.bat 이 한다.
+   */
+  async function checkUpdateNow() {
+    const btn = $('#updateBtn');
+    const done = () => { if (btn) { btn.disabled = false; btn.textContent = '🔄 업데이트 확인'; } };
+    if (btn) { btn.disabled = true; btn.textContent = '확인 중…'; }
+    if (window.AndroidBridge && typeof window.AndroidBridge.checkUpdate === 'function') {
+      try { window.AndroidBridge.checkUpdate(); } catch (e) { toast('업데이트를 확인하지 못했습니다'); }
+      done();
+      return;
+    }
+    if (!S) { done(); return; }
+    const r = await S.checkUpdate();
+    done();
+    if (!r.ok) { toast(r.msg); return; }
+    if (!r.newer) { toast('최신입니다 (데이터 ' + r.mine + ')'); return; }
+    alert('새 데이터가 있습니다.\n\n지금 쓰는 것: ' + r.mine + '\n최신: ' + r.latest
+      + '\n\n앱 폴더의 「업데이트.bat」(완전판은 update.bat)을 실행하면 받아집니다.');
+  }
+
+  /** 올리기 팝업 — 갤러리 화면에는 파츠가 안 보이므로 무엇이 올라가는지 여기서 보여 준다. */
+  function openUpload(open) {
+    const m = $('#uploadModal'), b = $('#uploadBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (!open) return;
+    $('#uploadMsg').textContent = '';
+    const box = $('#uploadTarget');
+    box.innerHTML = '';
+    const parts = state.equipped.length;
+    if (!state.ms) {
+      box.append(el('div', 'ac-warn', '올릴 구성이 없습니다 — 먼저 기체를 고르고 파츠를 장착하세요.'));
+    } else if (!parts) {
+      box.append(el('div', 'ac-warn',
+        T.msName(state.ms.MS名) + ' — 파츠가 없습니다. 파츠를 하나 이상 장착한 뒤 올려 주세요.'));
+    } else {
+      const line = el('div', 'sc-ms');
+      line.append(img(msImg(state.ms.MS名), 'ms', state.ms.MS名));
+      const meta = el('div', 'sc-meta');
+      meta.append(el('span', 'sc-msname', T.msName(state.ms.MS名)));
+      meta.append(el('span', 'sc-tags', [STAGE_LABEL[state.stage],
+        state.expansion !== C.EXPANSION_NONE ? expShort(state.expansion) : null,
+        '파츠 ' + parts + '개'].filter(Boolean).join(' · ')));
+      line.append(meta);
+      box.append(line);
+      const th = el('div', 'ac-thumbs');
+      for (const p of state.equipped) {
+        const t = el('div', 'ac-thumb');
+        t.append(img(partImg(p.name), 'parts', p.name));
+        const lv = lvOf(p.name);
+        if (lv) t.append(el('span', 'ac-lv', lv));
+        t.title = T.partName(p.name);
+        th.append(t);
+      }
+      box.append(th);
+    }
+    $('#uploadGo').disabled = !(state.ms && parts);
+    setTimeout(() => $('#uploadTitle').focus(), 30);
+  }
+
+  function uploadCurrent() { if (S) openUpload(true); }
+
+  async function uploadSubmit() {
     if (!S) return;
-    if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
-    const title = (prompt('갤러리에 올릴 제목을 입력하세요 (20자 이내)', '') || '').trim();
-    if (!title) return;                      // 취소하거나 비워 두면 올리지 않는다
-    const btn = $('#galleryUpload');
-    if (btn) { btn.disabled = true; btn.textContent = '올리는 중…'; }
-    const r = await S.upload(serialize(), title);
-    if (btn) { btn.disabled = false; btn.textContent = '↑ 내 구성 올리기'; }
-    toast(r.msg);
-    if (r.ok) { galleryList = []; loadGallery(); }
+    const title = $('#uploadTitle').value || '';
+    const desc = $('#uploadDesc').value || '';
+    if (!title.trim()) { $('#uploadMsg').textContent = '제목을 입력하세요'; return; }
+    const btn = $('#uploadGo');
+    btn.disabled = true; btn.textContent = '올리는 중…';
+    $('#uploadMsg').textContent = '';
+    const r = await S.upload(serialize(), title, desc);
+    btn.disabled = false; btn.textContent = '올리기';
+    if (r.ok) {
+      openUpload(false);
+      $('#uploadTitle').value = ''; $('#uploadDesc').value = '';
+      toast(r.msg);
+      galleryList = []; loadGallery();
+    } else {
+      $('#uploadMsg').textContent = r.msg;   // 팝업 안에 남긴다(토스트는 가려진다)
+    }
   }
 
   function openSavedModal(open) {
@@ -4937,6 +5011,8 @@
     meta.append(el('span', 'sc-tags', tags.filter(Boolean).join(' · ')));
     msLine.append(meta);
     card.append(msLine);
+    // 올린 사람이 적은 한 줄 설명 (갤러리 전용 — 저장 목록에는 없다)
+    if (opt.desc) card.append(el('div', 'sc-desc', opt.desc));
 
     // 파츠 아이콘
     const thumbs = el('div', 'ac-thumbs');
@@ -5523,6 +5599,19 @@
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
     $('#galleryUpload').onclick = uploadCurrent;
+    $('#uploadGo').onclick = uploadSubmit;
+    $('#uploadCancel').onclick = () => openUpload(false);
+    $('#uploadBack').onclick = () => openUpload(false);
+    $('#uploadTitle').onkeydown = ev => { if (ev.key === 'Enter') $('#uploadDesc').focus(); };
+    $('#uploadDesc').onkeydown = ev => { if (ev.key === 'Enter') uploadSubmit(); };
+    // 남은 글자 수 — 규칙이 길이를 막으므로 미리 보여 준다
+    const cnt = (inp, out, max) => {
+      const f = () => { $(out).textContent = ($(inp).value || '').length + '/' + max; };
+      $(inp).oninput = f; f();
+    };
+    cnt('#uploadTitle', '#uploadTitleCount', 20);
+    cnt('#uploadDesc', '#uploadDescCount', 60);
+    $('#updateBtn').onclick = checkUpdateNow;
     $('#galleryQuery').oninput = () => renderGallery();
     // 정렬·속성은 기체 선택 화면과 같은 칩으로 (버튼 모양·조작을 통일한다)
     const galChips = (boxSel, items, get, set) => {
@@ -5675,6 +5764,7 @@
       if (ev.key !== 'Escape') return;
       if (mobileSheetOpen()) { closeMobileSheets(); return; }   // 모바일 슬라이드 시트 먼저 닫기
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
+      if (!$('#uploadModal').hidden) { openUpload(false); return; }
       if (!$('#adminModal').hidden) { openAdmin(false); return; }
       if (state.view === 'gallery') { openGallery(false); return; }
       if (!$('#pietanModal').hidden) { openPietan(false); return; }
@@ -5706,7 +5796,7 @@
   /** 모바일 상단바 — 버튼 9개가 390px 폭에 1,211px 로 깔려 가로 스크롤로만 닿았다.
    *  자주 쓰는 것(피탄 시뮬·자동 구성)만 남기고 나머지는 「⋯」 메뉴로 접는다.
    *  메뉴 항목은 원래 버튼을 그대로 click() 하므로 동작·상태는 한 벌만 유지된다. */
-  const TOPBAR_MORE = ['#save', '#load', '#galleryBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn'];
+  const TOPBAR_MORE = ['#save', '#load', '#galleryBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn', '#updateBtn'];
   function setupTopbarOverflow() {
     const bar = document.querySelector('.topbar'); if (!bar) return;
     for (const sel of TOPBAR_MORE) { const b = $(sel); if (b) b.classList.add('in-more'); }

@@ -63,6 +63,8 @@
 
         // 제목은 선택. 길이와 문자 범위를 좁혀 둔다(한글·영문·숫자·공백·일부 기호).
         "title": { ".validate": "newData.isString() && newData.val().length <= 20 && newData.val().matches(/^[가-힣ㄱ-ㅎA-Za-z0-9 ·\\-_.,!?()\\[\\]]*$/)" },
+        // 한 줄 설명(선택). 자유 텍스트는 검열 부담의 대부분이라 짧게 묶어 둔다.
+        "desc" : { ".validate": "newData.isString() && newData.val().length <= 60 && newData.val().matches(/^[가-힣ㄱ-ㅎA-Za-z0-9 ·\\-_.,!?()\\[\\]\/+~]*$/)" },
 
         // 날짜 위조 금지 — 서버 시각만 허용.
         "at":    { ".validate": "newData.isNumber() && newData.val() === now" },
