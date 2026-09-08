@@ -62,6 +62,29 @@
 </section>
 
 <!-- ============================================================
+     공유 갤러리 화면 — 기체 선택 화면과 같은 뼈대(머리 + 격자)
+     ============================================================ -->
+<section class="screen screen-gallery" id="screenGallery">
+  <div class="select-head">
+    <div class="select-title">
+      <button id="galleryBack" class="back-btn" title="돌아가기">‹ 돌아가기</button>
+      <h1>공유 갤러리</h1>
+      <span class="data-fresh" id="galleryNote"></span>
+      <span class="right">
+        <button id="galleryUpload" class="btn-primary small">↑ 내 구성 올리기</button>
+        <button id="galleryReload" class="btn-ghost small">새로고침</button>
+      </span>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">정렬</span><div class="chips" id="gallerySortChips"></div></div>
+      <div class="filter-group"><span class="filter-lb">속성</span><div class="chips" id="galleryAttrChips"></div></div>
+    </div>
+    <input type="search" id="galleryQuery" placeholder="기체·제목 검색 (자쿠 / 사격 지원…)">
+  </div>
+  <div class="gallery-grid" id="galleryResults"></div>
+</section>
+
+<!-- ============================================================
      ② 파츠 적용 화면
      ============================================================ -->
 <section class="screen screen-build" id="screenBuild">
@@ -244,27 +267,6 @@
 </aside>
 
 <!-- ========== 저장한 구성 (화면 중앙) ========== -->
-<!-- ========== 공유 갤러리 ========== -->
-<div class="auto-modal-back" id="galleryBack" hidden></div>
-<div class="auto-modal" id="galleryModal" hidden role="dialog" aria-label="공유 갤러리">
-  <div class="am-head">
-    <b>🌏 공유 갤러리</b>
-    <span class="am-note" id="galleryNote"></span>
-    <span class="grow"></span>
-    <button id="galleryUpload" class="btn-primary small">↑ 내 구성 올리기</button>
-    <button id="galleryReload" class="btn-ghost small">새로고침</button>
-    <button id="galleryClose" class="btn-ghost">닫기</button>
-  </div>
-  <div class="row gallery-filter">
-    <input type="search" id="galleryQuery" class="grow" placeholder="기체·제목 검색">
-    <select id="gallerySort">
-      <option value="new">최신순</option>
-      <option value="ms">기체순</option>
-    </select>
-  </div>
-  <div class="auto-results" id="galleryResults"></div>
-</div>
-
 <div class="auto-modal-back" id="savedModalBack" hidden></div>
 <div class="auto-modal" id="savedModal" hidden role="dialog" aria-label="저장한 구성">
   <div class="am-head">

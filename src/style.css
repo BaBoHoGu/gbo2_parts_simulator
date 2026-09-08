@@ -123,13 +123,16 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accen
 .stepper li.arrow { color: var(--dim); font-size: 16px; }
 
 /* 파츠 적용 단계에서만 보이는 버튼(자동 구성·저장·공유) */
-body.view-select .step-only { display: none; }
+body.view-select .step-only,
+body.view-gallery .step-only { display: none; }
 
 /* ============ 화면 전환 ============ */
 
 .screen { flex: 1; min-height: 0; overflow: hidden; }
-body.view-select #screenBuild,
-body.view-build  #screenSelect { display: none; }
+/* 세 화면은 서로 배타 — 지금 보는 것만 남기고 감춘다 */
+body.view-select  #screenBuild, body.view-select  #screenGallery,
+body.view-build   #screenSelect, body.view-build  #screenGallery,
+body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none; }
 
 /* ---- ① 기체 선택 ---- */
 .screen-select { display: flex; flex-direction: column; }
@@ -2073,11 +2076,23 @@ body.drawer-open .m-actionbar { display: none !important; }
 .pietan-goal .btn-primary.small { padding: 3px 10px; font-size: 12px; }
 .pietan-goal .pietan-mnote { flex: 1 1 100%; }
 
-/* 공유 갤러리 — 저장 목록과 같은 카드를 쓰고, 머리줄만 다르다 */
-.gallery-filter { padding: 10px 16px 0; gap: 8px; }
-.gallery-filter input[type="search"] { min-width: 0; }
-.gallery-filter select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
-  border-radius: 7px; padding: 6px 8px; font-size: 12.5px; }
+/* ---- 공유 갤러리 화면 ----
+   기체 선택 화면과 같은 뼈대(.select-head + 격자)를 쓴다. 카드는 저장 목록과 같은 것. */
+.screen-gallery { display: flex; flex-direction: column; }
+.screen-gallery .select-title { align-items: center; }
+.screen-gallery .select-title .right { display: flex; gap: 6px; margin-left: auto; }
+.gallery-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  align-content: start;
+  padding: 14px 20px 24px;
+}
+.gallery-grid .detail-empty { grid-column: 1 / -1; }
+/* 격자 안에서는 카드가 칸 높이를 채우게 둔다(저장 목록은 세로 목록이라 그럴 필요가 없다) */
+.gallery-grid .saved-card { margin: 0; }
 /* 올린 시각·데이터 버전 — 제목 옆에 흐리게 */
 .sc-sub { font-size: 10.5px; color: var(--dim); margin-left: 8px; white-space: nowrap; }
-#galleryUpload.small { padding: 3px 10px; font-size: 12px; }
+#galleryUpload.small, #galleryReload.small { padding: 3px 10px; font-size: 12px; }
