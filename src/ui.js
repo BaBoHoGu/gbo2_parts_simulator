@@ -5024,9 +5024,6 @@
       nm.onclick = ev => { ev.stopPropagation(); opt.onRename(); };
     }
     head.append(nm);
-    // 올린 사람이 스스로 적은 이름 (갤러리 전용). 서버가 신원을 보증하지 않으므로
-    // 이름 자체로 취급하고, 제목과 구분되게 표시한다.
-    if (opt.author) head.append(el('span', 'sc-author', opt.author));
     if (opt.sub) head.append(el('span', 'sc-sub', opt.sub));
     if (opt.onDel) {
       const del = el('button', 'sc-del', '✕');
@@ -5035,6 +5032,9 @@
       head.append(del);
     }
     card.append(head);
+    // 올린 사람이 스스로 적은 이름 (갤러리 전용) — 제목과 기체 사이에 한 줄로 둔다.
+    // 서버가 신원을 보증하지 않으므로 제목만큼 강조하지 않는다.
+    if (opt.author) card.append(el('div', 'sc-author', opt.author));
 
     // 기체 한 줄 (썸네일 + 이름 · 강화 · 확장)
     const msLine = el('div', 'sc-ms');
