@@ -490,6 +490,46 @@ if (Test-Path $bundled) {
 if ($SetDictKey) { Set-DictKey; Close-Window 0 }
 if ($SetSiteKey) { Set-SiteKey; Close-Window 0 }
 
+# 배포 전에 '사람이 해야 하는데 잊기 쉬운 둘' 을 확인한다. 막지는 않고 알려만 준다.
+#   ① 소스 커밋·푸시 — 이 스크립트는 소스 저장소를 건드리지 않는다. 안 밀어 두면
+#      저장소가 뒤처지고, PC 를 옮길 때 그만큼 사라진다.
+#   ② 패치노트 — 경량판·완전판 ZIP 에 그대로 동봉되므로, 안 고치면 새 버전에
+#      낡은 안내문이 들어간다.
+# 빌드·업로드에 몇 분 쓰기 **전에** 알려 줘야 되돌릴 수 있어 여기 둔다.
+function Test-DeployReady {
+  $warn = @()
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try {
+    $dirty = @(& git -C $PSScriptRoot status --porcelain 2>$null)
+    if ($LASTEXITCODE -eq 0) {
+      if ($dirty.Count) { $warn += "커밋되지 않은 변경이 $($dirty.Count)개 있습니다." }
+      $ahead = @(& git -C $PSScriptRoot rev-list '@{u}..HEAD' 2>$null)
+      if ($LASTEXITCODE -eq 0 -and $ahead.Count) { $warn += "푸시되지 않은 커밋이 $($ahead.Count)개 있습니다." }
+    }
+  } catch { } finally { $ErrorActionPreference = $prevEap }
+
+  # 패치노트에 오늘 날짜 항목이 있는가 (여러 번 배포하는 날이면 첫 배포에만 뜬다)
+  $pn = Join-Path $PSScriptRoot '패치노트.md'
+  $today = Get-Date -Format 'yyyy-MM-dd'
+  if ((Test-Path $pn) -and -not (Select-String -Path $pn -SimpleMatch $today -Quiet)) {
+    $warn += "패치노트에 오늘($today) 항목이 없습니다 — 배포본 ZIP 에 그대로 들어갑니다."
+  }
+
+  if (-not $warn.Count) { return }
+  Write-Host ''
+  foreach ($w in $warn) { Write-Host "  ⚠ $w" -ForegroundColor Yellow }
+  # 비대화형(스케줄러·이 스크립트를 도구가 부를 때)에서는 매달리지 않고 알리기만 한다.
+  $piped = $true
+  try { $piped = [Console]::IsInputRedirected } catch { $piped = $true }
+  if ((-not $piped) -and (-not $env:CI) -and (-not $env:GBO2_NONINTERACTIVE)) {
+    Write-Host '  이대로 배포하려면 Enter, 그만두려면 Ctrl+C' -ForegroundColor Yellow
+    try { Read-Host | Out-Null } catch { }
+  } else {
+    Write-Host '  (비대화형이라 그대로 진행합니다)' -ForegroundColor DarkGray
+  }
+}
+if ($Publish) { Test-DeployReady }
+
 # -Rebuild: 데이터 재수신 없이 build.js 만 실행 (psycommu.override.json 등 오버라이드 패치 적용)
 if ($Rebuild) {
   $nodeArgs = @('tools/build.js')
