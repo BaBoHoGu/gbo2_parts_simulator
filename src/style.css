@@ -547,9 +547,31 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
 .h-level-seg .seg-btn { padding: 3px 9px; font-size: 11.5px; }
 
 /* 확장 스킬 + 확장 레벨을 한 줄에 */
-.exp-row { display: flex; gap: 6px; }
-.exp-row #expLevel { flex-shrink: 0; width: 68px; padding: 4px 6px; font-size: 12.5px; }
+.exp-row { display: flex; gap: 4px; }
+/* 'LV5' 만 들어가면 되는 칸이라 넓을 이유가 없다. 여기서 아낀 폭이 곧 오른쪽 열의 여유가
+   된다 — 800×372(가로 폰) 에서 이 줄이 넓어지면 성능 탭이 화면 밖으로 밀린다. */
+.exp-row #expLevel { flex-shrink: 0; width: 52px; padding: 4px 4px; font-size: 12.5px; }
 .exp-row select:disabled { opacity: .45; cursor: default; }
+/* 확장 스킬 효과 설명 버튼 — 레벨 칸과 같은 높이로 맞춘다 */
+.exp-help {
+  flex-shrink: 0; width: 22px; padding: 0; font-size: 13px; font-weight: 700;
+  color: var(--muted); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; cursor: pointer; line-height: 1;
+}
+.exp-help:hover { color: var(--text); border-color: var(--muted); }
+
+/* 확장 스킬 효과 팝업 — LV1~5 를 한눈에, 지금 고른 줄만 강조 */
+.exp-help-modal { max-width: 560px; }
+.exp-help-tbl { display: flex; flex-direction: column; gap: 2px; }
+.exp-help-row {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 6px 8px; border-radius: 6px; font-size: 12.5px;
+}
+.exp-help-row.on { background: #201d0e; border: 1px solid var(--accent); padding: 5px 7px; }
+.exp-help-lv { flex: 0 0 34px; color: var(--dim); font-size: 11.5px; }
+.exp-help-row.on .exp-help-lv { color: var(--accent); font-weight: 700; }
+.exp-help-eff { color: var(--text); overflow-wrap: anywhere; }
+.exp-help-note { margin-top: 10px; font-size: 11px; color: var(--dim); line-height: 1.5; }
 .hero .h-controls label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
 .hero .h-controls select { padding: 4px 8px; font-size: 12.5px; }
 

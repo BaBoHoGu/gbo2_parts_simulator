@@ -3803,6 +3803,66 @@
     loadGallery();
   }
 
+  /* ---------- 확장 스킬 효과 설명 ---------- */
+  // 표를 손으로 적지 않고 core.js 의 EXPANSION_LEVELS 에서 만든다.
+  // 같은 값을 두 곳에 적어 두면 상수가 바뀔 때 화면만 옛 숫자를 말하게 된다.
+
+  const EXP_CAT_KO = { '防御': '방어', '攻撃': '공격', '移動': '이동', '補助': '보조', '特殊': '특수' };
+  /** {shoot: 4, ...} → '사격 +4' 목록 */
+  const expStatText = obj => Object.entries(obj || {})
+    .map(([k, v]) => (C.STAT_LABEL[k] || k) + ' +' + v.toLocaleString()).join(' · ');
+
+  /** 한 레벨의 효과를 사람이 읽는 문장으로. 모양이 셋뿐이라 그대로 나눈다. */
+  function expEffectText(e) {
+    if (!e) return '';
+    if (e.per) {
+      const cats = (e.per.cats || []).map(c => EXP_CAT_KO[c] || c).join('·');
+      return cats + ' 파츠 1개당  ' + expStatText(e.per.add);
+    }
+    const parts = [];
+    if (e.add) parts.push(expStatText(e.add));
+    // 상한이 가산과 같으면 굳이 두 번 적지 않는다 (대부분 그렇다)
+    const same = e.limit && e.add && JSON.stringify(e.limit) === JSON.stringify(e.add);
+    if (e.limit && !same) parts.push('상한 ' + expStatText(e.limit));
+    else if (same) parts[0] += '  (상한도 같이 오름)';
+    return parts.join('  /  ');
+  }
+
+  function openExpHelp(open) {
+    const m = $('#expHelpModal'), b = $('#expHelpBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (!open) return;
+
+    const name = state.expansion;
+    const body = $('#expHelpBody');
+    body.innerHTML = '';
+    $('#expHelpTitle').textContent = C.EXPANSION_LABEL[name] || name;
+
+    if (name === C.EXPANSION_NONE) {
+      body.append(el('div', 'ac-warn', '확장 스킬을 고르면 레벨별 효과가 여기에 나옵니다.'));
+      return;
+    }
+    const levels = C.EXPANSION_LEVELS[name];
+    if (!levels) {
+      body.append(el('div', 'ac-warn', '이 확장 스킬의 수치 자료가 없습니다 — 계산에도 반영되지 않습니다.'));
+      return;
+    }
+
+    const tbl = el('div', 'exp-help-tbl');
+    levels.forEach((e, i) => {
+      const lv = i + 1;
+      const row = el('div', 'exp-help-row' + (lv === state.expLevel ? ' on' : ''));
+      row.append(el('span', 'exp-help-lv', 'LV' + lv));
+      row.append(el('span', 'exp-help-eff', expEffectText(e)));
+      tbl.append(row);
+    });
+    body.append(tbl);
+    body.append(el('div', 'exp-help-note',
+      '지금 고른 것은 LV' + state.expLevel + ' 입니다. 표의 값만 계산에 반영됩니다 — '
+      + '원본에 있는 일부 효과(실드 HP·리로드 단축·리페어툴 회복량)는 자료가 없어 반영하지 않습니다.'));
+  }
+
   /** 관리자 로그인 — 비밀번호는 앱에 없다. 관리자가 직접 입력해 Firebase 에 로그인한다. */
   async function adminSignIn() {
     if (!S) return;
@@ -5673,6 +5733,9 @@
     $('#galleryBtn').onclick = () => openGallery(true);
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
+    $('#expHelp').onclick = () => openExpHelp(true);
+    $('#expHelpClose').onclick = () => openExpHelp(false);
+    $('#expHelpBack').onclick = () => openExpHelp(false);
     $('#galleryUpload').onclick = uploadCurrent;
     $('#uploadBtn').onclick = uploadCurrent;
     $('#uploadGo').onclick = uploadSubmit;
@@ -5842,6 +5905,7 @@
       if (ev.key !== 'Escape') return;
       if (mobileSheetOpen()) { closeMobileSheets(); return; }   // 모바일 슬라이드 시트 먼저 닫기
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
+      if (!$('#expHelpModal').hidden) { openExpHelp(false); return; }
       if (!$('#uploadModal').hidden) { openUpload(false); return; }
       if (!$('#adminModal').hidden) { openAdmin(false); return; }
       if (state.view === 'gallery') { openGallery(false); return; }
