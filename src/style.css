@@ -564,18 +564,19 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
 .h-level-seg .seg-btn { padding: 3px 9px; font-size: 11.5px; }
 
 /* 확장 스킬 + 확장 레벨을 한 줄에 */
-.exp-row { display: flex; gap: 4px; }
-/* 'LV5' 만 들어가면 되는 칸이라 넓을 이유가 없다. 여기서 아낀 폭이 곧 오른쪽 열의 여유가
-   된다 — 800×372(가로 폰) 에서 이 줄이 넓어지면 성능 탭이 화면 밖으로 밀린다. */
-.exp-row #expLevel { flex-shrink: 0; width: 52px; padding: 4px 4px; font-size: 12.5px; }
+.exp-row { display: flex; gap: 6px; }
+.exp-row #expLevel { flex-shrink: 0; width: 68px; padding: 4px 6px; font-size: 12.5px; }
 .exp-row select:disabled { opacity: .45; cursor: default; }
-/* 확장 스킬 효과 설명 버튼 — 레벨 칸과 같은 높이로 맞춘다 */
-.exp-help {
-  flex-shrink: 0; width: 22px; padding: 0; font-size: 13px; font-weight: 700;
-  color: var(--muted); background: var(--panel-2); border: 1px solid var(--line);
-  border-radius: 6px; cursor: pointer; line-height: 1;
+/* 설명(?) 버튼은 라벨 줄에 둔다. 컨트롤 줄에 두면 왼쪽 열이 그만큼 넓어져
+   800x372(가로 폰) 에서 오른쪽 성능 탭이 화면 밖으로 밀린다 — 여유가 8px 뿐이었다.
+   라벨 줄은 글자 한 줄뿐이라 남는 자리가 있다. */
+.lbl-help {
+  width: 15px; height: 15px; padding: 0; margin-left: 4px; vertical-align: middle;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  color: var(--dim); background: transparent; border: 1px solid var(--line);
+  border-radius: 50%; cursor: pointer;
 }
-.exp-help:hover { color: var(--text); border-color: var(--muted); }
+.lbl-help:hover { color: var(--text); border-color: var(--muted); }
 
 /* 확장 스킬 효과 팝업 — LV1~5 를 한눈에, 지금 고른 줄만 강조 */
 .exp-help-modal { max-width: 560px; }
@@ -589,6 +590,20 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
 .exp-help-row.on .exp-help-lv { color: var(--accent); font-weight: 700; }
 .exp-help-eff { color: var(--text); overflow-wrap: anywhere; }
 .exp-help-note { margin-top: 10px; font-size: 11px; color: var(--dim); line-height: 1.5; }
+.exp-help-note b { color: var(--muted); }
+
+/* 강화리스트 — 순번 · 요구치 · 항목/효과. 지금 단계에서 적용되는 줄만 밝게 둔다. */
+.stage-help-row {
+  display: flex; gap: 8px; align-items: baseline;
+  padding: 5px 7px; border-radius: 6px; font-size: 12px; opacity: .45;
+}
+.stage-help-row.on { opacity: 1; background: var(--panel-2); }
+.stage-help-no { flex: 0 0 16px; color: var(--dim); font-size: 11px; text-align: right; }
+.stage-help-pt { flex: 0 0 62px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.stage-help-mid { display: flex; flex-wrap: wrap; gap: 3px 8px; align-items: baseline; }
+.stage-help-nm { color: var(--text); font-weight: 600; }
+.stage-help-eff { color: var(--ok); }
+.stage-help-eff.dim { color: var(--dim); }
 .hero .h-controls label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
 .hero .h-controls select { padding: 4px 8px; font-size: 12.5px; }
 
