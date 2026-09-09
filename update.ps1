@@ -519,10 +519,12 @@ function Test-DeployReady {
     }
   } catch { } finally { $ErrorActionPreference = $prevEap }
 
-  # 패치노트에 오늘 날짜 항목이 있는가 (여러 번 배포하는 날이면 첫 배포에만 뜬다)
+  # 패치노트에 오늘 날짜 '항목' 이 있는가 (여러 번 배포하는 날이면 첫 배포에만 뜬다).
+  # 날짜 문자열이 어디에든 있으면 통과시키면 안 된다 — 본문·링크에 우연히 있을 수 있다.
+  # 항목은 줄머리의 `_2026-09-09 업데이트_` 형태다.
   $pn = Join-Path $PSScriptRoot '패치노트.md'
   $today = Get-Date -Format 'yyyy-MM-dd'
-  if ((Test-Path $pn) -and -not (Select-String -Path $pn -SimpleMatch $today -Quiet)) {
+  if ((Test-Path $pn) -and -not (Select-String -Path $pn -Pattern "^_$today 업데이트" -Quiet)) {
     $warn += "패치노트에 오늘($today) 항목이 없습니다 — 배포본 ZIP 에 그대로 들어갑니다."
   }
 

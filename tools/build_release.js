@@ -22,7 +22,19 @@ try { commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT
 const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 // --light: HTML + 업데이트 스크립트만(≈16MB, GitHub 에서 데이터 받음). 기본: 완전판(node·도구 동봉).
 const LIGHT = process.argv.includes('--light');
-const stampArg = (() => { const i = process.argv.indexOf('--stamp'); return i >= 0 ? process.argv[i + 1] : null; })();
+// 버전 스탬프. --stamp 로 받는 게 정상 경로(update.ps1 이 넘긴다)지만, 손으로 실행할 때를
+// 대비해 **빌드된 HTML 에서 직접 읽는다.** 예전엔 없으면 빈 값을 써서, 그 경량판을 받은
+// 사람이 설치 직후 같은 내용을 15.87MB 다시 받았다. 스탬프의 원본은 언제나 그 HTML 이다.
+const stampArg = (() => {
+  const i = process.argv.indexOf('--stamp');
+  if (i >= 0 && process.argv[i + 1]) return process.argv[i + 1];
+  try {
+    const h = fs.readFileSync(p('dist', 'gbo2-simulator.html'), 'utf8');
+    const m = h.match(/"stamp"\s*:\s*"(\d{4}-\d{2}-\d{2}-\d{4})"/);
+    if (m) return m[1];
+  } catch { /* dist 가 없으면 아래에서 빈 값 */ }
+  return null;
+})();
 const NAME = `gbo2-simulator${LIGHT ? '-light' : ''}_${stamp}_${commit}`;
 const STAGE = p('release', NAME);
 
