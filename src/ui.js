@@ -5713,7 +5713,8 @@
   /* ---------- 초기화 ---------- */
 
   function buildControls() {
-    $('#brandImg').src = defaultImg('ms');
+    // 대표 이미지. imgUrl 을 거치므로 오프라인판은 인라인, 사이트판은 images/ 파일이 된다.
+    $('#brandImg').src = imgUrl('ui/brand.webp');
 
     // 강화리스트 — 세그먼트 버튼 (미강화 / 4단계 / 풀강)
     const seg = $('#stageSeg');
