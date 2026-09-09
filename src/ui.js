@@ -560,6 +560,28 @@
     return n;
   };
 
+  /**
+   * 글 안의 숫자만 조금 키워 눈에 띄게 한다. 파츠 특성은 「사격 보정 +5」처럼
+   * 설명과 수치가 한 줄에 섞여 있어, 수치를 찾으려면 문장을 읽어야 했다.
+   * innerHTML 을 쓰지 않는다 — 설명문은 원본에서 온 값이라 태그가 섞여도 그대로 글자로 남아야 한다.
+   * 부호·소수점·자릿점·%·배까지 한 덩어리로 잡는다 (+1.5%, 1,000, 2배).
+   */
+  // 단위(%·배)는 붙어 있을 때만 함께 잡는다. \s* 를 밖에 두면 단위가 없어도 뒤 공백까지
+  // 삼켜서, 강조된 덩어리에 빈칸이 끼어 글자 사이가 벌어진다.
+  const NUM_RE = /[+\-]?\d+(?:[.,]\d+)*(?:\s*(?:%|배))?/g;
+  function withNumbers(text) {
+    const frag = document.createDocumentFragment();
+    const str = String(text == null ? '' : text);
+    let last = 0;
+    for (const m of str.matchAll(NUM_RE)) {
+      if (m.index > last) frag.append(str.slice(last, m.index));
+      frag.append(el('b', 'num', m[0]));
+      last = m.index + m[0].length;
+    }
+    if (last < str.length) frag.append(str.slice(last));
+    return frag;
+  }
+
   let toastTimer = null;
   function toast(msg, action) {
     const t = $('#toast');
@@ -1153,7 +1175,9 @@
     if (desc) {
       const eff = el('div', 'd-eff');
       eff.append(el('div', 'd-eff-lb', '특성'));
-      eff.append(el('div', 'd-eff-tx', desc));
+      const tx = el('div', 'd-eff-tx');
+      tx.append(withNumbers(desc));
+      eff.append(tx);
       box.append(eff);
     }
   }
