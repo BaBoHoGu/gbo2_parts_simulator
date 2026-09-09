@@ -137,7 +137,13 @@ const buildMeta = {
   weapons: Object.values(weapons).reduce((a, p) => a + p.weapons.length, 0)
 };
 
+// 사이트판만 검색 제외 표시를 단다. 주소를 아는 사람은 열 수 있지만 검색에는 안 잡힌다
+// — 지금 파일을 주고받는 것과 같은 노출 수준이다. 나중에 열고 싶으면 이 한 줄과
+// robots.txt 를 빼면 된다(오프라인판에는 애초에 들어가지 않는다).
+const NOINDEX = '<meta name="robots" content="noindex, nofollow">\n';
+
 const html = read('src', 'index.html')
+  .replace('<title>', () => (WEB ? NOINDEX : '') + '<title>')
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
   .replace('/*__BUILD__*/', () => inline('GBO2_BUILD', buildMeta))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills }))
@@ -164,6 +170,12 @@ fs.mkdirSync(DIST, { recursive: true });
 // 사이트판은 반대로 여기에 이미지를 깐다 — 지웠다 다시 깔아 지워진 이미지가 남지 않게 한다.
 fs.rmSync(path.join(DIST, 'images'), { recursive: true, force: true });
 if (WEB && fs.existsSync(IMG_SRC)) fs.cpSync(IMG_SRC, path.join(DIST, 'images'), { recursive: true });
+if (WEB) {
+  fs.writeFileSync(path.join(DIST, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
+  // GitHub Pages 는 기본으로 Jekyll 을 돌리는데, Jekyll 은 '_' 로 시작하는 파일을 빼 버린다.
+  // 우리 기본 이미지가 _default.webp 라 이게 없으면 그 이미지들이 통째로 404 가 된다.
+  fs.writeFileSync(path.join(DIST, '.nojekyll'), '');
+}
 const out = path.join(DIST, WEB ? 'index.html' : 'gbo2-simulator.html');
 fs.writeFileSync(out, html);
 console.log('built', out, (Buffer.byteLength(html) / 1024 / 1024).toFixed(2) + ' MB',
