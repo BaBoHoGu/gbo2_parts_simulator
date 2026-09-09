@@ -409,6 +409,9 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
 .d-eff { background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 8px; padding: 10px 12px; }
 .d-eff-lb { font-size: 11px; color: var(--dim); letter-spacing: .5px; margin-bottom: 4px; }
 .d-eff-tx { font-size: 12.5px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
+/* 특성 안의 수치만 키워 눈에 띄게 한다. em 으로 잡아 본문 크기가 바뀌어도 비율이 유지된다.
+   줄간격은 위에서 1.5 로 고정돼 있어 숫자가 커져도 줄이 밀리지 않는다. */
+.d-eff-tx .num { font-size: 1.16em; font-weight: 700; color: var(--accent); }
 
 .stat-wrap { flex: 1; padding: 5px 0 8px; }
 
