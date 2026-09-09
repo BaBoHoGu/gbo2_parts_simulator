@@ -222,15 +222,31 @@ function Set-SiteKey {
   # 바로 확인한다 — 오타를 다음 배포 때 알게 되면 늦다.
   if (-not (Use-SiteCred)) { return }
   $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-  & npx --no-install wrangler pages project list 2>&1 | Out-Null
+  $list = & npx --no-install wrangler pages project list 2>&1 | Out-String
   $rc = $LASTEXITCODE
+  if ($rc -ne 0) {
+    $ErrorActionPreference = $prevEap; Clear-SiteCred
+    Write-Host '등록은 됐지만 Cloudflare 에 접속하지 못했습니다 — 토큰 권한을 확인하세요.' -ForegroundColor Red
+    Write-Host '  필요한 권한: Account · Cloudflare Pages · Edit' -ForegroundColor Yellow
+    Write-Host ($list.Trim()) -ForegroundColor DarkGray
+    return
+  }
+  # 대시보드에서 만들 필요 없다 — 없으면 여기서 만든다.
+  # (지금 대시보드의 「Upload your static files」는 Pages 가 아니라 Workers 앱을 만든다)
+  if ($list -notmatch [regex]::Escape($SiteProject)) {
+    Write-Host "Pages 프로젝트 '$SiteProject' 를 만듭니다…" -ForegroundColor Cyan
+    & npx --no-install wrangler pages project create $SiteProject --production-branch main
+    if ($LASTEXITCODE -ne 0) {
+      $ErrorActionPreference = $prevEap; Clear-SiteCred
+      Write-Host '프로젝트를 만들지 못했습니다 (이름이 이미 쓰이고 있을 수 있습니다).' -ForegroundColor Red
+      return
+    }
+  } else {
+    Write-Host "Pages 프로젝트 '$SiteProject' 확인" -ForegroundColor DarkGray
+  }
   $ErrorActionPreference = $prevEap
   Clear-SiteCred
-  if ($rc -eq 0) {
-    Write-Host "확인 완료 — 이제 -Publish 할 때마다 $SiteUrl 로 올라갑니다." -ForegroundColor Green
-  } else {
-    Write-Host '등록은 됐지만 Cloudflare 확인에 실패했습니다 (토큰 권한을 확인하세요).' -ForegroundColor Red
-  }
+  Write-Host "확인 완료 — 이제 -Publish 할 때마다 $SiteUrl 로 올라갑니다." -ForegroundColor Green
 }
 
 # 자격 증명을 프로세스 환경 변수로만 올린다. 실패해도 배포를 죽이지 않는다.
