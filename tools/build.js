@@ -127,11 +127,15 @@ if (fs.existsSync(IMG_SRC)) {
 // stamp 는 분 단위(로컬) — 배포 스탬프의 **원본**이다. update.ps1 이 이 값을 읽어
 // APK versionName·OTA version.json·릴리스 노트에 그대로 쓴다. 예전엔 배포 때 Get-Date 로
 // 따로 찍어서, 앱이 아는 값과 배포된 값이 서로 달랐다(같은 날 재배포를 PC 가 못 잡던 원인).
+// date 와 stamp 는 **같은 시각에서 뽑는다.** 예전엔 date 만 UTC(toISOString)였는데,
+// 한국 기준 00~09시에 빌드하면 date 가 하루 뒤처져 배지와 스탬프가 서로 다른 날을 가리켰다
+// (갤러리에 기록되는 ver 도 같이 어긋난다).
 const pad = n => String(n).padStart(2, '0');
 const now = new Date();
+const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 const buildMeta = {
-  date: new Date().toISOString().slice(0, 10),
-  stamp: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`,
+  date: day,
+  stamp: `${day}-${pad(now.getHours())}${pad(now.getMinutes())}`,
   ms: msData.length,
   parts: Object.values(parts).reduce((a, b) => a + b.length, 0),
   weapons: Object.values(weapons).reduce((a, p) => a + p.weapons.length, 0)

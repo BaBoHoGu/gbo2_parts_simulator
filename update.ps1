@@ -265,6 +265,10 @@ function Set-SiteKey {
 # 자격 증명을 프로세스 환경 변수로만 올린다. 실패해도 배포를 죽이지 않는다.
 function Use-SiteCred {
   if (-not (Test-Path $SiteCred)) { return $false }
+  # wrangler 가 되묻지 않게 CI 를 잠깐 세우는데, Close-Window 도 같은 값으로 '대화형인가'
+  # 를 판정한다. 남겨 두면 배포가 끝나는 순간 창이 그냥 닫혀 로그를 못 본다 —
+  # 경고만 남기고 진행하는 것들(gh 만료·사전 실패)을 볼 방법이 사라진다. 원래대로 되돌린다.
+  $script:PrevCI = if (Test-Path Env:\CI) { $env:CI } else { $null }
   try {
     $lines = @(Get-Content $SiteCred)
     if ($lines.Count -lt 2) { throw '파일 형식이 올바르지 않습니다' }
@@ -281,7 +285,11 @@ function Use-SiteCred {
     return $false
   }
 }
-function Clear-SiteCred { $env:CLOUDFLARE_API_TOKEN = $null }
+function Clear-SiteCred {
+  $env:CLOUDFLARE_API_TOKEN = $null
+  if ($null -eq $script:PrevCI) { Remove-Item Env:\CI -ErrorAction SilentlyContinue }
+  else { $env:CI = $script:PrevCI }
+}
 
 function Publish-Site {
   $web = Join-Path $PSScriptRoot 'dist\web'
@@ -374,7 +382,10 @@ a{color:#ffc93c}</style>
     & git -C $dir push -q --force origin HEAD:gh-pages
     if ($LASTEXITCODE -eq 0) { Write-Host '  옛 GitHub Pages 주소는 새 주소로 넘어갑니다.' -ForegroundColor DarkGray }
     & git -C $dir branch -q -M gh-pages 2>$null | Out-Null
-  } catch { } finally { $ErrorActionPreference = $prevEap }
+  } catch {
+    # 조용히 삼키면 옛 주소가 낡은 채로 남는다
+    Write-Host "  옛 주소 안내 페이지를 갱신하지 못했습니다: $($_.Exception.Message)" -ForegroundColor Yellow
+  } finally { $ErrorActionPreference = $prevEap }
 }
 
 # ── 공유 갤러리 사전(dict) 자동 게시 ────────────────────────────────────────
@@ -559,17 +570,31 @@ if (-not $Check) {
   $script:VerStamp = $null
   $distHtmlPath = Join-Path $PSScriptRoot 'dist\gbo2-simulator.html'
   if (Test-Path $distHtmlPath) {
-    # 앞부분만 읽는다 — GBO2_BUILD 는 문서 앞쪽에 있고, 15MB 를 통째로 올릴 이유가 없다.
+    # 찾을 때까지 앞에서부터 조금씩 읽는다. 예전엔 앞 200,000자만 봤는데, GBO2_BUILD 위치는
+    # 그 앞에 놓인 CSS 길이에 따라 밀린다(지금 110,666자 · CSS 91,588자). CSS 가 커지면
+    # 조용히 못 찾고 Get-Date 로 떨어져, 앱이 아는 버전과 배포된 버전이 어긋난다.
     $sr = New-Object System.IO.StreamReader($distHtmlPath, [System.Text.Encoding]::UTF8)
     try {
-      $buf = New-Object char[] 200000
-      $n = $sr.Read($buf, 0, $buf.Length)
-      $head = New-Object string($buf, 0, $n)
+      $buf = New-Object char[] 65536
+      $head = ''
+      while (-not $script:VerStamp) {
+        $n = $sr.Read($buf, 0, $buf.Length)
+        if ($n -le 0) { break }
+        $head += (New-Object string($buf, 0, $n))
+        $m = [regex]::Match($head, '"stamp"\s*:\s*"(\d{4}-\d{2}-\d{2}-\d{4})"')
+        if ($m.Success) { $script:VerStamp = $m.Groups[1].Value }
+        # 데이터 블록까지 가면 이미 지나친 것이다 — 15MB 를 다 읽지 않는다
+        elseif ($head.Length -gt 1000000) { break }
+      }
     } finally { $sr.Dispose() }
-    $m = [regex]::Match($head, '"stamp"\s*:\s*"(\d{4}-\d{2}-\d{2}-\d{4})"')
-    if ($m.Success) { $script:VerStamp = $m.Groups[1].Value }
   }
-  if (-not $script:VerStamp) { $script:VerStamp = Get-Date -Format 'yyyy-MM-dd-HHmm' }
+  if (-not $script:VerStamp) {
+    # 폴백은 조용하면 안 된다. 이러면 APK·version.json·릴리스 노트가 앱이 아는 값과 달라진다.
+    $script:VerStamp = Get-Date -Format 'yyyy-MM-dd-HHmm'
+    Write-Host "`n  ⚠ 빌드된 HTML 에서 버전 스탬프를 찾지 못했습니다." -ForegroundColor Red
+    Write-Host "    현재 시각($($script:VerStamp))으로 대신합니다 — 앱이 아는 자기 버전과" -ForegroundColor Yellow
+    Write-Host '    배포된 버전이 어긋날 수 있습니다. tools/build.js 의 GBO2_BUILD 를 확인하세요.' -ForegroundColor Yellow
+  }
   Write-Host "`n최신 결과물: dist\gbo2-simulator.html (브라우저에서 새로고침 하세요)" -ForegroundColor Green
   # 데이터가 갱신됐으면 APK 도 함께 최신화 (‑NoApk 로 건너뛸 수 있음)
   if (-not $NoApk) { Build-Apk }
