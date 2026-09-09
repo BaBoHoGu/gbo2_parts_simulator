@@ -3856,9 +3856,10 @@
       const label = T.fullstEffect(k);
       // 값의 모양이 셋이다: 숫자(계산에 들어감) · "3%"·"1초"(안 들어감) · true(있고 없고만 있는 것)
       const num = typeof raw === 'number';
+      // 문자열 값에는 일본어 단위가 섞여 있다("1秒"). 무장 표에 쓰는 변환기를 그대로 쓴다.
       const txt = raw === true ? label
         : num ? label + ' +' + raw.toLocaleString()
-        : label + ' ' + String(raw);
+        : label + ' ' + jaUnits(raw);
       parts.push({ txt, applied: num });
     }
     return parts;
