@@ -214,6 +214,19 @@ function Set-SiteKey {
   $acct = (Read-Host 'Account ID').Trim()
   if (-not $acct) { Write-Host '취소했습니다.' -ForegroundColor Yellow; return }
   $tok = Read-Host 'API 토큰' -AsSecureString
+  # 길이를 먼저 본다. 콘솔에 붙여넣기가 안 먹어 한두 글자만 들어가는 일이 실제로 있었는데,
+  # -AsSecureString 은 화면에 아무것도 안 보여 눈치챌 수가 없다. 그대로 저장하면
+  # 다음 배포에서 엉뚱한 오류(fetch failed)로 나타나 원인을 찾기 어렵다.
+  $b0 = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($tok)
+  try { $len = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($b0).Length }
+  finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b0) }
+  if ($len -lt 20) {
+    Write-Host "입력된 토큰이 $len 글자입니다 — Cloudflare 토큰은 40자 안팎입니다." -ForegroundColor Red
+    Write-Host '  붙여넣기가 안 먹었을 수 있습니다. 창을 우클릭하거나 Ctrl+V 로 붙인 뒤' -ForegroundColor Yellow
+    Write-Host '  Enter 를 누르세요 (입력해도 화면에는 아무것도 안 보이는 게 정상입니다).' -ForegroundColor Yellow
+    Write-Host '  저장하지 않았습니다. 다시 실행해 주세요.' -ForegroundColor Yellow
+    return
+  }
   New-Item -ItemType Directory -Force $CredDir | Out-Null
   # DPAPI — 이 PC·이 Windows 계정에서만 풀린다. 저장소가 공개라 파일에 못 넣는다.
   Set-Content -Path $SiteCred -Encoding utf8 -Value @($acct, (ConvertFrom-SecureString $tok))
