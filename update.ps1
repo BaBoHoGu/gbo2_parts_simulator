@@ -9,12 +9,13 @@
 #   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
 #   .\update.ps1 -Publish   폰 OTA(data) + PC 배포본 ZIP 을 GitHub 에 올려 링크로 배포
 #   .\update.ps1 -SetDictKey  공유 갤러리 사전 계정을 이 PC 에 등록 (최초 1회, 이후 자동)
+#   .\update.ps1 -SetSiteKey  Cloudflare 배포 자격 증명을 이 PC 에 등록 (최초 1회, 이후 자동)
 #
 # gbo2.jp 최신 데이터·일본 위키(밸런스 패치 목록 포함)에서 변경분만 가져와
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$SetDictKey)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$SetDictKey, [switch]$SetSiteKey)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -107,6 +108,11 @@ function Build-Apk {
 # 폰 앱이 자동으로 받아가게 한다(OTA). gh CLI 로그인이 돼 있어야 한다.
 $OtaRepo = 'BaBoHoGu/gbo2_parts_simulator'
 
+# 배포용 자격 증명 보관함. 저장소가 공개라 파일에 못 넣고, DPAPI 로 이 PC·이 Windows
+# 계정에서만 풀리게 둔다. 사전(dict)·사이트(Cloudflare) 둘 다 여기를 쓴다.
+# **두 블록보다 먼저 정의해야 한다** — 아래에서 정의하면 위 블록이 빈 경로를 잡는다.
+$CredDir = Join-Path $env:LOCALAPPDATA 'gbo2-sim'
+
 # gh CLI 경로 + 로그인 여부 확인. 안 되면 $null 반환(호출부에서 건너뛴다).
 function Resolve-Gh {
   $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
@@ -188,13 +194,66 @@ function Publish-Pc {
   $ErrorActionPreference = $prevEap
 }
 
-# ── 사이트 게시 (GitHub Pages) ──────────────────────────────────────────────
-# 왜 여기서 올리나: Actions 가 저장소를 받아 다시 빌드하게 두면, ui_check 로 검사한 그 파일이
-# 아니라 새로 만든 파일이 나간다. 빌드 스탬프도 달라져 앱이 아는 자기 버전과 어긋난다.
-# 그래서 게이트를 통과한 dist\web 을 그대로 밀어 넣는다.
+# ── 사이트 게시 (Cloudflare Pages) ──────────────────────────────────────────
+# 왜 여기서 올리나: Git 연동으로 두면 Cloudflare 가 저장소를 받아 **다시 빌드**한다.
+# 그러면 ui_check 로 검사한 그 파일이 아니라 새로 만든 파일이 나가고, 빌드 스탬프도
+# 달라져 앱이 아는 자기 버전과 배포된 버전이 어긋난다. 그래서 검사를 통과한
+# dist\web 을 직접 올린다(Direct Upload).
 #
-# gh-pages 브랜치는 매번 **부모 없는 커밋 하나**로 덮어쓴다 — 이력이 쌓이지 않는다.
-# 이미지는 내용이 같으면 git 이 같은 개체로 보므로 실제로 오가는 건 바뀐 것뿐이다.
+# 왜 GitHub Pages 가 아닌가: 실측 결과 GitHub 이 한국으로 79 KB/s 였다(1MB 에 13초).
+# 같은 순간 Cloudflare 는 10,000 KB/s 였다. 회선이 아니라 GitHub 쪽 경로 문제다.
+# 옛 주소는 지우지 않고 새 주소로 넘겨보내는 페이지만 남긴다 — 그건 몇 KB 라 느려도 괜찮다.
+$SiteProject = 'gbo2-parts'
+$SiteUrl     = "https://$SiteProject.pages.dev"
+$SiteCred    = Join-Path $CredDir 'site.cred'
+
+function Set-SiteKey {
+  Write-Host 'Cloudflare 배포 자격 증명을 이 PC 에 등록합니다.' -ForegroundColor Cyan
+  Write-Host '  Account ID : Workers & Pages 화면 오른쪽에 있는 32자리' -ForegroundColor DarkGray
+  Write-Host '  API 토큰   : My Profile > API Tokens > Cloudflare Pages: Edit 권한' -ForegroundColor DarkGray
+  $acct = (Read-Host 'Account ID').Trim()
+  if (-not $acct) { Write-Host '취소했습니다.' -ForegroundColor Yellow; return }
+  $tok = Read-Host 'API 토큰' -AsSecureString
+  New-Item -ItemType Directory -Force $CredDir | Out-Null
+  # DPAPI — 이 PC·이 Windows 계정에서만 풀린다. 저장소가 공개라 파일에 못 넣는다.
+  Set-Content -Path $SiteCred -Encoding utf8 -Value @($acct, (ConvertFrom-SecureString $tok))
+  Write-Host "등록했습니다 → $SiteCred" -ForegroundColor Green
+
+  # 바로 확인한다 — 오타를 다음 배포 때 알게 되면 늦다.
+  if (-not (Use-SiteCred)) { return }
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & npx --no-install wrangler pages project list 2>&1 | Out-Null
+  $rc = $LASTEXITCODE
+  $ErrorActionPreference = $prevEap
+  Clear-SiteCred
+  if ($rc -eq 0) {
+    Write-Host "확인 완료 — 이제 -Publish 할 때마다 $SiteUrl 로 올라갑니다." -ForegroundColor Green
+  } else {
+    Write-Host '등록은 됐지만 Cloudflare 확인에 실패했습니다 (토큰 권한을 확인하세요).' -ForegroundColor Red
+  }
+}
+
+# 자격 증명을 프로세스 환경 변수로만 올린다. 실패해도 배포를 죽이지 않는다.
+function Use-SiteCred {
+  if (-not (Test-Path $SiteCred)) { return $false }
+  try {
+    $lines = @(Get-Content $SiteCred)
+    if ($lines.Count -lt 2) { throw '파일 형식이 올바르지 않습니다' }
+    $env:CLOUDFLARE_ACCOUNT_ID = $lines[0]
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR((ConvertTo-SecureString $lines[1]))
+    try { $env:CLOUDFLARE_API_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+    $env:CI = '1'          # wrangler 가 물어보지 않게
+    return $true
+  } catch {
+    Clear-SiteCred
+    Write-Host "`nCloudflare 자격 증명을 읽지 못했습니다 — 사이트 게시를 건너뜁니다. ($($_.Exception.Message))" -ForegroundColor Yellow
+    Write-Host '  .\update.ps1 -SetSiteKey 로 다시 등록하세요 (다른 PC 의 것은 풀리지 않습니다).' -ForegroundColor Yellow
+    return $false
+  }
+}
+function Clear-SiteCred { $env:CLOUDFLARE_API_TOKEN = $null }
+
 function Publish-Site {
   $web = Join-Path $PSScriptRoot 'dist\web'
   Write-Host "`n사이트 빌드 중… (이미지 분리판)" -ForegroundColor Cyan
@@ -206,38 +265,87 @@ function Publish-Site {
     Write-Host '사이트 빌드에 실패해 게시를 건너뜁니다.' -ForegroundColor Yellow; return
   }
 
-  $gh = Resolve-Gh
-  if (-not $gh) { Write-Host '→ 사이트 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
+  # wrangler 는 배포용 도구라 package.json 에 넣지 않았다 — 배포본을 받은 사용자가
+  # npm install 할 때 100MB 를 같이 받게 되기 때문이다. 이 PC 에만 깔아 둔다.
+  if (-not (Test-Path (Join-Path $PSScriptRoot 'node_modules\wrangler'))) {
+    Write-Host "`nwrangler 가 없어 사이트 게시를 건너뜁니다." -ForegroundColor Yellow
+    Write-Host '  npm install --no-save wrangler   로 설치하세요 (배포 PC 에서만 필요합니다).' -ForegroundColor Yellow
+    return
+  }
+  # 옛 GitHub Pages 게시에 쓰던 저장소가 남아 있으면 통째로 업로드된다(6.7MB).
+  Remove-Item (Join-Path $web '.git') -Recurse -Force -ErrorAction SilentlyContinue
 
-  # dist\web 안에 별도의 작은 저장소를 두고 gh-pages 로만 밀어 넣는다.
-  # 본 저장소 이력과 완전히 분리돼 있어, 여기서 무슨 일이 나도 작업 이력은 안 다친다.
-  $ErrorActionPreference = 'Continue'
-  try {
-    if (-not (Test-Path (Join-Path $web '.git'))) {
-      & git -C $web init -q
-      & git -C $web remote add origin "https://github.com/$OtaRepo.git"
-    }
-    & git -C $web config user.name  'gbo2-site-bot'
-    & git -C $web config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-    # 부모 없는 상태로 되돌린 뒤 통째로 다시 담는다 → 커밋은 언제나 1개
-    & git -C $web checkout -q --orphan tmp 2>$null | Out-Null
-    & git -C $web add -A
-    & git -C $web commit -q -m "사이트 $($script:VerStamp)" | Out-Null
-    Write-Host '사이트 게시 중… (gh-pages)' -ForegroundColor Cyan
-    & git -C $web push -q --force origin HEAD:gh-pages
-    $ok = ($LASTEXITCODE -eq 0)
-    # 다음 실행에서도 orphan 을 만들 수 있게 브랜치 이름을 정리
-    & git -C $web branch -q -M gh-pages 2>$null | Out-Null
-  } catch {
-    $ok = $false; Write-Host "  사이트 게시 중 오류: $($_.Exception.Message)" -ForegroundColor Yellow
-  } finally { $ErrorActionPreference = $prevEap }
+  if (-not (Test-Path $SiteCred)) {
+    Write-Host "`nCloudflare 계정이 등록돼 있지 않아 사이트 게시를 건너뜁니다." -ForegroundColor Yellow
+    Write-Host '  .\update.ps1 -SetSiteKey 로 한 번만 등록하면 이후로는 자동입니다.' -ForegroundColor Yellow
+    return
+  }
+  if (-not (Use-SiteCred)) { return }
+
+  Write-Host "사이트 게시 중… ($SiteProject)" -ForegroundColor Cyan
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & npx --no-install wrangler pages deploy $web --project-name $SiteProject --branch main
+  $ok = ($LASTEXITCODE -eq 0)
+  $ErrorActionPreference = $prevEap
+  Clear-SiteCred
 
   if ($ok) {
-    Write-Host "사이트 게시 완료 — https://babohogu.github.io/gbo2_parts_simulator/" -ForegroundColor Green
+    Write-Host "사이트 게시 완료 — $SiteUrl" -ForegroundColor Green
     Write-Host '  (검색 제외 상태입니다 — 주소를 아는 사람만 들어옵니다)' -ForegroundColor DarkGray
+    Publish-SiteRedirect
   } else {
     Write-Host '사이트 게시에 실패했습니다 (위 로그 확인). 나머지 배포는 정상입니다.' -ForegroundColor Red
   }
+}
+
+# 옛 GitHub Pages 주소를 새 주소로 넘겨보낸다. 이미 그 주소를 아는 사람이 있을 수 있어
+# 지우지 않는다. 내용이 몇 KB 뿐이라 GitHub 이 느려도 문제가 안 된다.
+function Publish-SiteRedirect {
+  $dir = Join-Path $PSScriptRoot 'dist\site-redirect'
+  New-Item -ItemType Directory -Force $dir | Out-Null
+  $html = @"
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="refresh" content="0; url=$SiteUrl">
+<title>GBO2 커스텀 파츠 시뮬레이터</title>
+<style>body{background:#0f1013;color:#e8eaef;font-family:system-ui,sans-serif;
+display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}
+a{color:#ffc93c}</style>
+</head>
+<body>
+<div>
+<p>주소가 바뀌었습니다.</p>
+<p><a href="$SiteUrl">$SiteUrl</a></p>
+<p style="color:#8a91a0;font-size:.9em">자동으로 넘어가지 않으면 위 주소를 눌러 주세요.</p>
+</div>
+<script>location.replace("$SiteUrl");</script>
+</body>
+</html>
+"@
+  [System.IO.File]::WriteAllText((Join-Path $dir 'index.html'), $html, (New-Object System.Text.UTF8Encoding($false)))
+  [System.IO.File]::WriteAllText((Join-Path $dir '404.html'), $html, (New-Object System.Text.UTF8Encoding($false)))
+  [System.IO.File]::WriteAllText((Join-Path $dir '.nojekyll'), '')
+
+  $gh = Resolve-Gh
+  if (-not $gh) { return }
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try {
+    if (-not (Test-Path (Join-Path $dir '.git'))) {
+      & git -C $dir init -q
+      & git -C $dir remote add origin "https://github.com/$OtaRepo.git"
+    }
+    & git -C $dir config user.name  'gbo2-site-bot'
+    & git -C $dir config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+    & git -C $dir checkout -q --orphan tmp 2>$null | Out-Null
+    & git -C $dir add -A
+    & git -C $dir commit -q -m "옛 주소 → $SiteUrl" | Out-Null
+    & git -C $dir push -q --force origin HEAD:gh-pages
+    if ($LASTEXITCODE -eq 0) { Write-Host '  옛 GitHub Pages 주소는 새 주소로 넘어갑니다.' -ForegroundColor DarkGray }
+    & git -C $dir branch -q -M gh-pages 2>$null | Out-Null
+  } catch { } finally { $ErrorActionPreference = $prevEap }
 }
 
 # ── 공유 갤러리 사전(dict) 자동 게시 ────────────────────────────────────────
@@ -245,7 +353,7 @@ function Publish-Site {
 # 안 올리면 새 기체로 만든 구성은 업로드가 조용히 거부되고, 사용자 눈에는 이유가 안 보인다.
 # 그래서 배포에 묶는다. 자격 증명은 저장소가 공개라 파일에 못 넣고, DPAPI 로 암호화해
 # 이 PC·이 계정에서만 풀리는 형태로 %LOCALAPPDATA% 에 둔다 (-SetDictKey 로 최초 1회 등록).
-$DictDir  = Join-Path $env:LOCALAPPDATA 'gbo2-sim'
+$DictDir  = $CredDir
 $DictCred = Join-Path $DictDir 'dict.cred'
 $DictHash = Join-Path $DictDir 'dict.sha'
 
@@ -351,6 +459,7 @@ if (Test-Path $bundled) {
 
 # 사전 계정 등록은 여기서 끝난다 — 데이터 수신·빌드를 할 이유가 없다.
 if ($SetDictKey) { Set-DictKey; Close-Window 0 }
+if ($SetSiteKey) { Set-SiteKey; Close-Window 0 }
 
 # -Rebuild: 데이터 재수신 없이 build.js 만 실행 (psycommu.override.json 등 오버라이드 패치 적용)
 if ($Rebuild) {
