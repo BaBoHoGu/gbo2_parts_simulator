@@ -2099,10 +2099,25 @@ body.drawer-open .m-actionbar { display: none !important; }
    — 서버가 신원을 보증하지 않으므로 제목만큼 강조하면 안 된다. */
 .sc-author { font-size: 11px; color: var(--muted); margin: 1px 0 4px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sc-author::before { content: 'by '; color: var(--dim); }
+.sc-author:not(:empty)::before { content: 'by '; color: var(--dim); }
 /* 올린 사람이 적은 한 줄 설명 */
 .sc-desc { font-size: 11.5px; color: var(--muted); margin: 2px 0 6px; line-height: 1.4;
   overflow-wrap: anywhere; }
+
+/* 격자에서는 카드마다 아래 글 위치가 어긋나면 나란히 읽기가 나쁘다.
+   들쭉날쭉하게 만드는 것이 셋 있어 각각 자리를 고정한다. */
+/* ① 작성자·설명 — 없는 카드도 같은 자리를 비워 둔다.
+   min-height 로는 1px 씩 어긋난다(빈 줄과 글자가 든 줄의 줄상자 높이가 다르다).
+   높이와 줄간격을 px 로 못 박아야 내용과 무관하게 같아진다. */
+.gallery-grid .sc-author { height: 16px; line-height: 16px; }
+.gallery-grid .sc-desc {
+  height: 32px; line-height: 16px;  /* 두 줄치 — 설명은 60자까지라 두 줄이면 다 들어간다 */
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+/* ② 파츠 아이콘 — 8개가 34px 이면 한 줄에 못 들어가 줄바꿈이 생긴다.
+   격자에서만 조금 줄여 8개까지 한 줄에 담는다(30×8 + 4×7 = 268px ≤ 278px). */
+.gallery-grid .ac-thumbs { flex-wrap: nowrap; }
+.gallery-grid .ac-thumb { width: 30px; height: 30px; flex: 0 0 auto; }
 #galleryUpload.small, #galleryReload.small { padding: 3px 10px; font-size: 12px; }
 
 /* 관리자 로그인 팝업 */

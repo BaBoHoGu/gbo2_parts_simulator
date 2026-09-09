@@ -906,6 +906,9 @@
   // 갤러리는 단계(stepper)에 넣지 않는다. 흐름의 한 단계가 아니라 언제든 다녀오는 곳이라,
   // 들어오기 전 화면을 기억해 두고 「돌아가기」로 그리로 되돌린다.
   let viewBefore = 'select';
+  // 지금 보고 있는 구성이 갤러리에서 온 것인가. 「기체 변경」이 어디로 돌아갈지 정한다
+  // — 갤러리에서 골라 들어왔는데 기체 선택 화면으로 튕기면 찾던 자리를 잃는다.
+  let fromGallery = false;
 
   function setView(view) {
     const changed = state.view !== view;
@@ -923,11 +926,20 @@
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
-    if (view === 'build') fitWholeRows($('#partList'));
+    if (view === 'build') {
+      fitWholeRows($('#partList'));
+      // 어디로 돌아가는지 버튼에 그대로 적는다 — 문구와 동작이 다르면 안 누른다
+      const back = $('#backToSelect');
+      if (back) {
+        back.textContent = fromGallery ? '‹ 갤러리로' : '‹ 기체 변경';
+        back.title = fromGallery ? '공유 갤러리로 돌아가기 (검색·필터 유지)' : '다른 기체 선택';
+      }
+    }
   }
 
   function selectMs(m) {
     state.ms = m;
+    fromGallery = false;        // 기체 선택 화면에서 골랐으니 거기로 돌아간다
     pushRecent(m.MS名);         // 최근 사용 목록 갱신
     state.form = 'normal';      // 새 기체는 통상 모드부터
     state.equipped = [];
@@ -3730,6 +3742,7 @@
       const sub = [relTime(bld.at), bld.ver && ('데이터 ' + bld.ver)].filter(Boolean).join(' · ');
       box.append(buildSummaryCard(bld, {
         sub,
+        uniform: true,      // 격자라 카드마다 줄 위치가 어긋나면 읽기 나쁘다
         desc: bld.desc,
         author: bld.author,
         // 관리자로 로그인했을 때만 ✕ 가 붙는다. 서버 규칙이 admins 목록으로 다시 확인하므로
@@ -3741,10 +3754,13 @@
           if (r.ok) { galleryList = galleryList.filter(x => x.id !== bld.id); renderGallery(); }
         } : null,
         onOpen: () => {
+          // deserialize 가 화면을 바꾸면서 「기체 변경」 문구를 정하므로 **먼저** 세운다.
+          // 뒤에 세우면 이미 그려진 버튼이 옛 문구를 달고 있다.
+          fromGallery = true;
           const r = deserialize(bld);
           // 성공하면 deserialize 가 이미 파츠 적용 화면을 띄웠다 — 여기서 화면을 또
           // 옮기면 「들어오기 전 화면」으로 돌아가 버린다. 실패했을 때만 갤러리에 남는다.
-          if (!r.ok) openGallery(false);
+          if (!r.ok) { fromGallery = false; openGallery(false); }
           toast(r.ok
             ? ('「' + bld.name + '」 가져왔습니다' + loadNote(r))
             : '이 구성의 기체가 내 데이터에 없습니다');
@@ -5034,7 +5050,8 @@
     card.append(head);
     // 올린 사람이 스스로 적은 이름 (갤러리 전용) — 제목과 기체 사이에 한 줄로 둔다.
     // 서버가 신원을 보증하지 않으므로 제목만큼 강조하지 않는다.
-    if (opt.author) card.append(el('div', 'sc-author', opt.author));
+    // uniform 이면 비어 있어도 자리를 차지한다(격자에서 아래 글 위치를 맞추려고).
+    if (opt.author || opt.uniform) card.append(el('div', 'sc-author', opt.author || ''));
 
     // 기체 한 줄 (썸네일 + 이름 · 강화 · 확장)
     const msLine = el('div', 'sc-ms');
@@ -5047,7 +5064,7 @@
     msLine.append(meta);
     card.append(msLine);
     // 올린 사람이 적은 한 줄 설명 (갤러리 전용 — 저장 목록에는 없다)
-    if (opt.desc) card.append(el('div', 'sc-desc', opt.desc));
+    if (opt.desc || opt.uniform) card.append(el('div', 'sc-desc', opt.desc || ''));
 
     // 파츠 아이콘
     const thumbs = el('div', 'ac-thumbs');
@@ -5112,6 +5129,7 @@
         onDel: () => deleteBuild(bld.id),
         onOpen: () => {
           const r = deserialize(bld);
+          fromGallery = false;
           openSavedModal(false);
           toast(r.ok
             ? ('「' + bld.name + '」 불러왔습니다' + loadNote(r))
@@ -5603,7 +5621,9 @@
       openPostureMenu(ev.currentTarget);
     };
 
-    $('#backToSelect').onclick = () => setView('select');
+    // 갤러리에서 들어왔으면 갤러리로 돌려보낸다. 검색어·필터는 그대로 남아 있다
+    // (모두 화면 상태로 들고 있어 다시 그리기만 하면 된다).
+    $('#backToSelect').onclick = () => { if (fromGallery) openGallery(true); else setView('select'); };
 
     // 스텝퍼: 1단계는 언제든 클릭해 기체 목록으로, 2단계는 기체가 있을 때만
     $('#stepper').querySelectorAll('li[data-step]').forEach(li => {
