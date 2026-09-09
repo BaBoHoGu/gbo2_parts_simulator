@@ -612,6 +612,14 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
 .slot-bar .track i.over { background: var(--bad); }
 .slot-bar.full .top .v { color: var(--accent); }
 
+/* 지금 보고 있는 파츠를 끼우면 찰 칸 — 채워진 칸 뒤에 이어서 깜빡인다.
+   숫자(+N)와 칸을 함께 보여 준다: 칸은 '얼마나 남는지', 숫자는 '얼마가 드는지'를 말한다. */
+.slot-bar .track i.pre { background: var(--ok); animation: slotPre 1.1s ease-in-out infinite; }
+.slot-bar .track i.pre.over { background: var(--bad); }   /* 남은 칸보다 많이 든다 */
+@keyframes slotPre { 0%, 100% { opacity: 1; } 50% { opacity: .28; } }
+.slot-bar .top .add { color: var(--ok); margin-left: 3px; }
+.slot-bar .top .add.over { color: var(--bad); }
+
 /* ============ 장착 슬롯 ============ */
 
 .equip-grid {

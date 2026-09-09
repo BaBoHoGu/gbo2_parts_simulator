@@ -1021,7 +1021,7 @@
       const tile = el('div', 'eq' + (state.locked.has(p.name) ? ' locked' : ''));
       tile.title = p.name + '\n\n' + T.partDesc(p.name, p.description);
       // 장착된 파츠도 목록 타일과 똑같이 상세 패널에 띄운다
-      tile.onmouseenter = () => { state.detailPart = p; renderDetail(p); };
+      tile.onmouseenter = () => { showDetail(p); };
 
       const lock = el('span', 'lock' + (state.locked.has(p.name) ? ' on' : ''), '🔒');
       lock.title = '자동 구성 시 이 파츠 고정';
@@ -1048,8 +1048,17 @@
     }
   }
 
+  /** 상세 패널에 파츠를 띄우고 슬롯 미리보기도 함께 갱신한다.
+   *  (상세만 바꾸고 슬롯을 안 그리면 미리보기가 한 박자 늦는다) */
+  function showDetail(p) { state.detailPart = p; renderDetail(p); renderSlots(); }
+
   function renderSlots() {
     const s = slots();
+    // 지금 보고 있는 파츠를 끼우면 칸이 얼마나 차는지 미리 보여 준다.
+    // 이미 장착한 파츠는 뺀다 — 끼울 것이 없으니 보여 줄 것도 없다.
+    // 못 끼우는 파츠도 그대로 보여 준다: 몇 칸 모자라서 안 되는지가 그 자체로 답이다.
+    const pv = state.detailPart && !state.equipped.some(e => e.name === state.detailPart.name)
+      ? state.detailPart : null;
     const box = $('#slotBars');
     box.innerHTML = '';
     const defs = [
@@ -1059,10 +1068,14 @@
     ];
 
     for (const [key, label, used, max] of defs) {
+      const cost = pv ? Number(pv[key] || 0) : 0;
+      const over = used + cost > max;
       const bar = el('div', 'slot-bar ' + key + (used >= max && max > 0 ? ' full' : ''));
       const top = el('div', 'top');
       top.append(el('span', 'k', label));
-      top.append(el('span', 'v', `${used} / ${max}`));
+      const v = el('span', 'v', `${used} / ${max}`);
+      if (cost > 0) v.append(el('span', 'add' + (over ? ' over' : ''), ' +' + cost));
+      top.append(v);
       bar.append(top);
 
       // 칸 수가 많으면 눈에 안 들어오므로 최대 20칸으로 압축해 보여준다.
@@ -1070,9 +1083,13 @@
       const cells = Math.min(Math.max(max, used, 1), 20);
       const scale = cells / Math.max(max, used, 1);
       const filled = Math.round(used * scale);
+      // 미리보기는 채워진 칸 뒤에 이어 붙인다. 칸 수(scale)는 바꾸지 않는다 —
+      // 마우스를 올릴 때마다 막대 눈금이 달라지면 오히려 읽기 어렵다.
+      const preEnd = Math.min(cells, Math.round((used + cost) * scale));
       for (let i = 0; i < cells; i++) {
         const cell = el('i');
         if (i < filled) cell.className = used > max ? 'over' : 'on';
+        else if (i < preEnd) cell.className = 'pre' + (over ? ' over' : '');
         track.append(cell);
       }
       bar.append(track);
@@ -2924,7 +2941,7 @@
     tile.append(why);
 
     // 핸들러는 만들 때 한 번만 붙이고, 판정은 그때그때 최신 상태에서 읽는다.
-    tile.onmouseenter = () => { state.detailPart = p; renderDetail(p); };
+    tile.onmouseenter = () => { showDetail(p); };
     tile.onclick = ev => {
       const fired = entryLp.get(tile);
       if (fired && fired()) return;              // 길게 눌러 메뉴를 연 것 — 장착까지 하지 않는다
@@ -2979,7 +2996,7 @@
     };
     menu.append(el('div', 'tile-menu-hd', v.fullNm));
     menu.append(mk('상세 보기', v.cat + ' · ' + v.slotTxt, () => {
-      state.detailPart = p; renderDetail(p);
+      showDetail(p);
       const d = $('#detailPanel'); if (d) d.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }));
     const banned = state.banned.has(p.name);
