@@ -132,6 +132,7 @@
             <div class="exp-row">
               <select id="expansion" class="grow"></select>
               <select id="expLevel" title="확장 스킬 레벨"></select>
+              <button type="button" id="expHelp" class="exp-help" title="이 확장 스킬의 효과 보기" aria-label="확장 스킬 효과 설명">?</button>
             </div>
           </div>
         </div>
@@ -281,6 +282,18 @@
 
 <!-- ========== 저장한 구성 (화면 중앙) ========== -->
 <!-- 내 구성 올리기 팝업 — 갤러리 화면에는 파츠가 안 보이므로, 무엇이 올라가는지 여기서 보여 준다 -->
+<!-- 확장 스킬 효과 설명 — 표는 core.js 의 EXPANSION_LEVELS 에서 그때그때 만든다.
+     손으로 적어 두면 상수가 바뀔 때 화면만 옛 숫자를 말하게 된다. -->
+<div class="auto-modal-back" id="expHelpBack" hidden></div>
+<div class="auto-modal exp-help-modal" id="expHelpModal" hidden role="dialog" aria-label="확장 스킬 효과">
+  <div class="am-head">
+    <b id="expHelpTitle">확장 스킬</b>
+    <span class="grow"></span>
+    <button id="expHelpClose" class="btn-ghost">닫기</button>
+  </div>
+  <div class="admin-body" id="expHelpBody"></div>
+</div>
+
 <div class="auto-modal-back" id="uploadBack" hidden></div>
 <div class="auto-modal admin-modal" id="uploadModal" hidden role="dialog" aria-label="내 구성 올리기">
   <div class="am-head">
