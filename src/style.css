@@ -408,10 +408,24 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
 
 .d-eff { background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 8px; padding: 10px 12px; }
 .d-eff-lb { font-size: 11px; color: var(--dim); letter-spacing: .5px; margin-bottom: 4px; }
-.d-eff-tx { font-size: 12.5px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
-/* 특성 안의 수치만 키워 눈에 띄게 한다. em 으로 잡아 본문 크기가 바뀌어도 비율이 유지된다.
-   줄간격은 위에서 1.5 로 고정돼 있어 숫자가 커져도 줄이 밀리지 않는다. */
-.d-eff-tx .num { font-size: 1.16em; font-weight: 700; color: var(--accent); }
+/* 줄간격을 px 로 못 박는다. 배수(1.5)로 두면 자식(.num)이 커질 때 그 줄만 높아져
+   상세 상자가 들쭉날쭉해지고, 그러면 아래 파츠 목록이 밀린다. 목록이 밀리면 커서 밑의
+   파츠가 바뀌어 다시 상자가 바뀌는 고리가 된다 — 파츠 사이에 마우스를 두면 화면이 떨렸다. */
+.d-eff-tx { font-size: 12.5px; color: var(--text); line-height: 19px; white-space: pre-wrap; }
+/* 특성 안의 수치만 키워 눈에 띄게 한다. 줄 높이(19px)는 위에서 물려받아 그대로라
+   글자만 커지고 줄은 그대로다. */
+.d-eff-tx .num { font-size: 14.5px; font-weight: 700; color: var(--accent); }
+
+/* 마우스가 있는 환경에서만 특성 상자의 높이를 못 박는다.
+   설명 길이에 따라 상자가 커졌다 작아지면 아래 파츠 목록이 밀리고, 밀린 목록 때문에
+   커서 밑의 파츠가 바뀌어 상자가 또 바뀐다 — 파츠 사이에 마우스를 두면 화면이 떨렸다.
+   긴 설명은 상자 안에서 스크롤한다(마우스를 올려 둔 채 굴릴 수 있다).
+   손가락만 있는 기기에는 hover 가 없어 이 고리가 생기지 않으므로 그대로 둔다. */
+@media (hover: hover) and (pointer: fine) {
+  .d-eff-tx { height: 114px; overflow-y: auto; }   /* 19px x 6줄 — 163종 중 5종만 스크롤한다.
+     더 키우면(152px) 스크롤은 사라지지만 파츠 목록 자리를 33px 영구히 뺏고,
+     133px 은 6px 만 가려 '잘린 줄' 처럼 보인다. */
+}
 
 .stat-wrap { flex: 1; padding: 5px 0 8px; }
 
