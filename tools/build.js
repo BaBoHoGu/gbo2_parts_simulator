@@ -167,6 +167,10 @@ for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPO
 }
 
 const DIST = WEB ? path.join(ROOT, 'dist', 'web') : path.join(ROOT, 'dist');
+// 사이트판은 폴더를 통째로 비우고 다시 만든다. 배포는 이 폴더를 그대로 업로드하므로,
+// 더 이상 만들지 않는 파일이 남아 있으면 계속 사이트에 올라간다(옛 배포에 쓰던 .git 도).
+// 오프라인판의 dist 는 APK·배포본이 함께 쓰는 곳이라 비우지 않는다.
+if (WEB) fs.rmSync(DIST, { recursive: true, force: true });
 fs.mkdirSync(DIST, { recursive: true });
 
 // 오프라인판은 이미지가 HTML 안에 있어 dist/images 가 필요 없다(진짜 단일 파일).
