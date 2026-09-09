@@ -554,6 +554,11 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
 }
 
 .hero .h-main { flex: 1; min-width: 0; }
+/* 기체 이름 → 위키. 제목 모양은 그대로 두고, 눌리는 것임을 밑줄로만 알린다
+   (색까지 바꾸면 이름이 링크로 보여 제목 구실을 못 한다). */
+.hero-wiki { color: inherit; text-decoration: none; }
+.hero-wiki:hover { text-decoration: underline; text-underline-offset: 3px; }
+.hero-wiki::after { content: ' ↗'; font-size: .62em; color: var(--dim); vertical-align: super; }
 .hero h3 { margin: 0 0 2px; font-size: 15.5px; line-height: 1.22; word-break: keep-all; }
 .hero .h-sub { color: var(--muted); font-size: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .hero .h-controls { display: flex; gap: 10px 12px; align-items: flex-end; flex-wrap: wrap; }
