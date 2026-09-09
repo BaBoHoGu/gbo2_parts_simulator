@@ -150,8 +150,16 @@ async function upload(bld, title, desc, author) {
     { method: 'PUT', body: JSON.stringify(body) });
   if (r.ok) return { ok: true, msg: '갤러리에 올렸습니다' };
   if (r.status === 401) {
-    // 규칙이 거부한 것 — 가장 흔한 이유가 '이미 같은 구성이 있음' 이다.
-    return { ok: false, code: 'dup', msg: '이미 같은 구성이 올라와 있거나, 올릴 수 없는 구성입니다' };
+    // 401 하나에 서로 다른 이유가 섞여 있다 — 중복이거나, 규칙이 거부했거나.
+    // 뭉뚱그려 '중복이거나' 라고 말하면 사용자가 자기 탓으로 오해하고, 실제 문제(사전이
+    // 낡음·앱이 서버보다 새로움)가 개발자에게 영영 안 알려진다. builds 는 공개 읽기라
+    // 지문으로 직접 확인할 수 있으니, 실패했을 때만 한 번 물어 갈라 준다.
+    const dup = await req(`${CFG.db}/builds/${fp}.json?shallow=true`);
+    if (dup.ok && dup.json) return { ok: false, code: 'dup', msg: '이미 같은 구성이 올라와 있습니다' };
+    return {
+      ok: false, code: 'reject',
+      msg: '서버가 이 구성을 받지 않았습니다 — 앱이나 서버가 서로 다른 버전일 수 있습니다'
+    };
   }
   return { ok: false, code: 'net', msg: '올리지 못했습니다 — 잠시 후 다시 시도하세요' };
 }
