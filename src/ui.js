@@ -3893,9 +3893,16 @@
       const def = fullst.find(d => d.name === entry.name);
       const lv = def && (def.levels || []).find(l => Number(l.level) === Number(entry.level));
       const effs = lv ? fullstEffText(lv.effects) : [];
-      // 기체는 이 레벨을 쓰는데 강화 정의에 그 레벨이 없는 경우가 있다(4종·17기).
-      // 넷 다 계산에 안 들어가는 효과라 수치는 어긋나지 않지만, 없는 건 없다고 말한다.
-      if (!lv) mid.append(el('span', 'stage-help-eff dim', '(이 레벨의 효과 자료가 없습니다)'));
+      // 기체는 이 레벨을 쓰는데 어느 자료에도 값이 없는 경우가 있다(2종·8기).
+      // '우리가 모른다' 가 아니라 '어디에도 없다' 라고 말해야 오해가 없다 —
+      // 효과가 무엇인지는 알지만(윗 레벨에 있다) 그 레벨의 수치만 없는 것이다.
+      if (!lv) {
+        const known = def && (def.levels || [])[0];
+        const what = known ? Object.keys(known.effects || {})
+          .filter(k => k !== 'limitIncreases').map(k => T.fullstEffect(k)).join(' · ') : '';
+        mid.append(el('span', 'stage-help-eff dim',
+          (what ? what + ' — ' : '') + 'LV' + entry.level + ' 수치가 원본·위키 어디에도 없습니다'));
+      }
       else if (!effs.length) mid.append(el('span', 'stage-help-eff dim', '(효과 없음)'));
       for (const e of effs) {
         const tag = el('span', 'stage-help-eff' + (e.applied ? '' : ' dim'), e.txt);

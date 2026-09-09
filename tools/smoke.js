@@ -119,7 +119,7 @@ setTimeout(async () => {
   const nfc = n => String(n).normalize('NFC');
   const has = (dir, name) => !!IMG[dir + '/' + nfc(name) + '.webp'];
   check('이미지가 HTML 에 인라인됨', Object.keys(IMG).length > 0, Object.keys(IMG).length + '개');
-  // 미러(gbo2.jp)에 없어 위키·게임 화면에서 보강한 기체는 이미지도 없다 — 기본 이미지로 대체된다.
+  // gbo2.jp 에 없어 위키·게임 화면에서 보강한 기체는 이미지도 없다 — 기본 이미지로 대체된다.
   // 미러에 있는 기체만 이미지를 요구하고, 보강분은 INFO 로 알린다.
   const officialBase = new Set(
     JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'msData.json'), 'utf8'))
