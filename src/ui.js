@@ -5419,7 +5419,21 @@
       hero.style.visibility = 'hidden';
     }
 
-    $('#heroName').textContent = m ? T.msName(m.MS名) : '기체를 선택하세요';
+    // 기체 이름은 위키 페이지로 이어 준다. 주소는 데이터에 기체마다 들어 있다(wiki_url).
+    // 없는 기체가 나올 수 있으니(추가분 등) 그때는 그냥 글자로 둔다 — 죽은 링크보다 낫다.
+    const nameBox = $('#heroName');
+    nameBox.innerHTML = '';
+    if (!m) { nameBox.textContent = '기체를 선택하세요'; }
+    else if (m.wiki_url) {
+      const a = el('a', 'hero-wiki', T.msName(m.MS名));
+      a.href = m.wiki_url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.title = '위키에서 이 기체 보기 (새 창)';
+      nameBox.append(a);
+    } else {
+      nameBox.textContent = T.msName(m.MS名);
+    }
 
     const sub = $('#heroSub');
     sub.innerHTML = '';

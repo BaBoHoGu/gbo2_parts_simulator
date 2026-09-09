@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ClipData;
+import android.content.Intent;
 import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.SharedPreferences;
@@ -101,6 +102,25 @@ public class MainActivity extends Activity {
 
         web.setBackgroundColor(Color.parseColor("#0f1013"));
         web.setWebViewClient(new WebViewClient() {
+            /**
+             * 앱 밖 주소(위키·공식 사이트 등)는 기본 브라우저로 넘긴다.
+             * 그냥 두면 WebView 가 앱 자리에 그 페이지를 열어 버려 돌아올 길이 마땅치 않다.
+             * 우리 문서(gbo2.local)만 앱 안에서 연다.
+             */
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri u = request.getUrl();
+                if (u == null || APP_HOST.equals(u.getHost())) return false;   // 앱 문서는 그대로
+                try {
+                    Intent i = new Intent(Intent.ACTION_VIEW, u);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(i);
+                } catch (Exception e) {
+                    toastUi("이 링크를 열 수 있는 앱이 없습니다");
+                }
+                return true;   // WebView 가 따라가지 않게 한다
+            }
+
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri u = request.getUrl();
