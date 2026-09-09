@@ -10,12 +10,13 @@
 #   .\update.ps1 -Publish   폰 OTA(data) + PC 배포본 ZIP 을 GitHub 에 올려 링크로 배포
 #   .\update.ps1 -SetDictKey  공유 갤러리 사전 계정을 이 PC 에 등록 (최초 1회, 이후 자동)
 #   .\update.ps1 -SetSiteKey  Cloudflare 배포 자격 증명을 이 PC 에 등록 (최초 1회, 이후 자동)
+#   .\update.ps1 -RulesPublished  Firebase 보안 규칙을 콘솔에 게시했다고 기록 (경고를 끈다)
 #
 # gbo2.jp 최신 데이터·일본 위키(밸런스 패치 목록 포함)에서 변경분만 가져와
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$SetDictKey, [switch]$SetSiteKey)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$SetDictKey, [switch]$SetSiteKey, [switch]$RulesPublished)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -112,6 +113,9 @@ $OtaRepo = 'BaBoHoGu/gbo2_parts_simulator'
 # 계정에서만 풀리게 둔다. 사전(dict)·사이트(Cloudflare) 둘 다 여기를 쓴다.
 # **두 블록보다 먼저 정의해야 한다** — 아래에서 정의하면 위 블록이 빈 경로를 잡는다.
 $CredDir = Join-Path $env:LOCALAPPDATA 'gbo2-sim'
+# 마지막으로 '게시했다' 고 확인한 보안 규칙의 해시. 서버의 규칙은 관리자 권한 없이 읽을 수
+# 없으므로 **파일이 바뀌었는지만** 본다 — 확인이 아니라 알림이다.
+$RulesSha = Join-Path $CredDir 'rules.sha'
 
 # gh CLI 경로 + 로그인 여부 확인. 안 되면 $null 반환(호출부에서 건너뛴다).
 function Resolve-Gh {
@@ -500,6 +504,15 @@ if (Test-Path $bundled) {
 # 사전 계정 등록은 여기서 끝난다 — 데이터 수신·빌드를 할 이유가 없다.
 if ($SetDictKey) { Set-DictKey; Close-Window 0 }
 if ($SetSiteKey) { Set-SiteKey; Close-Window 0 }
+if ($RulesPublished) {
+  $rp = Join-Path $PSScriptRoot 'firebase\rules.json'
+  if (-not (Test-Path $rp)) { Write-Host 'firebase\rules.json 을 찾지 못했습니다.' -ForegroundColor Red; Close-Window 1 }
+  New-Item -ItemType Directory -Force $CredDir | Out-Null
+  Set-Content -Path $RulesSha -Encoding utf8 -Value (Get-FileHash $rp -Algorithm SHA256).Hash
+  Write-Host '현재 규칙을 게시된 것으로 기록했습니다 — 다음부터 경고가 뜨지 않습니다.' -ForegroundColor Green
+  Write-Host '  (파일이 또 바뀌면 다시 알려 줍니다. 서버를 직접 확인하지는 않습니다)' -ForegroundColor DarkGray
+  Close-Window 0
+}
 
 # 배포 전에 '사람이 해야 하는데 잊기 쉬운 둘' 을 확인한다. 막지는 않고 알려만 준다.
 #   ① 소스 커밋·푸시 — 이 스크립트는 소스 저장소를 건드리지 않는다. 안 밀어 두면
@@ -526,6 +539,21 @@ function Test-DeployReady {
   $today = Get-Date -Format 'yyyy-MM-dd'
   if ((Test-Path $pn) -and -not (Select-String -Path $pn -Pattern "^_$today 업데이트" -Quiet)) {
     $warn += "패치노트에 오늘($today) 항목이 없습니다 — 배포본 ZIP 에 그대로 들어갑니다."
+  }
+
+  # 보안 규칙이 마지막 게시 이후 바뀌었는가.
+  # **서버를 직접 확인하는 게 아니다** — 규칙은 관리자 권한 없이 읽을 수 없어서 앱이
+  # 확인할 방법이 없다. 파일이 바뀐 것만 보고 '잊지 않게' 알린다.
+  # 규칙은 정의하지 않은 필드를 막으므로($other:false), 낡은 채로 앱만 나가면 새 필드를
+  # 쓴 업로드가 전부 거부된다(작성자 기능에서 실제로 겪었다).
+  $rules = Join-Path $PSScriptRoot 'firebase\rules.json'
+  if (Test-Path $rules) {
+    $now = (Get-FileHash $rules -Algorithm SHA256).Hash
+    $was = if (Test-Path $RulesSha) { (Get-Content $RulesSha -Raw).Trim() } else { '' }
+    if ($now -ne $was) {
+      $warn += 'firebase/rules.json 이 마지막 게시 이후 바뀌었습니다 — 콘솔에 게시하지 않으면 새 필드를 쓴 업로드가 거부됩니다.'
+      $warn += '  (게시를 마쳤다면  .\update.ps1 -RulesPublished  로 기록해 두세요)'
+    }
   }
 
   if (-not $warn.Count) { return }
