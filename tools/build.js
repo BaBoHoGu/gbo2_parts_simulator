@@ -8,7 +8,7 @@ const readJson = (...p) => JSON.parse(read(...p));
 const D = require('./lib/dataset.js');
 
 const msData = readJson('data', 'msData.json');
-// 공식 미러(gbo2.jp)에 아직 없는 기체(예: 갓 추가된 LV — 위키엔 있으나 미러 반영 전)를 보탠다.
+// gbo2.jp(비공식 팬 사이트)에 아직 없는 기체(예: 갓 추가된 LV — 위키엔 있으나 반영 전)를 보탠다.
 // 병합 규칙은 tools/lib/dataset.js 한 곳에만 둔다 — 공유 갤러리 사전도 같은 목록을 써야 하는데,
 // 예전엔 여기만 병합해서 앱에는 있고 사전에는 없는 기체가 생겼다(업로드가 조용히 거부됨).
 {
@@ -27,12 +27,22 @@ if (fs.existsSync(overridePath)) {
   if (n) console.log(`위키 교정 적용: ${Object.keys(override).length}기 · ${n}개 필드`);
 }
 const parts = readJson('data', 'parts.json');
-// 미러(gbo2.jp)에 아직 없는 파츠를 위키에서 보강한다 — 기체의 msData.additions.json 과 같은 역할.
+// gbo2.jp 에 아직 없는 파츠를 위키에서 보강한다 — 기체의 msData.additions.json 과 같은 역할.
 {
   const n = D.mergePartAdditions(ROOT, parts);
   if (n) console.log(`파츠 보강: ${n}개 (parts.additions.json)`);
 }
 const fullst = readJson('data', 'fullst.json');
+// 원본 표에 빠진 강화 레벨을 위키에서 보강한다 (기체는 쓰는데 정의가 없던 것들).
+{
+  const n = D.mergeFullstAdditions(ROOT, fullst);
+  if (n) console.log(`강화리스트 보강: ${n}개 레벨 (fullst.additions.json)`);
+}
+// gbo2.jp 값이 위키와 다르면 위키를 따른다 (gbo2.jp 는 공식이 아닌 팬 사이트다).
+{
+  const n = D.applyFullstOverride(ROOT, fullst);
+  if (n) console.log(`강화리스트 교정: ${n}개 효과 (fullst.override.json)`);
+}
 const weapons = readJson('data', 'weapons.json');
 const skills = readJson('data', 'skills.json');
 

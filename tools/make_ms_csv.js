@@ -9,7 +9,7 @@ const rd = (...p) => JSON.parse(fs.readFileSync(path.join(ROOT, ...p), 'utf8'));
 const rdSafe = (...p) => { try { return rd(...p); } catch { return null; } };
 
 const msData = rd('data', 'msData.json');
-// 공식 미러에 아직 없는 추가 기체 병합 (같은 MS名 이 이미 있으면 스킵)
+// gbo2.jp 에 아직 없는 추가 기체 병합 (같은 MS名 이 이미 있으면 스킵)
 const adds = rdSafe('data', 'msData.additions.json');
 if (Array.isArray(adds)) { const have = new Set(msData.map(m => m.MS名)); for (const m of adds) if (!have.has(m.MS名)) msData.push(m); }
 // 위키 교정(override) 적용 — 코스트·속성·희소도 등이 보정될 수 있다
