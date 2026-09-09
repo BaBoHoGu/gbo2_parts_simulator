@@ -188,6 +188,58 @@ function Publish-Pc {
   $ErrorActionPreference = $prevEap
 }
 
+# ── 사이트 게시 (GitHub Pages) ──────────────────────────────────────────────
+# 왜 여기서 올리나: Actions 가 저장소를 받아 다시 빌드하게 두면, ui_check 로 검사한 그 파일이
+# 아니라 새로 만든 파일이 나간다. 빌드 스탬프도 달라져 앱이 아는 자기 버전과 어긋난다.
+# 그래서 게이트를 통과한 dist\web 을 그대로 밀어 넣는다.
+#
+# gh-pages 브랜치는 매번 **부모 없는 커밋 하나**로 덮어쓴다 — 이력이 쌓이지 않는다.
+# 이미지는 내용이 같으면 git 이 같은 개체로 보므로 실제로 오가는 건 바뀐 것뿐이다.
+function Publish-Site {
+  $web = Join-Path $PSScriptRoot 'dist\web'
+  Write-Host "`n사이트 빌드 중… (이미지 분리판)" -ForegroundColor Cyan
+  $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & $node (Join-Path $PSScriptRoot 'tools\build.js') '--web' | Out-Null
+  $rc = $LASTEXITCODE
+  $ErrorActionPreference = $prevEap
+  if ($rc -ne 0 -or -not (Test-Path (Join-Path $web 'index.html'))) {
+    Write-Host '사이트 빌드에 실패해 게시를 건너뜁니다.' -ForegroundColor Yellow; return
+  }
+
+  $gh = Resolve-Gh
+  if (-not $gh) { Write-Host '→ 사이트 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
+
+  # dist\web 안에 별도의 작은 저장소를 두고 gh-pages 로만 밀어 넣는다.
+  # 본 저장소 이력과 완전히 분리돼 있어, 여기서 무슨 일이 나도 작업 이력은 안 다친다.
+  $ErrorActionPreference = 'Continue'
+  try {
+    if (-not (Test-Path (Join-Path $web '.git'))) {
+      & git -C $web init -q
+      & git -C $web remote add origin "https://github.com/$OtaRepo.git"
+    }
+    & git -C $web config user.name  'gbo2-site-bot'
+    & git -C $web config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+    # 부모 없는 상태로 되돌린 뒤 통째로 다시 담는다 → 커밋은 언제나 1개
+    & git -C $web checkout -q --orphan tmp 2>$null | Out-Null
+    & git -C $web add -A
+    & git -C $web commit -q -m "사이트 $($script:VerStamp)" | Out-Null
+    Write-Host '사이트 게시 중… (gh-pages)' -ForegroundColor Cyan
+    & git -C $web push -q --force origin HEAD:gh-pages
+    $ok = ($LASTEXITCODE -eq 0)
+    # 다음 실행에서도 orphan 을 만들 수 있게 브랜치 이름을 정리
+    & git -C $web branch -q -M gh-pages 2>$null | Out-Null
+  } catch {
+    $ok = $false; Write-Host "  사이트 게시 중 오류: $($_.Exception.Message)" -ForegroundColor Yellow
+  } finally { $ErrorActionPreference = $prevEap }
+
+  if ($ok) {
+    Write-Host "사이트 게시 완료 — https://babohogu.github.io/gbo2_parts_simulator/" -ForegroundColor Green
+    Write-Host '  (검색 제외 상태입니다 — 주소를 아는 사람만 들어옵니다)' -ForegroundColor DarkGray
+  } else {
+    Write-Host '사이트 게시에 실패했습니다 (위 로그 확인). 나머지 배포는 정상입니다.' -ForegroundColor Red
+  }
+}
+
 # ── 공유 갤러리 사전(dict) 자동 게시 ────────────────────────────────────────
 # 보안 규칙이 기체·파츠 이름을 사전과 대조하므로, 데이터가 갱신되면 사전도 같이 올려야 한다.
 # 안 올리면 새 기체로 만든 구성은 업로드가 조용히 거부되고, 사용자 눈에는 이유가 안 보인다.
@@ -393,6 +445,6 @@ if (-not $Check) {
   # -Publish: 폰 자동 갱신용 데이터(OTA) + PC 배포본 ZIP 을 GitHub 에 올린다
   # 사전을 먼저 올린다. 순서가 반대면, OTA 를 받은 사람이 새 기체로 구성을 만들었는데
   # 사전이 아직 낡아서 업로드가 거부되는 창이 잠깐 생긴다.
-  if ($Publish) { Publish-Dict; Publish-Ota; Publish-Pc }
+  if ($Publish) { Publish-Dict; Publish-Ota; Publish-Pc; Publish-Site }
 }
 Close-Window 0
