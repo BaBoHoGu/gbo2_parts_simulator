@@ -517,6 +517,7 @@
   }
 
   const SAVE_KEY = 'gbo2-offline-build';
+  const AUTHOR_KEY = 'gbo2-offline-author';   // 갤러리에 적을 이름 (이 기기에만 남는다)
   const OWNED_KEY = 'gbo2-offline-unowned';    // 기본 제외한 파츠 목록 (영구 저장)
   const FAV_KEY = 'gbo2-offline-fav';          // 즐겨찾기 기체
   const RECENT_KEY = 'gbo2-offline-recent';    // 최근 고른 기체
@@ -3730,6 +3731,7 @@
       box.append(buildSummaryCard(bld, {
         sub,
         desc: bld.desc,
+        author: bld.author,
         // 관리자로 로그인했을 때만 ✕ 가 붙는다. 서버 규칙이 admins 목록으로 다시 확인하므로
         // 버튼이 보인다고 지워지는 게 아니라, 실제 권한이 있어야 지워진다.
         onDel: (S && S.isAdmin()) ? async () => {
@@ -3886,6 +3888,9 @@
       }
       box.append(th);
     }
+    // 이름은 매번 다시 치는 게 번거로우므로 지난번 것을 채워 둔다
+    try { $('#uploadAuthor').value = localStorage.getItem(AUTHOR_KEY) || ''; } catch { /* 무시 */ }
+    $('#uploadAuthor').dispatchEvent(new Event('input'));
     $('#uploadGo').disabled = !(state.ms && parts);
     setTimeout(() => $('#uploadTitle').focus(), 30);
   }
@@ -3896,14 +3901,17 @@
     if (!S) return;
     const title = $('#uploadTitle').value || '';
     const desc = $('#uploadDesc').value || '';
+    const author = $('#uploadAuthor').value || '';
     if (!title.trim()) { $('#uploadMsg').textContent = '제목을 입력하세요'; return; }
     const btn = $('#uploadGo');
     btn.disabled = true; btn.textContent = '올리는 중…';
     $('#uploadMsg').textContent = '';
-    const r = await S.upload(serialize(), title, desc);
+    const r = await S.upload(serialize(), title, desc, author);
     btn.disabled = false; btn.textContent = '올리기';
     if (r.ok) {
       openUpload(false);
+      // 이름만 남긴다 — 제목·설명은 구성마다 다르지만 이름은 늘 같다
+      try { localStorage.setItem(AUTHOR_KEY, author.trim()); } catch { /* 무시 */ }
       $('#uploadTitle').value = ''; $('#uploadDesc').value = '';
       toast(r.msg);
       galleryList = [];
@@ -5016,6 +5024,9 @@
       nm.onclick = ev => { ev.stopPropagation(); opt.onRename(); };
     }
     head.append(nm);
+    // 올린 사람이 스스로 적은 이름 (갤러리 전용). 서버가 신원을 보증하지 않으므로
+    // 이름 자체로 취급하고, 제목과 구분되게 표시한다.
+    if (opt.author) head.append(el('span', 'sc-author', opt.author));
     if (opt.sub) head.append(el('span', 'sc-sub', opt.sub));
     if (opt.onDel) {
       const del = el('button', 'sc-del', '✕');
@@ -5639,7 +5650,8 @@
     $('#uploadCancel').onclick = () => openUpload(false);
     $('#uploadBack').onclick = () => openUpload(false);
     $('#uploadTitle').onkeydown = ev => { if (ev.key === 'Enter') $('#uploadDesc').focus(); };
-    $('#uploadDesc').onkeydown = ev => { if (ev.key === 'Enter') uploadSubmit(); };
+    $('#uploadDesc').onkeydown = ev => { if (ev.key === 'Enter') $('#uploadAuthor').focus(); };
+    $('#uploadAuthor').onkeydown = ev => { if (ev.key === 'Enter') uploadSubmit(); };
     // 남은 글자 수 — 규칙이 길이를 막으므로 미리 보여 준다
     const cnt = (inp, out, max) => {
       const f = () => { $(out).textContent = ($(inp).value || '').length + '/' + max; };
@@ -5647,6 +5659,7 @@
     };
     cnt('#uploadTitle', '#uploadTitleCount', 20);
     cnt('#uploadDesc', '#uploadDescCount', 60);
+    cnt('#uploadAuthor', '#uploadAuthorCount', 12);
     $('#updateBtn').onclick = checkUpdateNow;
     $('#galleryQuery').oninput = () => renderGallery();
     // 정렬·속성은 기체 선택 화면과 같은 칩으로 (버튼 모양·조작을 통일한다)
@@ -5717,7 +5730,9 @@
       } catch { fallback(); }
     };
     $('#importBtn').onclick = () => {
-      const text = prompt('공유 코드(또는 예전 JSON)를 붙여넣으세요');
+      // 옛 JSON 도 decodeShare 가 그대로 받는다(하위 호환). 다만 앱이 더 이상 JSON 을
+      // 만들지 않으므로, 안내에는 지금 쓰는 것만 적는다.
+      const text = prompt('공유 코드를 붙여넣으세요');
       if (!text) return;
       const obj = decodeShare(text);
       if (!obj) { toast('공유 코드 형식이 올바르지 않습니다'); return; }

@@ -95,7 +95,7 @@ function fingerprint(b) {
  * @param {string} title 사용자가 적은 제목
  * @returns {Promise<{ok:boolean, code?:string, msg:string}>}
  */
-async function upload(bld, title, desc) {
+async function upload(bld, title, desc, author) {
   if (!bld || !bld.ms) return { ok: false, code: 'noms', msg: '먼저 기체를 선택하세요' };
   const parts = (bld.parts || []).filter(Boolean);
   // 파츠가 없는 구성은 공유할 내용이 없다. 서버 규칙도 p0 를 필수로 두어 이중으로 막는다.
@@ -107,6 +107,12 @@ async function upload(bld, title, desc) {
   // 서버 규칙과 같은 문자 범위 — 여기서 걸러 주면 사용자가 이유를 바로 안다
   if (!/^[가-힣ㄱ-ㅎA-Za-z0-9 ·\-_.,!?()[\]]*$/.test(t))
     return { ok: false, code: 'title', msg: '제목에 쓸 수 없는 문자가 있습니다' };
+  const a = (author || '').trim();
+  // 서버 규칙과 같은 범위 — 여기서 걸러 주면 사용자가 이유를 바로 안다.
+  // 이름은 제목보다 좁게 잡는다(괄호·문장부호로 남을 사칭하기 어렵게).
+  if (a.length > 12) return { ok: false, code: 'author', msg: '이름은 12자까지입니다' };
+  if (a && !/^[가-힣ㄱ-ㅎA-Za-z0-9 ._-]*$/.test(a))
+    return { ok: false, code: 'author', msg: '이름에 쓸 수 없는 문자가 있습니다' };
   const d = (desc || '').trim();
   if (d.length > 60) return { ok: false, code: 'desc', msg: '설명은 60자까지입니다' };
   if (d && !/^[가-힣ㄱ-ㅎA-Za-z0-9 ·\-_.,!?()[\]/+~]*$/.test(d))
@@ -136,6 +142,7 @@ async function upload(bld, title, desc) {
     ver: (window.GBO2_BUILD && window.GBO2_BUILD.date) || ''
   };
   if (d) body.desc = d;   // 비어 있으면 아예 안 보낸다(규칙이 정의 안 한 필드를 막으므로 null 도 안 된다)
+  if (a) body.author = a;
   parts.forEach((n, i) => { body['p' + i] = toKey(n); });
 
   const fp = fingerprint({ ms: bld.ms, stage: bld.stage, exp: bld.expansion, expLv: bld.expLevel, parts });
@@ -165,6 +172,7 @@ function toBuild(id, v) {
     expansion: fromKey(v.exp),
     expLevel: Number(v.expLv) || 1,
     desc: v.desc || '',
+    author: v.author || '',
     at: Number(v.at) || 0,
     ver: v.ver || '',
     uid: v.uid || ''
