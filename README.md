@@ -175,22 +175,38 @@ node tools/build_release.js   # release/<이름>/ 폴더 + 같은 이름 .zip
   `update.ps1` 은 동봉된 `node\node.exe` 를 먼저 쓰고, 없으면 시스템 `node` 로 넘어간다.
 - 사용자는 `dist\gbo2-simulator.html` 을 연다. 폴더 구성은 그대로 두어야 한다.
 
+### 사이트
+
+`node tools/build.js --web` 이 `dist/web/` 에 사이트판을 만든다 — 이미지를 인라인하지 않고
+`images/` 로 따로 낸다. 그래야 압축이 듣고(전송 6.00MB → 1.23MB) `loading="lazy"` 가 살아나
+첫 화면에 필요한 56장만 받는다. `file://` 에서는 외부 이미지가 캔버스를 오염시켜 PNG 카드가
+깨지므로, 오프라인용 단일 파일은 인라인을 그대로 유지한다.
+
+배포(`-Publish`)가 Cloudflare Pages 로 올린다 → **https://gbo2-parts.pages.dev**
+(검색 제외 상태 — `robots.txt` 와 `noindex` 를 빼면 열린다)
+
 ### 개발 PC 를 옮길 때
 
-저장소만 옮기면 되는 게 아니다. **저장소에 없는 것**이 세 가지 있다 — 셋 다 비밀값이라
+저장소만 옮기면 되는 게 아니다. **저장소에 없는 것**이 넷 있다 — 비밀값이거나 환경이라
 공개 저장소에 둘 수 없어 일부러 PC 에 묶어 뒀다.
 
 | 무엇 | 어디에 | 없으면 |
 |---|---|---|
 | `gh` CLI 로그인 | `gh auth login` | OTA·PC 배포본이 안 올라감 |
 | 공유 갤러리 사전 계정 | `%LOCALAPPDATA%\gbo2-sim\dict.cred` | 새 기체 구성을 아무도 못 올림 |
+| Cloudflare 자격 증명 | `%LOCALAPPDATA%\gbo2-sim\site.cred` | 사이트가 안 올라감 |
 | JDK / Android SDK | `JAVA_HOME` 또는 Android Studio JBR | APK 를 못 만듦 |
 
-`dict.cred` 는 DPAPI 로 **그 Windows 사용자에게** 암호화돼 있어서 복사해 가도 안 풀린다.
-새 PC 에서 `.\update.ps1 -SetDictKey` 로 다시 등록한다(등록 직후 로그인·권한까지 확인해 준다).
+`.cred` 파일은 DPAPI 로 **그 Windows 사용자에게** 암호화돼 있어 복사해 가도 안 풀린다.
+새 PC 에서 각각 다시 등록한다 — 둘 다 등록 직후 실제로 접속해 권한까지 확인해 준다.
 
-같은 폴더의 `dict.sha` 도 안 따라오므로, 새 PC 의 첫 배포는 사전을 한 번 더 올린다.
-같은 내용을 다시 쓰는 것이라 문제는 없다.
+```powershell
+.\update.ps1 -SetDictKey     # Firebase 사전 계정
+.\update.ps1 -SetSiteKey     # Cloudflare
+npm install --no-save wrangler   # 사이트 배포 도구 (package.json 에 없다)
+```
+
+**전체 절차·계정·요금·자주 하는 실수는 [docs/운영.md](docs/운영.md) 에 정리돼 있다.**
 
 ## 알려진 차이
 
