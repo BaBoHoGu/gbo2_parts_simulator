@@ -21,6 +21,8 @@
   const KIND = table(raw.kind);
   const ATTR = table(raw.attr);
   const WEAPONS = table(raw.weapons || {});
+  const FULLST = table(raw.fullst || {});             // 강화리스트 항목 이름
+  const FULLST_EFF = table(raw.fullstEffect || {});   // 강화리스트 효과 키
   // 설명문에 섞인 고유명사(ビーム・ライフル 등)를 옮긴다. 긴 표기부터 치환해야
   // 짧은 항목이 긴 이름을 잘라먹지 않는다.
   const TERMS = Object.entries(raw.terms || {})
@@ -42,8 +44,16 @@
   const partDesc = (name, fallback) => (partEntry(name) || {}).d || fallback || '';
   const kindName = k => (k ? KIND.get(norm(k)) || k : k);
   const attrName = a => (a ? ATTR.get(norm(a)) || a : a);
+  const fullstName = n => (n ? FULLST.get(norm(n)) || n : n);
+  /** 강화 효과 키. 스탯 키는 core 의 STAT_LABEL 이 이미 갖고 있어 그쪽을 먼저 본다. */
+  const fullstEffect = k => {
+    if (!k) return '';
+    const C = window.GBO2Core;
+    return (C && C.STAT_LABEL[k]) || FULLST_EFF.get(norm(k)) || k;
+  };
   const weaponName = n => (n ? WEAPONS.get(norm(n)) || n : n);
   const weaponTerms = s => TERMS.reduce((t, [ja, ko]) => t.split(ja).join(ko), norm(String(s)));
 
-  window.GBO2i18n = { msName, partName, partDesc, kindName, attrName, weaponName, weaponTerms, norm };
+  window.GBO2i18n = { msName, partName, partDesc, kindName, attrName, weaponName, weaponTerms,
+    fullstName, fullstEffect, norm };
 })();

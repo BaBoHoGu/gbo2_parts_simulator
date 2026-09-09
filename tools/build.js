@@ -87,7 +87,9 @@ const i18n = {
   skillText: autoJson('skill_text.json'),     // 스킬 효과·설명 번역 (jp→ko)
   weaponNote: autoJson('weapon_note.json'),   // 무장 備考 번역 (jp→ko), 없으면 UI 하드코딩 폴백
   attr: misc.attr,
-  kind: misc.kind
+  kind: misc.kind,
+  fullst: misc.fullst,             // 강화리스트 항목 이름
+  fullstEffect: misc.fullstEffect  // 강화리스트 효과 키
 };
 
 // </script> 가 데이터 안에 들어가도 파서가 깨지지 않도록 이스케이프한다.

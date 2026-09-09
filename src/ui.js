@@ -3844,6 +3844,80 @@
     loadGallery();
   }
 
+  /* ---------- 강화리스트 설명 ---------- */
+  // 확장 스킬 설명과 같은 방식 — 표를 손으로 적지 않고 데이터에서 만든다.
+  // 요구치(points)·항목·레벨은 기체마다 다르므로 ms.fullst 에서, 효과는 fullst 정의에서 온다.
+
+  /** 강화 효과 한 줄. 값이 숫자면 계산에 들어가고, "3%"·"1초" 같은 문자열은 안 들어간다. */
+  function fullstEffText(effects) {
+    const parts = [];
+    for (const [k, raw] of Object.entries(effects || {})) {
+      if (k === 'limitIncreases') continue;
+      const label = T.fullstEffect(k);
+      // 값의 모양이 셋이다: 숫자(계산에 들어감) · "3%"·"1초"(안 들어감) · true(있고 없고만 있는 것)
+      const num = typeof raw === 'number';
+      const txt = raw === true ? label
+        : num ? label + ' +' + raw.toLocaleString()
+        : label + ' ' + String(raw);
+      parts.push({ txt, applied: num });
+    }
+    return parts;
+  }
+
+  function openStageHelp(open) {
+    const m = $('#stageHelpModal'), b = $('#stageHelpBack');
+    if (m) m.hidden = !open;
+    if (b) b.hidden = !open;
+    if (!open) return;
+
+    const body = $('#stageHelpBody');
+    body.innerHTML = '';
+    const ms = state.ms;
+    $('#stageHelpTitle').textContent = ms ? T.msName(ms.MS名) + ' — 강화리스트' : '강화리스트';
+    if (!ms) { body.append(el('div', 'ac-warn', '먼저 기체를 고르세요.')); return; }
+    const list = Array.isArray(ms.fullst) ? ms.fullst : [];
+    if (!list.length) { body.append(el('div', 'ac-warn', '이 기체는 강화리스트 자료가 없습니다.')); return; }
+
+    // 4단계는 앞 4개까지만 스탯에 반영된다. 파츠칸만은 단계와 무관하게 전부 더해진다
+    // (원본이 그렇게 계산한다 — 5·6번째에 슬롯 강화가 든 기체가 실제로 있다).
+    const tbl = el('div', 'exp-help-tbl');
+    list.forEach((entry, i) => {
+      const n = i + 1;
+      const on = state.stage === 6 ? true : state.stage === 4 ? n <= 4 : false;
+      const row = el('div', 'stage-help-row' + (on ? ' on' : ''));
+      row.append(el('span', 'stage-help-no', String(n)));
+      row.append(el('span', 'stage-help-pt', (entry.points || 0).toLocaleString() + ' pt'));
+
+      const mid = el('span', 'stage-help-mid');
+      mid.append(el('span', 'stage-help-nm', T.fullstName(entry.name) + ' LV' + entry.level));
+      const def = fullst.find(d => d.name === entry.name);
+      const lv = def && (def.levels || []).find(l => Number(l.level) === Number(entry.level));
+      const effs = lv ? fullstEffText(lv.effects) : [];
+      // 기체는 이 레벨을 쓰는데 강화 정의에 그 레벨이 없는 경우가 있다(4종·17기).
+      // 넷 다 계산에 안 들어가는 효과라 수치는 어긋나지 않지만, 없는 건 없다고 말한다.
+      if (!lv) mid.append(el('span', 'stage-help-eff dim', '(이 레벨의 효과 자료가 없습니다)'));
+      else if (!effs.length) mid.append(el('span', 'stage-help-eff dim', '(효과 없음)'));
+      for (const e of effs) {
+        const tag = el('span', 'stage-help-eff' + (e.applied ? '' : ' dim'), e.txt);
+        if (!e.applied) tag.title = '이 효과는 계산에 반영되지 않습니다';
+        mid.append(tag);
+      }
+      row.append(mid);
+      tbl.append(row);
+    });
+    body.append(tbl);
+
+    const lb = { 0: '미강화', 4: '4단계', 6: '풀강' }[state.stage] || '';
+    const note = el('div', 'exp-help-note');
+    note.append(document.createTextNode(
+      '지금은 ' + lb + ' 입니다. 4단계는 앞 4개까지 스탯에 반영되고, 풀강은 전부 반영됩니다. '));
+    note.append(el('b', '', '파츠칸만은 단계와 무관하게 전부 더해집니다'));
+    note.append(document.createTextNode(
+      ' — 원본이 그렇게 계산하며, 5·6번째에 파츠칸 강화가 든 기체가 실제로 있습니다. '
+      + '흐린 글씨는 자료는 있으나 계산에 넣지 않는 효과입니다(초 단위 단축 등).'));
+    body.append(note);
+  }
+
   /* ---------- 확장 스킬 효과 설명 ---------- */
   // 표를 손으로 적지 않고 core.js 의 EXPANSION_LEVELS 에서 만든다.
   // 같은 값을 두 곳에 적어 두면 상수가 바뀔 때 화면만 옛 숫자를 말하게 된다.
@@ -5774,6 +5848,9 @@
     $('#galleryBtn').onclick = () => openGallery(true);
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
+    $('#stageHelp').onclick = () => openStageHelp(true);
+    $('#stageHelpClose').onclick = () => openStageHelp(false);
+    $('#stageHelpBack').onclick = () => openStageHelp(false);
     $('#expHelp').onclick = () => openExpHelp(true);
     $('#expHelpClose').onclick = () => openExpHelp(false);
     $('#expHelpBack').onclick = () => openExpHelp(false);
@@ -5946,6 +6023,7 @@
       if (ev.key !== 'Escape') return;
       if (mobileSheetOpen()) { closeMobileSheets(); return; }   // 모바일 슬라이드 시트 먼저 닫기
       if (!$('#mskillInline').hidden) { openMskill(false); return; }
+      if (!$('#stageHelpModal').hidden) { openStageHelp(false); return; }
       if (!$('#expHelpModal').hidden) { openExpHelp(false); return; }
       if (!$('#uploadModal').hidden) { openUpload(false); return; }
       if (!$('#adminModal').hidden) { openAdmin(false); return; }
