@@ -3784,9 +3784,18 @@
     }
   }
 
-  function openGallery(open) {
+  /**
+   * @param {boolean} open
+   * @param {boolean} [back] 「‹ 갤러리로」처럼 **되돌아오는** 경우.
+   *   갤러리에서 구성을 열고 다시 갤러리로 돌아온 것이므로 '들어오기 전 화면' 은
+   *   그대로 둬야 한다. 안 그러면 그 구성이 '들어오기 전' 이 돼, 「돌아가기」가
+   *   기체 선택이 아니라 방금 보던 구성으로 되돌아가는 고리가 생긴다.
+   */
+  function openGallery(open, back) {
     if (!open) { setView(viewBefore === 'gallery' ? 'select' : viewBefore); return; }
+    const before = viewBefore;
     setView('gallery');
+    if (back) viewBefore = before;
     // 캐시가 있으면 먼저 보여 주고(오프라인에서도 열린다) 새로 받아 온다
     if (!galleryList.length && S) galleryList = S.readCache();
     updateAdminBtn();
@@ -5623,7 +5632,7 @@
 
     // 갤러리에서 들어왔으면 갤러리로 돌려보낸다. 검색어·필터는 그대로 남아 있다
     // (모두 화면 상태로 들고 있어 다시 그리기만 하면 된다).
-    $('#backToSelect').onclick = () => { if (fromGallery) openGallery(true); else setView('select'); };
+    $('#backToSelect').onclick = () => { if (fromGallery) openGallery(true, true); else setView('select'); };
 
     // 스텝퍼: 1단계는 언제든 클릭해 기체 목록으로, 2단계는 기체가 있을 때만
     $('#stepper').querySelectorAll('li[data-step]').forEach(li => {
