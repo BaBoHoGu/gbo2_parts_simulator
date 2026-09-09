@@ -13,7 +13,8 @@ tools/_original_calc.js   # extract_original_calc.js 가 raw/app.js 에서 생�
 # 위키 원본 캐시 (~170MB) — `node tools/fetch_wiki.js` 로 다시 받는다.
 # 추출 결과인 data/weapons.json 만 버전 관리한다.
 raw/wiki/
-raw/wiki_*.html   # 위키에서 받아 둔 사본 — 파생 자료라 저장소에 두지 않는다
+# 위키에서 받아 둔 사본 — 파생 자료라 저장소에 두지 않는다
+raw/wiki_*.html
 
 # 업데이트 감지용 임시 다운로드 (tools/update.js) — 언제든 다시 받는다.
 raw/remote/
