@@ -160,6 +160,9 @@ const NOINDEX = '<meta name="robots" content="noindex, nofollow">\n';
 
 const html = read('src', 'index.html')
   .replace('<title>', () => (WEB ? NOINDEX : '') + '<title>')
+  // 탭 아이콘은 파일로 두면 사이트에서 404 가 나고 오프라인판에는 실을 곳이 없다 — data URI 로 심는다
+  .replace('/*__FAVICON__*/', () => 'data:image/png;base64,'
+    + fs.readFileSync(path.join(ROOT, 'assets', 'favicon.png')).toString('base64'))
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
   .replace('/*__BUILD__*/', () => inline('GBO2_BUILD', buildMeta))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills }))
