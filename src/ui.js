@@ -2962,9 +2962,11 @@
     thumb.append(hint);
     tile.append(thumb);
     tile.append(el('div', 'pt-nm', v.shortNm));
-    // 칸 소모 — 폰 세로의 가로줄 타일에서만 보인다(그 밖에서는 CSS 로 숨김).
+    // 칸 소모 — 폰 세로의 가로줄 타일, 태블릿의 큰 카드에서만 보인다(그 밖에서는 CSS 로 숨김).
     // 목록에서 '원거리 3칸 남았는데 뭘 넣지'를 파츠마다 눌러 보지 않고 훑을 수 있게.
     tile.append(el('div', 'pt-slot', v.slotTxt));
+    // 분류(방어·공격…) — 태블릿 큰 카드의 왼쪽 위. 그 밖에서는 CSS 로 숨긴다.
+    tile.append(el('div', 'pt-cat', v.cat));
     const why = el('div', 'pt-why');
     tile.append(why);
 
@@ -3107,7 +3109,7 @@
      기체 헤더는 기체 이름 줄바꿈·확장 스킬 유무로 높이가 달라져 CSS 만으로는
      남은 높이를 못 적는다. 헤더 아래부터 화면 끝까지를 재어 CSS 변수로 넘긴다.
      (무장은 이 띠 아래에 그대로 흘러 스크롤 한 번이면 닿는다) */
-  const TABLET_2COL = '(min-width: 720px) and (max-width: 1080px) and (min-height: 960px)';
+  const TABLET_2COL = '(min-width: 720px) and (max-width: 1080px) and (min-height: 1000px)';
   const DETAIL_H = 244 + 8;      // 파츠 상세 고정 높이 + 칸 간격 (CSS 와 짝)
   function fitBuildBand() {
     const sb = $('#screenBuild');
