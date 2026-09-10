@@ -228,6 +228,9 @@ public class MainActivity extends Activity {
         splashRoot.addView(buildSplash());
         setContentView(splashRoot);
 
+        // 번들이 저장된 OTA 보다 새로우면 OTA 를 버린다 — 반드시 loadUrl 전에.
+        dropStaleOta();
+
         // 시작할 때 갱신을 확인하고, 있으면 받아서 **적용한 뒤** 앱을 연다.
         // 오프라인이거나 오래 걸리면 기다리지 않고 기존 버전으로 연다(아래 감시 타이머).
         new Thread(this::startupUpdate).start();
@@ -247,6 +250,31 @@ public class MainActivity extends Activity {
 
     private File otaFile() {
         return new File(getFilesDir(), "ota_index.html");
+    }
+
+    /**
+     * 번들(APK) 이 저장된 OTA 보다 새로우면 그 OTA 를 버린다.
+     *
+     * serveApp() 은 OTA 파일이 있으면 무조건 그걸 먼저 서빙한다. 그래서 새로 빌드한
+     * APK 를 덮어 설치해도, 예전에 받아 둔 OTA 가 남아 있으면 계속 옛 화면이 나왔다.
+     * 서버에 더 새로운 것이 올라오기 전까지 스스로 회복되지 않는다.
+     * 날짜 문자열은 yyyy-MM-dd-HHmm 이라 사전순 비교가 곧 시간순이다.
+     *
+     * 지우는 것은 내부 파일과 날짜 기록뿐이다 — 저장 구성·즐겨찾기는 WebView 의
+     * localStorage 에 있어 그대로 남는다.
+     */
+    private void dropStaleOta() {
+        SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
+        String stored = p.getString(KEY_DATE, null);
+        if (stored == null) return;
+        String bundled;
+        try { bundled = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+        catch (Exception e) { return; }
+        if (bundled == null || bundled.isEmpty()) return;
+        if (stored.compareTo(bundled) >= 0) return;      // OTA 가 같거나 더 새롭다 — 그대로 둔다
+        File f = otaFile();
+        if (f.exists()) f.delete();
+        p.edit().remove(KEY_DATE).apply();
     }
 
     /** 현재 서빙 데이터 날짜 — 저장된 OTA 날짜, 없으면 번들(=APK versionName=빌드날짜). */
