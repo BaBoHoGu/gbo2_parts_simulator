@@ -2390,3 +2390,109 @@ body.drawer-open .m-actionbar { display: none !important; }
   /* 장착 불가 사유는 다섯째 줄로 흘린다 — 그 카드만 높아진다 */
   .part-list .pt-why { grid-row: 5; font-size: 9.5px; line-height: 12px; }
 }
+
+
+/* ═══ [폰 한 화면 시험판 2026-09-10] 폰 세로도 스크롤 없이 한 화면에 ═══
+   태블릿과 같은 모양(2열 큰 카드)을 폰에도 넣어 본다.
+   자리를 만들려고 조인 것: 파츠칸 2열x4줄(219px) → 8열x1줄(54px),
+   기체 카드 그림 56 → 46px, 세그먼트·셀렉트·검색칸 높이, 출처 푸터 두 줄 → 한 줄.
+
+   값: 390x844 에서 스크롤은 사라지지만 한 화면에 보이는 파츠가 10 → 2장이 된다.
+       (360x800 은 0장, 430x932 는 6장)
+   폰 세로는 844px 중 상단바 57 + 기체 헤더 281(최대로 조인 값) + 상세 168 +
+   푸터 30 을 빼면 목록에 161px 밖에 안 남는데, 카드 한 장이 85px 이다.
+   태블릿(1024~1440px)과 달리 남는 자리 자체가 없다.
+
+   실기에서 보고 판단하기 위한 시험판이다. 되돌리기: 이 블록만 지운다
+   (앞의 [모바일 목록 개편] 블록이 되살아나 2열 가로줄 10장으로 돌아간다). */
+@media (max-width: 700px) and (min-height: 561px) {
+  /* 한 화면에 가두고, 넘치는 것은 목록이 자체 스크롤한다 */
+  .screen-build {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    /* 아래 여백 = 액션바(65px) − 한 줄로 접은 푸터(≈20px). 78px 은 낭비였다 */
+    padding: 8px 8px 48px;
+    overflow: hidden;
+  }
+  .build-col, .build-parts { margin-bottom: 0; }
+  .build-parts {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+  .build-parts > .panel { min-height: 0; display: flex; flex-direction: column; }
+  /* 위쪽 블록의 `.build-parts > .panel.fill { min-height: 340px }` 가 더 구체적이라
+     이겼다 — 목록이 안 줄어들어 액션바 아래로 90px 흘러넘쳤다 */
+  .build-parts > .panel.fill { min-height: 0; }
+
+  /* 파츠칸 8개를 한 줄로 — 이름은 폭 43px 에 못 들어가 그림과 LV 만 남긴다 */
+  .equip-grid { grid-template-columns: repeat(8, 1fr); gap: 3px; padding: 5px 8px; }
+  .equip-grid .eq { min-height: 44px; }
+  .eq .nm { font-size: 0; }
+  .eq .cost { display: none; }
+
+  /* 기체 카드·조작부 조이기 */
+  .hero-body img, .heroImg, #heroImg { width: 46px; height: 46px; }
+  .hero { padding: 8px 10px; }
+  .seg-btn { min-height: 30px; padding: 5px 10px; font-size: 11.5px; }
+  select { min-height: 32px; font-size: 12.5px; }
+  .build-parts input[type="search"] { min-height: 32px; padding: 5px 10px; font-size: 12.5px; }
+  .build-parts .chip { min-height: 28px; padding: 4px 10px; font-size: 11.5px; }
+
+  /* 출처 표기는 지울 수 없다 — 한 줄로 접는다 */
+  /* 출처 표기는 지울 수 없다 — 첫 문장만 접고 글자를 줄인다.
+     한 줄로 눕혀(nowrap) 보았더니 링크가 x=438 까지 화면 밖으로 나가
+     ui_check 가 10건을 잡았다. 줄바꿈은 그대로 두는 것이 맞다. */
+  .app-foot { padding: 2px 8px; font-size: 9px; line-height: 1.25; }
+  .app-foot p:first-child { display: none; }
+  .app-foot .foot-links { gap: 0 8px; margin-top: 0; }
+
+  /* 파츠 상세는 높이를 못박는다 — 파츠를 훑을 때 아래가 밀리지 않게 */
+  .build-detail > .panel { height: 168px; overflow-y: auto; }
+
+  /* ── 파츠 목록: 태블릿과 같은 2열 큰 카드 ──
+     앞 블록의 가로줄 타일을 덮어쓴다. */
+  .part-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    max-height: none;            /* fitWholeRows 는 예산이 없으면 물러난다 */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .part-list .part-tile {
+    grid-template-columns: 1fr;
+    grid-template-rows: 11px 38px 13px 11px;
+    justify-items: center;
+    align-items: center;
+    gap: 1px;
+    padding: 3px 6px 4px;
+    text-align: center;
+  }
+  .part-list .pt-cat {
+    display: block;
+    grid-row: 1; grid-column: 1;
+    justify-self: start;
+    font-size: 9px; line-height: 11px;
+    color: var(--muted);
+  }
+  .part-list .pt-thumb { grid-row: 2; grid-column: 1; width: 38px; height: 38px; }
+  .part-list .part-tile img { width: 38px; height: 38px; }
+  .part-list .pt-nm {
+    grid-row: 3; grid-column: 1;
+    font-size: 10.5px; line-height: 13px;
+    text-align: center;
+  }
+  .part-list .pt-slot {
+    grid-row: 4; grid-column: 1;
+    font-size: 9px; line-height: 11px;
+  }
+  .part-list .pt-why { grid-row: 5; grid-column: 1; font-size: 9px; line-height: 11px; text-align: center; }
+  /* 가로줄에서는 칸 소모 앞에 세웠던 ✓ 를 이름 뒤로 돌려놓는다 */
+  .part-list .part-tile.on .pt-nm::after { content: " ✓"; color: var(--ok); }
+  .part-list .part-tile.on .pt-slot::before { content: none; }
+}
