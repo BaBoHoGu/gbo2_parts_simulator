@@ -1910,7 +1910,7 @@
       if (shieldHp || shieldSize) {                       // 실드는 HP·크기가 핵심이다
         // 실드 보강재·커넥팅[범용Ⅱ형]은 실드 HP 를 올려 준다
         const base = Number(shieldHp) || 0;
-        const bonus = shieldHp ? (wm.shieldHp || 0) : 0;
+        const bonus = shieldHp ? shieldHpBonus(wm, state.equipped, state.expansion, state.expLevel) : 0;
         ammoCell.append(document.createTextNode(shieldHp ? 'HP ' + (base + bonus).toLocaleString() : '—'));
         if (bonus) ammoCell.append(el('span', 'w-gain', ' (+' + bonus.toLocaleString() + ')'));
         if (shieldSize) ammoCell.append(el('span', 'w-sub', '크기 ' + shieldSize));
@@ -2491,7 +2491,8 @@
       const isEpack = D.isEpackMag(w), shieldHp = f('シールドHP', 'HP'), shieldSize = f('サイズ');
       let ammoStr;
       if (shieldHp || shieldSize) {
-        const base = Number(shieldHp) || 0, bonus = shieldHp ? (wm.shieldHp || 0) : 0;
+        const base = Number(shieldHp) || 0,
+          bonus = shieldHp ? shieldHpBonus(wm, state.equipped, state.expansion, state.expLevel) : 0;
         ammoStr = shieldHp ? 'HP ' + (base + bonus).toLocaleString() : (shieldSize ? '크기 ' + shieldSize : '—');
       } else if (ammo) ammoStr = jaUnits(ammo);
       else if (isEpack && ohShots) { const mag = String(ohShots).match(/(\d+)\s*発/); ammoStr = mag ? mag[1] + '발' : jaUnits(ohShots); }
@@ -4067,16 +4068,33 @@
   // 같은 값을 두 곳에 적어 두면 상수가 바뀔 때 화면만 옛 숫자를 말하게 된다.
 
   const EXP_CAT_KO = { '防御': '방어', '攻撃': '공격', '移動': '이동', '補助': '보조', '特殊': '특수' };
+  /** 실드 HP 보너스 — 파츠(무장 규칙) + 확장 스킬(파츠확장[HP]).
+   *  세 화면(무장 표·PNG·피탄)이 같은 값을 쓰도록 한 곳에 둔다. */
+  const shieldHpBonus = (wm, equipped, expansion, expLevel) =>
+    ((wm && wm.shieldHp) || 0) + C.expansionShieldHp(expansion, expLevel, equipped || []);
+
   /** {shoot: 4, ...} → '사격 +4' 목록 */
   const expStatText = obj => Object.entries(obj || {})
     .map(([k, v]) => (C.STAT_LABEL[k] || k) + ' +' + v.toLocaleString()).join(' · ');
+
+  /** 스탯이 아닌 효과(실드 HP·리로드 단축·리페어 회복량)를 사람 말로.
+   *  스탯 표(STAT_LABEL)에 없는 값이라 여기서 이름을 붙인다 —
+   *  이게 없어서 위키에 적힌 「シールドHPが300増加」「リロード…1%短縮」 이 설명에서 통째로 빠졌다. */
+  const EXP_EXTRA_TEXT = {
+    shieldHp: v => '실드 HP +' + v.toLocaleString(),
+    reloadOhPct: v => '무장 리로드·오버히트 −' + v + '%',
+    repairPct: v => '리페어 회복량 +' + v + '%'
+  };
+  const expExtraText = obj => Object.entries(obj || {})
+    .map(([k, v]) => (EXP_EXTRA_TEXT[k] ? EXP_EXTRA_TEXT[k](v) : k + ' +' + v)).join(' · ');
 
   /** 한 레벨의 효과를 사람이 읽는 문장으로. 모양이 셋뿐이라 그대로 나눈다. */
   function expEffectText(e) {
     if (!e) return '';
     if (e.per) {
       const cats = (e.per.cats || []).map(c => EXP_CAT_KO[c] || c).join('·');
-      return cats + ' 파츠 1개당  ' + expStatText(e.per.add);
+      const per = [expStatText(e.per.add), expExtraText(e.perExtra)].filter(Boolean).join(' · ');
+      return cats + ' 파츠 1개당  ' + per;
     }
     const parts = [];
     if (e.add) parts.push(expStatText(e.add));
@@ -4084,6 +4102,7 @@
     const same = e.limit && e.add && JSON.stringify(e.limit) === JSON.stringify(e.add);
     if (e.limit && !same) parts.push('상한 ' + expStatText(e.limit));
     else if (same) parts[0] += '  (상한도 같이 오름)';
+    if (e.extra) parts.push(expExtraText(e.extra));
     return parts.join('  /  ');
   }
 
@@ -4720,7 +4739,7 @@
   /** 적 기체가 그 LV 에서 실제로 쓰는 무장 목록 (위력·누적치를 그 레벨로). */
   /** 이 기체가 든 실드 — 그 LV 의 シールドHP + 실드 보강재·커넥팅 파츠. 실드가 없으면 null.
    *  실드 HP 자체는 무장 표에서 이미 쓰던 계산(D.weaponModsOf().shieldHp)을 그대로 쓴다. */
-  function shieldOf(ms, msLv, equipped) {
+  function shieldOf(ms, msLv, equipped, expansion, expLevel) {
     const id = pietanPageId(ms), page = id && weaponData[id];
     if (!page) return null;
     const sh = (page.weapons || []).find(w => w.type === 'shield'
@@ -4730,7 +4749,7 @@
     const d = lvk && sh.levels[lvk];
     const base = Number(d && d.raw && d.raw['シールドHP']) || 0;
     if (!base) return null;
-    const bonus = D.weaponModsOf(equipped || [], msLv, ms['属性']).shieldHp || 0;
+    const bonus = shieldHpBonus(D.weaponModsOf(equipped || [], msLv, ms['属性']), equipped, expansion, expLevel);
     return { hp: base + bonus, base, bonus, name: T.weaponName(sh.name) };
   }
 
@@ -5132,7 +5151,7 @@
     box.append(metric('경직까지', stagVal, stagNote));
     // 실드로 받으면 기체 HP 피해를 막고 실드 HP 가 대신 깎인다(위키 83).
     if (pietanShield) {
-      const mine = shieldOf(state.ms, msLevel(state.ms), state.equipped);
+      const mine = shieldOf(state.ms, msLevel(state.ms), state.equipped, state.expansion, state.expLevel);
       const sm = D.shieldMultOf({ info: { '備考': w.note || '' } });
       const eShPct = D.shieldDmgPctOf(eEq, w.attr);  // 실드 피해 증가는 때리는 쪽(적) 파츠 몫
       const sHit = mine && shieldHit(dmg, sm, false, eShPct);
