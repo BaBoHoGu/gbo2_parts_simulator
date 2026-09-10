@@ -1,0 +1,16 @@
+# Cloudflare Pages 배포 설정 — 사이트(dist/web)와 갤러리 API(functions/)를 함께 올린다.
+#
+# 바인딩을 여기 적어 두는 이유: Direct Upload 방식이라 대시보드에서 손으로 걸어 둘 수도
+# 있지만, 그러면 「누가 언제 왜 걸었는지」가 저장소에 안 남는다. 코드와 같이 두면
+# 다른 PC 에서 배포해도 같은 구성이 나온다.
+#
+# 시크릿(WHO_SALT · SIGN_KEY · ADMIN_PW_SHA256)은 여기 두지 않는다 —
+# 이 저장소는 공개다. `wrangler pages secret put` 으로 Cloudflare 에만 넣는다.
+name = "gbo2-parts"
+pages_build_output_dir = "dist/web"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gbo2-gallery"
+database_id = "f120f804-513b-4456-b8c3-9ad825071f27"
