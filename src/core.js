@@ -106,21 +106,47 @@ const EXPANSION_LEVELS = {
     .map(([a, l]) => ({ add: { armorMelee: a }, limit: { armorMelee: l } })),
   'スラスター拡張': [[4, 1], [6, 2], [8, 3], [12, 4], [20, 5]]
     .map(([t, h]) => ({ add: { thruster: t, highSpeedMovement: h }, limit: { thruster: t, highSpeedMovement: h } })),
-  'MS戦複合拡張': [1, 2, 3, 4, 5].map(v => ({
+  // 리페어툴 회복량은 앱이 다루지 않는 값이라 계산에는 안 들어가지만, 설명에서 빠뜨리면
+  // 「이게 다인가」 하고 오해한다. 적어만 둔다(위키 6432).
+  'MS戦複合拡張': [[1, 10], [2, 12], [3, 15], [4, 19], [5, 25]].map(([v, rp]) => ({
     add: { armorRange: v, armorBeam: v, armorMelee: v, shoot: v, meleeCorrection: v },
-    limit: { armorRange: v, armorBeam: v, armorMelee: v, shoot: v, meleeCorrection: v }
+    limit: { armorRange: v, armorBeam: v, armorMelee: v, shoot: v, meleeCorrection: v },
+    extra: { repairPct: rp }
   })),
-  'パーツ拡張[HP]': [50, 100, 200, 300, 400]
-    .map(v => ({ per: { cats: ['攻撃', '防御', '特殊'], add: { hp: v } } })),
+  // 실드 HP 는 스탯(STAT_KEYS)이 아니라 무장 표의 값이라 per.add 에 못 넣는다
+  // (zeroStats 에 칸이 없어 NaN 이 된다). perExtra 로 따로 실어 설명·계산이 같은 값을 본다.
+  'パーツ拡張[HP]': [[50, 50], [100, 100], [200, 150], [300, 200], [400, 300]]
+    .map(([hp, sh]) => ({ per: { cats: ['攻撃', '防御', '特殊'], add: { hp } }, perExtra: { shieldHp: sh } })),
   'パーツ拡張[攻撃]': [[1, 1], [2, 1], [2, 2], [3, 3], [4, 4]]
     .map(([m, s]) => ({ per: { cats: ['移動'], add: { meleeCorrection: m, shoot: s } } })),
   'パーツ拡張[装甲]': [[1, 1, 1], [2, 1, 1], [2, 1, 2], [2, 2, 2], [3, 3, 3]]
     .map(([r, b, m]) => ({ per: { cats: ['補助'], add: { armorRange: r, armorBeam: b, armorMelee: m } } })),
   'パーツ拡張[スラスター]': [[1, 1], [2, 1], [3, 1], [4, 1], [5, 2]]
     .map(([t, h]) => ({ per: { cats: ['防御', '補助', '特殊'], add: { thruster: t, highSpeedMovement: h } } })),
+  // 리로드·OH 1% 단축은 레벨과 무관하게 같다(위키 6432). 계산은 damage.js 가 이미 하고
+  // 있었는데 설명에만 빠져 있었다 — 같은 데이터에서 둘 다 나오게 여기 적는다.
   'カスタムパーツ複合拡張α': [[50, 1, 1], [100, 1, 1], [150, 1, 1], [200, 2, 1], [250, 2, 2]]
-    .map(([hp, t, h]) => ({ per: { cats: ['攻撃'], add: { hp, thruster: t, highSpeedMovement: h } } }))
+    .map(([hp, t, h]) => ({ per: { cats: ['攻撃'], add: { hp, thruster: t, highSpeedMovement: h } },
+      perExtra: { reloadOhPct: 1 } }))
 };
+
+/**
+ * 확장 스킬이 주는 **실드 HP** 보너스. 파츠확장[HP] 만 해당한다.
+ *
+ * 실드 HP 는 기체 스탯이 아니라 무장(실드) 쪽 값이라 calcStats 의 합산에 섞을 수 없다.
+ * 그런데 무장 표·피탄 시뮬은 이 값을 써야 한다 — 그래서 여기 하나만 두고 화면들이 불러 쓴다.
+ * (예전에는 아예 빠져 있어, 위키에 적힌 「シールドHPが300増加」 가 어디에도 반영되지 않았다)
+ */
+function expansionShieldHp(expansion, expLevel, equipped) {
+  const def = EXPANSION_LEVELS[expansion];
+  if (!def) return 0;
+  const n = Number(expLevel);
+  const lv = Math.min(Math.max(isFinite(n) && n >= 1 ? n : MAX_EXPANSION_LEVEL, 1), def.length);
+  const e = def[lv - 1];
+  if (!e || !e.perExtra || !e.perExtra.shieldHp || !e.per) return 0;
+  const cnt = (equipped || []).filter(p => p && e.per.cats.includes(p.category)).length;
+  return cnt * e.perExtra.shieldHp;
+}
 
 const MAX_PARTS = 8;
 
@@ -645,6 +671,7 @@ const GBO2Core = {
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
+  expansionShieldHp,
   effectConflict, partBase
 };
 
