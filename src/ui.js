@@ -3094,7 +3094,9 @@
     let fit = 0, nextTop = null;
     // 본뜻은 「최대 3행」이 아니라 「정사각 타일 3행만큼의 높이까지」다.
     // 행 수로 끊으면 폰 세로의 가로줄 타일(행 높이 절반)이 6개밖에 안 보인다.
-    const ROW_BUDGET = 264;   // 정사각 타일(82px) 3행 + 줄 간격
+    // 기본 264px = 정사각 타일(82px) 3행 + 줄 간격.
+    // 타일 모양이 다르면 CSS 에서 --row-budget 로 바꾼다(큰 카드는 더 준다).
+    const ROW_BUDGET = parseFloat(cs.getPropertyValue('--row-budget')) || 264;
     for (const [top, bottom] of [...rowBottom].sort((a, b) => a[0] - b[0])) {
       if (bottom > ROW_BUDGET || bottom + padBottom > budget) { nextTop = top; break; }
       fit = bottom;

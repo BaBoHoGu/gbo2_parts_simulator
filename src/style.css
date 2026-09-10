@@ -2390,3 +2390,62 @@ body.drawer-open .m-actionbar { display: none !important; }
   /* 장착 불가 사유는 다섯째 줄로 흘린다 — 그 카드만 높아진다 */
   .part-list .pt-why { grid-row: 5; font-size: 9.5px; line-height: 12px; }
 }
+
+
+/* ═══ [폰 큰 카드 2026-09-10] 폰 세로 목록을 태블릿과 같은 2열 큰 카드로 ═══
+   앞서 한 번은 "스크롤 없이 한 화면"까지 밀어붙였다가 목록이 반 줄만 남아
+   되돌렸다. 문제는 카드가 아니라 한 화면에 가둔 것이었다 —
+   스크롤은 지금처럼 두고 모양만 태블릿과 맞춘다.
+
+   자리는 파츠칸에서 낸다: 2열x4줄 219px → 4열x2줄 128px (이름·칸 소모는 남는다).
+   목록 예산은 264 → 400px 로 키워 큰 카드도 네 줄이 보이게 한다.
+
+   되돌리기: 이 블록만 지운다 (앞 블록의 2열 가로줄로 돌아간다). */
+@media (max-width: 700px) and (min-height: 561px) {
+  /* 파츠칸 2열x4줄 → 4열x2줄 */
+  .equip-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .equip-grid .eq { min-height: 56px; }
+  .eq .nm { font-size: 9.5px; line-height: 12px; }
+  .eq img { width: 30px; height: 30px; }
+
+  /* 목록: 2열 큰 카드 — 앞 블록의 가로줄 타일을 덮어쓴다 */
+  .part-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    max-height: 46vh;
+    --row-budget: 400px;         /* fitWholeRows 가 읽는다 */
+  }
+  .part-list .part-tile {
+    grid-template-columns: 1fr;
+    grid-template-rows: 12px 44px 15px 12px;
+    justify-items: center;
+    align-items: center;
+    gap: 1px;
+    padding: 4px 7px 5px;
+    text-align: center;
+  }
+  .part-list .pt-cat {
+    display: block;
+    grid-row: 1; grid-column: 1;
+    justify-self: start;
+    font-size: 9.5px; line-height: 12px;
+    color: var(--muted);
+  }
+  .part-list .pt-thumb { grid-row: 2; grid-column: 1; width: 44px; height: 44px; }
+  .part-list .part-tile img { width: 44px; height: 44px; }
+  .part-list .pt-lv { font-size: 9px; padding: 1px 4px; }
+  .part-list .pt-nm {
+    grid-row: 3; grid-column: 1;
+    font-size: 11px; line-height: 15px;
+    text-align: center;
+  }
+  .part-list .pt-slot {
+    grid-row: 4; grid-column: 1;
+    font-size: 9.5px; line-height: 12px;
+    text-align: center;
+  }
+  .part-list .pt-why { grid-row: 5; grid-column: 1; font-size: 9.5px; line-height: 12px; text-align: center; }
+  /* 가로줄에서 칸 소모 앞에 세웠던 ✓ 를 이름 뒤로 돌려놓는다 */
+  .part-list .part-tile.on .pt-nm::after { content: " ✓"; color: var(--ok); }
+  .part-list .part-tile.on .pt-slot::before { content: none; }
+}
