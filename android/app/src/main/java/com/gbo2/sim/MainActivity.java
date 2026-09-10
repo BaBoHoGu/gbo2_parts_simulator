@@ -264,16 +264,18 @@ public class MainActivity extends Activity {
      * localStorage 에 있어 그대로 남는다.
      */
     private void dropStaleOta() {
+        File f = otaFile();
+        if (!f.exists()) return;                          // 버릴 것이 없다
         SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
         String stored = p.getString(KEY_DATE, null);
-        if (stored == null) return;
         String bundled;
         try { bundled = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
         catch (Exception e) { return; }
         if (bundled == null || bundled.isEmpty()) return;
-        if (stored.compareTo(bundled) >= 0) return;      // OTA 가 같거나 더 새롭다 — 그대로 둔다
-        File f = otaFile();
-        if (f.exists()) f.delete();
+        // 날짜 기록 없이 파일만 남은 경우도 버린다 — 언제 것인지 알 수 없는 파일을
+        // 번들보다 우선해서 서빙할 이유가 없다(serveApp 은 파일이 있으면 무조건 그걸 쓴다).
+        if (stored != null && stored.compareTo(bundled) >= 0) return;   // OTA 가 같거나 더 새롭다
+        f.delete();
         p.edit().remove(KEY_DATE).apply();
     }
 

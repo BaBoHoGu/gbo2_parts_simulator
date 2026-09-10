@@ -863,7 +863,9 @@
     const box = document.getElementById('dataFresh');
     const b = (typeof window !== 'undefined' && window.GBO2_BUILD) || null;
     if (!box || !b) return;
-    box.textContent = `데이터 ${b.date} · 기체 ${b.ms.toLocaleString()} · 파츠 ${b.parts} · 무장 ${b.weapons.toLocaleString()}`;
+    // 날짜만 적으면 같은 날 두 번 빌드했을 때 어느 것이 도는지 구분이 안 된다.
+    // 실기에서 "새 APK 를 깔았는데 옛 화면" 을 가릴 방법이 없어 분까지 적는다.
+    box.textContent = `데이터 ${b.stamp || b.date} · 기체 ${b.ms.toLocaleString()} · 파츠 ${b.parts} · 무장 ${b.weapons.toLocaleString()}`;
   }
 
   function renderMsList() {
