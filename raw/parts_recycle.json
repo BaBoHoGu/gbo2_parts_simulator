@@ -1,0 +1,817 @@
+[
+ {
+  "name": "射撃強化プログラム",
+  "lv": "LV1",
+  "recycle": "10"
+ },
+ {
+  "name": "射撃強化プログラム",
+  "lv": "LV2",
+  "recycle": "20"
+ },
+ {
+  "name": "射撃強化プログラム",
+  "lv": "LV3",
+  "recycle": "75"
+ },
+ {
+  "name": "射撃強化プログラム",
+  "lv": "LV4",
+  "recycle": "75"
+ },
+ {
+  "name": "射撃強化プログラム",
+  "lv": "LV5",
+  "recycle": "120"
+ },
+ {
+  "name": "格闘強化プログラム",
+  "lv": "LV1",
+  "recycle": "10"
+ },
+ {
+  "name": "格闘強化プログラム",
+  "lv": "LV2",
+  "recycle": "20"
+ },
+ {
+  "name": "格闘強化プログラム",
+  "lv": "LV3",
+  "recycle": "75"
+ },
+ {
+  "name": "格闘強化プログラム",
+  "lv": "LV4",
+  "recycle": "75"
+ },
+ {
+  "name": "格闘強化プログラム",
+  "lv": "LV5",
+  "recycle": "120"
+ },
+ {
+  "name": "オーバーチューン［射撃］",
+  "lv": "LV1",
+  "recycle": "130"
+ },
+ {
+  "name": "オーバーチューン［射撃］",
+  "lv": "LV2",
+  "recycle": ""
+ },
+ {
+  "name": "オーバーチューン［射撃］",
+  "lv": "LV3",
+  "recycle": ""
+ },
+ {
+  "name": "オーバーチューン［格闘］",
+  "lv": "LV1",
+  "recycle": "130"
+ },
+ {
+  "name": "オーバーチューン［格闘］",
+  "lv": "LV2",
+  "recycle": ""
+ },
+ {
+  "name": "オーバーチューン［格闘］",
+  "lv": "LV3",
+  "recycle": ""
+ },
+ {
+  "name": "射撃特化プログラム",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "格闘特化プログラム",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "イレギュラーDBL",
+  "lv": "LV1",
+  "recycle": "10"
+ },
+ {
+  "name": "試験型イレギュラーDBL",
+  "lv": "LV1",
+  "recycle": "-"
+ },
+ {
+  "name": "特殊燃焼剤",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "火器管制最適化システム",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "レベルリンクシステム［格闘］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "レベルリンクシステム［射撃］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "カテゴリ特攻プログラム［強襲］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "コネクティングシステム［支援Ⅰ型］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "コネクティングシステム［支援Ⅱ型］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "CP内蔵特殊構造材",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "弾薬強化キット",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "強化フレーム",
+  "lv": "LV1",
+  "recycle": "-"
+ },
+ {
+  "name": "強化フレーム",
+  "lv": "LV2",
+  "recycle": "20"
+ },
+ {
+  "name": "強化フレーム",
+  "lv": "LV3",
+  "recycle": "20"
+ },
+ {
+  "name": "強化フレーム",
+  "lv": "LV4",
+  "recycle": "55"
+ },
+ {
+  "name": "強化フレーム",
+  "lv": "LV5",
+  "recycle": "75"
+ },
+ {
+  "name": "新型フレーム",
+  "lv": "LV1",
+  "recycle": "90"
+ },
+ {
+  "name": "新型フレーム",
+  "lv": "LV2",
+  "recycle": "120"
+ },
+ {
+  "name": "新型フレーム",
+  "lv": "LV3",
+  "recycle": "230"
+ },
+ {
+  "name": "新型フレーム",
+  "lv": "LV4",
+  "recycle": ""
+ },
+ {
+  "name": "シールド補強材",
+  "lv": "LV1",
+  "recycle": "15"
+ },
+ {
+  "name": "シールド補強材",
+  "lv": "LV2",
+  "recycle": "15"
+ },
+ {
+  "name": "シールド補強材",
+  "lv": "LV3",
+  "recycle": "20"
+ },
+ {
+  "name": "シールド補強材",
+  "lv": "LV4",
+  "recycle": "30"
+ },
+ {
+  "name": "シールド補強材",
+  "lv": "LV5",
+  "recycle": "80"
+ },
+ {
+  "name": "コネクティングシステム［汎用Ⅱ型］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "耐実弾装甲",
+  "lv": "LV1",
+  "recycle": "10"
+ },
+ {
+  "name": "耐実弾装甲",
+  "lv": "LV2",
+  "recycle": "25"
+ },
+ {
+  "name": "耐実弾装甲",
+  "lv": "LV3",
+  "recycle": "40"
+ },
+ {
+  "name": "耐実弾装甲",
+  "lv": "LV4",
+  "recycle": "70"
+ },
+ {
+  "name": "耐実弾装甲",
+  "lv": "LV5",
+  "recycle": "140"
+ },
+ {
+  "name": "耐ビーム装甲",
+  "lv": "LV1",
+  "recycle": "10"
+ },
+ {
+  "name": "耐ビーム装甲",
+  "lv": "LV2",
+  "recycle": "25"
+ },
+ {
+  "name": "耐ビーム装甲",
+  "lv": "LV3",
+  "recycle": "40"
+ },
+ {
+  "name": "耐ビーム装甲",
+  "lv": "LV4",
+  "recycle": "70"
+ },
+ {
+  "name": "耐ビーム装甲",
+  "lv": "LV5",
+  "recycle": "140"
+ },
+ {
+  "name": "耐格闘装甲",
+  "lv": "LV1",
+  "recycle": "10"
+ },
+ {
+  "name": "耐格闘装甲",
+  "lv": "LV2",
+  "recycle": "25"
+ },
+ {
+  "name": "耐格闘装甲",
+  "lv": "LV3",
+  "recycle": "40"
+ },
+ {
+  "name": "耐格闘装甲",
+  "lv": "LV4",
+  "recycle": "70"
+ },
+ {
+  "name": "耐格闘装甲",
+  "lv": "LV5",
+  "recycle": "140"
+ },
+ {
+  "name": "新型耐実弾装甲",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "新型耐ビーム装甲",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "新型耐格闘装甲",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "オーバーチューン［フレーム］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "オーバーチューン［実弾装甲］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "オーバーチューン［ビーム装甲］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "オーバーチューン［格闘装甲］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "ヘビーアーマー",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "複合装甲材［Type-A］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "複合装甲材［Type-B］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "複合装甲材［Type-C］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "サイコ・パッケージ",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "新型緩衝材",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "特殊強化フレーム［Type-A］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "特殊強化フレーム［Type-B］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "特殊強化フレーム［Type-C］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "特殊強化フレーム［Type-D］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "爆風軽減装甲",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "レベルリンクシステム［装甲］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "特殊強化装置［Type-γ］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "教育型コンピューター［特防］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "貫通軽減装甲",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "高性能走行制御機構",
+  "lv": "LV1",
+  "recycle": "25"
+ },
+ {
+  "name": "噴射制御装置",
+  "lv": "LV1",
+  "recycle": "20"
+ },
+ {
+  "name": "噴射制御装置",
+  "lv": "LV2",
+  "recycle": "35"
+ },
+ {
+  "name": "噴射制御装置",
+  "lv": "LV3",
+  "recycle": "85"
+ },
+ {
+  "name": "噴射制御装置",
+  "lv": "LV4",
+  "recycle": "85"
+ },
+ {
+  "name": "噴射制御装置",
+  "lv": "LV5",
+  "recycle": ""
+ },
+ {
+  "name": "大出力追加ブースター",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "オーバーチューン［機動］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "オーバーチューン［機動］",
+  "lv": "LV2",
+  "recycle": ""
+ },
+ {
+  "name": "オーバーチューン［スラスター］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "運動性能強化機構",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "燃焼効率補助装置",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "コンポジットモーター",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "高純度推進材",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "コネクティングシステム［汎用Ⅰ型］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "冷却システム",
+  "lv": "LV1",
+  "recycle": "15"
+ },
+ {
+  "name": "冷却システム",
+  "lv": "LV2",
+  "recycle": "15"
+ },
+ {
+  "name": "冷却システム",
+  "lv": "LV3",
+  "recycle": "55"
+ },
+ {
+  "name": "冷却システム",
+  "lv": "LV4",
+  "recycle": "60"
+ },
+ {
+  "name": "冷却システム",
+  "lv": "LV5",
+  "recycle": "80"
+ },
+ {
+  "name": "強制冷却システム",
+  "lv": "LV1",
+  "recycle": "20"
+ },
+ {
+  "name": "強制冷却システム",
+  "lv": "LV2",
+  "recycle": "25"
+ },
+ {
+  "name": "強制冷却システム",
+  "lv": "LV3",
+  "recycle": "70"
+ },
+ {
+  "name": "強制冷却システム",
+  "lv": "LV4",
+  "recycle": "75"
+ },
+ {
+  "name": "強制冷却システム",
+  "lv": "LV5",
+  "recycle": "100"
+ },
+ {
+  "name": "クイックローダー",
+  "lv": "LV1",
+  "recycle": "25"
+ },
+ {
+  "name": "クイックローダー",
+  "lv": "LV2",
+  "recycle": "45"
+ },
+ {
+  "name": "クイックローダー",
+  "lv": "LV3",
+  "recycle": "75"
+ },
+ {
+  "name": "クイックローダー",
+  "lv": "LV4",
+  "recycle": "80"
+ },
+ {
+  "name": "補助ジェネレーター",
+  "lv": "LV1",
+  "recycle": "15"
+ },
+ {
+  "name": "補助ジェネレーター",
+  "lv": "LV2",
+  "recycle": "40"
+ },
+ {
+  "name": "補助ジェネレーター",
+  "lv": "LV3",
+  "recycle": "70"
+ },
+ {
+  "name": "補助ジェネレーター",
+  "lv": "LV4",
+  "recycle": "75"
+ },
+ {
+  "name": "補助ジェネレーター",
+  "lv": "LV5",
+  "recycle": "115"
+ },
+ {
+  "name": "高精度集束リング",
+  "lv": "LV1",
+  "recycle": "75"
+ },
+ {
+  "name": "高精度集束リング",
+  "lv": "LV2",
+  "recycle": "80"
+ },
+ {
+  "name": "高精度集束リング",
+  "lv": "LV3",
+  "recycle": "90"
+ },
+ {
+  "name": "AD-DCS",
+  "lv": "LV1",
+  "recycle": "30"
+ },
+ {
+  "name": "AD-DCS",
+  "lv": "LV2",
+  "recycle": "40"
+ },
+ {
+  "name": "フィールドモーター",
+  "lv": "LV1",
+  "recycle": "40"
+ },
+ {
+  "name": "フィールドモーター",
+  "lv": "LV2",
+  "recycle": "70"
+ },
+ {
+  "name": "フィールドモーター",
+  "lv": "LV3",
+  "recycle": "80"
+ },
+ {
+  "name": "AD-ASL",
+  "lv": "LV1",
+  "recycle": "15"
+ },
+ {
+  "name": "AD-ASL",
+  "lv": "LV2",
+  "recycle": "25"
+ },
+ {
+  "name": "電子防護システム",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "大容量補給パック",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "緊急修復モジュール",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "脚部特殊装甲",
+  "lv": "LV1",
+  "recycle": "45"
+ },
+ {
+  "name": "脚部特殊装甲",
+  "lv": "LV2",
+  "recycle": "65"
+ },
+ {
+  "name": "脚部特殊装甲",
+  "lv": "LV3",
+  "recycle": "75"
+ },
+ {
+  "name": "脚部特殊装甲",
+  "lv": "LV4",
+  "recycle": "75"
+ },
+ {
+  "name": "頭部特殊装甲",
+  "lv": "LV1",
+  "recycle": "10"
+ },
+ {
+  "name": "頭部特殊装甲",
+  "lv": "LV2",
+  "recycle": "25"
+ },
+ {
+  "name": "頭部特殊装甲",
+  "lv": "LV3",
+  "recycle": "45"
+ },
+ {
+  "name": "背部特殊装甲",
+  "lv": "LV1",
+  "recycle": "10"
+ },
+ {
+  "name": "背部特殊装甲",
+  "lv": "LV2",
+  "recycle": "25"
+ },
+ {
+  "name": "背部特殊装甲",
+  "lv": "LV3",
+  "recycle": "55"
+ },
+ {
+  "name": "データベースリンク",
+  "lv": "LV1",
+  "recycle": "65"
+ },
+ {
+  "name": "データベースリンク",
+  "lv": "LV2",
+  "recycle": "80"
+ },
+ {
+  "name": "スペースドフレーム",
+  "lv": "LV1",
+  "recycle": "75"
+ },
+ {
+  "name": "スペースドフレーム",
+  "lv": "LV2",
+  "recycle": "150"
+ },
+ {
+  "name": "スペースドフレーム",
+  "lv": "LV3",
+  "recycle": "350"
+ },
+ {
+  "name": "スペースドフレーム",
+  "lv": "LV4",
+  "recycle": ""
+ },
+ {
+  "name": "スペースドアーマー",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "サイコフレーム",
+  "lv": "LV1",
+  "recycle": "350"
+ },
+ {
+  "name": "教育型コンピューター",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "教育型コンピューター［特射］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "教育型コンピューター［特格］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "複合フレーム［Type-A］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "複合フレーム［Type-B］",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "水中戦適正化装置",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "射撃攻防プログラム",
+  "lv": "LV1",
+  "recycle": "425"
+ },
+ {
+  "name": "格闘攻防プログラム",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "総合強化プログラム［格闘］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "総合強化プログラム［射撃］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "特殊強化装置［Type-α］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "特殊強化装置［Type-β］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "カテゴリ特攻プログラム［汎用］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "カテゴリ特攻プログラム［支援］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "コネクティングシステム［強襲Ⅰ型］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "コネクティングシステム［強襲Ⅱ型］",
+  "lv": "LV1",
+  "recycle": ""
+ },
+ {
+  "name": "ハロ（V）",
+  "lv": "LV1",
+  "recycle": ""
+ }
+]

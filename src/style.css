@@ -2503,3 +2503,34 @@ body.drawer-open .m-actionbar { display: none !important; }
   background: rgba(255, 202, 58, .12);
   border: 1px solid rgba(255, 202, 58, .3);
 }
+
+
+/* 업로드 폼 — 필수 표시와 무과금 체크 */
+.admin-body .req {
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--bad);
+  background: rgba(255, 107, 107, .12);
+  border: 1px solid rgba(255, 107, 107, .3);
+}
+.up-free { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+.up-free input { width: auto; margin: 0; }
+.up-free.off { opacity: .55; cursor: not-allowed; }
+.up-free.off input { cursor: not-allowed; }
+.up-free .note { margin-left: auto; text-align: right; }
+
+/* 갤러리 카드의 무과금 배지 — 강화·확장 표기 오른쪽 */
+.sc-free {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ok);
+  background: rgba(94, 214, 129, .12);
+  border: 1px solid rgba(94, 214, 129, .35);
+  white-space: nowrap;
+}

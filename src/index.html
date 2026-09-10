@@ -316,14 +316,20 @@
   </div>
   <div class="admin-body">
     <div class="upload-target" id="uploadTarget"></div>
-    <label>제목 <span class="note" id="uploadTitleCount">0/20</span>
+    <label>작성자 <span class="req">필수</span> <span class="note" id="uploadAuthorCount">0/12</span>
+      <input type="text" id="uploadAuthor" maxlength="12" placeholder="예: 게임 내 닉네임">
+    </label>
+    <label>제목 <span class="req">필수</span> <span class="note" id="uploadTitleCount">0/20</span>
       <input type="text" id="uploadTitle" maxlength="20" placeholder="예: 사격 지원형">
+    </label>
+    <!-- 무과금 표시 — 리사이클 티켓으로 살 수 없는 파츠가 하나라도 있으면 잠긴다 -->
+    <label class="up-free" id="uploadFreeWrap">
+      <input type="checkbox" id="uploadFree">
+      <span>무과금 구성</span>
+      <span class="note" id="uploadFreeNote"></span>
     </label>
     <label>설명 (선택) <span class="note" id="uploadDescCount">0/60</span>
       <input type="text" id="uploadDesc" maxlength="60" placeholder="예: 관통 경감 장갑으로 조사빔 버티기">
-    </label>
-    <label>작성자 (선택) <span class="note" id="uploadAuthorCount">0/12</span>
-      <input type="text" id="uploadAuthor" maxlength="12" placeholder="예: 게임 내 닉네임">
     </label>
     <div class="admin-foot">
       <span class="note" id="uploadMsg"></span>

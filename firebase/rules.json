@@ -88,6 +88,11 @@
         "uid":   { ".validate": "newData.val() === auth.uid" },
         // 어느 데이터 버전에서 만든 구성인지 (예: "2026-09-07").
         "ver":   { ".validate": "newData.isString() && newData.val().length <= 12" },
+        // 올린 사람이 「무과금 구성」으로 표시했는가. true 만 허용한다 —
+        // 안 붙이면 무과금이 아닌 것이라, false 를 실어 둘 이유가 없다.
+        // (앱은 리사이클로 못 사는 파츠가 있으면 체크 자체를 막지만, 서버는
+        //  그 판정을 다시 하지 못한다 — 파츠 표를 서버가 들고 있지 않다.)
+        "free":  { ".validate": "newData.isBoolean() && newData.val() === true" },
 
         // 위에 정의하지 않은 필드는 일절 금지.
         "$other": { ".validate": false }

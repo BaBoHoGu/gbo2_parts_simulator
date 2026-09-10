@@ -33,6 +33,8 @@ const parts = readJson('data', 'parts.json');
   if (n) console.log(`파츠 보강: ${n}개 (parts.additions.json)`);
 }
 const fullst = readJson('data', 'fullst.json');
+// 파츠별 필요 리사이클 티켓 — 「무과금 구성」 판정에 쓴다(숫자=구매 가능, null=과금).
+const recycle = (readJson('data', 'parts.recycle.json') || {}).ticket || {};
 // 원본 표에 빠진 강화 레벨을 위키에서 보강한다 (기체는 쓰는데 정의가 없던 것들).
 {
   const n = D.mergeFullstAdditions(ROOT, fullst);
@@ -165,7 +167,7 @@ const html = read('src', 'index.html')
     + fs.readFileSync(path.join(ROOT, 'assets', 'favicon.png')).toString('base64'))
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
   .replace('/*__BUILD__*/', () => inline('GBO2_BUILD', buildMeta))
-  .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills }))
+  .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills, recycle }))
   .replace('/*__IMAGES__*/', () => inline('GBO2_IMAGES', images))
   .replace('/*__WEAPONS__*/', () => inline('GBO2_WEAPONS', weapons))
   .replace('/*__SKILLS__*/', () => inline('GBO2_SKILLS', skills))
