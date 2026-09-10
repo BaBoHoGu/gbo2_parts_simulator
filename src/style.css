@@ -2516,11 +2516,17 @@ body.drawer-open .m-actionbar { display: none !important; }
   background: rgba(255, 107, 107, .12);
   border: 1px solid rgba(255, 107, 107, .3);
 }
-.up-free { display: flex; align-items: center; gap: 7px; cursor: pointer; }
-.up-free input { width: auto; margin: 0; }
-.up-free.off { opacity: .55; cursor: not-allowed; }
-.up-free.off input { cursor: not-allowed; }
-.up-free .note { margin-left: auto; text-align: right; }
+/* 무과금 판정 줄 — 사용자가 고르는 것이 아니라 프로그램이 정한 결과를 보여 준다 */
+.up-free {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px; border-radius: 8px;
+  background: rgba(94, 214, 129, .10);
+  border: 1px solid rgba(94, 214, 129, .32);
+}
+.up-free .uf-mark { font-weight: 700; font-size: 12.5px; color: var(--ok); flex: 0 0 auto; }
+.up-free .note { margin-left: auto; text-align: right; min-width: 0; }
+.up-free.off { background: rgba(255, 202, 58, .09); border-color: rgba(255, 202, 58, .30); }
+.up-free.off .uf-mark { color: var(--accent); }
 
 /* 갤러리 카드의 무과금 배지 — 강화·확장 표기 오른쪽 */
 .sc-free {
