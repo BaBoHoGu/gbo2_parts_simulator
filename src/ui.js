@@ -2334,7 +2334,12 @@
         const m = thrusterMetrics(state.ms, thr, state.equipped, env);
         if (!m) continue;
         const row = el('div', 'dura-row thr-row');
-        row.append(el('span', 'dura-lb', '스러스터 ' + label));
+        const colKoTag = m.col === 'adapt' ? '적성' : m.col === 'assault' ? '강습' : null;
+        const lb = el('span', 'dura-lb', '스러스터 ' + label);
+        // 어느 기준으로 낸 값인지 화면에 적는다 — 지상적성 기체는 OH 가 7 이 아니라 6.3초라
+        // 근거가 안 보이면 혼자 다른 값처럼 읽힌다(툴팁은 폰에서 안 뜬다).
+        if (colKoTag) lb.append(el('span', 'thr-col', colKoTag));
+        row.append(lb);
         const cell = (k, v, base) => {
           const c = el('span', 'dura-cell');
           c.append(el('span', 'dura-k', k));

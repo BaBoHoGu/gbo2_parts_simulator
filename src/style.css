@@ -2490,3 +2490,16 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* [hidden] 은 UA 기본 display:none 일 뿐이라, 아래 .stagger-skills 의 display 지정에
    진다 — 접었는데 목록이 그대로 보였다. 명시해서 이긴다. */
 .stagger-skills[hidden] { display: none !important; }
+
+
+/* 스러스터 지표의 기준 표시(적성·강습) — 6.3초가 왜 7초와 다른지 화면에서 읽히게 */
+.thr-col {
+  margin-left: 5px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(255, 202, 58, .12);
+  border: 1px solid rgba(255, 202, 58, .3);
+}
