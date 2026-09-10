@@ -4,7 +4,7 @@
 // 코드에 그냥 넣을 수 있으므로 DB 왕복이 사라진다 — 대신 **앱과 같은 목록**이어야
 // 하는 규칙은 그대로다(미러에 없는 기체를 앱이 additions 로 보태 넣기 때문).
 //
-//   node tools/build_worker_dict.js  →  worker/functions/lib/dict.js
+//   node tools/build_worker_dict.js  →  functions/lib/dict.js
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -36,7 +36,7 @@ export const EXP = new Set(${JSON.stringify(exp)});
 /** 리사이클 티켓으로 살 수 없는 파츠 — 하나라도 있으면 무과금 구성이 아니다. */
 export const PAID = new Set(${JSON.stringify(paid)});
 `;
-const dst = path.join(ROOT, 'worker', 'functions', 'lib', 'dict.js');
+const dst = path.join(ROOT, 'functions', 'lib', 'dict.js');
 fs.mkdirSync(path.dirname(dst), { recursive: true });
 fs.writeFileSync(dst, out, 'utf8');
 console.log(`사전 생성 — 기체 ${msData.length} · 파츠 ${parts.length} · 확장 ${exp.length} · 과금 ${paid.length}`);

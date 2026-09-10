@@ -41,3 +41,5 @@ raw/parts_recycle.json
 # wrangler 로컬 개발 상태 (miniflare D1·KV 등)
 worker/.wrangler/
 .wrangler/
+# 갤러리 이관용 임시 SQL (tools/migrate_gallery.js 가 만든다)
+raw/migrate_gallery.sql
