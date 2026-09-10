@@ -2540,3 +2540,7 @@ body.drawer-open .m-actionbar { display: none !important; }
   border: 1px solid rgba(94, 214, 129, .35);
   white-space: nowrap;
 }
+
+
+/* 작성자 뒤 IP 앞자리 — 이름보다 흐리게 둔다(이름이 주고, 이건 곁들이다) */
+.sc-ip { margin-left: 4px; color: var(--dim); font-variant-numeric: tabular-nums; }

@@ -134,6 +134,8 @@ function toBuild(v) {
     expLevel: Number(v.expLv) || 1,
     desc: v.desc || '',
     author: v.author || '',
+    // 올린 사람 IP 앞자리(220.80). 서버가 정하고 앱은 그대로 보여만 준다.
+    ipHead: v.ipHead || '',
     free: v.free === true,
     at: Number(v.at) || 0,
     ver: v.ver || ''

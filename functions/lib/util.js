@@ -31,6 +31,24 @@ export async function whoOf(request, env) {
   return (await sha256Hex(ip + '|' + (env.WHO_SALT || 'gbo2'))).slice(0, 24);
 }
 
+/**
+ * 화면에 적을 IP 앞자리 — IPv4 는 「220.80」, IPv6 는 「2001:2d8」.
+ *
+ * 국내 게시판이 흔히 쓰는 표기다. 전체를 적지 않는 이유는 뻔하다 — 앞 두 마디만으로는
+ * 사람을 특정할 수 없고(통신사·지역 수준), 같은 사람이 이름만 바꿔 가며 쓰는 것은 드러난다.
+ * 이 값만 저장하고 **원본 IP 는 어디에도 남기지 않는다**(속도 제한용 해시는 별도).
+ */
+export function ipHeadOf(request) {
+  const ip = (request.headers.get('CF-Connecting-IP') || '').trim();
+  if (!ip) return null;
+  if (ip.includes(':')) {                       // IPv6 — 앞 두 마디
+    const seg = ip.split(':').filter(Boolean).slice(0, 2);
+    return seg.length ? seg.join(':') : null;
+  }
+  const seg = ip.split('.');
+  return seg.length === 4 ? seg[0] + '.' + seg[1] : null;
+}
+
 export async function sha256Hex(s) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');

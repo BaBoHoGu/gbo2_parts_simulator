@@ -2,7 +2,7 @@
 // POST /api/builds   구성 올리기
 //
 // Firebase 규칙이 하던 검사를 그대로 옮겼다 — 짝을 주석에 적어 둔다.
-import { json, bad, CORS, whoOf } from '../lib/util.js';
+import { json, bad, CORS, whoOf, ipHeadOf } from '../lib/util.js';
 import { MS, PARTS, EXP, PAID } from '../lib/dict.js';
 import { ensureSchema } from '../lib/schema.js';
 import { TITLE_RE, AUTHOR_RE, DESC_RE } from '../lib/util.js';
@@ -15,7 +15,7 @@ export const onRequestOptions = () => new Response(null, { status: 204, headers:
 export async function onRequestGet({ env }) {
   await ensureSchema(env);
   const { results } = await env.DB.prepare(
-    `SELECT id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, at
+    `SELECT id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, ip_head, at
        FROM builds
       WHERE id NOT IN (SELECT id FROM blocked)
       ORDER BY at DESC
@@ -25,7 +25,8 @@ export async function onRequestGet({ env }) {
     builds: results.map(r => ({
       id: r.id, ms: r.ms, stage: r.stage, exp: r.exp, expLv: r.exp_lv,
       parts: JSON.parse(r.parts), title: r.title, author: r.author,
-      desc: r.descr || '', free: r.free === 1, ver: r.ver || '', at: r.at
+      desc: r.descr || '', free: r.free === 1, ver: r.ver || '',
+      ipHead: r.ip_head || '', at: r.at
     }))
   });
 }
@@ -64,6 +65,7 @@ export async function onRequestPost({ request, env }) {
 
   // ── 속도 제한 ── (rules.json: throttle/$uid, 60초)
   const who = await whoOf(request, env);
+  const ipHead = ipHeadOf(request);     // 화면에 적을 앞자리. 원본 IP 는 저장하지 않는다.
   const now = Date.now();
   const prev = await env.DB.prepare('SELECT at FROM throttle WHERE who = ?').bind(who).first();
   if (prev && now - Number(prev.at) < THROTTLE_MS) {
@@ -76,9 +78,9 @@ export async function onRequestPost({ request, env }) {
   if (dup) return bad('dup', '이미 올라온 구성입니다');
 
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO builds (id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, who, at)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .bind(id, ms, stage, exp, expLv, JSON.stringify(parts), title, author, desc || null, free, ver, who, now),
+    env.DB.prepare(`INSERT INTO builds (id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, who, ip_head, at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .bind(id, ms, stage, exp, expLv, JSON.stringify(parts), title, author, desc || null, free, ver, who, ipHead, now),
     env.DB.prepare('INSERT INTO throttle (who, at) VALUES (?,?) ON CONFLICT(who) DO UPDATE SET at = excluded.at')
       .bind(who, now)
   ]);
