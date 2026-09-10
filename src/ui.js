@@ -4138,19 +4138,18 @@
     if (m) m.hidden = !open;
     if (b) b.hidden = !open;
     $('#adminMsg').textContent = '';
-    if (open) { $('#adminPw').value = ''; setTimeout(() => $('#adminEmail').focus(), 30); }
-    else { $('#adminEmail').value = ''; $('#adminPw').value = ''; }
+    if (open) { $('#adminPw').value = ''; setTimeout(() => $('#adminPw').focus(), 30); }
+    else { $('#adminPw').value = ''; }
   }
 
   async function adminSubmit() {
     if (!S) return;
-    const email = ($('#adminEmail').value || '').trim();
     const pw = $('#adminPw').value || '';
-    if (!email || !pw) { toast('이메일과 비밀번호를 입력하세요'); return; }
+    if (!pw) { toast('비밀번호를 입력하세요'); return; }
     const btn = $('#adminGo');
     btn.disabled = true; btn.textContent = '확인 중…';
     $('#adminMsg').textContent = '';
-    const r = await S.adminLogin(email, pw);
+    const r = await S.adminLogin(pw);
     btn.disabled = false; btn.textContent = '로그인';
     $('#adminPw').value = '';                 // 비밀번호는 화면에 남기지 않는다
     if (r.ok) {
@@ -6096,7 +6095,6 @@
     $('#adminGo').onclick = adminSubmit;
     $('#adminCancel').onclick = () => openAdmin(false);
     $('#adminBack').onclick = () => openAdmin(false);
-    $('#adminEmail').onkeydown = ev => { if (ev.key === 'Enter') $('#adminPw').focus(); };
     // 비밀번호 칸에서 Enter 로 바로 로그인
     $('#adminPw').onkeydown = ev => { if (ev.key === 'Enter') adminSubmit(); };
     $('#savedModalClose').onclick = () => openSavedModal(false);
