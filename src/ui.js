@@ -2961,6 +2961,9 @@
     thumb.append(hint);
     tile.append(thumb);
     tile.append(el('div', 'pt-nm', v.shortNm));
+    // 칸 소모 — 폰 세로의 가로줄 타일에서만 보인다(그 밖에서는 CSS 로 숨김).
+    // 목록에서 '원거리 3칸 남았는데 뭘 넣지'를 파츠마다 눌러 보지 않고 훑을 수 있게.
+    tile.append(el('div', 'pt-slot', v.slotTxt));
     const why = el('div', 'pt-why');
     tile.append(why);
 
@@ -3084,11 +3087,13 @@
       rowBottom.set(top, Math.max(rowBottom.get(top) || 0, top + t.offsetHeight));
     }
 
-    let fit = 0, nextTop = null, rows = 0;
-    const MAX_ROWS = 3;   // 파츠 목록은 최대 3행만 보이고, 그 이상은 스크롤
+    let fit = 0, nextTop = null;
+    // 본뜻은 「최대 3행」이 아니라 「정사각 타일 3행만큼의 높이까지」다.
+    // 행 수로 끊으면 폰 세로의 가로줄 타일(행 높이 절반)이 6개밖에 안 보인다.
+    const ROW_BUDGET = 264;   // 정사각 타일(82px) 3행 + 줄 간격
     for (const [top, bottom] of [...rowBottom].sort((a, b) => a[0] - b[0])) {
-      if (rows >= MAX_ROWS || bottom + padBottom > budget) { nextTop = top; break; }   // MAX_ROWS 넘거나 예산 초과면 끊는다
-      fit = bottom; rows++;
+      if (bottom > ROW_BUDGET || bottom + padBottom > budget) { nextTop = top; break; }
+      fit = bottom;
     }
     if (!fit) return;
     // 아래 여백이 줄 간격보다 넓으면 다음 줄 윗머리가 비어져 나오므로 그 앞에서 끊는다
