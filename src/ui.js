@@ -188,6 +188,54 @@
     return norm.length ? norm : modes;
   }
 
+  /**
+   * 「켜는 방어 무장」 — I필드 발생기·리플렉터 패널처럼, 골라 쓰는 동안 받는 피해를 깎는 부무장.
+   * 스킬이 아니라 무장이라 스킬 목록에 안 잡혔는데, 실제로는 방어 스킬과 똑같이
+   * 내구 지표·누적치에 영향을 준다(X3 빔 −50%, 풀아머 오베론 빔 −70% 따위).
+   *
+   * 備考 표기가 스킬과 달라 그대로는 안 읽힌다 — 스킬은 「被ダメージ －50%」,
+   * 무장은 「ビーム属性射撃被ダメージ50%軽減」 처럼 마이너스 없이 적힌다.
+   *
+   * 「装備中シールドへの被ダメージ」 는 실드 HP 라 뺀다 — 기체 HP 와 다른 값이고,
+   * 여기에 섞으면 실효 HP 가 부풀어 오른다.
+   */
+  const DEF_WEAPON_PREFIX = '무장:';
+  function defenseWeaponsOf(ms, lv) {
+    if (!ms) return [];
+    const out = [];
+    for (const w of weaponsOfMs(ms)) {
+      const note = (w.info && w.info['備考']) || '';
+      if (!note) continue;
+      const segs = note.split(' / ');
+      const cuts = [];
+      for (const seg of segs) {
+        if (/装備中シールドへの/.test(seg)) continue;           // 실드 HP — 기체 HP 가 아니다
+        const m = seg.match(/被ダメージ\s*(\d+)\s*[%％]\s*軽減/);
+        if (!m) continue;
+        const scope = /ビーム/.test(seg) ? 'beam' : /実弾/.test(seg) ? 'solid'
+          : /格闘/.test(seg) ? 'melee' : /射撃/.test(seg) ? 'shoot' : 'all';
+        cuts.push({ scope, pct: Number(m[1]) });
+      }
+      if (!cuts.length) continue;
+      // 누적치 배수도 같은 자리에 적힌다 — 스킬과 같은 문구라 같은 규칙으로 읽는다
+      const mm = note.match(/よろけ値を\s*(\d+)\s*[%％]?[?？\s]*かつ小数点以下切り捨て/);
+      const secs = note.match(/効果時間[：:]\s*([\d.]+)\s*秒/) || note.match(/([\d.]+)\s*秒間持続/);
+      // 조건은 문장에서 읽는다 — 그냥 고르면 되는 것과 자세를 잡아야 하는 것은 다르다
+      const base = /ガード体勢/.test(note) ? '가드 중' : '선택 중';
+      out.push({
+        name: DEF_WEAPON_PREFIX + w.name,
+        ko: T.weaponName ? T.weaponName(w.name) : w.name,
+        mult: mm ? Number(mm[1]) / 100 : 1,
+        threshold: null,
+        cuts,
+        cond: secs ? `${base} (${secs[1]}초)` : base,
+        from: 1,
+        isWeapon: true
+      });
+    }
+    return out;
+  }
+
   /** 이 기체가 그 LV 에서 가진, 누적치에 영향 주는 스킬 목록.
    *  같은 이름이 LV 구간별로 여러 개면(예: 데미지컨트롤 LV1=130·LV2~=160) 현재 LV 에 맞는 최상위를 쓴다. */
   function staggerSkillsOf(ms, lv, form) {
@@ -227,7 +275,14 @@
       if (granted) byName.set('ハイ・マニューバーアーマー(부여)',
         { name: 'ハイ・マニューバーアーマー(부여)', ko: '하이 마뉴버아머(부여)', mult: 0.5, threshold: null, cuts: [{ scope: 'all', pct: 40 }], cond: '이동중', from: 1 });
     }
-    return [...byName.values()];
+    // 켜는 방어 무장(I필드 발생기 등)을 같은 목록에 얹는다 — 체크·집계·피탄이 한 벌로 돈다.
+    // 다만 스킬이 '그 무장이 하는 일'을 설명만 하는 경우가 있다
+    // (시스쿠드: 스킬 「Iフィールド制御装置」 빔 −80% = 무장 「Iフィールド・ランチャー」 빔 −80%).
+    // 둘 다 체크하면 같은 경감을 두 번 세므로, 경감 내역이 똑같으면 무장 쪽을 뺀다.
+    const sig = c => c.map(x => x.scope + ':' + x.pct).sort().join(',');
+    const skillSigs = new Set([...byName.values()].map(v => sig(v.cuts)));
+    const weapons = defenseWeaponsOf(ms, lv).filter(w => !skillSigs.has(sig(w.cuts)));
+    return [...byName.values(), ...weapons];
   }
 
   /** 상대 무장의 성질에 따라서만 걸리는 파츠 경감 — 내구 지표(무장을 특정하지 않음)에는
