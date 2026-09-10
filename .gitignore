@@ -38,3 +38,6 @@ dist/ui_check/
 backup/
 # 탐색용 중간 산출물 (정식 결과는 data/parts.recycle.json)
 raw/parts_recycle.json
+# wrangler 로컬 개발 상태 (miniflare D1·KV 등)
+worker/.wrangler/
+.wrangler/
