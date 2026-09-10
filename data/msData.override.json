@@ -31,5 +31,10 @@
  },
  "ゲルググＲ_LV1": {
   "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/7870.html"
+ },
+ "ゴールドスモー_LV1": {
+  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/7925.html",
+  "旋回_地上_通常時": 90,
+  "旋回_宇宙_通常時": 93
  }
 }
