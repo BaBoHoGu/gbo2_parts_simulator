@@ -195,14 +195,6 @@ fs.mkdirSync(DIST, { recursive: true });
 // 사이트판은 반대로 여기에 이미지를 깐다 — 지웠다 다시 깔아 지워진 이미지가 남지 않게 한다.
 fs.rmSync(path.join(DIST, 'images'), { recursive: true, force: true });
 if (WEB && fs.existsSync(IMG_SRC)) fs.cpSync(IMG_SRC, path.join(DIST, 'images'), { recursive: true });
-// 갤러리 API — Pages Functions. dist/web 안에 functions/ 가 있으면 `wrangler pages deploy`
-// 가 사이트와 **같은 배포로** 올린다(프로젝트도 명령도 하나로 유지된다).
-// 사전(dict.js)은 이 저장소의 데이터에서 만들어지므로, 앱과 서버가 늘 같은 목록을 본다.
-if (WEB) {
-  const fnSrc = path.join(ROOT, 'worker', 'functions');
-  if (fs.existsSync(fnSrc)) fs.cpSync(fnSrc, path.join(DIST, 'functions'), { recursive: true });
-  else console.warn('⚠ worker/functions 가 없어 갤러리 API 없이 사이트를 만듭니다.');
-}
 if (WEB) {
   fs.writeFileSync(path.join(DIST, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
   // GitHub Pages 는 기본으로 Jekyll 을 돌리는데, Jekyll 은 '_' 로 시작하는 파일을 빼 버린다.
