@@ -17,8 +17,18 @@ const DDL = [
   `CREATE TABLE IF NOT EXISTS blocked (id TEXT PRIMARY KEY, at INTEGER NOT NULL)`
 ];
 
+/* 나중에 늘어난 열. D1(SQLite)에는 ADD COLUMN IF NOT EXISTS 가 없어서, 이미 있으면
+   나는 오류를 삼킨다 — 여기서 막히면 갤러리 전체가 멈춘다. */
+const ALTERS = [
+  'ALTER TABLE builds ADD COLUMN ip_head TEXT'
+];
+
 export async function ensureSchema(env) {
   if (done) return;
   await env.DB.batch(DDL.map(s => env.DB.prepare(s)));
+  for (const sql of ALTERS) {
+    try { await env.DB.prepare(sql).run(); }
+    catch (e) { /* duplicate column — 이미 있다 */ }
+  }
   done = true;
 }

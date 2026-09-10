@@ -3921,6 +3921,7 @@
         uniform: true,      // 격자라 카드마다 줄 위치가 어긋나면 읽기 나쁘다
         desc: bld.desc,
         author: bld.author,
+        ipHead: bld.ipHead,
         // 관리자로 로그인했을 때만 ✕ 가 붙는다. 서버 규칙이 admins 목록으로 다시 확인하므로
         // 버튼이 보인다고 지워지는 게 아니라, 실제 권한이 있어야 지워진다.
         onDel: (S && S.isAdmin()) ? async () => {
@@ -5406,7 +5407,13 @@
     // 올린 사람이 스스로 적은 이름 (갤러리 전용) — 제목과 기체 사이에 한 줄로 둔다.
     // 서버가 신원을 보증하지 않으므로 제목만큼 강조하지 않는다.
     // uniform 이면 비어 있어도 자리를 차지한다(격자에서 아래 글 위치를 맞추려고).
-    if (opt.author || opt.uniform) card.append(el('div', 'sc-author', opt.author || ''));
+    if (opt.author || opt.uniform) {
+      const who = el('div', 'sc-author', opt.author || '');
+      // 이름 뒤에 IP 앞자리를 적는다 — 서버가 붙인 값이라 사용자가 바꿀 수 없다.
+      // 같은 사람이 이름만 갈아 가며 올리는 것이 드러난다(국내 게시판의 그 표기).
+      if (opt.author && opt.ipHead) who.append(el('span', 'sc-ip', '(' + opt.ipHead + ')'));
+      card.append(who);
+    }
 
     // 기체 한 줄 (썸네일 + 이름 · 강화 · 확장)
     const msLine = el('div', 'sc-ms');
