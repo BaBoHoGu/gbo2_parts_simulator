@@ -36,3 +36,5 @@ dist/ui_check/
 # UI 개선 착수 전 스냅샷 — 바로 열어 볼 수 있는 단일 파일(16MB).
 # 소스는 git tag ui-before-redesign 에 있으니 파일까지 커밋하지는 않는다.
 backup/
+# 탐색용 중간 산출물 (정식 결과는 data/parts.recycle.json)
+raw/parts_recycle.json
