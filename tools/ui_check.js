@@ -112,7 +112,10 @@ function probeSafeTop(sel, inset) {
 
 const VIEWS = [
   { tag: 'desktop', w: 1500, h: 1000, touch: false, mobile: false },
-  { tag: '폰세로', w: 390, h: 844, touch: true, mobile: true },
+  // 폰 세로는 화면 모드가 둘이다 — 기본은 「넓게 보기」(폭 768px 로 잡아 2단),
+  // 「크게 보기」는 지금까지의 폰 레이아웃. 둘 다 봐야 한쪽만 고치다 다른 쪽을 깨지 않는다.
+  { tag: '폰세로(넓게)', w: 390, h: 844, touch: true, mobile: false, viewMode: 'wide' },
+  { tag: '폰세로(크게)', w: 390, h: 844, touch: true, mobile: true, viewMode: 'large' },
   { tag: '폰가로', w: 844, h: 390, touch: true, mobile: true },
   // S펜 단말·DeX 처럼 터치인데 pointer:fine 을 보고하는 경우. ② 회귀가 여기서만 났다.
   { tag: '폰가로(스타일러스)', w: 800, h: 372, touch: false, mobile: true }
@@ -156,6 +159,12 @@ async function runView(view) {
     }
     const errs = [];
     pg.on('pageerror', e => errs.push(String(e.message).slice(0, 120)));
+    // 화면 모드는 첫 그리기 전에 정해져야 한다(메타 뷰포트를 바꾸므로 나중에 넣으면 늦다)
+    if (view.viewMode) {
+      await pg.evaluateOnNewDocument(m => {
+        try { localStorage.setItem('gbo2.viewMode', m); } catch (e) {}
+      }, view.viewMode);
+    }
     await pg.goto(URL, { waitUntil: 'networkidle2', timeout: 90000 });
     for (let i = 0; i < 80 && !(await pg.$('.ms-card')); i++) await sleep(100);
     check(view.tag, '기체 목록이 그려짐', !!(await pg.$('.ms-card')));

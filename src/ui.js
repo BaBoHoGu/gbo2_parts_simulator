@@ -6123,10 +6123,58 @@
   /** 모바일 상단바 — 버튼 9개가 390px 폭에 1,211px 로 깔려 가로 스크롤로만 닿았다.
    *  자주 쓰는 것(피탄 시뮬·자동 구성)만 남기고 나머지는 「⋯」 메뉴로 접는다.
    *  메뉴 항목은 원래 버튼을 그대로 click() 하므로 동작·상태는 한 벌만 유지된다. */
-  const TOPBAR_MORE = ['#save', '#load', '#galleryBtn', '#uploadBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn', '#updateBtn'];
+  /* ── 폰 화면 모드 ──────────────────────────────────────────
+     폰 세로는 폭이 390px 안팎이라 성능표(368px)와 파츠 목록을 나란히 둘 수 없다.
+     그래서 화면 폭을 768px 로 잡아 태블릿 2단 규칙을 그대로 태우고, 브라우저가
+     축소해 보여 준다. 폰이 세로로 길어 CSS 높이가 1,600px 을 넘으므로 오히려
+     태블릿보다 많이 들어간다(파츠 카드 6 → 14장).
+       넓게 보기(기본) — 폭 768px. 본문 글자가 약 1.3mm 로 절반이 된다.
+       크게 보기      — 폭 = 기기 폭. 지금까지의 폰 화면.
+     핀치 줌을 열어 두어 작으면 손가락으로 키울 수 있다. */
+  const WIDE_W = 768;
+  // 메타를 바꾸면 innerWidth 가 따라 바뀐다 — 기기 본래 폭은 처음 한 번만 잰다
+  const DEVICE_CSS_W = window.innerWidth;
+  const isPhoneWidth = () => DEVICE_CSS_W <= 700;
+  const VIEW_KEY = 'gbo2.viewMode';
+  let viewMode = 'large';
+  try { viewMode = localStorage.getItem(VIEW_KEY) || 'wide'; } catch (e) { viewMode = 'wide'; }
+
+  function applyViewMode() {
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) return;
+    if (isPhoneWidth() && viewMode === 'wide') {
+      const scale = (DEVICE_CSS_W / WIDE_W).toFixed(4);
+      meta.setAttribute('content',
+        `width=${WIDE_W}, initial-scale=${scale}, user-scalable=yes, viewport-fit=cover`);
+    } else {
+      meta.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
+    }
+    const b = $('#viewModeBtn');
+    if (b) {
+      // 글자는 '지금 상태'가 아니라 '누르면 되는 것'을 적는다
+      b.textContent = viewMode === 'wide' ? '크게 보기' : '넓게 보기';
+      b.title = viewMode === 'wide'
+        ? '글자를 키웁니다 — 성능은 아래 「성능」 버튼으로 봅니다'
+        : '한 화면에 넓게 봅니다 — 성능·파츠가 같이 보이고 글자는 작아집니다';
+    }
+    // 폭이 바뀌었으니 높이를 다시 잰다(띠·줄 맞춤)
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
+  }
+
+  function toggleViewMode() {
+    viewMode = viewMode === 'wide' ? 'large' : 'wide';
+    try { localStorage.setItem(VIEW_KEY, viewMode); } catch (e) {}
+    applyViewMode();
+    toast(viewMode === 'wide' ? '넓게 보기 — 두 손가락으로 키울 수 있습니다' : '크게 보기');
+  }
+
+  const TOPBAR_MORE = ['#viewModeBtn', '#save', '#load', '#galleryBtn', '#uploadBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn', '#updateBtn'];
   function setupTopbarOverflow() {
     const bar = document.querySelector('.topbar'); if (!bar) return;
     for (const sel of TOPBAR_MORE) { const b = $(sel); if (b) b.classList.add('in-more'); }
+    const vm = $('#viewModeBtn');
+    if (vm) vm.onclick = toggleViewMode;
+    applyViewMode();
     const btn = el('button', 'btn-ghost topbar-more');
     btn.id = 'topbarMore'; btn.textContent = '⋯';
     btn.title = '저장 · 저장 목록 · 비교 · 공유 · 이미지 · 가져오기 · 기본 파츠 설정';
@@ -6140,6 +6188,7 @@
       for (const sel of TOPBAR_MORE) {
         const src = $(sel);
         if (!src || (onSelect && src.classList.contains('step-only'))) continue;   // 기체 선택 화면에선 숨는 것들
+        if (src.dataset.phoneOnly && !isPhoneWidth()) continue;                    // 태블릿·PC 에선 의미 없는 항목
         const it = el('button', 'png-menu-item');
         it.append(el('span', 'pm-t', src.textContent.trim()));
         if (src.title) it.append(el('span', 'pm-s', src.title));

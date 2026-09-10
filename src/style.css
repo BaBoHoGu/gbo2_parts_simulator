@@ -2460,3 +2460,8 @@ body.drawer-open .m-actionbar { display: none !important; }
   .part-list .part-tile.on .pt-nm::after { content: " ✓"; color: var(--ok); }
   .part-list .part-tile.on .pt-slot::before { content: none; }
 }
+
+
+/* 화면 모드 토글은 「⋯」 메뉴 항목의 원본일 뿐이라 상단바에는 그리지 않는다.
+   (메뉴 생성기가 원본의 글자·설명을 읽고, 누르면 원본을 click 한다) */
+#viewModeBtn { display: none !important; }
