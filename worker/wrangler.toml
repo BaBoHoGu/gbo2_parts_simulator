@@ -1,0 +1,16 @@
+# 로컬 시험용 설정. 실제 배포는 dist/web 에 functions/ 를 얹어
+# `wrangler pages deploy dist/web` 로 나가므로, 이 파일은 개발에서만 쓴다.
+name = "gbo2-parts"
+pages_build_output_dir = "public"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gbo2-gallery"
+database_id = "local"
+
+[vars]
+WHO_SALT = "local-test-salt"
+SIGN_KEY = "local-test-sign-key"
+# 로컬 시험용 비밀번호 "test1234" 의 SHA-256
+ADMIN_PW_SHA256 = "937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244"
