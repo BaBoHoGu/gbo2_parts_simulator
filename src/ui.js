@@ -4196,6 +4196,15 @@
   }
 
   /** 올리기 팝업 — 갤러리 화면에는 파츠가 안 보이므로 무엇이 올라가는지 여기서 보여 준다. */
+  /* ── 무과금 판정 ──────────────────────────────────────────
+     위키 「カスタムパーツ」 표의 必要リサイクルチケット 칸을 그대로 쓴다.
+       숫자 → 티켓으로 살 수 있다(무과금) · 0 → 기본 지급 · null/없음 → 티켓으로 못 산다(과금)
+     데이터는 tools/build_parts_recycle.js 가 위키에서 뽑아 둔다. */
+  const RECYCLE = (window.GBO2_DATA && window.GBO2_DATA.recycle) || {};
+  const isFreePart = name => RECYCLE[name] != null;
+  /** 이 구성에 든 과금 파츠 목록(한글명). 없으면 빈 배열 = 무과금 구성. */
+  const paidPartsIn = equipped => equipped.filter(p => !isFreePart(p.name)).map(p => T.partName(p.name));
+
   function openUpload(open) {
     const m = $('#uploadModal'), b = $('#uploadBack');
     if (m) m.hidden = !open;
@@ -4234,8 +4243,22 @@
     // 이름은 매번 다시 치는 게 번거로우므로 지난번 것을 채워 둔다
     try { $('#uploadAuthor').value = localStorage.getItem(AUTHOR_KEY) || ''; } catch { /* 무시 */ }
     $('#uploadAuthor').dispatchEvent(new Event('input'));
+
+    // 무과금 체크 — 티켓으로 못 사는 파츠가 하나라도 있으면 끄고 잠근다.
+    // 「검수를 위해」 라는 말대로, 체크만 못 하게 막는 게 아니라 이유까지 적어 준다.
+    const paid = state.ms ? paidPartsIn(state.equipped) : [];
+    const wrap = $('#uploadFreeWrap'), chk = $('#uploadFree'), fnote = $('#uploadFreeNote');
+    if (wrap && chk) {
+      chk.disabled = paid.length > 0;
+      if (paid.length) chk.checked = false;
+      wrap.classList.toggle('off', paid.length > 0);
+      fnote.textContent = paid.length
+        ? '리사이클로 못 사는 파츠 ' + paid.length + '종: ' + paid.slice(0, 3).join(', ') + (paid.length > 3 ? ' 외' : '')
+        : (parts ? '리사이클 티켓만으로 만들 수 있는 구성입니다' : '');
+      fnote.title = paid.length ? paid.join(', ') : '';
+    }
     $('#uploadGo').disabled = !(state.ms && parts);
-    setTimeout(() => $('#uploadTitle').focus(), 30);
+    setTimeout(() => $('#uploadAuthor').focus(), 30);
   }
 
   function uploadCurrent() { if (S) openUpload(true); }
@@ -4245,11 +4268,23 @@
     const title = $('#uploadTitle').value || '';
     const desc = $('#uploadDesc').value || '';
     const author = $('#uploadAuthor').value || '';
-    if (!title.trim()) { $('#uploadMsg').textContent = '제목을 입력하세요'; return; }
+    // 작성자를 먼저 묻는 순서라 검사도 같은 순서로 — 위에서부터 채우게 된다
+    if (!author.trim()) { $('#uploadMsg').textContent = '작성자를 입력하세요'; $('#uploadAuthor').focus(); return; }
+    if (!title.trim()) { $('#uploadMsg').textContent = '제목을 입력하세요'; $('#uploadTitle').focus(); return; }
+    // 체크가 켜져 있어도 구성을 다시 본다 — 팝업을 열어 둔 채 파츠를 바꿨을 수 있다
+    const free = !!($('#uploadFree') && $('#uploadFree').checked);
+    if (free) {
+      const paid = paidPartsIn(state.equipped);
+      if (paid.length) {
+        $('#uploadMsg').textContent = '무과금 구성이 아닙니다 — ' + paid.slice(0, 2).join(', ') + (paid.length > 2 ? ' 외 ' + (paid.length - 2) + '종' : '');
+        openUpload(true);
+        return;
+      }
+    }
     const btn = $('#uploadGo');
     btn.disabled = true; btn.textContent = '올리는 중…';
     $('#uploadMsg').textContent = '';
-    const r = await S.upload(serialize(), title, desc, author);
+    const r = await S.upload(serialize(), title, desc, author, free);
     btn.disabled = false; btn.textContent = '올리기';
     if (r.ok) {
       openUpload(false);
@@ -5387,7 +5422,14 @@
     meta.append(el('span', 'sc-msname', ms ? T.msName(ms.MS名) : bld.ms));
     const tags = [STAGE_LABEL[bld.stage] || ''];
     if (bld.expansion && bld.expansion !== C.EXPANSION_NONE) tags.push(expShort(bld.expansion));
-    meta.append(el('span', 'sc-tags', tags.filter(Boolean).join(' · ')));
+    const tagLine = el('span', 'sc-tags', tags.filter(Boolean).join(' · '));
+    // 올린 사람이 「무과금」으로 표시한 구성 — 강화·확장 표기 오른쪽에 붙인다
+    if (bld.free) {
+      const badge = el('span', 'sc-free', '무과금');
+      badge.title = '리사이클 티켓만으로 만들 수 있는 구성';
+      tagLine.append(badge);
+    }
+    meta.append(tagLine);
     msLine.append(meta);
     card.append(msLine);
     // 올린 사람이 적은 한 줄 설명 (갤러리 전용 — 저장 목록에는 없다)
