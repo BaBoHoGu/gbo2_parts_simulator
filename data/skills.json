@@ -8741,8 +8741,8 @@
  ],
  "ウイングガンダムゼロ": [
   {
-   "name": "ＺＥＲＯシステム?",
-   "nameKo": "ZERO 시스템",
+   "name": "ＺＥＲＯシステム",
+   "nameKo": "ＺＥＲＯシステム",
    "forever": false,
    "secs": 25,
    "hp": null,
