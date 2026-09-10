@@ -862,6 +862,7 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
   overflow: hidden;
 }
 .pt-why { font-size: 9.5px; line-height: 1.15; text-align: center; color: var(--bad); }
+.pt-slot { display: none; }   /* 폰 세로 가로줄 타일에서만 켠다 */
 
 .part-tile.on { background: #1c2a1e; border-color: #3f7a4d; }
 .part-tile.on .pt-nm::after { content: " ✓"; color: var(--ok); }
@@ -2195,3 +2196,65 @@ body.drawer-open .m-actionbar { display: none !important; }
 .admin-foot { display: flex; align-items: center; gap: 8px; }
 .admin-foot .note { color: var(--bad); }
 #galleryAdmin.on { color: var(--ok); border-color: var(--ok); }
+
+
+/* ═══ [모바일 목록 개편 2026-09-10] 폰 세로: 파츠 목록을 2열 가로줄로 ═══
+   4열 정사각은 그림·이름만 보여 줘, 칸 소모를 알려면 파츠마다 눌러야 했다.
+   가로줄이면 「근2 중1 원3」이 목록에 같이 서서 훑는 것만으로 고를 수 있다.
+   스크롤 총길이는 4열과 거의 같다(3,967 → 4,158px). 한 화면 노출은 12 → 10개.
+   가로로 눕힌 폰(높이 ≤560px)은 제외 — 거기선 목록 높이가 모자란다.
+   되돌리기: 이 블록과 .pt-slot 규칙, ui.js 의 pt-slot 추가분을 지운다. */
+@media (max-width: 700px) and (min-height: 561px) {
+  .part-list { grid-template-columns: repeat(2, 1fr); gap: 4px; }
+
+  .part-list .part-tile {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    /* 행을 명시해야 썸네일의 세로 병합이 먹는다 —
+       명시 행이 없으면 `1 / -1` 이 `1 / 1` 로 접혀 타일이 13px 부푼다 */
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 7px;
+    row-gap: 0;
+    padding: 5px 7px 5px 6px;
+    text-align: left;
+  }
+  .part-list .pt-thumb { grid-column: 1; grid-row: 1 / span 2; width: 34px; height: 34px; }
+  .part-list .part-tile img { width: 34px; height: 34px; border-radius: 6px; }
+  .part-list .pt-lv { font-size: 8.5px; padding: 1px 3px; }
+  .part-list .pt-hint { font-size: 9px; }
+
+  /* 이름은 한 줄 — 두 줄로 풀면 타일이 60px 이 되어 스크롤이 5,400px 로 늘어난다 */
+  .part-list .pt-nm {
+    grid-column: 2;
+    display: block;
+    font-size: 11.5px;
+    line-height: 15px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .part-list .pt-slot {
+    display: block;
+    grid-column: 2;
+    font-size: 10px;
+    line-height: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+  }
+  /* 장착 불가 사유는 셋째 줄(암시 행)로 흘러 나간다 — 그 타일만 높아진다 */
+  .part-list .pt-why {
+    grid-column: 2;
+    grid-row: 3;
+    font-size: 9.5px;
+    line-height: 12px;
+    text-align: left;
+  }
+  /* 장착된 파츠의 ✓ 는 이름 끝이 잘리면 같이 잘린다 — 칸 소모 줄 앞에 세운다 */
+  .part-list .part-tile.on .pt-nm::after { content: none; }
+  .part-list .part-tile.on .pt-slot::before { content: "✓ "; color: var(--ok); font-weight: 700; }
+}
