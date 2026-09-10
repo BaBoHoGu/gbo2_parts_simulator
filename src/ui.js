@@ -390,6 +390,16 @@
   // 세 속성을 한 번에 도는 자리가 많아 목록으로 둔다 (라벨은 화면마다 조금씩 다르다)
   const DURA_ATTRS = [['solid', '내실탄', '실탄'], ['beam', '내빔', '빔'], ['melee', '내격투', '격투']];
 
+  /* 방어 스킬 목록 펼침 상태 — 기본은 접힘(자리를 아끼는 것이 이 기능의 목적).
+     renderAll 이 성능 패널을 통째로 다시 그리므로 모듈 스코프에 둔다. */
+  const DEF_SKILL_KEY = 'gbo2.defSkillOpen';
+  let defSkillOpen = false;
+  try { defSkillOpen = localStorage.getItem(DEF_SKILL_KEY) === '1'; } catch (e) {}
+  function setDefSkillOpen(v) {
+    defSkillOpen = !!v;
+    try { localStorage.setItem(DEF_SKILL_KEY, defSkillOpen ? '1' : '0'); } catch (e) {}
+  }
+
   /** 누적치 스킬 체크박스 묶음 (내구 지표·피탄 시뮬 공통). onChange 는 상태 반영 후 콜백.
    *  각 스킬의 발동 조건을 라벨로 보여 주고, 동시 발동 가능한 것만 사용자가 자유롭게 체크한다. */
   function staggerCheckList(ms, lv, onChange, sel, form) {
@@ -2353,12 +2363,23 @@
     }
 
     // 방어 스킬 체크박스 — 체크 시 위 내구 지표·누적치에 반영된다.
+    // 스킬이 많은 기체는 이 목록만 300px 을 넘어, 위쪽 스탯을 보려면 계속 스크롤해야 했다.
+    // 접었다 펼 수 있게 하고, 접힌 채로도 몇 개를 켜 뒀는지 머리줄에 적는다
+    // (안 적으면 켜 둔 것을 잊고 잘못된 수치를 읽는다).
     const cl = staggerCheckList(state.ms, lv, () => renderAll());
     if (cl.count) {
-      const head = el('div', 'dura-row stg-head');
+      const names = staggerSkillsOf(state.ms, lv).map(x => x.name);
+      const onCount = names.filter(n => state.staggerOn.has(n)).length;
+      const head = el('button', 'dura-row stg-head' + (defSkillOpen ? ' open' : ''));
+      head.type = 'button';
+      head.setAttribute('aria-expanded', defSkillOpen ? 'true' : 'false');
+      head.append(el('span', 'stg-caret', defSkillOpen ? '▾' : '▸'));
       head.append(el('span', 'dura-lb', '방어 스킬'));
-      head.append(el('span', 'stagger-detail', '체크 시 내구·누적치 반영'));
+      head.append(el('span', 'stagger-detail',
+        onCount ? `${onCount}개 체크 — 내구·누적치에 반영 중` : `${cl.count}개 · 체크 시 내구·누적치 반영`));
+      head.onclick = () => { setDefSkillOpen(!defSkillOpen); renderAll(); };
       body.append(head);
+      cl.wrap.hidden = !defSkillOpen;
       body.append(cl.wrap);
     }
   }
@@ -3114,7 +3135,13 @@
      남은 높이를 못 적는다. 헤더 아래부터 화면 끝까지를 재어 CSS 변수로 넘긴다.
      (무장은 이 띠 아래에 그대로 흘러 스크롤 한 번이면 닿는다) */
   const TABLET_2COL = '(min-width: 720px) and (max-width: 1080px) and (min-height: 1000px)';
-  const DETAIL_H = 244 + 8;      // 파츠 상세 고정 높이 + 칸 간격 (CSS 와 짝)
+  /* 파츠 상세에 떼어 줄 높이. 내용은 파츠에 따라 282~419px 이라 244px 고정으로는
+     163개 전부가 스크롤을 요구했다. 남은 높이의 절반 남짓을 주되,
+     너무 좁거나(스탯이 안 보임) 너무 넓지(목록이 사라짐) 않게 가둔다.
+       DETAIL_MIN  머리줄+그림+칸 수치까지는 보이는 최소
+       DETAIL_MAX  가장 긴 파츠(419px)와 머리줄이 들어가는 높이 */
+  const DETAIL_MIN = 300, DETAIL_MAX = 470, DETAIL_SHARE = 0.55;
+  const PARTS_MIN = 150;        // 목록이 최소 한 줄은 남게
   function fitBuildBand() {
     const sb = $('#screenBuild');
     if (!sb) return;
@@ -3122,6 +3149,7 @@
     if (!window.matchMedia || !window.matchMedia(TABLET_2COL).matches) {
       sb.style.removeProperty('--band-parts');
       sb.style.removeProperty('--band-stats');
+      sb.style.removeProperty('--band-detail');
       return;
     }
     const left = document.querySelector('.build-left');
@@ -3133,10 +3161,14 @@
     if (avail < 160) {                                        // 헤더가 화면을 다 먹었다 — 손대지 않는다
       sb.style.removeProperty('--band-parts');
       sb.style.removeProperty('--band-stats');
+      sb.style.removeProperty('--band-detail');
       return;
     }
+    const detail = Math.min(DETAIL_MAX, Math.max(DETAIL_MIN,
+      Math.min(Math.round(avail * DETAIL_SHARE), avail - PARTS_MIN - 8)));
     sb.style.setProperty('--band-stats', avail + 'px');
-    sb.style.setProperty('--band-parts', Math.max(150, avail - DETAIL_H) + 'px');
+    sb.style.setProperty('--band-detail', detail + 'px');
+    sb.style.setProperty('--band-parts', Math.max(PARTS_MIN, avail - detail - 8) + 'px');
   }
 
   function renderBannedCount() {

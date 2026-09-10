@@ -2339,8 +2339,10 @@ body.drawer-open .m-actionbar { display: none !important; }
   .build-stats  { height: var(--band-stats, 520px); }
 
   /* 파츠 상세는 높이를 못박는다 — 파츠에 손을 올릴 때마다 내용 길이가 달라져
-     높이가 출렁이면 위아래가 통째로 밀린다(데스크톱에서 겪은 그 깜빡임). */
-  .build-detail > .panel { height: 244px; overflow-y: auto; }
+     높이가 출렁이면 위아래가 통째로 밀린다(데스크톱에서 겪은 그 깜빡임).
+     값은 fitBuildBand 가 남은 높이에서 떼어 준다(내용이 282~419px 이라 244px 로는
+     163개 파츠 전부가 스크롤을 요구했다). */
+  .build-detail > .panel { height: var(--band-detail, 244px); overflow-y: auto; }
 
   /* 목록은 칸이 주는 만큼 쓴다. max-height 가 없으면 fitWholeRows 가
      예산을 못 재고 그대로 물러나므로(높이를 건드리지 않는다) flex 가 맡는다. */
@@ -2465,3 +2467,26 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* 화면 모드 토글은 「⋯」 메뉴 항목의 원본일 뿐이라 상단바에는 그리지 않는다.
    (메뉴 생성기가 원본의 글자·설명을 읽고, 누르면 원본을 click 한다) */
 #viewModeBtn { display: none !important; }
+
+
+/* 방어 스킬 머리줄 — 눌러서 접었다 편다 (버튼이지만 기존 dura-row 모양을 지킨다) */
+.stg-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 7px 0 6px;
+}
+.stg-head:hover .dura-lb { color: var(--accent); }
+.stg-head .stg-caret { color: var(--muted); font-size: 11px; width: 11px; flex: 0 0 auto; }
+.stg-head .stagger-detail { margin-left: auto; }
+/* [hidden] 은 UA 기본 display:none 일 뿐이라, 아래 .stagger-skills 의 display 지정에
+   진다 — 접었는데 목록이 그대로 보였다. 명시해서 이긴다. */
+.stagger-skills[hidden] { display: none !important; }
