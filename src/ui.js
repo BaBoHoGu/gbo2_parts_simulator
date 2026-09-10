@@ -949,6 +949,7 @@
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
     if (view === 'build') {
+      fitBuildBand();
       fitWholeRows($('#partList'));
       // 어디로 돌아가는지 버튼에 그대로 적는다 — 문구와 동작이 다르면 안 누른다
       const back = $('#backToSelect');
@@ -3062,6 +3063,7 @@
       frag.append(t.tile);              // 기존 노드를 옮길 뿐, 새로 만들지 않는다
     }
     box.replaceChildren(frag);
+    fitBuildBand();
     fitWholeRows(box);
     box.scrollTop = keepScroll;
   }
@@ -3099,6 +3101,36 @@
     // 아래 여백이 줄 간격보다 넓으면 다음 줄 윗머리가 비어져 나오므로 그 앞에서 끊는다
     const h = nextTop == null ? fit + padBottom : Math.min(fit + padBottom, nextTop);
     box.style.height = h + 'px';
+  }
+
+  /* 태블릿 2단 배치(720~1080px · 높이 820px 이상)에서 두 단의 높이를 정한다.
+     기체 헤더는 기체 이름 줄바꿈·확장 스킬 유무로 높이가 달라져 CSS 만으로는
+     남은 높이를 못 적는다. 헤더 아래부터 화면 끝까지를 재어 CSS 변수로 넘긴다.
+     (무장은 이 띠 아래에 그대로 흘러 스크롤 한 번이면 닿는다) */
+  const TABLET_2COL = '(min-width: 720px) and (max-width: 1080px) and (min-height: 960px)';
+  const DETAIL_H = 244 + 8;      // 파츠 상세 고정 높이 + 칸 간격 (CSS 와 짝)
+  function fitBuildBand() {
+    const sb = $('#screenBuild');
+    if (!sb) return;
+    // jsdom(smoke.js)에는 matchMedia 가 없다 — 없으면 2단 배치도 없다고 본다
+    if (!window.matchMedia || !window.matchMedia(TABLET_2COL).matches) {
+      sb.style.removeProperty('--band-parts');
+      sb.style.removeProperty('--band-stats');
+      return;
+    }
+    const left = document.querySelector('.build-left');
+    if (!left || !left.offsetParent) return;                 // 숨어 있으면 잴 수 없다
+    // 화면 좌표(getBoundingClientRect)로 재면 스크롤한 만큼 띠가 넓어진다 —
+    // 회전 후 돌아왔을 때 9px 씩 어긋났다. 스크롤과 무관한 배치 값으로 잰다.
+    //   쓸 수 있는 높이 = 칸 안쪽 높이 − 위아래 여백(8+8) − 기체 헤더 − 칸 간격(8)
+    const avail = Math.round(sb.clientHeight - 8 - 8 - left.offsetHeight - 8);
+    if (avail < 160) {                                        // 헤더가 화면을 다 먹었다 — 손대지 않는다
+      sb.style.removeProperty('--band-parts');
+      sb.style.removeProperty('--band-stats');
+      return;
+    }
+    sb.style.setProperty('--band-stats', avail + 'px');
+    sb.style.setProperty('--band-parts', Math.max(150, avail - DETAIL_H) + 'px');
   }
 
   function renderBannedCount() {
@@ -6044,7 +6076,7 @@
     let resizeTimer = null;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => fitWholeRows($('#partList')), 120);
+      resizeTimer = setTimeout(() => { fitBuildBand(); fitWholeRows($('#partList')); }, 120);
     });
 
     document.addEventListener('keydown', ev => {

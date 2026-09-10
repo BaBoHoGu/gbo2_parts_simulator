@@ -2258,3 +2258,86 @@ body.drawer-open .m-actionbar { display: none !important; }
   .part-list .part-tile.on .pt-nm::after { content: none; }
   .part-list .part-tile.on .pt-slot::before { content: "✓ "; color: var(--ok); font-weight: 700; }
 }
+
+
+/* ═══ [태블릿 2단 배치 2026-09-10] ═══
+   태블릿 세로는 지금까지 한 줄로 쌓여, 768x1024 에서 파츠 목록이 스크롤
+   1,510px 아래에 있었다 — 파츠를 고르는 화면인데 파츠가 안 보였다.
+   위에 기체 헤더를 통째로 두고, 아래를 「왼쪽=파츠 목록·상세 / 오른쪽=성능」
+   두 단으로 갈라 스크롤 없이 한 화면에 담는다.
+
+   조건이 좁은 이유:
+     min-width 720px  — 그 아래로는 한 단이 350px 미만이라 목록이 2열도 안 나온다
+     max-width 1080px — 그 위는 기존 3단(정보·상세·성능)이 이미 더 낫다
+     min-height 960px — 기체 헤더가 298px 이라, 그보다 짧으면 목록이 2줄도
+                        못 채운다(720x900 에서 4개). 짧으면 지금처럼 쌓는다.
+   무장은 첫 화면 바로 아래(4행)에 그대로 둔다 — 스크롤 한 번이면 닿는다.
+   되돌리기: 이 블록만 지운다 (git revert 로 충분). */
+@media (min-width: 720px) and (max-width: 1080px) and (min-height: 960px) {
+  /* 상단바가 3줄(150px)을 먹고 있었다 — 폰과 같은 「⋯」 메뉴로 접는다.
+     768px 에서는 접어도 2줄이라, 지나간 단계 표시까지 접어 한 줄로 만든다.
+     (뒤로 가기는 빌드 화면의 「‹ 기체 변경」 버튼이 이미 담당한다) */
+  .topbar-more { display: inline-flex; align-items: center; }
+  .topbar .in-more { display: none !important; }
+  .stepper li[data-step]:not(.on), .stepper li.arrow { display: none; }
+
+  /* 출처 표기는 지울 수 없다 — 두 줄을 한 줄로 접어 35px 을 목록에 돌려준다 */
+  .app-foot { padding-top: 4px; padding-bottom: 4px; font-size: 10.5px; }
+  .app-foot p:first-child { display: none; }
+
+  .screen-build {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
+    /* 행 높이를 1fr 로 두면 안 된다 — 아래 무장(4행)까지 같이 나눠 갖느라
+       1fr 이 0 으로 눌려 목록이 14px 이 됐다. 높이는 fitBuildBand 가 잰다. */
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    gap: 8px;
+    padding: 8px;
+    overflow-y: auto;
+  }
+  .incomplete-notice { grid-column: 1 / -1; grid-row: 1; }
+  .build-left   { grid-column: 1 / -1; grid-row: 1; }
+  .build-parts  { grid-column: 1; grid-row: 2; }
+  .build-detail { grid-column: 1; grid-row: 3; }
+  .build-stats  { grid-column: 2; grid-row: 2 / 4; }
+  .build-bottom { grid-column: 1 / -1; grid-row: 4; }
+
+  /* 위의 (max-width:1080px) 블록이 block 으로 풀어 둔 것을 다시 flex 로 —
+     칸 높이에 맞춰 내부를 늘리고, 넘치는 것은 각자 스크롤한다 */
+  .build-col, .build-parts { margin-bottom: 0; }
+  /* 높이를 정해 준 두 칸만 flex 로 — 기체 헤더까지 건드리면 그 패널이
+     0px 로 접힌다(내용 높이를 잃는다). 헤더는 내용만큼 자라게 둔다. */
+  .build-parts, .build-stats {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .build-parts > .panel, .build-stats > .panel {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .build-detail > .panel { min-height: 0; }
+  .build-parts > .panel.fill { min-height: 0; }
+
+  /* 두 단의 높이 — fitBuildBand 가 기체 헤더 아래 남은 높이를 재어 채운다.
+     JS 가 아직 안 돌았을 때를 위한 기본값을 둔다(빈 화면보다 낫다). */
+  .build-parts  { height: var(--band-parts, 300px); }
+  .build-stats  { height: var(--band-stats, 520px); }
+
+  /* 파츠 상세는 높이를 못박는다 — 파츠에 손을 올릴 때마다 내용 길이가 달라져
+     높이가 출렁이면 위아래가 통째로 밀린다(데스크톱에서 겪은 그 깜빡임). */
+  .build-detail > .panel { height: 244px; }
+
+  /* 목록은 칸이 주는 만큼 쓴다. max-height 가 없으면 fitWholeRows 가
+     예산을 못 재고 그대로 물러나므로(높이를 건드리지 않는다) flex 가 맡는다. */
+  .part-list { max-height: none; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  .stat-wrap { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  .d-eff-tx { height: auto; }
+
+  /* 파츠칸 8개를 한 줄로 — 2열이면 4줄(≈400px)이 되어 아래가 다 밀린다 */
+  .equip-grid { grid-template-columns: repeat(8, 1fr); }
+  .equip-grid .eq { min-height: 58px; }
+}
