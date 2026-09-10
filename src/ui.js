@@ -4244,17 +4244,18 @@
     try { $('#uploadAuthor').value = localStorage.getItem(AUTHOR_KEY) || ''; } catch { /* 무시 */ }
     $('#uploadAuthor').dispatchEvent(new Event('input'));
 
-    // 무과금 체크 — 티켓으로 못 사는 파츠가 하나라도 있으면 끄고 잠근다.
-    // 「검수를 위해」 라는 말대로, 체크만 못 하게 막는 게 아니라 이유까지 적어 준다.
+    // 무과금 여부는 장착 파츠에서 바로 읽는다 — 사용자가 고르지 않는다.
+    // 결과만 보여 주지 않고 왜 그런지(어느 파츠 때문인지)까지 적는다.
     const paid = state.ms ? paidPartsIn(state.equipped) : [];
-    const wrap = $('#uploadFreeWrap'), chk = $('#uploadFree'), fnote = $('#uploadFreeNote');
-    if (wrap && chk) {
-      chk.disabled = paid.length > 0;
-      if (paid.length) chk.checked = false;
-      wrap.classList.toggle('off', paid.length > 0);
-      fnote.textContent = paid.length
-        ? '리사이클로 못 사는 파츠 ' + paid.length + '종: ' + paid.slice(0, 3).join(', ') + (paid.length > 3 ? ' 외' : '')
-        : (parts ? '리사이클 티켓만으로 만들 수 있는 구성입니다' : '');
+    const wrap = $('#uploadFreeWrap'), mark = $('#uploadFreeMark'), fnote = $('#uploadFreeNote');
+    if (wrap && mark) {
+      const free = parts > 0 && !paid.length;
+      wrap.hidden = !parts;
+      wrap.classList.toggle('off', !free);
+      mark.textContent = free ? '무과금 구성' : '과금 파츠 포함';
+      fnote.textContent = free
+        ? '리사이클 티켓만으로 만들 수 있습니다 — 갤러리에 「무과금」으로 붙습니다'
+        : (paid.length + '종: ' + paid.slice(0, 3).join(', ') + (paid.length > 3 ? ' 외 ' + (paid.length - 3) + '종' : ''));
       fnote.title = paid.length ? paid.join(', ') : '';
     }
     $('#uploadGo').disabled = !(state.ms && parts);
@@ -4271,16 +4272,9 @@
     // 작성자를 먼저 묻는 순서라 검사도 같은 순서로 — 위에서부터 채우게 된다
     if (!author.trim()) { $('#uploadMsg').textContent = '작성자를 입력하세요'; $('#uploadAuthor').focus(); return; }
     if (!title.trim()) { $('#uploadMsg').textContent = '제목을 입력하세요'; $('#uploadTitle').focus(); return; }
-    // 체크가 켜져 있어도 구성을 다시 본다 — 팝업을 열어 둔 채 파츠를 바꿨을 수 있다
-    const free = !!($('#uploadFree') && $('#uploadFree').checked);
-    if (free) {
-      const paid = paidPartsIn(state.equipped);
-      if (paid.length) {
-        $('#uploadMsg').textContent = '무과금 구성이 아닙니다 — ' + paid.slice(0, 2).join(', ') + (paid.length > 2 ? ' 외 ' + (paid.length - 2) + '종' : '');
-        openUpload(true);
-        return;
-      }
-    }
+    // 무과금 여부는 올리는 순간의 장착 파츠에서 다시 읽는다 — 팝업을 열어 둔 채
+    // 파츠를 바꿨을 수 있고, 화면에 적힌 값을 믿을 이유가 없다.
+    const free = state.equipped.length > 0 && !paidPartsIn(state.equipped).length;
     const btn = $('#uploadGo');
     btn.disabled = true; btn.textContent = '올리는 중…';
     $('#uploadMsg').textContent = '';
