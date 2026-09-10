@@ -862,7 +862,7 @@ body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none;
   overflow: hidden;
 }
 .pt-why { font-size: 9.5px; line-height: 1.15; text-align: center; color: var(--bad); }
-.pt-slot { display: none; }   /* 폰 세로 가로줄 타일에서만 켠다 */
+.pt-slot, .pt-cat { display: none; }   /* 폰 가로줄 타일 · 태블릿 큰 카드에서만 켠다 */
 
 .part-tile.on { background: #1c2a1e; border-color: #3f7a4d; }
 .part-tile.on .pt-nm::after { content: " ✓"; color: var(--ok); }
@@ -2269,11 +2269,12 @@ body.drawer-open .m-actionbar { display: none !important; }
    조건이 좁은 이유:
      min-width 720px  — 그 아래로는 한 단이 350px 미만이라 목록이 2열도 안 나온다
      max-width 1080px — 그 위는 기존 3단(정보·상세·성능)이 이미 더 낫다
-     min-height 960px — 기체 헤더가 298px 이라, 그보다 짧으면 목록이 2줄도
-                        못 채운다(720x900 에서 4개). 짧으면 지금처럼 쌓는다.
+     min-height 1000px— 기체 헤더 298px + 파츠 상세 244px 을 빼고 나면
+                        그보다 짧은 화면은 큰 카드가 2개밖에 안 들어간다
+                        (720x960 에서 2개). 짧으면 지금처럼 쌓는다.
    무장은 첫 화면 바로 아래(4행)에 그대로 둔다 — 스크롤 한 번이면 닿는다.
    되돌리기: 이 블록만 지운다 (git revert 로 충분). */
-@media (min-width: 720px) and (max-width: 1080px) and (min-height: 960px) {
+@media (min-width: 720px) and (max-width: 1080px) and (min-height: 1000px) {
   /* 상단바가 3줄(150px)을 먹고 있었다 — 폰과 같은 「⋯」 메뉴로 접는다.
      768px 에서는 접어도 2줄이라, 지나간 단계 표시까지 접어 한 줄로 만든다.
      (뒤로 가기는 빌드 화면의 「‹ 기체 변경」 버튼이 이미 담당한다) */
@@ -2298,8 +2299,10 @@ body.drawer-open .m-actionbar { display: none !important; }
   }
   .incomplete-notice { grid-column: 1 / -1; grid-row: 1; }
   .build-left   { grid-column: 1 / -1; grid-row: 1; }
-  .build-parts  { grid-column: 1; grid-row: 2; }
-  .build-detail { grid-column: 1; grid-row: 3; }
+  /* 왼쪽 열은 위가 상세, 아래가 목록 — 고른 파츠가 눈높이에 오고
+     목록은 아래로 길게 흐른다(공식 시뮬레이터와 같은 순서) */
+  .build-detail { grid-column: 1; grid-row: 2; }
+  .build-parts  { grid-column: 1; grid-row: 3; }
   .build-stats  { grid-column: 2; grid-row: 2 / 4; }
   .build-bottom { grid-column: 1 / -1; grid-row: 4; }
 
@@ -2329,7 +2332,7 @@ body.drawer-open .m-actionbar { display: none !important; }
 
   /* 파츠 상세는 높이를 못박는다 — 파츠에 손을 올릴 때마다 내용 길이가 달라져
      높이가 출렁이면 위아래가 통째로 밀린다(데스크톱에서 겪은 그 깜빡임). */
-  .build-detail > .panel { height: 244px; }
+  .build-detail > .panel { height: 244px; overflow-y: auto; }
 
   /* 목록은 칸이 주는 만큼 쓴다. max-height 가 없으면 fitWholeRows 가
      예산을 못 재고 그대로 물러나므로(높이를 건드리지 않는다) flex 가 맡는다. */
@@ -2340,4 +2343,50 @@ body.drawer-open .m-actionbar { display: none !important; }
   /* 파츠칸 8개를 한 줄로 — 2열이면 4줄(≈400px)이 되어 아래가 다 밀린다 */
   .equip-grid { grid-template-columns: repeat(8, 1fr); }
   .equip-grid .eq { min-height: 58px; }
+
+  /* 검색칸·칩을 조금 낮춰 목록에 한 줄을 더 준다 */
+  .part-filter input[type="search"], .build-parts input[type="search"] { min-height: 34px; padding: 6px 10px; font-size: 13px; }
+  .build-parts .chip { min-height: 30px; padding: 5px 11px; }
+
+  /* ── 파츠 목록: 2열 큰 카드 ──
+     분류를 왼쪽 위, 그림을 크게, 이름과 칸 소모를 아래에 둔다. */
+  .part-list { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  /* 분류는 DOM 에서 맨 뒤라, 행을 못박지 않으면 카드 아래로 내려간다 */
+  .part-list .part-tile {
+    display: grid;
+    grid-template-rows: 12px 50px 14px 12px;
+    justify-items: center;
+    gap: 1px;
+    padding: 3px 7px 4px;
+  }
+  .part-list .pt-cat {
+    display: block;
+    grid-row: 1;
+    justify-self: start;
+    font-size: 10px;
+    line-height: 12px;
+    color: var(--muted);
+  }
+  .part-list .pt-thumb { grid-row: 2; }
+  .part-list .pt-thumb, .part-list .part-tile img { width: 50px; height: 50px; }
+  .part-list .pt-nm {
+    grid-row: 3;
+    font-size: 11px;
+    line-height: 14px;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .part-list .pt-slot {
+    display: block;
+    grid-row: 4;
+    font-size: 9.5px;
+    line-height: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 장착 불가 사유는 다섯째 줄로 흘린다 — 그 카드만 높아진다 */
+  .part-list .pt-why { grid-row: 5; font-size: 9.5px; line-height: 12px; }
 }
