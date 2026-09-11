@@ -33,7 +33,8 @@ const STAT_KEYS = [
   [/^遠距離パーツスロット/, '遠スロット']
 ];
 // 기체 스탯이 아닌 줄 — 무장·스킬·방패. 이것을 안 거르면 무장 위력이 기체 HP 로 들어온다.
-const NOT_STAT = /下格闘補正|威力|スキル|シールドHP|シールド装備時|枚装備|射程|ヒート率|発射間隔|OH復帰|リロード|弾数|集束/;
+// 「…補正上昇値低下5 → 3」 은 효과의 '상승폭' 변경이지 기체 스탯값이 아니다 (2019/09/26 계열 오탐 52칸의 원인).
+const NOT_STAT = /下格闘補正|威力|スキル|シールドHP|シールド装備時|枚装備|射程|ヒート率|発射間隔|OH復帰|リロード|弾数|集束|上昇値|低下値/;
 
 const flat = h => h
   .replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ')
@@ -105,6 +106,12 @@ function latestFor(changes, key, lv) {
     if (c.lv != null && c.lv !== lv) continue;
     if (!best || String(c.date) > String(best.date)) best = c;
   }
+  // ③ 「LV 표기 없음」 기록의 숫자는 **LV1 값**이다. 상위 LV 는 「함께 조정」될 뿐 폭·절대값은 적히지 않는다.
+  //    공식 공지 관례: 「機体HP「23000」→「26000」に上昇（併せて上位LVも上昇）」(2026/06/25 サイコ・ドーガ — 위키 표 LV1 26000 · LV2 29000)
+  //    또 LV 가 조정 뒤에 추가되는 경우도 있다 (ディマーテル: HP 조정 2025/01/30, LV2 추가 2025/05/22).
+  //    위키 이력은 이 LV1 숫자만 옮겨 적는다. 그래서 LV2 이상에 절대값으로 대조하면 LV 간 차이만큼 틀린다
+  //    (오탐 112칸 · ディマーテル_LV2 오교정의 원인).
+  if (best && best.lv == null && lv !== 1) return null;
   return best;
 }
 
@@ -168,4 +175,5 @@ function main() {
     console.log('\n→ ' + path.relative(ROOT, out));
   }
 }
-main();
+if (require.main === module) main();
+module.exports = { parseHistory, latestFor, historyText };
