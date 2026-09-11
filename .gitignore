@@ -43,3 +43,4 @@ worker/.wrangler/
 .wrangler/
 # 갤러리 이관용 임시 SQL (tools/migrate_gallery.js 가 만든다)
 raw/migrate_gallery.sql
+raw/history_flags.json

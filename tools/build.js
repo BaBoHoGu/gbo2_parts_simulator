@@ -26,6 +26,21 @@ if (fs.existsSync(overridePath)) {
   }
   if (n) console.log(`위키 교정 적용: ${Object.keys(override).length}기 · ${n}개 필드`);
 }
+// 위키 「アップデート履歴」로 확인한 교정 — override 보다 **나중에** 얹는다.
+//
+// 왜 파일이 따로인가: extract_ms_wiki.js 는 「위키 스탯표와 일치하면 교정 해제」를 한다.
+// 그런데 여기서 고치는 값들은 바로 그 스탯표가 낡은 경우라, override 에 넣으면
+// 다음 갱신에서 조용히 지워진다. 이 파일은 그 도구가 건드리지 않는다.
+const manualPath = path.join(ROOT, 'data', 'msData.manual.json');
+if (fs.existsSync(manualPath)) {
+  const fix = (JSON.parse(fs.readFileSync(manualPath, 'utf8')) || {}).fix || {};
+  let n = 0;
+  for (const m of msData) {
+    const f = fix[m.MS名];
+    if (f) for (const [k, d] of Object.entries(f)) { m[k] = d.value; n++; }
+  }
+  if (n) console.log(`이력 교정 적용: ${Object.keys(fix).length}기 · ${n}개 칸 (msData.manual.json)`);
+}
 const parts = readJson('data', 'parts.json');
 // gbo2.jp 에 아직 없는 파츠를 위키에서 보강한다 — 기체의 msData.additions.json 과 같은 역할.
 {
