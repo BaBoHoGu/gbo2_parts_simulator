@@ -69,7 +69,12 @@ function parseHistory(lines) {
   for (let raw of lines) {
     let line = raw.replace(/\s*→\s*/g, ' → ').replace(/\s+/g, ' ').trim();
     const dm = line.match(/^(20\d\d\/\d\d\/\d\d)\s*[：:]?\s*(.*)$/);
-    if (dm) { date = dm[1]; line = dm[2].replace(/^性能調整\s*/, ''); if (!line) continue; }
+    if (dm) { date = dm[1]; line = dm[2]; }
+    // 「性能調整」은 날짜 줄 뒤에 붙기도 하고, 다음 줄 첫머리에 오기도 한다.
+    // 안 벗기면 그 줄을 통째로 놓친다 — メッサーF01型 「性能調整機体HP上昇Lv1：23000 → 26000」 이
+    // 안 잡혀 2025/04/24 의 옛 값과 대조되던 오탐의 원인.
+    line = line.replace(/^性能調整\s*/, '');
+    if (!line) continue;
     if (!date || !line.includes('→') || NOT_STAT.test(line)) continue;
     // 「変形時」 계열은 우리 데이터에 별도 칸이 없다 — 통상시만 본다.
     if (/変形時|変身時|MA形態/.test(line)) continue;
