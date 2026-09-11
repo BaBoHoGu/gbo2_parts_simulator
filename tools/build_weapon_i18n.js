@@ -103,14 +103,19 @@ function joinParts(parts) {
 function translate(name) {
   let s = NFC(name);
 
-  // 1) 「<기체명>用」 접두사
-  const hit = msNames.find(m => s.startsWith(NFC(m) + '用'));
-  let prefix = '';
-  if (hit) { prefix = msDict[hit] + '용'; s = s.slice(NFC(hit).length + 1); }
+  // 1) 기체명은 **어디에 있든** 기체 사전으로 옮긴다.
+  //    예전엔 「<기체명>用」 접두사만 봐서 「Cガンダム用…」처럼 앞에 글자가 붙으면
+  //    기체명을 놓치고 음역으로 떨어졌다 → 「C 건 다무 용」. 60칸의 원인.
+  const hits = [];
+  for (const m of msNames) {
+    const k = NFC(m);
+    if (k.length < 2 || !s.includes(k)) continue;
+    s = s.split(k).join('{{' + hits.length + '}}');
+    hits.push(msDict[m]);
+  }
 
   // 2) 용어 사전 (긴 것부터). 번역한 자리는 인덱스 마커로 표시해 둔다.
   //    공백으로 감싸면 용어가 붙어 있을 때 경계가 어긋난다.
-  const hits = [];
   for (const k of termKeys) {
     if (!s.includes(k)) continue;
     s = s.split(k).join('{{' + hits.length + '}}');
@@ -121,9 +126,12 @@ function translate(name) {
   const parts = s.split(/\{\{(\d+)\}\}/)
     .map((seg, i) => (i % 2 ? hits[Number(seg)] : translitKana(seg)));
 
-  const ko = joinParts(prefix ? [prefix, ...parts] : parts);
+  const ko = joinParts(parts);
   // 기존 기체·파츠 사전과 표기를 맞춘다 — 「・」는 공백, 전각 괄호는 ASCII 로
   return ko
+    // 라틴 약칭 사이의 「・」는 가운뎃점으로 남긴다 — 「B・S・ライフル」이
+    // 「B S 라이플」이 되면 어디까지가 한 약칭인지 읽을 수 없다.
+    .replace(/([A-Za-z0-9])・(?=[A-Za-z0-9])/g, '$1·')
     .replace(/・/g, ' ')
     .replace(/［/g, '[').replace(/］/g, ']')
     .replace(/（/g, '(').replace(/）/g, ')')
@@ -132,6 +140,10 @@ function translate(name) {
     .replace(/\s+([\])])/g, '$1').replace(/([[(])\s+/g, '$1')
     // 「型」「式」은 앞말에 붙는 접미사다 — 따로 떼면 「육전 형 실드」처럼 어색해진다
     .replace(/([가-힣]) (형|식)(?![가-힣])/g, '$1$2')
+    // 「用」도 앞말에 붙는다 — 「3호기 용 실드」가 아니라 「3호기용 실드」.
+    // 사람이 손본 weapons.override.json 의 표기가 이쪽이다.
+    .replace(/([가-힣0-9A-Za-z\]\)]) 용(?![가-힣])/g, '$1용')
+    .replace(/용(?=[0-9])/g, '용 ')
     .trim();
 }
 
