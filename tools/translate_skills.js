@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { translate: one, hasJa, sleep } = require('./lib/mt.js');
+const { protect } = require('./lib/glossary.js');
 const ROOT = path.join(__dirname, '..');
 const rd = (...p) => JSON.parse(fs.readFileSync(path.join(ROOT, ...p), 'utf8'));
 const rdSafe = (...p) => { try { return rd(...p); } catch { return {}; } };
@@ -37,7 +38,9 @@ const rdSafe = (...p) => { try { return rd(...p); } catch { return {}; } };
   const partCache = new Map();
   async function trPart(p) {
     if (partCache.has(p)) return partCache.get(p);
-    const ko = await one(p);
+    // 게임 용어를 한글로 먼저 박아 두고 보낸다. 안 그러면 gtx 가
+    // 「よろけ」를 「쑥쑥」·「잡음」으로 옮기거나 문장에서 통째로 빼 버린다.
+    const ko = await one(protect(p));
     const v = (ko && !hasJa(ko)) ? ko : null;
     partCache.set(p, v);
     await sleep(80);
