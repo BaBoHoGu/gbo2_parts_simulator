@@ -455,6 +455,26 @@
     try { localStorage.setItem(DEF_SKILL_KEY, defSkillOpen ? '1' : '0'); } catch (e) {}
   }
 
+  /* 무장 칸 접힘 — 파츠를 고를 때는 무장 표가 자리만 차지한다.
+     방어 스킬 목록과 같은 방식으로 localStorage 에 기억한다. */
+  const WEAPON_FOLD_KEY = 'gbo2.weaponFold';
+  let weaponFolded = false;
+  try { weaponFolded = localStorage.getItem(WEAPON_FOLD_KEY) === '1'; } catch (e) {}
+  function applyWeaponFold() {
+    const sec = document.querySelector('.build-weapons .panel');
+    const b = $('#weaponFold');
+    if (sec) sec.classList.toggle('folded', weaponFolded);
+    if (b) {
+      b.classList.toggle('on', weaponFolded);
+      b.title = weaponFolded ? '무장 칸을 폅니다' : '무장 칸을 접습니다';
+    }
+  }
+  function toggleWeaponFold() {
+    weaponFolded = !weaponFolded;
+    try { localStorage.setItem(WEAPON_FOLD_KEY, weaponFolded ? '1' : '0'); } catch (e) {}
+    applyWeaponFold();
+  }
+
   /** 누적치 스킬 체크박스 묶음 (내구 지표·피탄 시뮬 공통). onChange 는 상태 반영 후 콜백.
    *  각 스킬의 발동 조건을 라벨로 보여 주고, 동시 발동 가능한 것만 사용자가 자유롭게 체크한다. */
   function staggerCheckList(ms, lv, onChange, sel, form) {
@@ -1983,6 +2003,7 @@
       if (state.openWeapons.includes(w.name)) openWeaponDetail(row, w, d, lv);
     }
     syncWeaponOpenAll();
+    applyWeaponFold();
   }
 
   /** 무장 표의 열 이름을 한글로. 없는 이름은 원문을 그대로 쓴다. */
@@ -6506,6 +6527,7 @@
     // 비교 칸의 select 는 개수가 바뀌므로 renderComparePick 이 그때그때 연결한다
 
     // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명 (무장 칸 안에서 토글)
+    $('#weaponFold').onclick = toggleWeaponFold;
     $('#weaponOpenAll').onclick = toggleWeaponOpenAll;
     $('#skillListBtn').onclick = () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }

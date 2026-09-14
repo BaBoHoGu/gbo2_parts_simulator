@@ -23,8 +23,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 기체를 고르고 무장을 모두 편다 (인자로 넘긴 셀렉터가 무장 쪽일 때)
   await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) c.click(); });
   await sleep(2500);
-  await pg.evaluate(() => { const b = document.getElementById('weaponOpenAll'); if (b) b.click(); });
-  await sleep(900);
+  await pg.evaluate(() => { const b = document.getElementById('weaponFold'); if (b && !document.querySelector('.build-weapons .panel.folded')) b.click(); });
+  await sleep(700);
   const f = path.join(OUT, NAME + '.png');
   if (SEL === 'full') await pg.screenshot({ path: f });
   else {

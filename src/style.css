@@ -2754,3 +2754,21 @@ body.drawer-open .m-actionbar { display: none !important; }
 
 /* 무장 「모두 열기 / 모두 닫기」 — 하나라도 펴 두면 눌린 티를 낸다 */
 #weaponOpenAll.on { color: var(--accent); border-color: var(--accent-dim); }
+
+
+/* 무장 칸 접기 — 파츠를 고를 때는 무장 표가 자리만 차지한다 */
+.panel-fold {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: inherit; font: inherit; letter-spacing: inherit;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.panel-fold i { font-style: normal; color: var(--muted); font-size: 10px; transition: transform .12s; }
+.panel-fold:hover { color: var(--accent); }
+.panel-fold.on i { transform: rotate(-90deg); }
+/* 접으면 머리줄만 남긴다 */
+.build-weapons .panel.folded > *:not(h2) { display: none; }
+.build-weapons .panel.folded { flex: 0 0 auto; }
+/* 접었을 때 머리줄의 정렬·자세 같은 도구는 쓸 일이 없다 */
+.build-weapons .panel.folded .w-tools,
+.build-weapons .panel.folded #weaponOpenAll,
+.build-weapons .panel.folded #skillListBtn { display: none; }
