@@ -2730,6 +2730,15 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 .h-facts .hf i { font-style: normal; color: var(--dim); }
 .h-facts .hf b { font-weight: 700; color: var(--muted); }
+/* 지상·우주·수중 — 화면 곳곳에서 쓰는 색과 맞춘다 */
+.h-facts .env-g { color: var(--accent); }
+.h-facts .env-s { color: var(--info); }
+.h-facts .env-w { color: var(--data, #3fd0cf); }
+/* 격투 판정력 단계 — 약 < 중 < 강 < 강+ 가 한눈에 보이게 */
+.h-facts .jd-w { color: var(--dim); }
+.h-facts .jd-m { color: var(--info); }
+.h-facts .jd-s { color: var(--accent); }
+.h-facts .jd-x { color: var(--close); }
 /* 적성이 있는 기체는 눈에 띄게 — 스러스터 회복이 달라지는 값이다 */
 .h-facts .hf.on { border-color: var(--accent-dim); }
 .h-facts .hf.on b { color: var(--accent); }

@@ -15,6 +15,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await pg.setViewport({ width: 1500, height: 950, deviceScaleFactor: 2 });
   await pg.goto(URL, { waitUntil: 'load', timeout: 180000 });
   await sleep(4500);
+  // 판정력이 조건부인 기체를 골라 본다
+  await pg.evaluate(() => {
+    const inp = document.querySelector('#msSearch, input[type=search]');
+    if (inp) { inp.value = '시스쿠드'; inp.dispatchEvent(new Event('input', { bubbles: true })); }
+  });
+  await sleep(900);
   await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) c.click(); });
   await sleep(2500);
   await pg.evaluate(() => {

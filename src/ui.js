@@ -5910,21 +5910,29 @@
     const line = $('#heroFacts');
     if (!line) return;
     line.innerHTML = '';
-    const add = (lb, txt, cls) => {
+    // 값 안의 낱말마다 색을 줄 수 있게, 문자열이 아니라 조각 배열을 받는다.
+    const add = (lb, parts, cls) => {
       const b = el('span', 'hf' + (cls ? ' ' + cls : ''));
       b.append(el('i', '', lb));
-      b.append(el('b', '', txt));
+      const v = el('b');
+      parts.forEach((x, i) => {
+        if (i) v.append(document.createTextNode(typeof x === 'string' ? ' ' : ' · '));
+        v.append(typeof x === 'string' ? document.createTextNode(x) : el('span', x.cls, x.t));
+      });
+      b.append(v);
       line.append(b);
     };
-    const sortie = [m['出撃_地上可'] !== false && '지상', m['出撃_宇宙可'] !== false && '우주']
-      .filter(Boolean).join(' · ');
-    add('출격', sortie || '—');
-    const adapt = [m['環境適正_地上'] && '지상', m['環境適正_宇宙'] && '우주', m['環境適正_水中'] && '수중']
-      .filter(Boolean).join(' · ');
-    add('적성', adapt || '없음', adapt ? 'on' : '');
+    // 지상·우주·수중은 화면 곳곳에서 같은 색을 쓴다 — 여기서도 맞춘다.
+    const envChip = t => ({ t, cls: 'env-' + (t === '지상' ? 'g' : t === '우주' ? 's' : 'w') });
+
+    const sortie = [m['出撃_地上可'] !== false && '지상', m['出撃_宇宙可'] !== false && '우주'].filter(Boolean);
+    add('출격', sortie.length ? sortie.map(envChip) : ['—']);
+    const adapt = [m['環境適正_地上'] && '지상', m['環境適正_宇宙'] && '우주', m['環境適正_水中'] && '수중'].filter(Boolean);
+    add('적성', adapt.length ? adapt.map(envChip) : ['없음'], adapt.length ? 'on' : '');
+
     // 판정력은 「通常：中 スキル発動時： 強」처럼 조건이 붙은 기체가 18기 있다.
-    // 그런 것은 줄여 적지 않고 조건까지 그대로 보여 준다 — 줄이면 뜻이 달라진다.
-    // 조건 문구가 11종이라 낱말 사전으로 옮긴다. 스킬 이름은 skTr 이 맡는다.
+    // 조건까지 그대로 적으면 길어서, 기본값만 색으로 보이고 조건은 「… 시 상승」으로 줄인다.
+    // 다만 조건 쪽이 더 낮거나 같으면 줄이지 않고 값을 적는다 — 줄이면 거짓이 된다.
     const JD_WORDS = [
       ['スキル発動時', '스킬 발동 시'], ['システム発動中', '시스템 발동 중'],
       ['共振発動時', '공진 발동 시'], ['変身時', '변신 시'],
@@ -5933,16 +5941,36 @@
       ['かつ', ' 또한 '], ['以下', ' 이하'],
       ['強', '강'], ['中', '중'], ['弱', '약'],
     ];
-    const jd = String(m['格闘判定力'] || '').trim();
-    if (jd) {
+    // 「強＋」는 강과 별개 단계가 아니라 강보다 한 칸 위다 — 강(3.5) 로 적는다.
+    const jdText = v => (v === '강+' ? '강(3.5)' : v);
+    const jdClass = v => 'jd-' + ({ '약': 'w', '중': 'm', '강': 's', '강+': 'x' }[v] || 'm');
+    const jdRaw = String(m['格闘判定力'] || '').trim();
+    if (jdRaw) {
       // 「S・ノズル制御機構（G）」 같은 스킬 이름이 문장 안에 박혀 있다.
       // 통째로 조회하면 안 걸리므로, 긴 이름부터 문장 안에서 갈아 끼운다.
-      let t = jd;
+      let t = jdRaw;
       for (const nm of skillNamesByLen()) if (t.includes(nm)) t = t.split(nm).join(skTr(nm));
       for (const [ja, ko] of JD_WORDS) t = t.split(ja).join(ko);
-      t = t.replace(/[：:]/g, ': ').replace(/［/g, '[').replace(/］/g, ']')
-        .replace(/（/g, '(').replace(/）/g, ')').replace(/\s+/g, ' ').trim();
-      add('격투 판정력', t);
+      t = t.replace(/[：:]/g, ':').replace(/［/g, '[').replace(/］/g, ']')
+        .replace(/（/g, '(').replace(/）/g, ')').replace(/＋/g, '+').replace(/\s+/g, ' ').trim();
+
+      const segs = [...t.matchAll(/([^:]+):\s*(강\+|강|중|약)/g)].map(x => [x[1].trim(), x[2]]);
+      if (!segs.length) {
+        // 조건 없는 단일 값
+        const v = /강\+|강|중|약/.exec(t);
+        add('격투 판정력', [v ? { t: jdText(v[0]), cls: jdClass(v[0]) } : t]);
+      } else {
+        const base = segs[0][1];
+        const parts = [{ t: jdText(base), cls: jdClass(base) }];
+        // 원문에 적힌 값을 그대로 적는다 — 「상승」처럼 없는 말을 지어내지 않는다.
+        // 조건 문구가 이미 「… 시」·「… 중」으로 끝나면 「시」를 또 붙이지 않는다.
+        const when = c => (/(시|중|후|이하)$/.test(c) ? c : c + ' 시');
+        for (const [cond, val] of segs.slice(1)) {
+          parts.push('/ ' + when(cond) + ':');
+          parts.push({ t: jdText(val), cls: jdClass(val) });
+        }
+        add('격투 판정력', parts);
+      }
     }
   }
 
