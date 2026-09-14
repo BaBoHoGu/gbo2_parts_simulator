@@ -2750,3 +2750,7 @@ body.drawer-open .m-actionbar { display: none !important; }
 .wd-chip.wc-fire { color: var(--info); border-color: color-mix(in srgb, var(--info) 45%, var(--line)); }
 .wd-chip.wc-stag { color: var(--accent); border-color: var(--accent-dim); }
 .wd-chip.wc-stag2 { color: var(--close); border-color: color-mix(in srgb, var(--close) 45%, var(--line)); }
+
+
+/* 무장 「모두 열기 / 모두 닫기」 — 하나라도 펴 두면 눌린 티를 낸다 */
+#weaponOpenAll.on { color: var(--accent); border-color: var(--accent-dim); }

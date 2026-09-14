@@ -513,7 +513,7 @@
     msLimit: 80,
     form: 'normal',        // 'normal' | 'transform' — 성능표를 어느 형태로 볼지
     detailPart: null,      // 상세 미리보기에 고정된 파츠
-    openWeapon: null,      // 펼쳐 둔 무장 이름 — 파츠를 갈아 끼워도 닫히지 않게 유지한다
+    openWeapons: [],       // 펼쳐 둔 무장 이름들 — 파츠를 갈아 끼워도 닫히지 않게 유지한다
     skillPicks: new Set(), // 발동시킨 기체 스킬의 인덱스 (여러 개를 겹칠 수 있다)
     posture: 'stand',      // 사격 자세 'stand'|'crouch'|'prone' — 무장 피해에 자세 보정을 얹는다
     scope: false,          // 스코프 조준 (자세와 별개로 얹힌다)
@@ -1785,6 +1785,7 @@
       const mustCharge = /集束必須/.test(note);
 
       const row = el('div', 'weapon');
+      row.dataset.w = w.name;
       row.dataset.name = w.name;
 
       // ① 구분
@@ -1979,8 +1980,9 @@
       row.onclick = () => toggleWeaponDetail(row, w, d, lv);
       box.append(row);
       // 파츠를 갈아 끼우면 목록을 다시 그리므로, 펼쳐 둔 무장은 여기서 되살린다
-      if (state.openWeapon === w.name) openWeaponDetail(row, w, d, lv);
+      if (state.openWeapons.includes(w.name)) openWeaponDetail(row, w, d, lv);
     }
+    syncWeaponOpenAll();
   }
 
   /** 무장 표의 열 이름을 한글로. 없는 이름은 원문을 그대로 쓴다. */
@@ -2127,15 +2129,40 @@
   /** 위키 備考를 한국어로. MT 번역 사전 우선, 없으면 하드코딩 폴백. */
   const noteText = s => (s ? normNote(NOTE_MT[s] != null ? NOTE_MT[s] : noteFallback(s)) : '');
 
-  /** 누를 때마다 펼치거나 접는다. 열어 둔 무장은 state 에 남겨 다시 그려도 유지한다. */
+  /** 누를 때마다 펼치거나 접는다. 열어 둔 무장은 state 에 남겨 다시 그려도 유지한다.
+   *  여러 개를 한꺼번에 열 수 있다 — 무장끼리 견주려면 하나씩만 열려서는 안 된다. */
   function toggleWeaponDetail(row, w, d, lv) {
     const open = row.nextElementSibling && row.nextElementSibling.classList.contains('weapon-detail');
-    // 한 번에 하나만 열어 둔다
-    for (const e of [...row.parentNode.querySelectorAll('.weapon-detail')]) e.remove();
-    for (const e of [...row.parentNode.querySelectorAll('.weapon.open')]) e.classList.remove('open');
-    state.openWeapon = open ? null : w.name;
-    if (open) return;
-    openWeaponDetail(row, w, d, lv);
+    if (open) {
+      row.nextElementSibling.remove();
+      row.classList.remove('open');
+      state.openWeapons = state.openWeapons.filter(n => n !== w.name);
+    } else {
+      if (!state.openWeapons.includes(w.name)) state.openWeapons.push(w.name);
+      openWeaponDetail(row, w, d, lv);
+    }
+    syncWeaponOpenAll();
+  }
+
+  /** 「모두 열기 / 모두 닫기」 — 버튼 글자는 지금 상태를 보고 정한다. */
+  function weaponNames() {
+    return [...document.querySelectorAll('#weaponList .weapon')].map(r => r.dataset.w).filter(Boolean);
+  }
+  function syncWeaponOpenAll() {
+    const b = $('#weaponOpenAll');
+    if (!b) return;
+    const all = weaponNames();
+    const allOpen = all.length > 0 && all.every(n => state.openWeapons.includes(n));
+    b.textContent = allOpen ? '⌃ 모두 닫기' : '⌄ 모두 열기';
+    b.classList.toggle('on', state.openWeapons.length > 0);
+    b.hidden = all.length < 2;      // 무장이 하나면 버튼이 필요 없다
+  }
+  function toggleWeaponOpenAll() {
+    const all = weaponNames();
+    const allOpen = all.length > 0 && all.every(n => state.openWeapons.includes(n));
+    state.openWeapons = allOpen ? [] : all;
+    renderWeapons();
+    syncWeaponOpenAll();
   }
 
   /** 무장 행 아래에 위키의 설명과 표 값을 그대로 펼친다. */
@@ -5807,7 +5834,7 @@
     // (스킬 선택은 기체별 인덱스라 다른 기체를 불러오면 어긋난다)
     // 기본 제외(banned)는 기체를 가리지 않는 영구 설정이므로 불러오기에서 건드리지 않는다.
     state.form = 'normal';
-    state.openWeapon = null;
+    state.openWeapons = [];
     state.skillPicks.clear();
     state.staggerOn.clear();    // 불러온 구성도 방어 스킬 체크는 새로 시작한다(이전 기체 것이 남지 않게)
     clearAutoResults();         // 이전 기체의 자동 구성 후보가 남아 잘못 적용되지 않게 지운다
@@ -6479,6 +6506,7 @@
     // 비교 칸의 select 는 개수가 바뀌므로 renderComparePick 이 그때그때 연결한다
 
     // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명 (무장 칸 안에서 토글)
+    $('#weaponOpenAll').onclick = toggleWeaponOpenAll;
     $('#skillListBtn').onclick = () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
       // 모바일에선 별도 시트로 연다(무장 표와 섞이면 보기 어렵다). 데스크톱은 기존 인라인 토글.
