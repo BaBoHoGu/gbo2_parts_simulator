@@ -26,6 +26,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(12000);
   await pg.evaluate(() => { const d = document.querySelector('#autoDrawer'); if (d) d.classList.remove('open'); });
   await sleep(800);
+  // 무장 한 줄을 펴서 위키 설명까지 찍는다
+  await pg.evaluate(() => {
+    const r = document.querySelector('.weapon');
+    if (r) r.click();
+  });
+  await sleep(900);
+  await pg.evaluate(() => { const d = document.querySelector('.wd-note-chips, .wd-note-tx'); if (d) d.scrollIntoView({ block: 'center' }); });
+  await sleep(400);
   await pg.screenshot({ path: path.join(OUT, 'build.png') });
   console.log('ok');
   await browser.close();

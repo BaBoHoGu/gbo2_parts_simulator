@@ -2595,10 +2595,20 @@ body.drawer-open .m-actionbar { display: none !important; }
 .codex-ttl .codex-tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; }
 .codex-jp { color: var(--dim); font-size: 11.5px; margin-bottom: 10px; }
 .codex-sub { font-size: 12px; font-weight: 700; color: var(--accent); margin: 14px 0 6px; }
-.codex-row + .codex-row { margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); }
+/* LV 마다 상자 하나. 점선으로만 나누면 LV 가 넷일 때 어디서 끊기는지 잘 안 보인다. */
+.codex-row {
+  border: 1px solid var(--line); border-radius: 3px;
+  background: var(--panel-2);
+  padding: 8px 10px 9px;
+}
+.codex-row + .codex-row { margin-top: 7px; }
 .codex-row b { color: var(--accent); font-size: 12px; }
 .codex-eff { white-space: pre-wrap; font-size: 12.5px; line-height: 1.55; color: var(--fg, #d7dce6); margin-top: 3px; }
-.codex-desc { white-space: pre-wrap; font-size: 12px; line-height: 1.5; color: var(--muted); margin-top: 4px; }
+/* 보충 설명은 효과와 줄로 나눈다 — 붙여 두면 어디까지가 효과인지 안 보인다 */
+.codex-desc {
+  white-space: pre-wrap; font-size: 12px; line-height: 1.5; color: var(--muted);
+  margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--line);
+}
 
 /* --- 우: 보유 기체 --- */
 .codex-msbar { display: flex; flex-direction: column; align-items: stretch; gap: 5px; margin-bottom: 7px; }
@@ -2686,4 +2696,17 @@ body.drawer-open .m-actionbar { display: none !important; }
   /* 출처 안내 문장은 링크가 바로 아래 있어 굳이 두 줄을 쓸 필요가 없다 */
   .app-foot .foot-src { display: none; }
   .app-foot .foot-links { gap: 1px 9px; margin-top: 1px; }
+}
+
+
+/* 위키 설명을 항목별 칩으로 — 「 / 」로 이어 붙이면 몇 개인지 안 세어진다 */
+.wd-note-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.wd-chip {
+  font-size: 11.5px; line-height: 1.45;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  white-space: normal;
 }

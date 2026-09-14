@@ -2197,7 +2197,16 @@
     if (w.info && w.info['備考']) {
       const note = el('div', 'wd-sec');
       note.append(el('div', 'wd-sec-lb', '위키 설명'));
-      note.append(el('div', 'wd-note-tx', noteText(w.info['備考'])));
+      // 「 / 」로 이어 붙은 한 줄은 항목이 몇 개인지 세기 어렵다.
+      // 원문이 이미 불릿 목록이므로 쪼개서 하나씩 칩으로 보여 준다.
+      const items = noteText(w.info['備考']).split(' / ').map(t => t.trim()).filter(Boolean);
+      if (items.length > 1) {
+        const wrap = el('div', 'wd-note-chips');
+        for (const t of items) wrap.append(el('span', 'wd-chip', t));
+        note.append(wrap);
+      } else {
+        note.append(el('div', 'wd-note-tx', items[0] || ''));
+      }
       box.append(note);
     }
     row.after(box);
