@@ -2556,8 +2556,15 @@
     const showW = detail && weapons.length > 0;
     if (detail && !weapons.length) toast('무장 정보가 없어 요약으로 저장합니다');
 
-    const PAD = 24, IP = 20, GAP = 20, DPR = 2;
-    const W = showW ? 1200 : 1040;
+    // 카드가 메신저(카톡 등)를 지나면 긴 변이 1280 안팎으로 줄고 다시 압축된다.
+    // 그때 글자가 살아남느냐는 「글자 크기 ÷ 카드 폭」 비율로 정해진다 — DPR 로는 안 바뀐다.
+    // 그래서 글자를 키우고(FS) 그래프 바를 줄여 폭을 깎았다. 2400px 에서 13px 본문이
+    // 1280 으로 줄면 14px 이 되어 뭉갰는데, 이 비율이면 19px 로 남는다.
+    const PAD = 24, IP = 20, GAP = 20;
+    let DPR = 3;                                  // 아래에서 폰 메모리에 맞춰 낮출 수 있다
+    const FS = 1.2;                               // 카드 글자 배율
+    const fnt = (px, w) => (w ? w + ' ' : '') + +(px * FS).toFixed(1) + 'px ' + F;
+    const W = showW ? 1120 : 1040;  // 상세만 좁혔다 — 요약을 더 줄이면 그래프 바가 안 보인다
     const leftX = PAD, leftW = 396, rightX = PAD + leftW + GAP, rightW = W - PAD - rightX, panelTop = PAD;
 
     // 이미지 미리 로드 (data URI → onload 즉시지만 비동기라 await)
@@ -2624,27 +2631,27 @@
       box(lx, ly, TH, TH, 8);
       fit(heroImg, lx + 2, ly + 2, TH - 4, TH - 4);
       const nx = lx + TH + 14;
-      lt(clip(ctx, T.msName(m.MS名), lR - nx, '700 17px ' + F), nx, ly + 21, '700 17px ' + F, CO.text);
-      lt('★'.repeat(msRarity(m)) || '', nx, ly + 44, '13px ' + F, CO.accent);
+      lt(clip(ctx, T.msName(m.MS名), lR - nx, fnt(17, '700')), nx, ly + 21, fnt(17, '700'), CO.text);
+      lt('★'.repeat(msRarity(m)) || '', nx, ly + 44, fnt(13), CO.accent);
       if (draw) {
-        ctx.font = '13px ' + F; const sw = ctx.measureText('★'.repeat(msRarity(m)) || '').width;
+        ctx.font = fnt(13); const sw = ctx.measureText('★'.repeat(msRarity(m)) || '').width;
         const bt = T.attrName(m.属性) + ' ' + m.コスト;
-        ctx.font = '700 12px ' + F; const bw = ctx.measureText(bt).width + 18;
+        ctx.font = fnt(12, '700'); const bw = ctx.measureText(bt).width + 18;
         const bx = nx + sw + (sw ? 10 : 0), byy = ly + 33;
         ctx.fillStyle = attrC; rrect(bx, byy, bw, 20, 10); ctx.fill();
         ctx.fillStyle = '#10151c'; ctx.textAlign = 'left'; ctx.fillText(bt, bx + 9, byy + 14);
       }
       ly += TH + 14;
       lt('강화 ' + STAGE_LABEL[state.stage] + '    확장 ' + expLabel + (formLabel ? '    ' + formLabel : ''),
-        lx, ly + 4, '12px ' + F, CO.muted);
+        lx, ly + 4, fnt(12), CO.muted);
       ly += 16; rule(ly, lx, lR); ly += 14;
 
       // 파츠 슬롯 게이지 (근/중/원)
-      lt('파츠 슬롯', lx, ly + 2, '700 12px ' + F, CO.muted); ly += 16;
+      lt('파츠 슬롯', lx, ly + 2, fnt(12, '700'), CO.muted); ly += 16;
       for (const [lb, used, max] of slotRows) {
         const rowY = ly;
-        lt(lb, lx, rowY + 13, '13px ' + F, CO.text);
-        lt(used + ' / ' + max, lx + 26, rowY + 13, '13px ' + F, used > max ? CO.bad : CO.muted);
+        lt(lb, lx, rowY + 13, fnt(13), CO.text);
+        lt(used + ' / ' + max, lx + 26, rowY + 13, fnt(13), used > max ? CO.bad : CO.muted);
         const bX = lx + 92, bW = lR - bX, bh = 12, bY = rowY + 2;
         const cells = Math.min(Math.max(max, used, 1), 20);
         const scale = cells / Math.max(max, used, 1);
@@ -2659,8 +2666,8 @@
       ly += 4; rule(ly, lx, lR); ly += 12;
 
       // 장착 파츠 썸네일 그리드 (4열, LV 뱃지)
-      lt('장착 파츠 ' + partItems.length, lx, ly + 2, '700 12px ' + F, CO.muted); ly += 16;
-      if (!partItems.length) { lt('없음', lx, ly + 6, '13px ' + F, CO.dim); ly += 22; }
+      lt('장착 파츠 ' + partItems.length, lx, ly + 2, fnt(12, '700'), CO.muted); ly += 16;
+      if (!partItems.length) { lt('없음', lx, ly + 6, fnt(13), CO.dim); ly += 22; }
       else {
         const cols = 4, cg = 8, cw = (lR - lx - (cols - 1) * cg) / cols;
         const rows = Math.ceil(partItems.length / cols);
@@ -2669,7 +2676,7 @@
           box(cx, cy, cw, cw, 7);
           fit(it.im, cx + 3, cy + 3, cw - 6, cw - 6);
           if (it.lv && draw) {   // LV 뱃지 (우하단)
-            ctx.font = '700 10px ' + F; const t = 'LV' + it.lv, w2 = ctx.measureText(t).width + 8;
+            ctx.font = fnt(10, '700'); const t = 'LV' + it.lv, w2 = ctx.measureText(t).width + 8;
             ctx.fillStyle = 'rgba(6,9,14,.82)'; rrect(cx + cw - w2 - 3, cy + cw - 17, w2, 14, 4); ctx.fill();
             ctx.fillStyle = CO.text; ctx.textAlign = 'left'; ctx.fillText(t, cx + cw - w2 + 1, cy + cw - 6);
           }
@@ -2681,12 +2688,12 @@
       /* ═══ 우측 패널: 성능표 ═══ */
       const rxi = rightX + IP, rR = rightX + rightW - IP;
       let ry = panelTop + IP;
-      const xTotalR = rxi + 150, xGainR = rxi + 236, barX = rxi + 250, barR = rR - 46, barW = barR - barX, xCapR = rR;
-      lt('항목', rxi, ry + 11, '11px ' + F, CO.dim);
-      rt('합계', xTotalR, ry + 11, '11px ' + F, CO.dim);
-      rt('보정', xGainR, ry + 11, '11px ' + F, CO.dim);
-      lt('그래프', barX, ry + 11, '11px ' + F, CO.dim);
-      rt('상한', xCapR, ry + 11, '11px ' + F, CO.dim);
+      const xTotalR = rxi + 168, xGainR = rxi + 254, barX = rxi + 268, barR = rR - 52, barW = barR - barX, xCapR = rR;
+      lt('항목', rxi, ry + 11, fnt(11), CO.dim);
+      rt('합계', xTotalR, ry + 11, fnt(11), CO.dim);
+      rt('보정', xGainR, ry + 11, fnt(11), CO.dim);
+      lt('그래프', barX, ry + 11, fnt(11), CO.dim);
+      rt('상한', xCapR, ry + 11, fnt(11), CO.dim);
       ry += 18; rule(ry, rxi, rR); ry += 2;
 
       for (const k of C.STAT_KEYS) {
@@ -2702,14 +2709,14 @@
         const atCap = limit !== Infinity && tot >= limit;
         const rowY = ry + 19;
 
-        lt(C.STAT_LABEL[k], rxi, rowY, '13px ' + F, CO.text);
-        rt((over ? '⚠ ' : '') + tot.toLocaleString(), xTotalR, rowY, '700 15px ' + F,
+        lt(C.STAT_LABEL[k], rxi, rowY, fnt(13), CO.text);
+        rt((over ? '⚠ ' : '') + tot.toLocaleString(), xTotalR, rowY, fnt(15, '700'),
           over ? CO.close : atCap ? CO.accent : CO.text);
         if (draw) {   // 보정: 파츠(초록)+스킬(보라)
           ctx.textAlign = 'right'; let dx = xGainR;
-          if (skillGain) { ctx.font = '700 13px ' + F; ctx.fillStyle = skillCol; ctx.fillText('+' + skillGain, dx, rowY); dx -= ctx.measureText('+' + skillGain).width + 5; }
-          if (base !== 0) { ctx.font = '700 13px ' + F; ctx.fillStyle = base > 0 ? CO.ok : CO.bad; ctx.fillText((base > 0 ? '+' : '') + base.toLocaleString(), dx, rowY); }
-          else if (!skillGain) { ctx.font = '13px ' + F; ctx.fillStyle = CO.dim; ctx.fillText('·', dx, rowY); }
+          if (skillGain) { ctx.font = fnt(13, '700'); ctx.fillStyle = skillCol; ctx.fillText('+' + skillGain, dx, rowY); dx -= ctx.measureText('+' + skillGain).width + 5; }
+          if (base !== 0) { ctx.font = fnt(13, '700'); ctx.fillStyle = base > 0 ? CO.ok : CO.bad; ctx.fillText((base > 0 ? '+' : '') + base.toLocaleString(), dx, rowY); }
+          else if (!skillGain) { ctx.font = fnt(13); ctx.fillStyle = CO.dim; ctx.fillText('·', dx, rowY); }
           ctx.textAlign = 'left';
           // 막대: 회색 소체 + 초록 증가 + 보라 스킬, 트랙 위 (앱 성능표와 동일)
           const by = ry + 11, bh = 11;
@@ -2718,9 +2725,9 @@
           ctx.save(); rrect(barX, by, barW, bh, 3); ctx.clip();
           seg(baseW, CO.dim); seg(gainW, over ? CO.close : atCap ? CO.accent : CO.ok); seg(skillW, skillCol);
           ctx.restore();
-          if (over) { ctx.font = '700 10px ' + F; ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText('OVER', barR - 4, by + 9); ctx.textAlign = 'left'; }
+          if (over) { ctx.font = fnt(10, '700'); ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText('OVER', barR - 4, by + 9); ctx.textAlign = 'left'; }
         }
-        rt(limit === Infinity ? '—' : limit.toLocaleString(), xCapR, rowY, '13px ' + F, CO.dim);
+        rt(limit === Infinity ? '—' : limit.toLocaleString(), xCapR, rowY, fnt(13), CO.dim);
         ry += 30;
       }
 
@@ -2730,44 +2737,44 @@
       // 카드에 이 행이 아예 없어서, 파츠·스킬의 공격 % 효과가 이미지로는 보이지 않았다.
       {
         const ab = partAttackBonus(state.equipped, lv);
-        lt('공격 지표', rxi, ry + 4, '700 12px ' + F, CO.muted);
+        lt('공격 지표', rxi, ry + 4, fnt(12, '700'), CO.muted);
         let ax = rxi + 78;
         for (const [key, lb, corr] of [['shoot', '사격', r.total.shoot], ['melee', '격투', r.total.meleeCorrection]]) {
           const mult = (1 + ab[key] / 100) * skillDmgPctList(key).reduce((s2, q) => s2 * (1 + q / 100), 1);
           const pct = Math.round((mult - 1) * 100);
           const eff = Math.round(((1 + corr / 100) * (1 + pct / 100) - 1) * 100);
-          lt(lb, ax, ry + 4, '12px ' + F, CO.muted); ax += textW(lb, '12px ' + F, 26) + 5;
+          lt(lb, ax, ry + 4, fnt(12), CO.muted); ax += textW(lb, fnt(12), 26) + 5;
           const v = eff.toLocaleString();
-          lt(v, ax, ry + 4, '700 13px ' + F, CO.info); ax += (draw ? ctx.measureText(v).width : 40) + 5;
+          lt(v, ax, ry + 4, fnt(13, '700'), CO.info); ax += (draw ? ctx.measureText(v).width : 40) + 5;
           if (pct !== 0) {
             const tg = '피해 ' + (pct > 0 ? '+' : '') + pct + '%';
-            lt(tg, ax, ry + 4, '700 11px ' + F, pct < 0 ? CO.bad : CO.ok);
+            lt(tg, ax, ry + 4, fnt(11, '700'), pct < 0 ? CO.bad : CO.ok);
             ax += (draw ? ctx.measureText(tg).width : 52) + 14;
           } else ax += 14;
         }
         ry += 24;
       }
 
-      lt('내구 지표', rxi, ry + 4, '700 12px ' + F, CO.muted);
+      lt('내구 지표', rxi, ry + 4, fnt(12, '700'), CO.muted);
       let dx = rxi + 78;
       // 화면과 같이 피해경감(파츠 % · 체크한 방어 스킬)을 실효 HP 에 접는다.
       // 이게 빠져 있어서 경감 파츠를 껴도 카드의 내구 지표가 경감 전 값으로 나갔다.
       const pngCuts = damageCutsOf(state.equipped, { lv, skillMs: m });
       for (const [dattr, lb] of DURA_ATTRS) {
-        lt(lb, dx, ry + 4, '12px ' + F, CO.muted); dx += textW(lb, '12px ' + F, 30) + 5;
+        lt(lb, dx, ry + 4, fnt(12), CO.muted); dx += textW(lb, fnt(12), 30) + 5;
         const cutPct = cutPctOf(pngCuts, dattr);
         const v = enduranceOf(r.total, dattr, pngCuts).toLocaleString();
-        lt(v, dx, ry + 4, '700 13px ' + F, CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 5;
+        lt(v, dx, ry + 4, fnt(13, '700'), CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 5;
         if (cutPct) {
           const tg = '피해 -' + cutPct + '%';
-          lt(tg, dx, ry + 4, '700 11px ' + F, CO.ok);
+          lt(tg, dx, ry + 4, fnt(11, '700'), CO.ok);
           dx += (draw ? ctx.measureText(tg).width : 52) + 9;
         } else dx += 13;
       }
       ry += 24;
-      lt('누적치', rxi, ry + 4, '700 12px ' + F, CO.muted);
+      lt('누적치', rxi, ry + 4, fnt(12, '700'), CO.muted);
       lt('내성 ' + Math.round(stg.threshold / stg.mult) + '%    임계 ' + stg.threshold + '%'
-        + (stg.mult < 1 ? '    받는 누적 ×' + (+stg.mult.toFixed(3)) : ''), rxi + 78, ry + 4, '13px ' + F, CO.text);
+        + (stg.mult < 1 ? '    받는 누적 ×' + (+stg.mult.toFixed(3)) : ''), rxi + 78, ry + 4, fnt(13), CO.text);
       ry += 20;
       // 스러스터 지표 — 성능표와 같은 값(부스트·풀회복·OH). 출격 가능한 환경만.
       {
@@ -2778,17 +2785,17 @@
           if (env === 'space' && m['出撃_宇宙可'] === false) continue;
           const tm = thrusterMetrics(m, thrV, state.equipped, env);
           if (!tm) continue;
-          lt('스러스터 ' + lb, rxi, ry + 4, '700 12px ' + F, CO.muted);
+          lt('스러스터 ' + lb, rxi, ry + 4, fnt(12, '700'), CO.muted);
           lt('부스트 ' + sec1(tm.boost) + '    풀회복 ' + sec1(tm.full) + '    OH ' + sec1(tm.oh),
-            rxi + 96, ry + 4, '13px ' + F, CO.text);   // '스러스터 지상' 이 길어 78 이면 값과 붙는다
+            rxi + 96, ry + 4, fnt(13), CO.text);   // '스러스터 지상' 이 길어 78 이면 값과 붙는다
           ry += 20;
         }
       }
       if (skills.length) {
         ry += 8; rule(ry, rxi, rR); ry += 12;
-        lt('발동 스킬', rxi, ry + 4, '700 12px ' + F, skillCol);
-        const lines = wrapLines(ctx, skills.join('  ·  '), '13px ' + F, rR - (rxi + 78));
-        lines.forEach((ln, i) => lt(ln, rxi + 78, ry + 4 + i * 19, '13px ' + F, CO.text));
+        lt('발동 스킬', rxi, ry + 4, fnt(12, '700'), skillCol);
+        const lines = wrapLines(ctx, skills.join('  ·  '), fnt(13), rR - (rxi + 78));
+        lines.forEach((ln, i) => lt(ln, rxi + 78, ry + 4 + i * 19, fnt(13), CO.text));
         ry += Math.max(16, lines.length * 19);
       }
       rightBottom = ry;
@@ -2804,7 +2811,9 @@
     const footerY = contentBottom + 22;
     const H = Math.ceil(footerY + PAD - 6);
 
-    // 2패스: 실제 렌더 (레티나 2배)
+    // 2패스: 실제 렌더. 캔버스가 너무 크면 폰(WebView)에서 만들다 실패해
+    // 빈 이미지가 나온다 — 픽셀 수에 상한을 두고 배율을 낮춘다.
+    while (DPR > 2 && W * H * DPR * DPR > 12e6) DPR -= 0.5;
     const cvs = document.createElement('canvas');
     cvs.width = W * DPR; cvs.height = H * DPR;
     const ctx = cvs.getContext('2d');
@@ -2829,14 +2838,18 @@
       const dclip = (t, maxW, font) => { ctx.font = font; if (ctx.measureText(t).width <= maxW) return t; let s = t; while (s && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1); return s + '…'; };
       const wx0 = PAD + IP, wR = W - PAD - IP;
       // 컬럼 x (좌측정렬: 구분·이름·유형 / 우측정렬: 나머지)
-      const cSec = wx0, dotX = wx0 + 52, cName = wx0 + 62, cType = wx0 + 300;
+      // 폭에 대한 비율로 잡는다. 예전엔 1200px 를 전제한 고정 좌표라
+      // 카드를 좁히자 사거리 열이 카드 밖으로 나갔다.
+      const wW = wR - wx0, col = f => wx0 + wW * f;
+      const cSec = wx0, dotX = col(.047), cName = col(.056), cType = col(.270);
       // 논차지·풀차지는 「기본 (+파츠) (+스킬)」 가 한 줄에 들어가야 해서 넓게 잡는다.
-      const cNC = wx0 + 472, cCH = wx0 + 610, cCool = wx0 + 726, cAmmo = wx0 + 838, cStg = wx0 + 916, cRange = wx0 + 1010, cRel = wR;
+      const cNC = col(.425), cCH = col(.549), cCool = col(.653), cAmmo = col(.754),
+        cStg = col(.824), cRange = col(.908), cRel = wR;
       let wy = wpTop + IP + 4;
-      dtext('무장 내역', wx0, wy + 8, '700 13px ' + F, CO.text);
-      dtext('(피해량은 파츠·스킬·자세 반영)', wx0 + 82, wy + 8, '11px ' + F, CO.dim);
+      dtext('무장 내역', wx0, wy + 8, fnt(13, '700'), CO.text);
+      dtext('(피해량은 파츠·스킬·자세 반영)', wx0 + 82, wy + 8, fnt(11), CO.dim);
       wy += 24;
-      const hf = '11px ' + F;
+      const hf = fnt(11);
       dtext('구분', cSec, wy + 8, hf, CO.dim);
       dtext('이름', cName, wy + 8, hf, CO.dim);
       dtext('유형', cType, wy + 8, hf, CO.dim);
@@ -2849,23 +2862,23 @@
       dtext('리로드/OH', cRel, wy + 8, hf, CO.dim, 'right');
       wy += 8; ctx.strokeStyle = CO.line; ctx.beginPath(); ctx.moveTo(wx0, wy + 0.5); ctx.lineTo(wR, wy + 0.5); ctx.stroke();
       wy += 4;
-      const vf = '12px ' + F, vfb = '700 12px ' + F;
+      const vf = fnt(12), vfb = fnt(12, '700');
       weapons.forEach((wp, i) => {
         const ry = wy + 16 + i * wpRowH;
         const tc = wp.attr === 'melee' ? CO.close : wp.attr === 'beam' ? CO.info
           : wp.attr === 'shield' ? CO.long : wp.attr === 'solid' ? CO.accent : CO.mid;
-        dtext(wp.sec, cSec, ry, '11px ' + F, CO.muted);
+        dtext(wp.sec, cSec, ry, fnt(11), CO.muted);
         ctx.fillStyle = tc; ctx.beginPath(); ctx.arc(dotX, ry - 4, 3.5, 0, 7); ctx.fill();
         // 디버프는 이름 옆에, **고정 피해는 아랫줄에** — 화면 무장 표와 같은 배치다.
         // 예전엔 카드에서만 이름 옆에 붙여 두어, 소이 무장은 표기가 길어 이름이 잘렸다.
         const dbTag = (wp.debuffs || []).join(' · ');
-        ctx.font = '10px ' + F;
+        ctx.font = fnt(10);
         const tagW = dbTag ? ctx.measureText(dbTag).width + 6 : 0;
         const nmTxt = dclip(wp.name, cType - cName - 10 - tagW, vf);
         dtext(nmTxt, cName, ry, vf, CO.text);
         if (dbTag) {
           ctx.font = vf;
-          dtext(dbTag, cName + ctx.measureText(nmTxt).width + 6, ry, '10px ' + F, CO.close);
+          dtext(dbTag, cName + ctx.measureText(nmTxt).width + 6, ry, fnt(10), CO.close);
         }
         if (wp.fx) {
           const hitTx = wp.fx.ranged ? wp.fx.hits + '~' + wp.fx.hitsMax : String(wp.fx.hits);
@@ -2874,7 +2887,7 @@
             : wp.fx.total.toLocaleString();
           dtext(wp.fx.hitsMax > 1
             ? '고정 ' + wp.fx.per.toLocaleString() + '×' + hitTx + ' = ' + totTx
-            : '고정 ' + totTx, cName, ry + 12, '10px ' + F, CO.close);
+            : '고정 ' + totTx, cName, ry + 12, fnt(10), CO.close);
         }
         dtext(wp.kind, cType, ry, vf, tc);
         // 피해 칸 — 화면 무장 표와 같이 「기본 (+파츠) (+스킬)」 로 쪼개 오른쪽 정렬로 쌓는다.
@@ -2883,12 +2896,12 @@
           if (!v) { dtext('—', x, ry, vf, CO.dim, 'right'); return; }
           let rx = x;
           const seg = (t, font, col) => { dtext(t, rx, ry, font, col, 'right'); ctx.font = font; rx -= ctx.measureText(t).width + 3; };
-          if (v.skillGain) seg('(' + (v.skillGain > 0 ? '+' : '') + v.skillGain.toLocaleString() + ')', '10px ' + F, skillCol);
-          if (v.gain) seg('(' + (v.gain > 0 ? '+' : '') + v.gain.toLocaleString() + ')', '10px ' + F, v.gain > 0 ? CO.ok : CO.bad);
+          if (v.skillGain) seg('(' + (v.skillGain > 0 ? '+' : '') + v.skillGain.toLocaleString() + ')', fnt(10), skillCol);
+          if (v.gain) seg('(' + (v.gain > 0 ? '+' : '') + v.gain.toLocaleString() + ')', fnt(10), v.gain > 0 ? CO.ok : CO.bad);
           seg(v.base.toLocaleString(), bold ? vfb : vf, CO.text);
           if (v.n > 1) {
             let sx = x;
-            const sub = (t, col) => { dtext(t, sx, ry + 12, '10px ' + F, col, 'right'); ctx.font = '10px ' + F; sx -= ctx.measureText(t).width + 3; };
+            const sub = (t, col) => { dtext(t, sx, ry + 12, fnt(10), col, 'right'); ctx.font = fnt(10); sx -= ctx.measureText(t).width + 3; };
             if (v.skillGain) sub('(' + (v.skillGain > 0 ? '+' : '') + (v.skillGain * v.n).toLocaleString() + ')', skillCol);
             if (v.gain) sub('(' + (v.gain > 0 ? '+' : '') + (v.gain * v.n).toLocaleString() + ')', v.gain > 0 ? CO.ok : CO.bad);
             sub('전탄 ' + (v.base * v.n).toLocaleString() + ' ×' + v.n, CO.muted);
@@ -2905,7 +2918,7 @@
     }
 
     // 푸터
-    ctx.fillStyle = CO.dim; ctx.font = '11px ' + F;
+    ctx.fillStyle = CO.dim; ctx.font = fnt(11);
     ctx.textAlign = 'left'; ctx.fillText('GBO2 커스텀 파츠 시뮬레이터', PAD, footerY);
     ctx.textAlign = 'right'; ctx.fillText(new Date().toISOString().slice(0, 10), W - PAD, footerY);
     ctx.textAlign = 'left';
