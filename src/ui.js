@@ -1001,17 +1001,17 @@
 
   function setView(view) {
     const changed = state.view !== view;
-    if (view === 'gallery' && changed) viewBefore = state.view;
+    if ((view === 'gallery' || view === 'codex') && changed) viewBefore = state.view;
     state.view = view;
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
     if (view === 'select' && changed) { renderMsList(); renderViewChips(); }
-    for (const v of ['select', 'build', 'gallery'])
+    for (const v of ['select', 'build', 'gallery', 'codex'])
       document.body.classList.toggle('view-' + v, view === v);
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
       li.classList.toggle('on', li.dataset.step === view));
     // 화면 전환 시 스크롤을 위로 되돌린다
-    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery') }[view] || $('#screenSelect');
+    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex') }[view] || $('#screenSelect');
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
@@ -3994,6 +3994,122 @@
     loadGallery();
   }
 
+  /* ---------- 스킬 도감 ---------- */
+  // 기체와 상관없이 스킬을 위키 분류대로 모아 본다.
+  // 데이터는 이미 앱에 있는 ms_skills 를 그대로 쓴다 — 용량이 늘지 않는다.
+  // 같은 이름의 LV 는 한 줄로 묶는다(301종 · 이름+LV 로는 559개).
+  let codexIndex = null, codexCat = '전체', codexQ = '', codexOpen = new Set();
+
+  function buildCodexIndex() {
+    if (codexIndex) return codexIndex;
+    const byName = new Map();
+    for (const [msName, modes] of Object.entries(msSkillsData)) {
+      for (const md of modes || []) for (const sk of md.skills || []) {
+        if (!sk.name) continue;
+        let e = byName.get(sk.name);
+        if (!e) { e = { name: sk.name, cat: sk.cat || 'その他', lvs: new Map(), ms: new Set() }; byName.set(sk.name, e); }
+        // 분류가 빈 항목이 섞여 있다 — 한 번이라도 분류가 있으면 그것을 쓴다
+        if (sk.cat && (!e.cat || e.cat === 'その他')) e.cat = sk.cat;
+        e.ms.add(msName);
+        const lv = sk.lv || '';
+        if (!e.lvs.has(lv)) e.lvs.set(lv, { lv, eff: sk.eff || '', desc: sk.desc || '' });
+      }
+    }
+    const lvNum = v => { const m = /(\d+)/.exec(v); return m ? +m[1] : 0; };
+    codexIndex = [...byName.values()].map(e => ({
+      ...e,
+      ko: skTr(e.name),
+      lvList: [...e.lvs.values()].sort((a, b) => lvNum(a.lv) - lvNum(b.lv)),
+      msCount: e.ms.size,
+    })).sort((a, b) => b.msCount - a.msCount);
+    return codexIndex;
+  }
+
+  function renderCodex() {
+    const body = $('#codexBody'); if (!body) return;
+    const all = buildCodexIndex();
+    const q = codexQ.trim().toLowerCase();
+    const hit = all.filter(e => {
+      if (codexCat !== '전체' && (SKILL_CAT_KO[e.cat] || '기타') !== codexCat) return false;
+      if (!q) return true;
+      if (e.ko.toLowerCase().includes(q) || e.name.toLowerCase().includes(q)) return true;
+      return e.lvList.some(v => skTr(v.eff).toLowerCase().includes(q));
+    });
+    $('#codexNote').textContent = '스킬 ' + all.length + '종 · 보이는 것 ' + hit.length;
+    body.innerHTML = '';
+    if (!hit.length) { body.append(el('div', 'codex-empty', '찾는 스킬이 없습니다.')); return; }
+
+    // 분류별로 묶어 내보낸다 (전체 볼 때만 머리글을 단다)
+    const order = ['足回り', '攻撃', '防御', '移動', '格闘', '射撃', 'その他', ''];
+    const groups = new Map();
+    for (const e of hit) { const k = e.cat || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
+    const keys = [...groups.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    for (const k of keys) {
+      if (codexCat === '전체') {
+        const h = el('div', 'codex-cat', SKILL_CAT_KO[k] || '기타');
+        h.append(el('span', '', groups.get(k).length + '종'));
+        body.append(h);
+      }
+      for (const e of groups.get(k)) body.append(codexCard(e));
+    }
+  }
+
+  function codexCard(e) {
+    const box = el('div', 'codex-item');
+    const head = el('div', 'codex-head');
+    head.append(el('div', 'codex-nm', e.ko));
+    const lvs = el('div', 'codex-lvs');
+    for (const v of e.lvList) if (v.lv) lvs.append(el('span', 'codex-lv', v.lv));
+    head.append(lvs);
+    head.append(el('div', 'codex-cnt', e.msCount + '기'));
+    head.onclick = () => {
+      codexOpen.has(e.name) ? codexOpen.delete(e.name) : codexOpen.add(e.name);
+      renderCodex();
+    };
+    box.append(head);
+    if (!codexOpen.has(e.name)) return box;
+
+    const d = el('div', 'codex-detail');
+    for (const v of e.lvList) {
+      const row = el('div', 'codex-row');
+      if (v.lv) row.append(el('b', '', v.lv));
+      const eff = skTr(v.eff), desc = skTr(v.desc);
+      if (eff) row.append(el('div', 'codex-eff', eff.split(' / ').join('\n')));
+      if (desc && desc !== eff) row.append(el('div', 'codex-desc', desc.split(' / ').join('\n')));
+      d.append(row);
+    }
+    // 어떤 기체가 쓰는지 — 많으면 앞쪽만 적고 나머지는 수로 적는다
+    const names = [...e.ms].map(n => T.msName(n)).sort((a, b) => a.localeCompare(b, 'ko'));
+    const show = names.slice(0, 24);
+    const ms = el('div', 'codex-ms');
+    ms.append(el('b', '', '쓰는 기체 ' + names.length + ' — '));
+    ms.append(document.createTextNode(show.join(' · ') + (names.length > show.length ? ' 외 ' + (names.length - show.length) : '')));
+    d.append(ms);
+    box.append(d);
+    return box;
+  }
+
+  function openCodex(open) {
+    if (!open) { setView(viewBefore === 'codex' ? 'select' : viewBefore); return; }
+    setView('codex');
+    renderCodexChips();
+    renderCodex();
+  }
+
+  function renderCodexChips() {
+    const wrap = $('#codexCatChips'); if (!wrap) return;
+    wrap.innerHTML = '';
+    const all = buildCodexIndex();
+    const cnt = { 전체: all.length };
+    for (const e of all) { const k = SKILL_CAT_KO[e.cat] || '기타'; cnt[k] = (cnt[k] || 0) + 1; }
+    for (const nm of ['전체', '기동', '공격', '방어', '기타']) {
+      if (!cnt[nm]) continue;
+      const b = el('button', 'chip' + (codexCat === nm ? ' on' : ''), nm + ' ' + cnt[nm]);
+      b.onclick = () => { codexCat = nm; renderCodexChips(); renderCodex(); };
+      wrap.append(b);
+    }
+  }
+
   /* ---------- 강화리스트 설명 ---------- */
   // 확장 스킬 설명과 같은 방식 — 표를 손으로 적지 않고 데이터에서 만든다.
   // 요구치(points)·항목·레벨은 기체마다 다르므로 ms.fullst 에서, 효과는 fullst 정의에서 온다.
@@ -6077,6 +6193,9 @@
     $('#save').onclick = saveCurrentBuild;
     $('#load').onclick = () => openSavedModal(true);
     // 공유 갤러리 (전체 화면)
+    $('#codexBtn').onclick = () => openCodex(true);
+    $('#codexBack').onclick = () => openCodex(false);
+    $('#codexSearch').oninput = ev => { codexQ = ev.target.value; renderCodex(); };
     $('#galleryBtn').onclick = () => openGallery(true);
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
@@ -6258,6 +6377,7 @@
       if (!$('#expHelpModal').hidden) { openExpHelp(false); return; }
       if (!$('#uploadModal').hidden) { openUpload(false); return; }
       if (!$('#adminModal').hidden) { openAdmin(false); return; }
+      if (state.view === 'codex') { openCodex(false); return; }
       if (state.view === 'gallery') { openGallery(false); return; }
       if (!$('#pietanModal').hidden) { openPietan(false); return; }
       if (!$('#compareModal').hidden) { openCompareModal(false); return; }
@@ -6333,7 +6453,7 @@
     toast(viewMode === 'wide' ? '넓게 보기 — 두 손가락으로 키울 수 있습니다' : '크게 보기');
   }
 
-  const TOPBAR_MORE = ['#viewModeBtn', '#save', '#load', '#galleryBtn', '#uploadBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn', '#updateBtn'];
+  const TOPBAR_MORE = ['#viewModeBtn', '#save', '#load', '#codexBtn', '#galleryBtn', '#uploadBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn', '#updateBtn'];
   function setupTopbarOverflow() {
     const bar = document.querySelector('.topbar'); if (!bar) return;
     for (const sel of TOPBAR_MORE) { const b = $(sel); if (b) b.classList.add('in-more'); }

@@ -33,6 +33,7 @@
   <button id="save" class="btn-ghost step-only" title="현재 구성을 이름을 지정해 저장">저장</button>
   <button id="load" class="btn-ghost" title="저장한 구성 목록 (요약 보기 · 불러오기 · 삭제)">저장 목록</button>
   <button id="compareBtn" class="btn-ghost step-only" title="두 구성의 스탯·내구를 나란히 비교">⚖ 비교</button>
+  <button id="codexBtn" class="btn-ghost" title="기체와 상관없이 스킬을 분류별로 모아 봅니다">📖 스킬 도감</button>
   <button id="galleryBtn" class="btn-ghost" title="다른 사람이 올린 구성을 둘러보고 그대로 가져옵니다">🌏 갤러리</button>
   <!-- 짜던 자리에서 바로 올린다 — 갤러리까지 가서 올리는 건 한 번 더 걸어가는 일이다 -->
   <button id="uploadBtn" class="btn-ghost step-only" title="지금 구성을 공유 갤러리에 올립니다">↑ 갤러리에 올리기</button>
@@ -98,6 +99,24 @@
 
   </div>
   <div class="gallery-grid" id="galleryResults"></div>
+</section>
+
+<!-- ④ 스킬 도감 — 기체와 상관없이 위키 분류대로 스킬을 모아 본다 -->
+<section class="screen screen-codex" id="screenCodex">
+  <div class="select-head">
+    <div class="select-title">
+      <button id="codexBack" class="back-btn" title="돌아가기">‹ 돌아가기</button>
+      <h1>스킬 도감</h1>
+      <span class="data-fresh" id="codexNote"></span>
+      <span class="right">
+        <input id="codexSearch" class="codex-search" type="search" placeholder="스킬 이름·효과 검색" autocomplete="off">
+      </span>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">분류</span><div class="chips" id="codexCatChips"></div></div>
+    </div>
+  </div>
+  <div class="codex-body" id="codexBody"></div>
 </section>
 
 <!-- ============================================================

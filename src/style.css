@@ -124,15 +124,17 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accen
 
 /* 파츠 적용 단계에서만 보이는 버튼(자동 구성·저장·공유) */
 body.view-select .step-only,
+body.view-codex .step-only,
 body.view-gallery .step-only { display: none; }
 
 /* ============ 화면 전환 ============ */
 
 .screen { flex: 1; min-height: 0; overflow: hidden; }
 /* 세 화면은 서로 배타 — 지금 보는 것만 남기고 감춘다 */
-body.view-select  #screenBuild, body.view-select  #screenGallery,
-body.view-build   #screenSelect, body.view-build  #screenGallery,
-body.view-gallery #screenSelect, body.view-gallery #screenBuild { display: none; }
+body.view-select  #screenBuild, body.view-select  #screenGallery, body.view-select #screenCodex,
+body.view-build   #screenSelect, body.view-build  #screenGallery, body.view-build  #screenCodex,
+body.view-gallery #screenSelect, body.view-gallery #screenBuild, body.view-gallery #screenCodex,
+body.view-codex   #screenSelect, body.view-codex  #screenBuild, body.view-codex   #screenGallery { display: none; }
 
 /* ---- ① 기체 선택 ---- */
 .screen-select { display: flex; flex-direction: column; }
@@ -2549,3 +2551,42 @@ body.drawer-open .m-actionbar { display: none !important; }
 
 /* 작성자 뒤 IP 앞자리 — 이름보다 흐리게 둔다(이름이 주고, 이건 곁들이다) */
 .sc-ip { margin-left: 4px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+
+/* ============ ④ 스킬 도감 ============ */
+/* 기체와 상관없이 위키 분류대로 스킬을 모아 본다. 같은 이름의 LV 는 한 줄로 묶는다. */
+.screen-codex { display: flex; flex-direction: column; }
+.codex-search {
+  width: 240px; max-width: 46vw;
+  padding: 5px 9px; border-radius: 7px;
+  border: 1px solid var(--line); background: var(--panel2, #171b24); color: var(--fg, #d7dce6);
+  font-size: 12.5px;
+}
+.codex-body { flex: 1; min-height: 0; overflow: auto; padding: 4px 20px 18px; }
+.codex-empty { color: var(--dim); padding: 28px 4px; text-align: center; }
+.codex-cat { margin: 14px 0 6px; font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .3px; }
+.codex-cat span { color: var(--muted); font-weight: 400; margin-left: 6px; font-size: 11.5px; }
+.codex-item {
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  margin-bottom: 7px; overflow: hidden;
+}
+.codex-head {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 11px; cursor: pointer; user-select: none;
+}
+.codex-head:hover { border-color: var(--accent); background: var(--panel2, #171b24); }
+.codex-nm { font-weight: 700; font-size: 13.5px; color: var(--fg, #d7dce6); }
+.codex-lvs { display: flex; gap: 3px; flex-wrap: wrap; }
+.codex-lv { font-size: 10.5px; padding: 1px 6px; border-radius: 5px; background: var(--accent-dim); color: var(--accent); }
+.codex-cnt { margin-left: auto; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.codex-detail { border-top: 1px solid var(--line); padding: 9px 12px 11px; }
+.codex-row + .codex-row { margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); }
+.codex-row b { color: var(--accent); font-size: 12px; }
+.codex-eff { white-space: pre-wrap; font-size: 12.5px; line-height: 1.55; color: var(--fg, #d7dce6); margin-top: 3px; }
+.codex-desc { white-space: pre-wrap; font-size: 12px; line-height: 1.5; color: var(--muted); margin-top: 4px; }
+.codex-ms { margin-top: 6px; font-size: 11.5px; color: var(--dim); line-height: 1.6; }
+.codex-ms b { color: var(--muted); font-weight: 400; }
+@media (max-width: 768px) {
+  .codex-body { padding: 4px 10px 16px; }
+  .codex-search { width: 100%; max-width: none; }
+}
