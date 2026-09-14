@@ -4003,6 +4003,10 @@
     loadGallery();
   }
 
+  // 스킬명을 긴 것부터. 짧은 이름이 긴 이름을 잘라먹지 않게 한다.
+  let _skNames = null;
+  const skillNamesByLen = () => (_skNames ||= Object.keys(skillText).sort((a, b) => b.length - a.length));
+
   /* ---------- 스킬 도감 ---------- */
   // 기체와 상관없이 스킬을 위키 분류대로 모아 본다.
   // 데이터는 이미 앱에 있는 ms_skills 를 그대로 쓴다 — 용량이 늘지 않는다.
@@ -5899,6 +5903,46 @@
     if (r) {
       sub.append(el('span', '', '·'));
       sub.append(el('span', 'stars', '★'.repeat(r)));   // 기체 카드와 같은 표기
+    }
+
+    // 출격 가능 · 환경 적성 · 격투 판정력 — 데이터에는 있었는데 화면에 없던 셋.
+    // 적성은 스러스터 줄 옆 뱃지로만 보여서 수중 적성은 아예 볼 수 없었다.
+    const line = $('#heroFacts');
+    if (!line) return;
+    line.innerHTML = '';
+    const add = (lb, txt, cls) => {
+      const b = el('span', 'hf' + (cls ? ' ' + cls : ''));
+      b.append(el('i', '', lb));
+      b.append(el('b', '', txt));
+      line.append(b);
+    };
+    const sortie = [m['出撃_地上可'] !== false && '지상', m['出撃_宇宙可'] !== false && '우주']
+      .filter(Boolean).join(' · ');
+    add('출격', sortie || '—');
+    const adapt = [m['環境適正_地上'] && '지상', m['環境適正_宇宙'] && '우주', m['環境適正_水中'] && '수중']
+      .filter(Boolean).join(' · ');
+    add('적성', adapt || '없음', adapt ? 'on' : '');
+    // 판정력은 「通常：中 スキル発動時： 強」처럼 조건이 붙은 기체가 18기 있다.
+    // 그런 것은 줄여 적지 않고 조건까지 그대로 보여 준다 — 줄이면 뜻이 달라진다.
+    // 조건 문구가 11종이라 낱말 사전으로 옮긴다. 스킬 이름은 skTr 이 맡는다.
+    const JD_WORDS = [
+      ['スキル発動時', '스킬 발동 시'], ['システム発動中', '시스템 발동 중'],
+      ['共振発動時', '공진 발동 시'], ['変身時', '변신 시'],
+      ['発動中', '발동 중'], ['使用後', '사용 후'], ['射出', '사출'],
+      ['フェイズ', '페이즈'], ['通常時', '통상'], ['通常', '통상'],
+      ['かつ', ' 또한 '], ['以下', ' 이하'],
+      ['強', '강'], ['中', '중'], ['弱', '약'],
+    ];
+    const jd = String(m['格闘判定力'] || '').trim();
+    if (jd) {
+      // 「S・ノズル制御機構（G）」 같은 스킬 이름이 문장 안에 박혀 있다.
+      // 통째로 조회하면 안 걸리므로, 긴 이름부터 문장 안에서 갈아 끼운다.
+      let t = jd;
+      for (const nm of skillNamesByLen()) if (t.includes(nm)) t = t.split(nm).join(skTr(nm));
+      for (const [ja, ko] of JD_WORDS) t = t.split(ja).join(ko);
+      t = t.replace(/[：:]/g, ': ').replace(/［/g, '[').replace(/］/g, ']')
+        .replace(/（/g, '(').replace(/）/g, ')').replace(/\s+/g, ' ').trim();
+      add('격투 판정력', t);
     }
   }
 

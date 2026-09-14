@@ -2718,3 +2718,18 @@ body.drawer-open .m-actionbar { display: none !important; }
    중간에서 줄이 바뀌면 딴 뜻으로 읽힌다. 한글은 기본값이 아무 데서나
    끊기므로 낱말 단위로 끊게 한다. */
 .w-col, .w-dmg, .wd-chip, .wd-row, .codex-ms .co { word-break: keep-all; }
+
+
+/* 기체 요약의 추가 정보 — 출격 가능·환경 적성·격투 판정력 */
+.h-facts { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 4px; }
+.h-facts .hf {
+  display: inline-flex; align-items: baseline; gap: 5px;
+  padding: 1px 7px; border-radius: 2px;
+  border: 1px solid var(--line); background: var(--panel-2);
+  font-size: 11px; line-height: 1.5;
+}
+.h-facts .hf i { font-style: normal; color: var(--dim); }
+.h-facts .hf b { font-weight: 700; color: var(--muted); }
+/* 적성이 있는 기체는 눈에 띄게 — 스러스터 회복이 달라지는 값이다 */
+.h-facts .hf.on { border-color: var(--accent-dim); }
+.h-facts .hf.on b { color: var(--accent); }

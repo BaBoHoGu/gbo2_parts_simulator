@@ -34,8 +34,6 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     if (r) r.click();
   });
   await sleep(900);
-  await pg.evaluate(() => { const d = document.querySelector('.wd-note-chips'); if (d) d.scrollIntoView({ block: 'center' }); });
-  await sleep(400);
   await pg.screenshot({ path: path.join(OUT, 'build.png') });
   console.log('ok');
   await browser.close();
