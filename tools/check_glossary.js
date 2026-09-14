@@ -17,7 +17,19 @@ for (const f of FILES) {
   for (const [k, v] of Object.entries(o)) {
     const t = typeof v === 'string' ? v : (v && (v.d || v.n)) || '';
     if (!t) continue;
-    const m = missing(k, t);
+    // 칸 전체로만 보면 놓친다 — 같은 칸의 다른 불릿에 대응어가 하나만 있어도
+    // 통과해 버려서, 「よろけ値」가 「요로케값」·「사격비」로 흘러간 13칸을 못 봤다.
+    // 備考는 ' / ' 로 나뉜 불릿 목록이고 원문과 번역의 불릿 수가 같을 때가 대부분이니,
+    // 수가 맞으면 불릿끼리 짝지어 본다. 안 맞으면 종전대로 칸 전체로 본다.
+    const ks = k.split(' / '), ts = t.split(' / ');
+    let m;
+    if (ks.length > 1 && ks.length === ts.length) {
+      const set = new Set();
+      ks.forEach((kk, i) => missing(kk, ts[i]).forEach(x => set.add(x)));
+      m = [...set];
+    } else {
+      m = missing(k, t);
+    }
     if (m.length) hit.push([k, t, m]);
   }
   console.log(`  ${f.padEnd(12)} ${hit.length ? hit.length + '칸 대응어 없음' : '이상 없음'}`);

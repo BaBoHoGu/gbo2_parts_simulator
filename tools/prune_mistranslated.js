@@ -13,8 +13,17 @@ for (const f of ['skill_text', 'weapon_note']) {
   // (1) 핵심어가 대응어로 안 살아남은 칸 (2) 번역에 일본어가 남은 칸.
   // (2) 는 번역기가 실패했거나 스킬명이 사전에 없어 일본어로 떨어진 자리다.
   // 캐시에 남아 있으면 다시 시도되지 않으므로 비워야 재번역된다.
+  // 칸 전체로만 보면 같은 칸의 다른 불릿이 대응어를 채워 통과해 버린다 —
+  // 「非集束時よろけ有」가 「비 집속시 좋다」로 남아 있던 자리가 그렇다.
+  // 불릿 수가 맞으면 짝지어 본다. check_glossary.js 와 같은 기준이어야 한다.
+  const bad = (k, v) => {
+    const ks = k.split(' / '), ts = v.split(' / ');
+    if (ks.length > 1 && ks.length === ts.length)
+      return ks.some((kk, i) => missing(kk, ts[i]).length);
+    return missing(k, v).length > 0;
+  };
   const hit = Object.entries(o).filter(([k, v]) =>
-    typeof v === 'string' && (missing(k, v).length || hasJa(v)));
+    typeof v === 'string' && (bad(k, v) || hasJa(v)));
   if (!dry) {
     for (const [k] of hit) delete o[k];
     fs.writeFileSync(p, JSON.stringify(o, null, 1) + '\n', 'utf8');

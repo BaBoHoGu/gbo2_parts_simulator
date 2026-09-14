@@ -4331,7 +4331,8 @@
       const on = state.stage === 6 ? true : state.stage === 4 ? n <= 4 : false;
       const row = el('div', 'stage-help-row' + (on ? ' on' : ''));
       row.append(el('span', 'stage-help-no', String(n)));
-      row.append(el('span', 'stage-help-pt', (entry.points || 0).toLocaleString() + ' pt'));
+      row.append(el('span', 'stage-help-pt',
+        entry.points == null ? '— pt' : entry.points.toLocaleString() + ' pt'));
 
       const mid = el('span', 'stage-help-mid');
       mid.append(el('span', 'stage-help-nm', T.fullstName(entry.name) + ' LV' + entry.level));

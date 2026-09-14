@@ -11,19 +11,30 @@ const { parseTable: parseGrid } = require('./lib/table.js');
 const ROOT = path.join(__dirname, '..');
 const WIKI = path.join(ROOT, 'raw', 'wiki');
 
-// 備考는 ' / ' 로 이어진 불릿 목록이다. 값은 다음 불릿 전까지가 한 덩어리다.
-// \S+ 로 끊으면 「よろけ値：30%（65% x2）」가 공백에서 멎어 닫는 괄호를 잃는다
-// — 실제로 46건이 「30%（65% x2」로 저장돼 있었다.
-function parseStagger(note) {
-  const non = /非集束よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(note);
-  const chg = /(?:^|[^非])集束よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(note);
-  if (non && chg) return non[1].trim() + ' (' + chg[1].trim() + ')';
-  if (non) return non[1].trim();
-  if (chg) return chg[1].trim();
-  // 非集束/集束 표기를 지운 뒤 남은 일반 표기를 본다
-  const rest = note.replace(/(?:非)?集束よろけ値：[^/\n]+/g, '');
-  const plain = /よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(rest);
-  return plain ? plain[1].trim() : null;
+// 備考는 원문에서 <br> 로 항목을 나눈다. 공백으로 뭉개면 한 줄로 이어져 읽기 어려우니
+// 구분자를 남긴다.
+const clean = s => s
+  .replace(/<br\s*\/?>/gi, ' / ')
+  .replace(/<[^>]+>/g, '')
+  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/\s+/g, ' ').trim();
+
+const parseTable = html => parseGrid(html, clean);
+
+const LV = /^LV\s*(\d+)$/i;
+
+/**
+ * 위키에 LV1 을 그냥 「LV」로 적어 둔 표가 있다 (ディジェ（CA）의 격투 표, 전체에서 1건).
+ * 그대로 두면 그 행이 헤더로 빨려 들어가 위력·쿨타임이 통째로 사라지므로,
+ * 숫자를 함께 담고 있는 행에 한해 LV1 로 보정한다. (열 이름 행에는 숫자가 없다)
+ */
+function fixBareLevel(grid) {
+  for (const row of grid) {
+    if (!row.some(c => /^\d[\d,]*$/.test(c))) continue;
+    const i = row.findIndex(c => /^LV$/i.test(c));
+    if (i >= 0) row[i] = 'LV1';
+  }
+  return grid;
 }
 
 /** 첫 데이터 행(LV1 …) 위쪽은 전부 헤더로 본다. 집속 무기는 헤더가 2줄(威力/ノン·フル). */
@@ -295,8 +306,12 @@ if (!files.length) {
 
 // gbo2.jp 미러가 wiki_url 을 비워 보낸 신기체(예: ゴトラタン)를 override 로 보정 —
 // 그래야 페이지↔기체 매핑이 서서 무장이 추출된다.
+// 미러에 없어 손으로 넣은 기체·LV(msData.additions.json)도 함께 봐야 한다 —
+// 빼면 그 LV 가 names 에 안 들어가 무장이 안 붙는다 (ギラ・ズール（EH） LV3·LV4).
+let addData = [];
+try { addData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.additions.json'), 'utf8')); } catch { /* 없어도 됨 */ }
 const msData = require('./lib/msdata.js').applyWikiOverride(
-  JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')), ROOT);
+  JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')).concat(addData), ROOT);
 const namesByPage = new Map();
 for (const m of msData) {
   const id = (String(m.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
