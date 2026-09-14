@@ -2750,6 +2750,10 @@ body.drawer-open .m-actionbar { display: none !important; }
 .wd-chip.wc-fire { color: var(--info); border-color: color-mix(in srgb, var(--info) 45%, var(--line)); }
 .wd-chip.wc-stag { color: var(--accent); border-color: var(--accent-dim); }
 .wd-chip.wc-stag2 { color: var(--close); border-color: color-mix(in srgb, var(--close) 45%, var(--line)); }
+/* 초록 — 쏘는 동안 움직일 수 있거나 관통하는 것 */
+.wd-chip.wc-move { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+/* 빨강 — 상대의 방어를 무시하거나 추가로 때리는 것 */
+.wd-chip.wc-pierce { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
 
 
 /* 무장 칸 접기 — 파츠를 고를 때는 무장 표가 자리만 차지한다 */
