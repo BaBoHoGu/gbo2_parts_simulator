@@ -1293,7 +1293,7 @@
    *  낱말 몇 개로 느슨하게 본다. 위에 있는 규칙이 이긴다. */
   const CHIP_RULES = [
     // 빨강 — 상대의 방어를 무시하거나 추가로 때리는 것. 가장 먼저 본다.
-    ['wc-pierce', /완충재[^/]*무시|내격투 보정을[^/]*감소|추가 대미지|고정 대미지|고정 피해|헤비 ?어택|다운/],
+    ['wc-pierce', /완충재[^/]*무시|실드[^/]*무시|보정을[^/]*(?:감소|[0-9]+%)[^/]*계산|추가 대미지|고정 대미지|고정 피해|헤비 ?어택|다운/],
     // 초록 — 쏘는 동안 움직일 수 있거나 관통하는 것
     ['wc-move', /집속 중 이동|집속중 이동|유닛 관통|록온 후[^/]*이동 가능|이동 중 록온/],
     // 노랑·코랄 — 경직 단계
@@ -1302,8 +1302,14 @@
     // 파랑 — 사격 가능 여부
     ['wc-fire', /사격 가능/],
   ];
+  // 「실드 HP 무시를 무효화」처럼 뒤집는 문구가 하나 있다 — 뜻이 정반대라 빨강을 빼야 한다.
+  const CHIP_NEGATE = /(?:무시|대미지|다운)[^/]*(?:무효|막음|받지 않음)/;
   function noteChipCls(t) {
-    for (const [cls, re] of CHIP_RULES) if (re.test(t)) return ' ' + cls;
+    for (const [cls, re] of CHIP_RULES) {
+      if (!re.test(t)) continue;
+      if (cls === 'wc-pierce' && CHIP_NEGATE.test(t)) continue;
+      return ' ' + cls;
+    }
     return '';
   }
 
