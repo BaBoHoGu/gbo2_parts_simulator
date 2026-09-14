@@ -3997,8 +3997,13 @@
   /* ---------- 스킬 도감 ---------- */
   // 기체와 상관없이 스킬을 위키 분류대로 모아 본다.
   // 데이터는 이미 앱에 있는 ms_skills 를 그대로 쓴다 — 용량이 늘지 않는다.
-  // 같은 이름의 LV 는 한 줄로 묶는다(301종 · 이름+LV 로는 559개).
-  let codexIndex = null, codexCat = '전체', codexQ = '', codexOpen = new Set();
+  // 좌: 스킬 목록 · 우: 고른 스킬의 LV 별 효과와 보유 기체.
+  let codexIndex = null, codexCat = '전체', codexQ = '';
+  let codexSel = null;                                   // 고른 스킬 이름(원문)
+  let codexMsQ = '', codexMsAttr = 'all', codexMsCost = 'all', codexMsLv = 'all', codexMsLimit = 60;
+
+  // 기체 목록은 이미 만들어 둔 msByBase 를 쓴다(LV 오름차순 정렬돼 있다).
+  // 코스트가 기체 LV 마다 다르다 — 592기 중 495기가 그렇다. 그래서 범위로 다룬다.
 
   function buildCodexIndex() {
     if (codexIndex) return codexIndex;
@@ -4007,93 +4012,199 @@
       for (const md of modes || []) for (const sk of md.skills || []) {
         if (!sk.name) continue;
         let e = byName.get(sk.name);
-        if (!e) { e = { name: sk.name, cat: sk.cat || 'その他', lvs: new Map(), ms: new Set() }; byName.set(sk.name, e); }
+        if (!e) { e = { name: sk.name, cat: sk.cat || 'その他', lvs: new Map(), ms: new Map() }; byName.set(sk.name, e); }
         // 분류가 빈 항목이 섞여 있다 — 한 번이라도 분류가 있으면 그것을 쓴다
         if (sk.cat && (!e.cat || e.cat === 'その他')) e.cat = sk.cat;
-        e.ms.add(msName);
         const lv = sk.lv || '';
         if (!e.lvs.has(lv)) e.lvs.set(lv, { lv, eff: sk.eff || '', desc: sk.desc || '' });
+        // 기체별로 가진 스킬 LV 를 모은다 — 같은 기체가 기체 LV 에 따라 여러 단계를 갖는다
+        if (!e.ms.has(msName)) e.ms.set(msName, new Set());
+        if (lv) e.ms.get(msName).add(lv);
       }
     }
     const lvNum = v => { const m = /(\d+)/.exec(v); return m ? +m[1] : 0; };
     codexIndex = [...byName.values()].map(e => ({
       ...e,
       ko: skTr(e.name),
-      lvList: [...e.lvs.values()].sort((a, b) => lvNum(a.lv) - lvNum(b.lv)),
+      lvList: [...e.lvs.values()].sort((x, y) => lvNum(x.lv) - lvNum(y.lv)),
       msCount: e.ms.size,
-    })).sort((a, b) => b.msCount - a.msCount);
+    })).sort((x, y) => y.msCount - x.msCount);
     return codexIndex;
   }
 
-  function renderCodex() {
-    const body = $('#codexBody'); if (!body) return;
-    const all = buildCodexIndex();
+  function codexFiltered() {
     const q = codexQ.trim().toLowerCase();
-    const hit = all.filter(e => {
+    return buildCodexIndex().filter(e => {
       if (codexCat !== '전체' && (SKILL_CAT_KO[e.cat] || '기타') !== codexCat) return false;
       if (!q) return true;
       if (e.ko.toLowerCase().includes(q) || e.name.toLowerCase().includes(q)) return true;
       return e.lvList.some(v => skTr(v.eff).toLowerCase().includes(q));
     });
-    $('#codexNote').textContent = '스킬 ' + all.length + '종 · 보이는 것 ' + hit.length;
-    body.innerHTML = '';
-    if (!hit.length) { body.append(el('div', 'codex-empty', '찾는 스킬이 없습니다.')); return; }
+  }
 
-    // 분류별로 묶어 내보낸다 (전체 볼 때만 머리글을 단다)
+  function renderCodexList() {
+    const box = $('#codexList'); if (!box) return;
+    const hit = codexFiltered();
+    $('#codexNote').textContent = '스킬 ' + buildCodexIndex().length + '종 · 보이는 것 ' + hit.length;
+    box.innerHTML = '';
+    if (!hit.length) { box.append(el('div', 'codex-empty', '찾는 스킬이 없습니다.')); return; }
     const order = ['足回り', '攻撃', '防御', '移動', '格闘', '射撃', 'その他', ''];
     const groups = new Map();
     for (const e of hit) { const k = e.cat || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
-    const keys = [...groups.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
-    for (const k of keys) {
+    for (const k of [...groups.keys()].sort((x, y) => order.indexOf(x) - order.indexOf(y))) {
       if (codexCat === '전체') {
         const h = el('div', 'codex-cat', SKILL_CAT_KO[k] || '기타');
         h.append(el('span', '', groups.get(k).length + '종'));
-        body.append(h);
+        box.append(h);
       }
-      for (const e of groups.get(k)) body.append(codexCard(e));
+      for (const e of groups.get(k)) {
+        const it = el('div', 'codex-item' + (codexSel === e.name ? ' on' : ''));
+        it.append(el('div', 'codex-nm', e.ko));
+        const lvs = el('div', 'codex-lvs');
+        for (const v of e.lvList) if (v.lv) lvs.append(el('span', 'codex-lv', v.lv));
+        it.append(lvs);
+        it.append(el('div', 'codex-cnt', e.msCount + '기'));
+        it.onclick = () => selectCodex(e.name);
+        box.append(it);
+      }
     }
   }
 
-  function codexCard(e) {
-    const box = el('div', 'codex-item');
-    const head = el('div', 'codex-head');
-    head.append(el('div', 'codex-nm', e.ko));
-    const lvs = el('div', 'codex-lvs');
-    for (const v of e.lvList) if (v.lv) lvs.append(el('span', 'codex-lv', v.lv));
-    head.append(lvs);
-    head.append(el('div', 'codex-cnt', e.msCount + '기'));
-    head.onclick = () => {
-      codexOpen.has(e.name) ? codexOpen.delete(e.name) : codexOpen.add(e.name);
-      renderCodex();
-    };
-    box.append(head);
-    if (!codexOpen.has(e.name)) return box;
+  function selectCodex(name) {
+    codexSel = name;
+    codexMsQ = ''; codexMsAttr = 'all'; codexMsCost = 'all'; codexMsLv = 'all'; codexMsLimit = 60;
+    $('#codex2col').classList.add('sel');
+    renderCodexList();
+    renderCodexPane();
+    const p = $('#codexPane'); if (p) p.scrollTop = 0;
+  }
 
-    const d = el('div', 'codex-detail');
+  /** 보유 기체 한 줄에 필요한 것 — 이름·속성·코스트 범위·가진 스킬 LV. */
+  function codexMsRows(e) {
+    const byBase = msByBase;
+    const lvNum = v => { const m = /(\d+)/.exec(v); return m ? +m[1] : 0; };
+    const rows = [];
+    for (const [base, lvSet] of e.ms) {
+      const list = byBase.get(base);
+      if (!list || !list.length) continue;
+      const costs = list.map(m => m.コスト).filter(c => c != null);
+      if (!costs.length) continue;
+      rows.push({
+        base,
+        ko: T.msName(base),
+        attr: list[0].属性 || '',
+        attrKo: T.attrName(list[0].属性) || '-',
+        costMin: Math.min.apply(null, costs), costMax: Math.max.apply(null, costs),
+        lvs: [...lvSet].sort((x, y) => lvNum(x) - lvNum(y)),
+        ms: list[0],
+      });
+    }
+    return rows.sort((x, y) => (y.costMax - x.costMax) || x.ko.localeCompare(y.ko, 'ko'));
+  }
+
+  function renderCodexPane() {
+    const pane = $('#codexPane'); if (!pane) return;
+    pane.innerHTML = '';
+    const e = buildCodexIndex().find(x => x.name === codexSel);
+    if (!e) { pane.append(el('div', 'codex-ph', '왼쪽에서 스킬을 고르면 설명과 보유 기체가 나옵니다.')); return; }
+
+    const back = el('button', 'btn-ghost small codex-paneback', '‹ 목록');
+    back.onclick = () => { codexSel = null; $('#codex2col').classList.remove('sel'); renderCodexList(); renderCodexPane(); };
+    pane.append(back);
+
+    const ttl = el('div', 'codex-ttl');
+    ttl.append(el('h2', '', e.ko));
+    ttl.append(el('span', 'codex-tag', SKILL_CAT_KO[e.cat] || '기타'));
+    ttl.append(el('span', 'codex-tag', e.msCount + '기 보유'));
+    pane.append(ttl);
+    if (e.ko !== e.name) pane.append(el('div', 'codex-jp', e.name));
+
+    pane.append(el('div', 'codex-sub', 'LV 별 효과'));
     for (const v of e.lvList) {
       const row = el('div', 'codex-row');
       if (v.lv) row.append(el('b', '', v.lv));
       const eff = skTr(v.eff), desc = skTr(v.desc);
       if (eff) row.append(el('div', 'codex-eff', eff.split(' / ').join('\n')));
       if (desc && desc !== eff) row.append(el('div', 'codex-desc', desc.split(' / ').join('\n')));
-      d.append(row);
+      pane.append(row);
     }
-    // 어떤 기체가 쓰는지 — 많으면 앞쪽만 적고 나머지는 수로 적는다
-    const names = [...e.ms].map(n => T.msName(n)).sort((a, b) => a.localeCompare(b, 'ko'));
-    const show = names.slice(0, 24);
-    const ms = el('div', 'codex-ms');
-    ms.append(el('b', '', '쓰는 기체 ' + names.length + ' — '));
-    ms.append(document.createTextNode(show.join(' · ') + (names.length > show.length ? ' 외 ' + (names.length - show.length) : '')));
-    d.append(ms);
-    box.append(d);
-    return box;
+
+    pane.append(el('div', 'codex-sub', '보유 기체'));
+    const bar = el('div', 'codex-msbar');
+    const inp = el('input', 'codex-mssearch');
+    inp.type = 'search'; inp.placeholder = '기체 이름 검색'; inp.value = codexMsQ; inp.autocomplete = 'off';
+    inp.oninput = ev => { codexMsQ = ev.target.value; codexMsLimit = 60; renderCodexMsList(e); };
+    bar.append(inp);
+    // 칩 묶음마다 라벨을 단다 — 셋이 붙어 있으면 어디까지가 코스트인지 안 보인다
+    const mkChips = (lb, cur, list, set) => {
+      const g = el('div', 'codex-chipgrp');
+      g.append(el('span', 'filter-lb', lb));
+      const w = el('div', 'chips');
+      for (const c of list) {
+        const b = el('button', 'chip' + (cur() === c.v ? ' on' : ''), c.label);
+        b.onclick = () => { set(c.v); codexMsLimit = 60; renderCodexPane(); };
+        w.append(b);
+      }
+      g.append(w);
+      return g;
+    };
+    bar.append(mkChips('카테고리', () => codexMsAttr, [{ label: '전체', v: 'all' },
+      { label: '강습', v: '強襲' }, { label: '범용', v: '汎用' }, { label: '지원', v: '支援' }],
+      v => { codexMsAttr = v; }));
+    bar.append(mkChips('코스트', () => codexMsCost, COST_CHIPS, v => { codexMsCost = v; }));
+    if (e.lvList.filter(v => v.lv).length > 1) {
+      bar.append(mkChips('스킬 LV', () => codexMsLv, [{ label: '전체', v: 'all' }].concat(
+        e.lvList.filter(v => v.lv).map(v => ({ label: v.lv, v: v.lv }))), v => { codexMsLv = v; }));
+    }
+    pane.append(bar);
+    const listBox = el('div', 'codex-mslist'); listBox.id = 'codexMsList';
+    pane.append(listBox);
+    renderCodexMsList(e);
+  }
+
+  function renderCodexMsList(e) {
+    const box = $('#codexMsList'); if (!box) return;
+    const q = codexMsQ.trim().toLowerCase();
+    const rows = codexMsRows(e).filter(r => {
+      if (codexMsAttr !== 'all' && r.attr !== codexMsAttr) return false;
+      // 코스트는 기체 LV 마다 다르다 — 한 LV 라도 걸리면 통과시킨다
+      if (codexMsCost === 'low') { if (r.costMin > 250) return false; }
+      else if (codexMsCost !== 'all') { if (codexMsCost < r.costMin || codexMsCost > r.costMax) return false; }
+      if (codexMsLv !== 'all' && r.lvs.indexOf(codexMsLv) < 0) return false;
+      if (q && !r.ko.toLowerCase().includes(q) && !r.base.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    box.innerHTML = '';
+    if (!rows.length) { box.append(el('div', 'codex-empty', '조건에 맞는 기체가 없습니다.')); return; }
+    for (const r of rows.slice(0, codexMsLimit)) {
+      const it = el('div', 'codex-ms');
+      const nm = el('div', 'nm');
+      nm.append(el('span', 'dot ' + r.attr));
+      nm.append(el('span', '', r.ko));
+      it.append(nm);
+      it.append(el('div', 'at', r.attrKo));
+      it.append(el('div', 'co', r.costMin === r.costMax ? String(r.costMin) : r.costMin + '~' + r.costMax));
+      const lv = el('div', 'lv');
+      for (const v of r.lvs) lv.append(el('span', 'codex-lv', v));
+      it.append(lv);
+      // 눌러서 바로 그 기체로 간다 — 도감에서 본 것을 그대로 짜 볼 수 있다
+      it.title = '이 기체로 구성 짜기';
+      it.onclick = () => { selectMs(r.ms); };
+      box.append(it);
+    }
+    if (rows.length > codexMsLimit) {
+      const more = el('div', 'codex-msmore', '더 보기 (' + (rows.length - codexMsLimit) + '기 남음)');
+      more.onclick = () => { codexMsLimit += 60; renderCodexMsList(e); };
+      box.append(more);
+    }
   }
 
   function openCodex(open) {
     if (!open) { setView(viewBefore === 'codex' ? 'select' : viewBefore); return; }
     setView('codex');
     renderCodexChips();
-    renderCodex();
+    renderCodexList();
+    renderCodexPane();
   }
 
   function renderCodexChips() {
@@ -4105,7 +4216,7 @@
     for (const nm of ['전체', '기동', '공격', '방어', '기타']) {
       if (!cnt[nm]) continue;
       const b = el('button', 'chip' + (codexCat === nm ? ' on' : ''), nm + ' ' + cnt[nm]);
-      b.onclick = () => { codexCat = nm; renderCodexChips(); renderCodex(); };
+      b.onclick = () => { codexCat = nm; renderCodexChips(); renderCodexList(); };
       wrap.append(b);
     }
   }
@@ -6195,7 +6306,7 @@
     // 공유 갤러리 (전체 화면)
     $('#codexBtn').onclick = () => openCodex(true);
     $('#codexBack').onclick = () => openCodex(false);
-    $('#codexSearch').oninput = ev => { codexQ = ev.target.value; renderCodex(); };
+    $('#codexSearch').oninput = ev => { codexQ = ev.target.value; renderCodexList(); };
     $('#galleryBtn').onclick = () => openGallery(true);
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };

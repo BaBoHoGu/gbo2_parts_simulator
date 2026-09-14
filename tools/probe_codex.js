@@ -24,8 +24,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await pg.evaluate(() => document.querySelector('#codexBtn').click());
   await sleep(1200);
   await pg.screenshot({ path: path.join(OUT, 'codex' + (process.argv[2] ? '_' + process.argv[2] : '') + '.png') });
-  // 첫 항목을 펴 본다
-  await pg.evaluate(() => { const h = document.querySelector('.codex-head'); if (h) h.click(); });
+  // 첫 스킬을 골라 본다
+  await pg.evaluate(() => { const h = document.querySelector('.codex-item'); if (h) h.click(); });
   await sleep(600);
   await pg.screenshot({ path: path.join(OUT, 'codex_open' + (process.argv[2] ? '_' + process.argv[2] : '') + '.png') });
   const note = await pg.evaluate(() => (document.getElementById('codexNote') || {}).textContent || '');
