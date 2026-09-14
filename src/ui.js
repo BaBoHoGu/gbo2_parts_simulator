@@ -1805,7 +1805,6 @@
       const mustCharge = /集束必須/.test(note);
 
       const row = el('div', 'weapon');
-      row.dataset.w = w.name;
       row.dataset.name = w.name;
 
       // ① 구분
@@ -2002,7 +2001,6 @@
       // 파츠를 갈아 끼우면 목록을 다시 그리므로, 펼쳐 둔 무장은 여기서 되살린다
       if (state.openWeapons.includes(w.name)) openWeaponDetail(row, w, d, lv);
     }
-    syncWeaponOpenAll();
     applyWeaponFold();
   }
 
@@ -2162,28 +2160,6 @@
       if (!state.openWeapons.includes(w.name)) state.openWeapons.push(w.name);
       openWeaponDetail(row, w, d, lv);
     }
-    syncWeaponOpenAll();
-  }
-
-  /** 「모두 열기 / 모두 닫기」 — 버튼 글자는 지금 상태를 보고 정한다. */
-  function weaponNames() {
-    return [...document.querySelectorAll('#weaponList .weapon')].map(r => r.dataset.w).filter(Boolean);
-  }
-  function syncWeaponOpenAll() {
-    const b = $('#weaponOpenAll');
-    if (!b) return;
-    const all = weaponNames();
-    const allOpen = all.length > 0 && all.every(n => state.openWeapons.includes(n));
-    b.textContent = allOpen ? '⌃ 모두 닫기' : '⌄ 모두 열기';
-    b.classList.toggle('on', state.openWeapons.length > 0);
-    b.hidden = all.length < 2;      // 무장이 하나면 버튼이 필요 없다
-  }
-  function toggleWeaponOpenAll() {
-    const all = weaponNames();
-    const allOpen = all.length > 0 && all.every(n => state.openWeapons.includes(n));
-    state.openWeapons = allOpen ? [] : all;
-    renderWeapons();
-    syncWeaponOpenAll();
   }
 
   /** 무장 행 아래에 위키의 설명과 표 값을 그대로 펼친다. */
@@ -6528,7 +6504,6 @@
 
     // 무장 헤더 '스킬' — 이 기체의 스킬 목록·설명 (무장 칸 안에서 토글)
     $('#weaponFold').onclick = toggleWeaponFold;
-    $('#weaponOpenAll').onclick = toggleWeaponOpenAll;
     $('#skillListBtn').onclick = () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
       // 모바일에선 별도 시트로 연다(무장 표와 섞이면 보기 어렵다). 데스크톱은 기존 인라인 토글.
