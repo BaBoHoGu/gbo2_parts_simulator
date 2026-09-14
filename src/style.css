@@ -2668,28 +2668,11 @@ body.drawer-open .m-actionbar { display: none !important; }
 .slot-bar .track { gap: 3px; }
 .slot-bar .track i { border-radius: 0; height: 9px; }
 
-/* LV 뱃지를 타일 왼쪽 아래로 — 게임과 같은 자리. 오른쪽은 ✓ 표시와 겹쳤다. */
-.pt-lv {
-  right: auto; left: -2px; bottom: -2px;
-  border-radius: 0 3px 0 0;
-  padding: 2px 5px;
-}
-
 /* 코스트 뱃지 — 둥근 알약에서 각진 칩으로 */
 .cost-badge {
   border-radius: 2px;
   border: 1px solid var(--accent-dim);
   padding: 0 7px;
-}
-
-/* 기체 카드의 ★ 를 그림 안 왼쪽 위로 — 게임처럼 등급을 타일에서 바로 본다 */
-.ms-card { position: relative; }
-.ms-card .stars.on-thumb {
-  position: absolute; left: 5px; top: 5px;
-  padding: 1px 4px; border-radius: 2px;
-  background: rgba(8, 10, 14, .78);
-  line-height: 1; letter-spacing: -1px;
-  text-shadow: 0 0 4px rgba(0, 0, 0, .9);
 }
 
 /* 패널 머리글 — 게임처럼 얇은 밑줄을 깔아 구획을 분명히 한다 */
