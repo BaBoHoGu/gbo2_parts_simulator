@@ -50,9 +50,35 @@ async function req(url, opt = {}) {
   }
 }
 
+/* ---------- 기기 id ----------
+   투표 한도가 **기기별**이라 서버가 기기를 알아볼 값이 필요하다. IP 로는 안 된다 —
+   한 집이 한 사람으로 뭉치고, 폰은 IP 가 수시로 바뀐다.
+   여기서 임의의 값을 한 번 만들어 저장하고 헤더로 보낸다. 서버는 소금과 함께
+   해시해서 쓰므로 이 값 자체는 서버에 남지 않는다.
+   한계: **저장소를 지우면 한도가 초기화된다.** 로그인이 없는 한 어쩔 수 없다. */
+const DEV_KEY = 'gbo2.device';
+let devId = null;
+function deviceId() {
+  if (devId) return devId;
+  try {
+    devId = localStorage.getItem(DEV_KEY);
+    if (!/^[a-zA-Z0-9_-]{16,64}$/.test(devId || '')) {
+      const a = new Uint8Array(16);
+      (crypto.getRandomValues ? crypto : window.crypto).getRandomValues(a);
+      devId = [...a].map(x => x.toString(16).padStart(2, '0')).join('');
+      localStorage.setItem(DEV_KEY, devId);
+    }
+  } catch (e) {
+    // 저장소가 막힌 브라우저(사생활 보호 모드 등). 투표는 서버가 거절한다.
+    devId = null;
+  }
+  return devId;
+}
+const devHeader = () => { const d = deviceId(); return d ? { 'X-GBO2-Device': d } : {}; };
+
 const postJson = (path, body, headers = {}) => req(CFG.api + path, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', ...headers },
+  headers: { 'Content-Type': 'application/json', ...devHeader(), ...headers },
   body: JSON.stringify(body)
 });
 
@@ -230,6 +256,35 @@ async function checkUpdate() {
   return { ok: true, newer: !!(mine && latest > mine), latest, mine };
 }
 
-window.GBO2Share = { upload, list, readCache, CFG, adminLogin, adminLogout, isAdmin, remove, checkUpdate };
+/* ---------- 추천 · 비추 ----------
+   갈래(kind)는 'build'(갤러리 구성)와 'ms'(기체) 둘이고, 하루 한도를
+   **서로 나눠 쓰지 않는다** — 갈래마다 따로 추천 5 · 비추 3 이다.
+   집계·내 표·남은 횟수를 서버가 한 번에 돌려주므로 화면은 그대로 그리면 된다. */
+
+/** 이 갈래의 집계와 내 표를 받아 온다. 실패해도 앱을 멈추지 않는다. */
+async function votes(kind) {
+  const r = await req(CFG.api + '/votes?kind=' + encodeURIComponent(kind), { headers: devHeader() });
+  if (r.ok && r.json && r.json.ok) return { ok: true, ...r.json };
+  return { ok: false, totals: {}, mine: {}, left: null,
+    msg: (r.json && r.json.msg) || '투표 정보를 받지 못했습니다' };
+}
+
+/**
+ * 표를 놓거나 거둔다. 같은 방향을 다시 누르면 거둔다(서버가 토글로 처리).
+ * @param {'build'|'ms'} kind
+ * @param {string} target  구성 id 또는 기체 이름(일본어 원문)
+ * @param {1|-1|0} dir
+ */
+async function vote(kind, target, dir) {
+  if (!deviceId()) {
+    return { ok: false, code: 'dev', msg: '이 브라우저에서는 투표할 수 없습니다 (저장소가 막혀 있습니다)' };
+  }
+  const r = await postJson('/votes', { kind, target, dir });
+  if (r.ok && r.json && r.json.ok) return { ok: true, ...r.json };
+  if (r.json && r.json.msg) return { ok: false, code: r.json.code, msg: r.json.msg };
+  return { ok: false, code: 'net', msg: '투표하지 못했습니다 — 잠시 후 다시 시도하세요' };
+}
+
+window.GBO2Share = { upload, list, readCache, CFG, adminLogin, adminLogout, isAdmin, remove, checkUpdate, votes, vote, deviceId };
 
 })();

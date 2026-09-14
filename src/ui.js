@@ -3941,7 +3941,7 @@
 
   const S = window.GBO2Share;
   let galleryList = [];      // 서버(또는 캐시)에서 받아 둔 목록
-  let gallerySort = 'new';   // 'new' 최신순 | 'ms' 기체순
+  let gallerySort = 'new';   // 'new' 최신순 | 'ms' 기체순 | 'vote' 추천순
   let galleryAttr = '';      // '' 전체 | 強襲 | 汎用 | 支援
   // 기체 선택 화면과 같은 축으로 거른다 — 갤러리가 커지면 이게 없으면 못 찾는다
   let galleryCost = 'all';   // 'all' | 750… | 'low'(≤250)
@@ -3976,6 +3976,12 @@
         const an = T.msName(a.ms), bn = T.msName(b.ms);
         return an.localeCompare(bn, 'ko') || b.at - a.at;
       });
+    } else if (gallerySort === 'vote') {
+      // 추천에서 비추를 뺀 점수. 같으면 추천이 많은 쪽, 그다음 최신순.
+      // 비추를 빼는 이유: 추천만 보면 표가 많이 오간 구성이 늘 위로 간다.
+      list = [...list].sort((a, b) => voteScore(a.id) - voteScore(b.id)
+        || voteUp(b.id) - voteUp(a.id) || b.at - a.at);
+      list.reverse();
     }
     // 기체 기준 필터들 — 카드의 기체를 찾아 한 번에 거른다
     if (galleryAttr || galleryCost !== 'all' || galleryLv !== 'all' || galleryRarity !== 'all') {
@@ -4004,6 +4010,7 @@
       const sub = [relTime(bld.at), bld.ver && ('데이터 ' + bld.ver)].filter(Boolean).join(' · ');
       box.append(buildSummaryCard(bld, {
         sub,
+        vote: bld.id,       // 추천·비추
         uniform: true,      // 격자라 카드마다 줄 위치가 어긋나면 읽기 나쁘다
         desc: bld.desc,
         author: bld.author,
@@ -4064,6 +4071,7 @@
     updateAdminBtn();
     renderGallery();
     loadGallery();
+    loadVotes('build');
   }
 
   // 스킬명을 긴 것부터. 짧은 이름이 긴 이름을 잘라먹지 않게 한다.
@@ -5711,6 +5719,74 @@
   }
 
   /** 저장한 구성을 자동 구성 카드처럼 파츠 아이콘·스탯 요약으로 보여 준다. */
+  /* ===================== 추천 · 비추 =====================
+     갈래가 둘이다 — 'build'(갤러리 구성)와 'ms'(기체).
+     하루 한도(추천 5 · 비추 3)를 **갈래끼리 나눠 쓰지 않는다**(사용자 결정).
+     집계·내 표·남은 횟수는 서버가 한 번에 준다 — 앱은 그대로 그린다. */
+  const voteState = {
+    build: { totals: {}, mine: {}, left: null, loaded: false },
+    ms: { totals: {}, mine: {}, left: null, loaded: false }
+  };
+  // 같은 갈래를 두 화면이 동시에 쓰므로, 받아 오면 둘 다 다시 그린다.
+  const voteRedraw = { build: [], ms: [] };
+
+  const voteUp = id => (voteState.build.totals[id] || [0, 0])[0];
+  const voteScore = id => {
+    const [u, d] = voteState.build.totals[id] || [0, 0];
+    return u - d;
+  };
+
+  async function loadVotes(kind, force) {
+    if (!S || !S.votes) return;
+    const st = voteState[kind];
+    if (st.loaded && !force) return;
+    const r = await S.votes(kind);
+    if (!r.ok) return;                       // 못 받아도 앱은 그대로 돈다
+    st.totals = r.totals || {};
+    st.mine = r.mine || {};
+    st.left = r.left || null;
+    st.loaded = true;
+    for (const fn of voteRedraw[kind]) { try { fn(); } catch (e) {} }
+  }
+
+  /**
+   * 추천·비추 한 줄. 갤러리 카드와 기체 정보 화면이 **같은 것**을 쓴다.
+   * @param {'build'|'ms'} kind
+   * @param {string} target  구성 id 또는 기체 이름(일본어 원문)
+   */
+  function voteBar(kind, target) {
+    const bar = el('div', 'vote-bar');
+    const st = voteState[kind];
+    const draw = () => {
+      bar.innerHTML = '';
+      const [up, down] = st.totals[target] || [0, 0];
+      const my = st.mine[target] || 0;
+      const mk = (dir, txt, n) => {
+        const b = el('button', 'vote-btn' + (dir > 0 ? ' up' : ' down') + (my === dir ? ' on' : ''));
+        b.append(el('i', '', txt), el('b', '', String(n)));
+        b.title = my === dir
+          ? '누르면 취소합니다'
+          : (dir > 0 ? '추천' : '비추') + (st.left ? ` (오늘 ${dir > 0 ? st.left.up : st.left.down}번 남음)` : '');
+        b.onclick = async ev => {
+          ev.stopPropagation();          // 카드를 누른 것으로 새지 않게
+          b.disabled = true;
+          const r = await S.vote(kind, target, dir);
+          b.disabled = false;
+          if (!r.ok) { toast(r.msg); return; }
+          st.totals = r.totals || {};
+          st.mine = r.mine || {};
+          st.left = r.left || null;
+          for (const fn of voteRedraw[kind]) { try { fn(); } catch (e) {} }
+        };
+        return b;
+      };
+      bar.append(mk(1, '▲', up), mk(-1, '▼', down));
+    };
+    draw();
+    bar._draw = draw;
+    return bar;
+  }
+
   /**
    * 구성 요약 카드 — 저장 목록과 공유 갤러리가 **같은 렌더러**를 쓴다.
    * (둘이 따로 그리면 한쪽만 지표가 어긋나는 일이 생긴다 — 실제로 그런 버그를 여러 번 고쳤다)
@@ -5719,6 +5795,7 @@
    *   onOpen()          카드를 눌렀을 때
    *   onRename() onDel() 있으면 제목 클릭·✕ 버튼을 단다 (저장 목록 전용)
    *   sub               제목 아래 한 줄 (갤러리의 올린 날짜 등)
+   *   vote              구성 id. 주면 카드 아래에 추천·비추 줄을 단다.
    */
   function buildSummaryCard(bld, opt = {}) {
     const ms = msData.find(m => m.MS名 === bld.ms);
@@ -5813,6 +5890,9 @@
     // 내 데이터에 없는 파츠(밸런스 패치로 빠졌거나 상대가 더 최신 데이터일 때)를 밝힌다
     const lost = (bld.parts || []).length - parts.length;
     card.append(el('div', 'ac-parts', `파츠 ${parts.length}개` + (lost ? ` (없는 파츠 ${lost}개 제외)` : '')));
+
+    // 추천·비추 (갤러리·기체 정보에서만. 내 저장 목록에는 붙이지 않는다)
+    if (opt.vote) card.append(voteBar('build', opt.vote));
 
     card.title = '클릭해서 이 구성 불러오기';
     card.onclick = () => opt.onOpen && opt.onOpen();
@@ -6080,6 +6160,9 @@
       renderInfoBuilds();
       loadGallery().then(renderInfoBuilds);
     }
+    // 표가 들어오면 순서가 바뀌므로 구성 목록을 다시 그린다.
+    loadVotes('ms');
+    loadVotes('build').then(renderInfoBuilds);
   }
 
   /** 정보 화면에서 「파츠 고르기」 — 보고 있던 LV 그대로 파츠 화면으로 넘어간다. */
@@ -6127,6 +6210,11 @@
     }
 
     factsInto(m, $('#infoFacts'), $('#infoFacts2'));
+    // 기체 추천·비추. 기체는 LV 마다 나누지 않고 **기체 단위**로 센다 —
+    // LV 별로 갈라 두면 표가 흩어져 티어표 구실을 못 한다.
+    const vb = $('#infoVote');
+    vb.innerHTML = '';
+    vb.append(el('span', 'mi-vote-lb', '이 기체'), voteBar('ms', baseName(m.MS名)));
     renderInfoStats(m);
     renderInfoWeapons(m);
     renderInfoSkills(m);
@@ -6243,7 +6331,9 @@
     const base = baseName(infoMs.MS名);
     const list = (galleryList || [])
       .filter(b => baseName(String(b.ms || '')) === base)
-      .sort((a, b) => b.at - a.at);
+      // 추천에서 비추를 뺀 점수. 같으면 추천이 많은 쪽, 그다음 최신순.
+      .sort((a, b) => voteScore(b.id) - voteScore(a.id)
+        || voteUp(b.id) - voteUp(a.id) || b.at - a.at);
     $('#infoBuildCnt').textContent = list.length ? list.length + '개' : '';
     if (!list.length) {
       box.append(el('div', 'detail-empty', galleryLoading
@@ -6255,7 +6345,7 @@
       const otherLv = bld.ms !== infoMs.MS名;
       const sub = [relTime(bld.at), otherLv && T.msName(bld.ms)].filter(Boolean).join(' · ');
       box.append(buildSummaryCard(bld, {
-        sub, uniform: true, desc: bld.desc, author: bld.author,
+        sub, uniform: true, desc: bld.desc, author: bld.author, vote: bld.id,
         onOpen: () => {
           fromGallery = false;
           const r = deserialize(bld);
@@ -6687,6 +6777,15 @@
     // ── 기체 정보 화면 ──
     $('#infoBack').onclick = () => setView(infoBefore === 'info' ? 'select' : infoBefore);
     $('#infoGo').onclick = infoGoBuild;
+
+    // 표가 들어오거나 바뀌면 지금 보고 있는 화면만 다시 그린다.
+    // 투표 줄마다 콜백을 달지 않는 이유: 화면을 다시 그릴 때마다 줄이 새로 생겨
+    // 옛 줄의 콜백이 쌓인다. 화면 단위로 한 번만 걸어 두면 그럴 일이 없다.
+    voteRedraw.build.push(() => {
+      if (state.view === 'gallery') renderGallery();
+      else if (state.view === 'info') renderInfoBuilds();
+    });
+    voteRedraw.ms.push(() => { if (state.view === 'info') renderInfo(); });
     $('#stageHelp').onclick = () => openStageHelp(true);
     $('#stageHelpClose').onclick = () => openStageHelp(false);
     $('#stageHelpBack').onclick = () => openStageHelp(false);
@@ -6725,7 +6824,8 @@
         box.append(chip);
       }
     };
-    galChips('#gallerySortChips', [{ label: '최신순', v: 'new' }, { label: '기체순', v: 'ms' }],
+    galChips('#gallerySortChips',
+      [{ label: '최신순', v: 'new' }, { label: '추천순', v: 'vote' }, { label: '기체순', v: 'ms' }],
       () => gallerySort, v => { gallerySort = v; });
     galChips('#galleryAttrChips',
       [{ label: '전체', v: '' },

@@ -2891,3 +2891,27 @@ body.drawer-open .m-actionbar { display: none !important; }
   .mi-img { width: 100%; flex: 0 0 auto; height: 150px; }
   .mi-id h2 { font-size: 17px; }
 }
+
+
+/* ---- 추천 · 비추 ----
+   갤러리 카드와 기체 정보가 같은 줄을 쓴다. 한도는 갈래마다 따로다
+   (구성 하루 추천 5·비추 3, 기체도 따로 5·3). */
+.vote-bar { display: flex; gap: 5px; padding: 7px 0 1px; }
+.vote-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; font-size: 11px; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 3px;
+  background: transparent; color: var(--dim);
+}
+.vote-btn i { font-style: normal; font-size: 9px; }
+.vote-btn b { font-size: 11.5px; }
+.vote-btn:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
+.vote-btn:disabled { opacity: .5; cursor: default; }
+/* 내가 누른 쪽만 색이 든다 — 초록은 추천, 코랄은 비추. 무장 칩과 같은 계열이다 */
+.vote-btn.up.on { color: #8fd6a4; border-color: rgba(120, 200, 140, .45); background: rgba(120, 200, 140, .12); }
+.vote-btn.down.on { color: #f0907e; border-color: rgba(240, 144, 126, .4); background: rgba(240, 144, 126, .1); }
+
+/* 기체 정보의 기체 투표 — 판정력 줄 아래 */
+.mi-vote { display: flex; align-items: center; gap: 8px; }
+.mi-vote-lb { font-size: 11px; color: var(--muted); }
+.mi-vote .vote-bar { padding: 4px 0 0; }

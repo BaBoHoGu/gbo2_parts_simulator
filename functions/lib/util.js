@@ -9,7 +9,7 @@
 export const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-GBO2-Device',
   'Access-Control-Max-Age': '86400'
 };
 
@@ -30,6 +30,25 @@ export async function whoOf(request, env) {
   const ip = request.headers.get('CF-Connecting-IP') || '0.0.0.0';
   return (await sha256Hex(ip + '|' + (env.WHO_SALT || 'gbo2'))).slice(0, 24);
 }
+
+/* ---------- 기기 ----------
+ * 투표 한도는 **기기별**이다(사용자 결정). IP 해시(whoOf)로는 셀 수 없다 —
+ * 한 집·한 통신사가 한 사람으로 뭉뚱그려지고, 폰은 IP 가 수시로 바뀐다.
+ * 그래서 앱이 만들어 저장한 임의의 id 를 헤더로 받아 소금과 함께 해시해 쓴다.
+ *
+ * 한계를 분명히 해 둔다: **브라우저 저장소를 지우면 한도가 초기화된다.**
+ * 로그인이 없는 한 완전히 막을 수는 없다. 대신 표마다 IP 해시(who)도 같이
+ * 남겨 두어, 남용이 생기면 나중에 IP 단위 상한을 덧붙일 수 있게 했다.
+ */
+export async function devOf(request, env) {
+  const raw = String(request.headers.get('X-GBO2-Device') || '').trim();
+  // 형식이 어긋나면 기기 없음으로 본다 — 아무 값이나 받아 주면 한도가 뜻을 잃는다.
+  if (!/^[a-zA-Z0-9_-]{16,64}$/.test(raw)) return null;
+  return (await sha256Hex(raw + '|dev|' + (env.WHO_SALT || 'gbo2'))).slice(0, 24);
+}
+
+/** 한국 시각 기준의 '오늘' 번호. 하루 한도를 자정(KST)에 되돌리려고 쓴다. */
+export const dayOf = (ms = Date.now()) => Math.floor((ms + 9 * 3600e3) / 86400e3);
 
 /**
  * 화면에 적을 IP 앞자리 — IPv4 는 「220.80」, IPv6 는 「2001:2d8」.

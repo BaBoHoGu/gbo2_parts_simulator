@@ -14,7 +14,18 @@ const DDL = [
      free INTEGER NOT NULL DEFAULT 0, ver TEXT, who TEXT NOT NULL, at INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS builds_at ON builds (at DESC)`,
   `CREATE TABLE IF NOT EXISTS throttle (who TEXT PRIMARY KEY, at INTEGER NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS blocked (id TEXT PRIMARY KEY, at INTEGER NOT NULL)`
+  `CREATE TABLE IF NOT EXISTS blocked (id TEXT PRIMARY KEY, at INTEGER NOT NULL)`,
+  /* 추천·비추 — 구성(build)과 기체(ms) 를 한 표에 담되 kind 로 나눈다.
+     한 기기가 한 대상에 한 표만 가지므로 (kind,target,dev) 가 열쇠다.
+     표를 둘로 나누지 않은 이유: 집계·한도 계산이 완전히 같은 모양이라,
+     나누면 같은 코드를 두 벌 쓰게 되고 언젠가 한쪽만 고치게 된다. */
+  `CREATE TABLE IF NOT EXISTS votes (
+     kind TEXT NOT NULL, target TEXT NOT NULL, dev TEXT NOT NULL,
+     dir INTEGER NOT NULL, who TEXT, at INTEGER NOT NULL,
+     PRIMARY KEY (kind, target, dev))`,
+  `CREATE INDEX IF NOT EXISTS votes_target ON votes (kind, target)`,
+  /* 하루 한도를 셀 때 쓰는 길 — (기기, 갈래, 시각) */
+  `CREATE INDEX IF NOT EXISTS votes_dev ON votes (dev, kind, at)`
 ];
 
 /* 나중에 늘어난 열. D1(SQLite)에는 ADD COLUMN IF NOT EXISTS 가 없어서, 이미 있으면
