@@ -2722,6 +2722,8 @@ body.drawer-open .m-actionbar { display: none !important; }
 
 /* 기체 요약의 추가 정보 — 출격 가능·환경 적성·격투 판정력 */
 .h-facts { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 4px; }
+.h-facts + .h-facts { margin-top: 3px; }
+.h-facts:empty { display: none; }
 .h-facts .hf {
   display: inline-flex; align-items: baseline; gap: 5px;
   padding: 1px 7px; border-radius: 2px;

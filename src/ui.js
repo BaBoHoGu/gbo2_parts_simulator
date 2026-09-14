@@ -5908,19 +5908,27 @@
     // 출격 가능 · 환경 적성 · 격투 판정력 — 데이터에는 있었는데 화면에 없던 셋.
     // 적성은 스러스터 줄 옆 뱃지로만 보여서 수중 적성은 아예 볼 수 없었다.
     const line = $('#heroFacts');
+    const line2 = $('#heroFacts2');
     if (!line) return;
     line.innerHTML = '';
+    if (line2) line2.innerHTML = '';
+    let target = line;
     // 값 안의 낱말마다 색을 줄 수 있게, 문자열이 아니라 조각 배열을 받는다.
     const add = (lb, parts, cls) => {
       const b = el('span', 'hf' + (cls ? ' ' + cls : ''));
       b.append(el('i', '', lb));
       const v = el('b');
       parts.forEach((x, i) => {
-        if (i) v.append(document.createTextNode(typeof x === 'string' ? ' ' : ' · '));
+        // 가운뎃점은 값이 나란히 놓일 때만 (지상 · 우주).
+        // 「페이즈1 시:」 뒤에 끼면 「페이즈1 시: · 중」이 된다.
+        if (i) {
+          const both = typeof x !== 'string' && typeof parts[i - 1] !== 'string';
+          v.append(document.createTextNode(both ? ' · ' : ' '));
+        }
         v.append(typeof x === 'string' ? document.createTextNode(x) : el('span', x.cls, x.t));
       });
       b.append(v);
-      line.append(b);
+      target.append(b);
     };
     // 지상·우주·수중은 화면 곳곳에서 같은 색을 쓴다 — 여기서도 맞춘다.
     const envChip = t => ({ t, cls: 'env-' + (t === '지상' ? 'g' : t === '우주' ? 's' : 'w') });
@@ -5938,12 +5946,13 @@
       ['共振発動時', '공진 발동 시'], ['変身時', '변신 시'],
       ['発動中', '발동 중'], ['使用後', '사용 후'], ['射出', '사출'],
       ['フェイズ', '페이즈'], ['通常時', '통상'], ['通常', '통상'],
-      ['かつ', ' 또한 '], ['以下', ' 이하'],
+      ['かつ', ' '], ['以下', ' 이하'], ['HP', '체력 '],
       ['強', '강'], ['中', '중'], ['弱', '약'],
     ];
     // 「強＋」는 강과 별개 단계가 아니라 강보다 한 칸 위다 — 강(3.5) 로 적는다.
     const jdText = v => (v === '강+' ? '강(3.5)' : v);
     const jdClass = v => 'jd-' + ({ '약': 'w', '중': 'm', '강': 's', '강+': 'x' }[v] || 'm');
+    target = line2 || line;            // 판정력은 둘째 줄로 — 출격·적성과 성격이 다르다
     const jdRaw = String(m['格闘判定力'] || '').trim();
     if (jdRaw) {
       // 「S・ノズル制御機構（G）」 같은 스킬 이름이 문장 안에 박혀 있다.
