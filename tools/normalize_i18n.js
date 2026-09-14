@@ -6,10 +6,13 @@ const path = require('path');
 const UNITS = [['秒','초'],['倍','배'],['発','발'],['回','회'],['射','사'],['分','분'],
   ['等','등'],['最大','최대'],['ヒット','히트'],['腕','팔'],['門','문'],['丁','정'],['基','기'],['合計','합계'],['約','약'],['共鳴','공명']];
 const RULES = [
-  [/오버 히트/g, '오버히트'],          // 용어집은 붙여 쓴다
+  [/오버히트/g, '오버 히트'],           // 공식은 띄어 쓴다
   [/제어기구/g, '제어 기구'],
   [/실드장 특수 완충재/g, '실드 병장 특수 완충재'],   // MT 가 「병」을 흘린 자리
   [/메커니즘/g, '기구'],
+  [/병장/g, '무장'],          // 공식은 兵装·武装 모두 「무장」
+  [/리로드/g, '재장전'],
+  [/큰 경직/g, '강경직'],
 ];
 // 존댓말체 어미 → 평서체. 다른 항목이 전부 평서체라 섞이면 눈에 띈다.
 // MT 가 고르는 문체라 재번역해도 안 고쳐진다 — 나온 어미만 열거해 바꾼다.
@@ -34,14 +37,17 @@ for (const f of ['skill_text', 'weapon_note', 'weapons', 'parts']) {
   const p = path.join(__dirname, '..', 'data', 'i18n', f + '.json');
   let o; try { o = JSON.parse(fs.readFileSync(p, 'utf8')); } catch { continue; }
   let n = 0;
+  const one = (k, cur, set) => {
+    const t = apply(cur);
+    if (t === cur) return 0;
+    if (num(t) !== num(cur)) { skipped++; console.log('  숫자가 바뀌어 건너뜀: ' + k.slice(0, 40)); return 0; }
+    set(t); return 1;
+  };
   for (const [k, v] of Object.entries(o)) {
-    if (typeof v !== 'string') continue;
-    // 「兵装」은 병장, 「武装」은 무장 — 원문에 武装 이 없는데 무장이면 잘못 옮긴 것이다.
-    const t0 = (/兵装/.test(k) && !/武装/.test(k)) ? v.split('무장').join('병장') : v;
-    const t = apply(t0);
-    if (t === v) continue;
-    if (num(t) !== num(v)) { skipped++; console.log('  숫자가 바뀌어 건너뜀: ' + k.slice(0, 40)); continue; }
-    o[k] = t; n++;
+    if (typeof v === 'string') n += one(k, v, t => { o[k] = t; });
+    else if (v && typeof v === 'object')
+      for (const fld of ['n', 'd'])
+        if (typeof v[fld] === 'string') n += one(k, v[fld], t => { v[fld] = t; });
   }
   if (n) fs.writeFileSync(p, JSON.stringify(o, null, 1) + '\n', 'utf8');
   console.log(`  ${f.padEnd(12)} ${n}칸`);
