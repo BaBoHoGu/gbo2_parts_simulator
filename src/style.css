@@ -1603,8 +1603,11 @@ input:focus, select:focus, textarea:focus {
   --line: #47526a;
   --line-soft: #333c50;
   --text: #f4f6fb;
-  --muted: #a7b0c3;
-  --dim: #7b8498;
+  /* 회색 글씨가 어두운 바탕에서 잘 안 읽혔다. 패널(#272e40) 기준 명암비를
+     재 보니 --dim 이 3.6:1 로 WCAG AA(4.5:1) 미달이었다. 둘 다 올린다.
+       muted 6.22 → 7.56   ·   dim 3.61 → 5.28 */
+  --muted: #b9c2d4;
+  --dim: #98a2b8;
   --accent: #ffd24d;
   --accent-dim: #7d6318;
   --info: #63b0ff;
@@ -2564,7 +2567,7 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 .codex-2col {
   flex: 1; min-height: 0;
-  display: grid; grid-template-columns: 320px 1fr; gap: 12px;
+  display: grid; grid-template-columns: 368px 1fr; gap: 12px;   /* 좌측 +15% */
   padding: 4px 20px 16px;
 }
 .codex-list, .codex-pane { min-height: 0; overflow: auto; }
