@@ -78884,7 +78884,7 @@
     "mods": {
      "chargeRatio": 1.06,
      "chargeTime": 1.5,
-     "stagger": "30%（50% x2"
+     "stagger": "30%（50% x2）"
     }
    },
    {
@@ -87667,7 +87667,7 @@
     "mods": {
      "chargeRatio": 0.8,
      "chargeTime": 1,
-     "stagger": "20%（50% x3"
+     "stagger": "20%（50% x3）"
     }
    },
    {
@@ -88104,7 +88104,7 @@
     "mods": {
      "chargeRatio": 0.48,
      "chargeTime": 5.5,
-     "stagger": "40%（50% x5"
+     "stagger": "40%（50% x5）"
     }
    },
    {
@@ -91261,7 +91261,7 @@
     "mods": {
      "chargeRatio": 1.03,
      "chargeTime": 3,
-     "stagger": "20%（35% x3"
+     "stagger": "20%（35% x3）"
     }
    },
    {
@@ -93352,7 +93352,7 @@
      "chargeRatio": 0.49,
      "chargeTime": 10,
      "shieldMod": 1.3,
-     "stagger": "80%（50% x5"
+     "stagger": "80%（50% x5）"
     }
    },
    {
@@ -97455,7 +97455,7 @@
     "mods": {
      "chargeRatio": 1.03,
      "chargeTime": 3,
-     "stagger": "20%（35% x3"
+     "stagger": "20%（35% x3）"
     }
    },
    {
@@ -98004,7 +98004,7 @@
     "mods": {
      "chargeRatio": 1.03,
      "chargeTime": 3,
-     "stagger": "20%（35% x3"
+     "stagger": "20%（35% x3）"
     }
    },
    {
@@ -99006,7 +99006,7 @@
     "mods": {
      "chargeRatio": 0.52,
      "chargeTime": 10,
-     "stagger": "20%（50% x6"
+     "stagger": "20%（50% x6）"
     }
    },
    {
@@ -105923,7 +105923,7 @@
     "mods": {
      "chargeRatio": 1.09,
      "chargeTime": 1.5,
-     "stagger": "65%（65% x2"
+     "stagger": "65%（65% x2）"
     }
    },
    {
@@ -106741,7 +106741,7 @@
     "mods": {
      "chargeRatio": 1.458,
      "chargeTime": 1,
-     "stagger": "50%（50% x2"
+     "stagger": "50%（50% x2）"
     }
    },
    {
@@ -107426,7 +107426,7 @@
     "mods": {
      "chargeRatio": 0.345,
      "chargeTime": 1,
-     "stagger": "60%（25% x4"
+     "stagger": "60%（25% x4）"
     }
    },
    {
@@ -112014,7 +112014,7 @@
     "mods": {
      "chargeRatio": 0.875,
      "chargeTime": 1,
-     "stagger": "20%（35% x3"
+     "stagger": "20%（35% x3）"
     }
    },
    {
@@ -112522,7 +112522,7 @@
     },
     "mods": {
      "chargeTime": 2.5,
-     "stagger": "35%（35% x6"
+     "stagger": "35%（35% x6）"
     }
    },
    {
@@ -114090,7 +114090,7 @@
     "mods": {
      "chargeRatio": 1,
      "chargeTime": 1.5,
-     "stagger": "20%（50% x2"
+     "stagger": "20%（50% x2）"
     }
    },
    {
@@ -118436,7 +118436,7 @@
     "mods": {
      "chargeRatio": 0.167,
      "chargeTime": 4,
-     "stagger": "80%（50% x11"
+     "stagger": "80%（50% x11)"
     }
    },
    {
@@ -120899,7 +120899,7 @@
     "mods": {
      "chargeRatio": 0.94,
      "chargeTime": 2,
-     "stagger": "20%（65% x2"
+     "stagger": "20%（65% x2）"
     }
    },
    {
@@ -122461,7 +122461,7 @@
     "mods": {
      "chargeRatio": 1.022,
      "chargeTime": 1.5,
-     "stagger": "10%（35% x3"
+     "stagger": "10%（35% x3）"
     }
    },
    {
@@ -126319,7 +126319,7 @@
     "mods": {
      "chargeRatio": 0.208,
      "chargeTime": 3,
-     "stagger": "10%（35% x11"
+     "stagger": "10%（35% x11）"
     }
    },
    {
@@ -133062,7 +133062,7 @@
     "mods": {
      "chargeRatio": 0.25,
      "chargeTime": 4.5,
-     "stagger": "40%（35% x6"
+     "stagger": "40%（35% x6）"
     }
    },
    {
@@ -133172,7 +133172,7 @@
     "mods": {
      "chargeRatio": 0.52,
      "chargeTime": 1.5,
-     "stagger": "20%（50% x3"
+     "stagger": "20%（50% x3）"
     }
    },
    {
@@ -133881,7 +133881,7 @@
     "mods": {
      "chargeRatio": 0.4,
      "chargeTime": 1,
-     "stagger": "10%（35% x6"
+     "stagger": "10%（35% x6）"
     }
    },
    {
@@ -135350,7 +135350,7 @@
     "mods": {
      "chargeRatio": 0.39,
      "chargeTime": 4,
-     "stagger": "40%（50% x8"
+     "stagger": "40%（50% x8）"
     }
    },
    {
@@ -137333,7 +137333,7 @@
     },
     "mods": {
      "chargeTime": 2,
-     "stagger": "10%（50% x3"
+     "stagger": "10%（50% x3）"
     }
    },
    {
@@ -137890,7 +137890,7 @@
     "mods": {
      "chargeRatio": 0.59,
      "chargeTime": 1.5,
-     "stagger": "25%（35% x3"
+     "stagger": "25%（35% x3）"
     }
    },
    {
@@ -138097,7 +138097,7 @@
     },
     "mods": {
      "chargeTime": 2,
-     "stagger": "10%（50% x2"
+     "stagger": "10%（50% x2）"
     }
    },
    {
@@ -138992,7 +138992,7 @@
     "mods": {
      "chargeRatio": 0.94,
      "chargeTime": 2,
-     "stagger": "20%（65% x2"
+     "stagger": "20%（65% x2）"
     }
    },
    {
@@ -139889,7 +139889,7 @@
     },
     "mods": {
      "chargeTime": 2.5,
-     "stagger": "10%（35% x3"
+     "stagger": "10%（35% x3）"
     }
    },
    {
@@ -140115,7 +140115,7 @@
     "mods": {
      "chargeRatio": 0.5,
      "chargeTime": 2,
-     "stagger": "10%（20% x2"
+     "stagger": "10%（20% x2）"
     }
    },
    {
@@ -140360,7 +140360,7 @@
     },
     "mods": {
      "chargeTime": 2,
-     "stagger": "20%（50% x2"
+     "stagger": "20%（50% x2）"
     }
    },
    {
@@ -141018,7 +141018,7 @@
     "mods": {
      "chargeRatio": 0.59,
      "chargeTime": 1.5,
-     "stagger": "20%（35% x4"
+     "stagger": "20%（35% x4）"
     }
    },
    {
@@ -141601,7 +141601,7 @@
     "mods": {
      "chargeRatio": 0.538,
      "chargeTime": 1.5,
-     "stagger": "50%（65% x3"
+     "stagger": "50%（65% x3）"
     }
    },
    {
@@ -141741,7 +141741,7 @@
     "mods": {
      "chargeRatio": 0.36,
      "chargeTime": 3.5,
-     "stagger": "20%（25% x11"
+     "stagger": "20%（25% x11）"
     }
    },
    {
@@ -141988,7 +141988,7 @@
     "mods": {
      "chargeRatio": 0.35,
      "chargeTime": 1,
-     "stagger": "20%（35% x6"
+     "stagger": "20%（35% x6）"
     }
    },
    {
@@ -142302,7 +142302,7 @@
     "mods": {
      "chargeRatio": 0.679,
      "chargeTime": 1,
-     "stagger": "20%（65% x2"
+     "stagger": "20%（65% x2）"
     }
    },
    {
@@ -144204,7 +144204,7 @@
     "mods": {
      "chargeRatio": 0.5,
      "chargeTime": 1.5,
-     "stagger": "25%（55% x3"
+     "stagger": "25%（55% x3）"
     }
    },
    {
@@ -144648,7 +144648,7 @@
     "mods": {
      "chargeRatio": 0.765,
      "chargeTime": 2,
-     "stagger": "10%（50% x2"
+     "stagger": "10%（50% x2）"
     }
    },
    {
@@ -145502,7 +145502,7 @@
     },
     "mods": {
      "chargeTime": 1,
-     "stagger": "10%（35% x3"
+     "stagger": "10%（35% x3）"
     }
    },
    {
@@ -145569,7 +145569,7 @@
     },
     "mods": {
      "chargeTime": 2.5,
-     "stagger": "10%（35% x3"
+     "stagger": "10%（35% x3）"
     }
    },
    {
@@ -146639,7 +146639,7 @@
     "mods": {
      "chargeRatio": 0.818,
      "chargeTime": 3,
-     "stagger": "35%（50% x2"
+     "stagger": "35%（50% x2）"
     }
    },
    {
@@ -146802,7 +146802,7 @@
     "mods": {
      "chargeRatio": 0.375,
      "chargeTime": 4,
-     "stagger": "20%（20% x10"
+     "stagger": "20%（20% x10）"
     }
    },
    {
@@ -147474,7 +147474,7 @@
     "mods": {
      "chargeRatio": 0.45,
      "chargeTime": 1,
-     "stagger": "20%（50% x4"
+     "stagger": "20%（50% x4）"
     }
    },
    {
@@ -147582,7 +147582,7 @@
     "mods": {
      "chargeRatio": 0.487,
      "chargeTime": 2.5,
-     "stagger": "80%（50% x5"
+     "stagger": "80%（50% x5）"
     }
    },
    {
@@ -152112,7 +152112,7 @@
     "mods": {
      "chargeRatio": 0.69,
      "chargeTime": 1.5,
-     "stagger": "20%（50% x2"
+     "stagger": "20%（50% x2）"
     }
    },
    {
@@ -153653,7 +153653,7 @@
     "mods": {
      "chargeRatio": 0.833,
      "chargeTime": 1.5,
-     "stagger": "30%（65% x2"
+     "stagger": "30%（65% x2）"
     }
    },
    {
@@ -157952,7 +157952,7 @@
     "mods": {
      "chargeRatio": 0.714,
      "chargeTime": 3,
-     "stagger": "20%（25% x2"
+     "stagger": "20%（25% x2）"
     }
    },
    {
@@ -158389,7 +158389,7 @@
     "mods": {
      "chargeRatio": 2.67,
      "chargeTime": 2,
-     "stagger": "25%（50% x8"
+     "stagger": "25%（50% x8）"
     }
    },
    {

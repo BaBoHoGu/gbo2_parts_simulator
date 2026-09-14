@@ -2567,7 +2567,7 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 .codex-2col {
   flex: 1; min-height: 0;
-  display: grid; grid-template-columns: 368px 1fr; gap: 12px;   /* 좌측 +15% */
+  display: grid; grid-template-columns: 405px 1fr; gap: 12px;   /* 좌측 목록 — 스킬명이 길어도 LV 뱃지가 안 밀린다 */
   padding: 4px 20px 16px;
 }
 .codex-list, .codex-pane { min-height: 0; overflow: auto; }
@@ -2713,3 +2713,9 @@ body.drawer-open .m-actionbar { display: none !important; }
   color: var(--muted);
   white-space: normal;
 }
+
+
+/* 「600발/분」·「30%(65% x2)」 처럼 숫자+단위가 한 덩어리인 표기는
+   중간에서 줄이 바뀌면 딴 뜻으로 읽힌다. 한글은 기본값이 아무 데서나
+   끊기므로 낱말 단위로 끊게 한다. */
+.w-col, .w-dmg, .wd-chip, .wd-row, .codex-ms .co { word-break: keep-all; }

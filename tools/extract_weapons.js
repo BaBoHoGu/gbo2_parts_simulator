@@ -11,30 +11,19 @@ const { parseTable: parseGrid } = require('./lib/table.js');
 const ROOT = path.join(__dirname, '..');
 const WIKI = path.join(ROOT, 'raw', 'wiki');
 
-// 備考는 원문에서 <br> 로 항목을 나눈다. 공백으로 뭉개면 한 줄로 이어져 읽기 어려우니
-// 구분자를 남긴다. 앞뒤 공백이 있어 「よろけ値：35%」 같은 \S+ 추출에는 영향이 없다.
-const clean = s => s
-  .replace(/<br\s*\/?>/gi, ' / ')
-  .replace(/<[^>]+>/g, '')
-  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-  .replace(/\s+/g, ' ').trim();
-
-const parseTable = html => parseGrid(html, clean);
-
-const LV = /^LV\s*(\d+)$/i;
-
-/**
- * 위키에 LV1 을 그냥 「LV」로 적어 둔 표가 있다 (ディジェ（CA）의 격투 표, 전체에서 1건).
- * 그대로 두면 그 행이 헤더로 빨려 들어가 위력·쿨타임이 통째로 사라지므로,
- * 숫자를 함께 담고 있는 행에 한해 LV1 로 보정한다. (열 이름 행에는 숫자가 없다)
- */
-function fixBareLevel(grid) {
-  for (const row of grid) {
-    if (!row.some(c => /^\d[\d,]*$/.test(c))) continue;
-    const i = row.findIndex(c => /^LV$/i.test(c));
-    if (i >= 0) row[i] = 'LV1';
-  }
-  return grid;
+// 備考는 ' / ' 로 이어진 불릿 목록이다. 값은 다음 불릿 전까지가 한 덩어리다.
+// \S+ 로 끊으면 「よろけ値：30%（65% x2）」가 공백에서 멎어 닫는 괄호를 잃는다
+// — 실제로 46건이 「30%（65% x2」로 저장돼 있었다.
+function parseStagger(note) {
+  const non = /非集束よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(note);
+  const chg = /(?:^|[^非])集束よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(note);
+  if (non && chg) return non[1].trim() + ' (' + chg[1].trim() + ')';
+  if (non) return non[1].trim();
+  if (chg) return chg[1].trim();
+  // 非集束/集束 표기를 지운 뒤 남은 일반 표기를 본다
+  const rest = note.replace(/(?:非)?集束よろけ値：[^/\n]+/g, '');
+  const plain = /よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(rest);
+  return plain ? plain[1].trim() : null;
 }
 
 /** 첫 데이터 행(LV1 …) 위쪽은 전부 헤더로 본다. 집속 무기는 헤더가 2줄(威力/ノン·フル). */
@@ -67,15 +56,19 @@ const num = s => {
  * 「よろけ値」(누적치) 표기를 뽑는다.
  * 집속 무기는 非集束/集束 을 따로 적기도 하고, 한 값에 (17HIT) 처럼 덧붙기도 한다.
  */
+// 備考는 ' / ' 로 이어진 불릿 목록이다. 값은 다음 불릿 전까지가 한 덩어리다.
+// \S+ 로 끊으면 「よろけ値：30%（65% x2）」가 공백에서 멎어 닫는 괄호를 잃는다
+// — 실제로 46건이 「30%（65% x2」로 저장돼 있었다.
 function parseStagger(note) {
-  const non = /非集束よろけ値：(\S+)/.exec(note);
-  const chg = /(?:^|[^非])集束よろけ値：(\S+)/.exec(note);
-  if (non && chg) return non[1] + ' (' + chg[1] + ')';
-  if (non) return non[1];
-  if (chg) return chg[1];
+  const non = /非集束よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(note);
+  const chg = /(?:^|[^非])集束よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(note);
+  if (non && chg) return non[1].trim() + ' (' + chg[1].trim() + ')';
+  if (non) return non[1].trim();
+  if (chg) return chg[1].trim();
   // 非集束/集束 표기를 지운 뒤 남은 일반 표기를 본다
-  const plain = /よろけ値：(\S+(?:\s*[x×]\s*\d+)?)/.exec(note.replace(/(?:非)?集束よろけ値：\S+/g, ''));
-  return plain ? plain[1] : null;
+  const rest = note.replace(/(?:非)?集束よろけ値：[^/\n]+/g, '');
+  const plain = /よろけ値：([^/\n]+?)(?=\s*(?:\/|$))/.exec(rest);
+  return plain ? plain[1].trim() : null;
 }
 
 /**
