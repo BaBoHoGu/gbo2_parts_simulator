@@ -2636,3 +2636,71 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 .codex-paneback { display: none; }
 @media (max-width: 900px) { .codex-paneback { display: inline-block; margin-bottom: 8px; } }
+
+
+/* ============================================================
+   HUD 형태 — 게임 내 Customize 화면의 '생김새'를 따온다.
+   색은 건드리지 않는다. 우리 색은 뜻을 지고 있다
+   (초록=파츠 · 보라=스킬 · 청록=스킬2개+). 게임은 그 구분이 없어
+   팔레트를 그대로 가져오면 정보가 사라진다. 그래서 형태만 가져왔다.
+   ============================================================ */
+
+/* 모서리를 깎는다. clip-path 는 쓰지 않는다 — 패널 안에서 넘치는
+   드롭다운·툴팁이 잘린다. 반경을 줄이고 모서리에 꺾쇠를 얹는 방식이다. */
+:root { --radius: 3px; }
+
+.panel { position: relative; border-radius: 3px; }
+/* 좌상·우하 꺾쇠 — 게임 패널의 각진 인상을 내는 최소 장치 */
+.panel::before, .panel::after {
+  content: ''; position: absolute; width: 9px; height: 9px;
+  border: 1px solid var(--accent); opacity: .5; pointer-events: none;
+}
+.panel::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.panel::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
+
+/* 타일·카드도 각지게 */
+.part-tile, .ms-card, .eq, .d-thumb img, .part-tile img, .ms-card img,
+.eq img, .hero-body > img { border-radius: 3px; }
+.pt-thumb, .codex-item, .codex-pane, .codex-mslist { border-radius: 3px; }
+
+/* 슬롯 게이지를 블록으로 — 게임의 PARTS SLOT 과 같은 생김새.
+   점처럼 둥글면 개수가 한눈에 안 세어진다. */
+.slot-bar .track { gap: 3px; }
+.slot-bar .track i { border-radius: 0; height: 9px; }
+
+/* LV 뱃지를 타일 왼쪽 아래로 — 게임과 같은 자리. 오른쪽은 ✓ 표시와 겹쳤다. */
+.pt-lv {
+  right: auto; left: -2px; bottom: -2px;
+  border-radius: 0 3px 0 0;
+  padding: 2px 5px;
+}
+
+/* 코스트 뱃지 — 둥근 알약에서 각진 칩으로 */
+.cost-badge {
+  border-radius: 2px;
+  border: 1px solid var(--accent-dim);
+  padding: 0 7px;
+}
+
+/* 기체 카드의 ★ 를 그림 안 왼쪽 위로 — 게임처럼 등급을 타일에서 바로 본다 */
+.ms-card { position: relative; }
+.ms-card .stars.on-thumb {
+  position: absolute; left: 5px; top: 5px;
+  padding: 1px 4px; border-radius: 2px;
+  background: rgba(8, 10, 14, .78);
+  line-height: 1; letter-spacing: -1px;
+  text-shadow: 0 0 4px rgba(0, 0, 0, .9);
+}
+
+/* 패널 머리글 — 게임처럼 얇은 밑줄을 깔아 구획을 분명히 한다 */
+.panel > h2 { border-bottom: 1px solid var(--line-soft); }
+
+
+/* 좁은 화면에서 푸터가 화면을 너무 먹지 않게 — 고지는 남기고 부피만 줄인다 */
+@media (max-width: 768px) {
+  .app-foot { font-size: 9.5px; line-height: 1.35; padding: 4px 10px; }
+  .app-foot .foot-rights { font-size: 10px; }
+  /* 출처 안내 문장은 링크가 바로 아래 있어 굳이 두 줄을 쓸 필요가 없다 */
+  .app-foot .foot-src { display: none; }
+  .app-foot .foot-links { gap: 1px 9px; margin-top: 1px; }
+}

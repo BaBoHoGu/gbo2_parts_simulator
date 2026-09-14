@@ -972,9 +972,10 @@
       meta.append(el('span', 'dot ' + (m.属性 || '')));
       meta.append(el('span', '', T.attrName(m.属性) || '-'));
       meta.append(el('span', 'cost-badge', m.コスト));
-      const r = msRarity(m);
-      if (r) meta.append(el('span', 'stars', '★'.repeat(r)));
       info.append(meta);
+      // ★ 등급은 그림 위 왼쪽 아래로 — 게임처럼 타일만 봐도 등급을 안다
+      const r = msRarity(m);
+      if (r) card.append(el('span', 'stars on-thumb', '★'.repeat(r)));
 
       card.append(info);
       card.onclick = () => selectMs(m);
