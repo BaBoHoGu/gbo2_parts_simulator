@@ -28,11 +28,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(800);
   // 무장 한 줄을 펴서 위키 설명까지 찍는다
   await pg.evaluate(() => {
-    const r = document.querySelector('.weapon');
+    // 위키 설명이 한 항목뿐인 무장(격투)을 골라 편다
+    const rows = [...document.querySelectorAll('.weapon')];
+    const r = rows.find(x => /격투/.test(x.textContent)) || rows[0];
     if (r) r.click();
   });
   await sleep(900);
-  await pg.evaluate(() => { const d = document.querySelector('.wd-note-chips, .wd-note-tx'); if (d) d.scrollIntoView({ block: 'center' }); });
+  await pg.evaluate(() => { const d = document.querySelector('.wd-note-chips'); if (d) d.scrollIntoView({ block: 'center' }); });
   await sleep(400);
   await pg.screenshot({ path: path.join(OUT, 'build.png') });
   console.log('ok');
