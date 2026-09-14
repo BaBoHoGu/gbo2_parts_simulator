@@ -2744,3 +2744,9 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* 적성이 있는 기체는 눈에 띄게 — 스러스터 회복이 달라지는 값이다 */
 .h-facts .hf.on { border-color: var(--accent-dim); }
 .h-facts .hf.on b { color: var(--accent); }
+
+
+/* 위키 설명 칩 — 자주 찾는 항목은 색으로 구분한다. 목록이 길어 글자만으로는 안 보인다. */
+.wd-chip.wc-fire { color: var(--info); border-color: color-mix(in srgb, var(--info) 45%, var(--line)); }
+.wd-chip.wc-stag { color: var(--accent); border-color: var(--accent-dim); }
+.wd-chip.wc-stag2 { color: var(--close); border-color: color-mix(in srgb, var(--close) 45%, var(--line)); }

@@ -1263,6 +1263,20 @@
     .replace(/（/g, '(').replace(/）/g, ')').replace(/・/g, '·').replace(/：/g, ':')
     .replace(/＋/g, '+').replace(/－/g, '-').replace(/％/g, '%').replace(/×/g, 'x');
 
+  /** 칩 안의 「/」에서 줄이 바뀌면 「180발/」+「분」, 「<통상시/」+「변형시>」가 된다.
+   *  칩 전체를 nowrap 하면 50자짜리가 폰에서 넘치므로, 「/」 자리만 이음표로 묶는다.
+   *  U+2060(word joiner)은 보이지 않고 폭도 없다. */
+  const noKeepSlash = s => String(s).split('/').join('\u2060/\u2060');
+
+  /** 자주 찾는 항목은 색으로 구분한다 — 목록이 길어 글자만으로는 안 보인다.
+   *  「집속 시 경직(강경직) 있음」처럼 둘이 같이 있으면 센 쪽을 따른다. */
+  function noteChipCls(t) {
+    if (/강경직/.test(t)) return ' wc-stag2';
+    if (/경직/.test(t)) return ' wc-stag';
+    if (/사격 가능/.test(t)) return ' wc-fire';
+    return '';
+  }
+
   /** 표 열 이름에 공백 표기가 섞여 있어(OH復帰時間 / OH復帰 時間) 공백을 무시하고 찾는다. */
   function infoOf(info, ...names) {
     const flat = s => s.replace(/\s+/g, '');
@@ -2204,7 +2218,7 @@
       const items = noteText(w.info['備考']).split(' / ').map(t => t.trim()).filter(Boolean);
       if (items.length) {
         const wrap = el('div', 'wd-note-chips');
-        for (const t of items) wrap.append(el('span', 'wd-chip', t));
+        for (const t of items) wrap.append(el('span', 'wd-chip' + noteChipCls(t), noKeepSlash(t)));
         note.append(wrap);
       }
       box.append(note);

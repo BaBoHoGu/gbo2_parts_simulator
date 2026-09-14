@@ -18,7 +18,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 판정력이 조건부인 기체를 골라 본다
   await pg.evaluate(() => {
     const inp = document.querySelector('#msSearch, input[type=search]');
-    if (inp) { inp.value = '시스쿠드'; inp.dispatchEvent(new Event('input', { bubbles: true })); }
+    if (inp) { inp.value = 'V2 건담'; inp.dispatchEvent(new Event('input', { bubbles: true })); }
   });
   await sleep(900);
   await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) c.click(); });
