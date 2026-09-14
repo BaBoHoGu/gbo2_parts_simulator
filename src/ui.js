@@ -997,6 +997,15 @@
       info.append(meta);
 
       card.append(info);
+
+      // ⓘ — 파츠로 바로 가지 않고 기체를 먼저 훑어본다.
+      // 카드 자체는 종전대로 파츠 화면으로 간다: 아는 기체를 고를 때마다
+      // 한 번 더 누르게 만들 이유가 없다.
+      const ib = el('button', 'ms-info', 'ⓘ');
+      ib.title = '기체 정보 보기';
+      ib.onclick = ev => { ev.stopPropagation(); openInfo(m, 'select'); };
+      card.append(ib);
+
       card.onclick = () => selectMs(m);
       box.append(card);
     }
@@ -1026,12 +1035,12 @@
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
     if (view === 'select' && changed) { renderMsList(); renderViewChips(); }
-    for (const v of ['select', 'build', 'gallery', 'codex'])
+    for (const v of ['select', 'build', 'gallery', 'codex', 'info'])
       document.body.classList.toggle('view-' + v, view === v);
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
       li.classList.toggle('on', li.dataset.step === view));
     // 화면 전환 시 스크롤을 위로 되돌린다
-    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex') }[view] || $('#screenSelect');
+    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex'), info: $('#screenInfo') }[view] || $('#screenSelect');
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
@@ -5960,13 +5969,23 @@
       sub.append(el('span', 'stars', '★'.repeat(r)));   // 기체 카드와 같은 표기
     }
 
-    // 출격 가능 · 환경 적성 · 격투 판정력 — 데이터에는 있었는데 화면에 없던 셋.
-    // 적성은 스러스터 줄 옆 뱃지로만 보여서 수중 적성은 아예 볼 수 없었다.
-    const line = $('#heroFacts');
-    const line2 = $('#heroFacts2');
+    // 출격 가능 · 환경 적성 · 격투 판정력 — 기체 정보 화면과 같은 줄을 쓴다.
+    factsInto(m, $('#heroFacts'), $('#heroFacts2'));
+  }
+
+  /**
+   * 출격 가능 · 환경 적성 · 격투 판정력을 두 줄에 그린다.
+   * 성능 머리(heroFacts)와 기체 정보 화면(infoFacts)이 **같은 렌더러**를 쓴다 —
+   * 따로 그리면 한쪽만 표기가 어긋난다(그런 버그를 여러 번 고쳤다).
+   * @param {object} m   기체
+   * @param {Element} line   첫 줄 (출격·적성)
+   * @param {Element} line2  둘째 줄 (격투 판정력). 없으면 첫 줄에 이어 붙인다.
+   */
+  function factsInto(m, line, line2) {
     if (!line) return;
     line.innerHTML = '';
     if (line2) line2.innerHTML = '';
+    if (!m) return;
     let target = line;
     // 값 안의 낱말마다 색을 줄 수 있게, 문자열이 아니라 조각 배열을 받는다.
     const add = (lb, parts, cls) => {
@@ -6035,6 +6054,215 @@
         }
         add('격투 판정력', parts);
       }
+    }
+  }
+
+  /* ===================== 기체 정보 화면 =====================
+     기체를 고른 뒤 파츠로 넘어가기 전에 훑어보는 자리.
+     거쳐야만 하는 단계는 아니다 — 기체 카드의 ⓘ 로 들어온다.
+     아는 기체를 고를 때마다 한 번 더 누르게 만들 이유가 없어서다. */
+
+  // 지금 정보 화면에서 보고 있는 기체. state.ms 와 따로 둔다 —
+  // 여기서 LV 을 바꿔 보는 것이 아직 고르지 않은 구성을 건드리면 안 된다.
+  let infoMs = null;
+  // 정보 화면에 들어오기 전 화면. 「돌아가기」가 그리로 되돌린다.
+  let infoBefore = 'select';
+
+  function openInfo(m, from) {
+    if (!m) return;
+    infoMs = m;
+    infoBefore = from || state.view || 'select';
+    setView('info');
+    renderInfo();
+    // 갤러리 구성은 화면을 여는 김에 받아 둔다(캐시가 있으면 그것부터 보인다)
+    if (S && !galleryList.length) {
+      galleryList = S.readCache();
+      renderInfoBuilds();
+      loadGallery().then(renderInfoBuilds);
+    }
+  }
+
+  /** 정보 화면에서 「파츠 고르기」 — 보고 있던 LV 그대로 파츠 화면으로 넘어간다. */
+  function infoGoBuild() {
+    if (!infoMs) return;
+    selectMs(infoMs);
+    setView('build');
+  }
+
+  function renderInfo() {
+    const m = infoMs;
+    if (!m) return;
+    const img = $('#infoImg');
+    if (img) {
+      img.onerror = () => { img.onerror = null; img.src = defaultImg('ms'); };
+      img.src = msImg(m.MS名);
+    }
+
+    // 이름은 위키로 이어 준다 — 성능 머리와 같은 방식
+    const nameBox = $('#infoName');
+    nameBox.innerHTML = '';
+    if (m.wiki_url) {
+      const a = el('a', 'hero-wiki', T.msName(m.MS名));
+      a.href = m.wiki_url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.title = '위키에서 이 기체 보기 (새 창)';
+      nameBox.append(a);
+    } else nameBox.textContent = T.msName(m.MS名);
+
+    // 속성 · 코스트 · 등급
+    const tags = $('#infoTags');
+    tags.innerHTML = '';
+    tags.append(el('span', 'dot ' + (m.属性 || '')), el('span', '', T.attrName(m.属性)));
+    tags.append(el('span', 'cost-badge', '코스트 ' + m.コスト));
+    const r = msRarity(m);
+    if (r) tags.append(el('span', 'stars', '★'.repeat(r)));
+
+    // LV 탭 — 여기서 바꾸면 이 화면만 바뀐다(구성은 아직 시작도 안 했다)
+    const lvs = $('#infoLvs');
+    lvs.innerHTML = '';
+    const fam = msByBase.get(baseName(m.MS名)) || [m];
+    if (fam.length > 1) for (const x of fam) {
+      const b = el('button', 'mi-lv' + (x === m ? ' on' : ''), 'LV' + msLevel(x));
+      b.onclick = () => { infoMs = x; renderInfo(); };
+      lvs.append(b);
+    }
+
+    factsInto(m, $('#infoFacts'), $('#infoFacts2'));
+    renderInfoStats(m);
+    renderInfoWeapons(m);
+    renderInfoSkills(m);
+    renderInfoBuilds();
+  }
+
+  function renderInfoStats(m) {
+    const box = $('#infoStats');
+    box.innerHTML = '';
+    const row = (k, v) => {
+      const d = el('div', 'mi-st');
+      d.append(el('i', '', k), el('b', '', v));
+      box.append(d);
+    };
+    const n = v => (v == null ? '—' : Number(v).toLocaleString());
+    row('HP', n(m.HP));
+    row('내실탄 보정', n(m['耐実弾補正']));
+    row('내빔 보정', n(m['耐ビーム補正']));
+    row('내격투 보정', n(m['耐格闘補正']));
+    row('사격 보정', n(m['射撃補正']));
+    row('격투 보정', n(m['格闘補正']));
+    row('스피드', n(m['スピード']));
+    row('고속이동', n(m['高速移動']));
+    row('스러스터', n(m['スラスター']));
+    row('선회(지상)', n(m['旋回_地上_通常時']));
+    row('선회(우주)', n(m['旋回_宇宙_通常時']));
+    row('재출격', m['再出撃時間'] == null ? '—' : m['再出撃時間'] + '초');
+
+    const sb = $('#infoSlots');
+    sb.innerHTML = '';
+    for (const [k, v] of [['근접', m['近スロット']], ['중거리', m['中スロット']], ['원거리', m['遠スロット']]]) {
+      const d = el('div', 'mi-slot');
+      d.append(el('i', '', k), el('b', '', v == null ? '—' : String(v)));
+      sb.append(d);
+    }
+  }
+
+  // 무장 속성 → 한글 한 낱말. 무장 표의 유형 칸과 같은 말을 쓴다.
+  const MI_ATTR_KO = { beam: '빔', solid: '실탄', melee: '격투', shield: '실드', other: '기타' };
+
+  function renderInfoWeapons(m) {
+    const box = $('#infoWpn');
+    box.innerHTML = '';
+    const list = weaponsOfMs(m);
+    $('#infoWpnH').textContent = '무장' + (list.length ? ' ' + list.length + '종' : '');
+    if (!list.length) { box.append(el('div', 'detail-empty', '무장 정보가 없습니다.')); return; }
+    const lv = msLevel(m);
+    for (const w of list) {
+      const d = el('div', 'mi-w');
+      d.append(el('span', 'nm', T.weaponName ? T.weaponName(w.name) : w.name));
+      // 실드는 attr 가 비어 있고 type 에만 들어 있다 — 무장 표와 같은 판정을 쓴다
+      const at = (w.attr === 'shield' || w.type === 'shield') ? 'shield' : w.attr;
+      d.append(el('span', 'ty', MI_ATTR_KO[at] || '—'));
+      // 위력은 이 기체 LV 에 맞는 칸을 본다. 실드처럼 위력이 없는 무장은 「—」.
+      // weaponLevel() 은 state.ms 를 보므로 여기서는 못 쓴다 — 아직 고르지 않은 기체다.
+      const keys = Object.keys(w.levels || {}).map(Number).sort((a, b) => a - b);
+      const fit = keys.filter(k => k <= lv);
+      const lvl = keys.length ? w.levels[String(fit.length ? fit[fit.length - 1] : keys[0])] : null;
+      const pw = lvl && lvl.power;
+      d.append(el('b', '', pw ? Number(pw).toLocaleString() : '—'));
+      box.append(d);
+    }
+  }
+
+  function renderInfoSkills(m) {
+    const box = $('#infoSk');
+    box.innerHTML = '';
+    const modes = msSkillsData[baseName(m.MS名)] || [];
+    const mode = modes[0];
+    if (!mode || !mode.skills || !mode.skills.length) {
+      $('#infoSkH').textContent = '스킬';
+      box.append(el('div', 'detail-empty', '스킬 정보가 없습니다.'));
+      return;
+    }
+    // 스킬 목록 패널과 같은 규칙으로 이 LV 의 구간 하나씩만 고른다.
+    const lv = msLevel(m);
+    const groups = new Map();
+    for (const sk of mode.skills) {
+      const key = sk.cat + '|' + sk.name;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(sk);
+    }
+    const picked = [];
+    for (const cands of groups.values()) {
+      const chosen = pickByMsLv(cands, lv);
+      if (chosen) picked.push(chosen);
+    }
+    $('#infoSkH').textContent = '스킬' + (picked.length ? ' ' + picked.length + '종' : '');
+    if (!picked.length) { box.append(el('div', 'detail-empty', '이 LV 에서 표시할 스킬이 없습니다.')); return; }
+
+    const order = ['足回り', '攻撃', '防御', '移動', '格闘', '射撃', 'その他', ''];
+    const byCat = new Map();
+    for (const sk of picked) { if (!byCat.has(sk.cat)) byCat.set(sk.cat, []); byCat.get(sk.cat).push(sk); }
+    for (const cat of [...byCat.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b))) {
+      box.append(el('div', 'mi-skcat', SKILL_CAT_KO[cat] || cat || '기타'));
+      const ch = el('div', 'mi-skchips');
+      for (const sk of byCat.get(cat)) {
+        ch.append(el('span', 'wd-chip', skTr(sk.name) + (sk.lv ? ' ' + sk.lv : '')));
+      }
+      box.append(ch);
+    }
+  }
+
+  /**
+   * 갤러리에 올라온 이 기체의 구성.
+   * 지금은 **최근 순**이다 — 추천/비추 투표가 아직 없어 「추천 순」이라고 하면 거짓이 된다.
+   * 투표가 붙으면 정렬과 제목만 바꾸면 된다.
+   */
+  function renderInfoBuilds() {
+    const box = $('#infoBuilds');
+    if (!box || !infoMs) return;
+    box.innerHTML = '';
+    // 같은 기체의 다른 LV 구성도 함께 보여 준다 — LV 만 다른 구성을 숨길 이유가 없다
+    const base = baseName(infoMs.MS名);
+    const list = (galleryList || [])
+      .filter(b => baseName(String(b.ms || '')) === base)
+      .sort((a, b) => b.at - a.at);
+    $('#infoBuildCnt').textContent = list.length ? list.length + '개' : '';
+    if (!list.length) {
+      box.append(el('div', 'detail-empty', galleryLoading
+        ? '불러오는 중…'
+        : '아직 이 기체로 올라온 구성이 없습니다.'));
+      return;
+    }
+    for (const bld of list) {
+      const otherLv = bld.ms !== infoMs.MS名;
+      const sub = [relTime(bld.at), otherLv && T.msName(bld.ms)].filter(Boolean).join(' · ');
+      box.append(buildSummaryCard(bld, {
+        sub, uniform: true, desc: bld.desc, author: bld.author,
+        onOpen: () => {
+          fromGallery = false;
+          const r = deserialize(bld);
+          if (!r.ok) toast('이 구성의 기체가 내 데이터에 없습니다');
+          else toast('「' + bld.name + '」 가져왔습니다' + loadNote(r));
+        }
+      }));
     }
   }
 
@@ -6455,6 +6683,10 @@
     $('#galleryBtn').onclick = () => openGallery(true);
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
+
+    // ── 기체 정보 화면 ──
+    $('#infoBack').onclick = () => setView(infoBefore === 'info' ? 'select' : infoBefore);
+    $('#infoGo').onclick = infoGoBuild;
     $('#stageHelp').onclick = () => openStageHelp(true);
     $('#stageHelpClose').onclick = () => openStageHelp(false);
     $('#stageHelpBack').onclick = () => openStageHelp(false);

@@ -124,6 +124,52 @@
 </section>
 
 <!-- ============================================================
+     ⑤ 기체 정보 — 기체를 고른 뒤 파츠로 넘어가기 전에 훑어보는 자리.
+     거쳐야만 하는 단계는 아니다(기체 카드의 ⓘ 로 들어온다). 그래서
+     단계 표시(stepper)에 넣지 않는다 — 갤러리·도감과 같은 취급이다.
+     ============================================================ -->
+<section class="screen screen-info" id="screenInfo">
+  <div class="select-head">
+    <div class="select-title">
+      <button id="infoBack" class="back-btn" title="돌아가기">‹ 돌아가기</button>
+      <h1>기체 정보</h1>
+      <span class="right">
+        <button id="infoGo" class="btn-primary small">파츠 고르기 ›</button>
+      </span>
+    </div>
+  </div>
+  <div class="mi-body">
+    <!-- 기체 띠 — 그림·이름·코스트·LV·출격/적성/판정력 -->
+    <div class="panel mi-band">
+      <div class="mi-img"><img id="infoImg" alt="" loading="lazy"></div>
+      <div class="mi-id">
+        <h2 id="infoName"></h2>
+        <div class="mi-tags" id="infoTags"></div>
+        <div class="mi-lvs" id="infoLvs"></div>
+        <div class="h-facts" id="infoFacts"></div>
+        <div class="h-facts" id="infoFacts2"></div>
+      </div>
+    </div>
+    <!-- 성능·파츠칸 / 무장·스킬 / 올라온 구성 -->
+    <div class="mi-cols">
+      <div class="mi-col">
+        <div class="panel"><h2>성능</h2><div class="mi-stats" id="infoStats"></div></div>
+        <div class="panel"><h2>파츠 칸</h2><div class="mi-slots" id="infoSlots"></div></div>
+      </div>
+      <div class="mi-col">
+        <div class="panel"><h2 id="infoWpnH">무장</h2><div class="mi-wpn" id="infoWpn"></div></div>
+        <div class="panel"><h2 id="infoSkH">스킬</h2><div class="mi-sk" id="infoSk"></div></div>
+      </div>
+      <div class="panel mi-builds">
+        <h2>올라온 구성 <span id="infoBuildCnt"></span></h2>
+        <div class="mi-sub" id="infoBuildSub">갤러리에 올라온 이 기체 구성 — 최근 순</div>
+        <div class="mi-blist" id="infoBuilds"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
      ② 파츠 적용 화면
      ============================================================ -->
 <section class="screen screen-build" id="screenBuild">

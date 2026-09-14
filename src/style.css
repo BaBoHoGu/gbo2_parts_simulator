@@ -125,16 +125,20 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accen
 /* 파츠 적용 단계에서만 보이는 버튼(자동 구성·저장·공유) */
 body.view-select .step-only,
 body.view-codex .step-only,
+body.view-info .step-only,
 body.view-gallery .step-only { display: none; }
 
 /* ============ 화면 전환 ============ */
 
 .screen { flex: 1; min-height: 0; overflow: hidden; }
-/* 세 화면은 서로 배타 — 지금 보는 것만 남기고 감춘다 */
-body.view-select  #screenBuild, body.view-select  #screenGallery, body.view-select #screenCodex,
-body.view-build   #screenSelect, body.view-build  #screenGallery, body.view-build  #screenCodex,
-body.view-gallery #screenSelect, body.view-gallery #screenBuild, body.view-gallery #screenCodex,
-body.view-codex   #screenSelect, body.view-codex  #screenBuild, body.view-codex   #screenGallery { display: none; }
+/* 화면은 서로 배타 — 지금 보는 것 말고 전부 감춘다.
+   보이는 쪽은 적지 않는다: 화면마다 display 가 달라(.screen-build 는 grid)
+   여기서 한 값으로 덮으면 배치가 통째로 무너진다. */
+body.view-select  .screen:not(#screenSelect),
+body.view-build   .screen:not(#screenBuild),
+body.view-gallery .screen:not(#screenGallery),
+body.view-codex   .screen:not(#screenCodex),
+body.view-info    .screen:not(#screenInfo) { display: none; }
 
 /* ---- ① 기체 선택 ---- */
 .screen-select { display: flex; flex-direction: column; }
@@ -503,6 +507,16 @@ body.view-codex   #screenSelect, body.view-codex  #screenBuild, body.view-codex 
 }
 .ms-fav:hover { color: var(--accent); background: rgba(255,201,60,.12); border-color: transparent; }
 .ms-fav.on { color: var(--accent); }
+
+/* ⓘ — 파츠로 바로 가지 않고 기체를 먼저 훑어본다. ★ 바로 아래에 둔다.
+   손가락이 굵어도 ★ 를 잘못 누르지 않게 세로로 떨어뜨린다. */
+.ms-info {
+  position: absolute; top: 28px; right: 4px;
+  width: 22px; height: 22px; padding: 0; line-height: 1;
+  border: none; background: transparent; color: var(--dim);
+  font-size: 14px; cursor: pointer; border-radius: 6px;
+}
+.ms-info:hover { color: var(--accent); background: rgba(255, 201, 60, .12); }
 
 .ms-card:hover { background: var(--panel-2); border-color: var(--line); }
 .ms-card.sel { background: #2a2617; border-color: var(--accent); }
@@ -2771,3 +2785,109 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* 접었을 때 머리줄의 정렬·자세 같은 도구는 쓸 일이 없다 */
 .build-weapons .panel.folded .w-tools,
 .build-weapons .panel.folded #skillListBtn { display: none; }
+
+
+/* ============ ⑤ 기체 정보 ============
+   파츠로 넘어가기 전에 이 기체가 무엇인지 훑는 자리.
+   상단 띠(기체) + 3기둥(성능·파츠칸 / 무장·스킬 / 올라온 구성).
+   구성 목록을 아래가 아니라 **옆**에 세운 이유: 아래에 두면 위 세 기둥의
+   높이가 제각각이라 앞에 빈 구멍이 크게 생기고, 스크롤도 새로 생긴다. */
+.screen-info { display: flex; flex-direction: column; }
+.screen-info .select-title { align-items: center; }
+.screen-info .select-title .right { display: flex; gap: 6px; margin-left: auto; }
+.mi-body {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 9px;
+  padding: 9px; max-width: 1440px; margin: 0 auto; width: 100%;
+}
+/* 스크롤되는 세로 flex 상자에서는 자식이 기본으로 **찌그러진다**.
+   폰 폭에서 기체 띠가 306px → 2px 로 눌려 그림과 이름이 통째로 사라졌다.
+   넘치면 줄어드는 게 아니라 스크롤돼야 하므로 shrink 를 끈다. */
+.mi-body > * { flex: 0 0 auto; }
+
+/* ---- 기체 띠 ---- */
+.mi-band { display: flex; flex-direction: row; gap: 16px; align-items: center; }
+.mi-img {
+  width: 170px; height: 130px; flex: 0 0 170px;
+  background: rgba(0, 0, 0, .25); border-radius: 4px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+/* contain 이라 잘리지 않는다 — 165x145 원본을 cover 로 두면 머리가 날아간다 */
+.mi-img img { width: 100%; height: 100%; object-fit: contain; }
+.mi-id { flex: 1; min-width: 0; }
+.mi-id h2 { font-size: 20px; margin: 0 0 7px; }
+.mi-tags { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 7px; }
+.mi-lvs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 7px; }
+.mi-lv {
+  padding: 4px 13px; font-size: 11px; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 3px;
+  background: transparent; color: var(--muted);
+}
+.mi-lv:hover { color: var(--text); border-color: var(--accent); }
+.mi-lv.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
+
+/* ---- 3기둥 ---- */
+.mi-cols {
+  display: grid; grid-template-columns: 1fr 1fr 1.15fr;
+  gap: 9px; align-items: start;
+}
+.mi-col { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.mi-sub { font-size: 11px; color: var(--dim); margin: -3px 0 7px; }
+
+/* ---- 성능 ---- */
+.mi-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px; }
+.mi-st {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, .05); padding: 3px 0;
+}
+.mi-st i { font-style: normal; color: var(--muted); font-size: 11.5px; }
+.mi-st b { font-size: 13px; white-space: nowrap; }
+
+/* ---- 파츠 칸 ---- */
+.mi-slots { display: flex; gap: 9px; }
+.mi-slot {
+  flex: 1; text-align: center; padding: 8px 0;
+  background: rgba(255, 255, 255, .03); border-radius: 3px;
+}
+.mi-slot i { display: block; font-style: normal; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+.mi-slot b { font-size: 19px; color: var(--accent); }
+
+/* ---- 무장 ---- */
+.mi-wpn { display: flex; flex-direction: column; gap: 4px; }
+.mi-w {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; background: rgba(255, 255, 255, .03); border-radius: 3px;
+}
+.mi-w .nm { flex: 1; min-width: 0; font-size: 12px; word-break: keep-all; }
+.mi-w .ty {
+  font-size: 10.5px; color: var(--muted); border: 1px solid var(--line);
+  border-radius: 2px; padding: 1px 5px; white-space: nowrap;
+}
+.mi-w b { font-size: 12.5px; min-width: 46px; text-align: right; white-space: nowrap; }
+
+/* ---- 스킬 ---- */
+.mi-skcat { font-size: 11px; color: var(--accent); font-weight: 700; margin: 7px 0 4px; }
+.mi-skcat:first-child { margin-top: 0; }
+.mi-skchips { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* ---- 올라온 구성 ---- */
+/* 늘리지 않는다 — 구성이 없을 때 기둥 전체가 빈 상자가 된다 */
+.mi-builds { align-self: start; }
+.mi-blist { display: flex; flex-direction: column; gap: 7px; }
+/* 구성이 많으면 이 기둥만 스크롤한다 — 나머지 두 기둥은 안 움직인다 */
+.mi-blist { max-height: 560px; overflow-y: auto; }
+.mi-blist .saved-card { margin: 0; }
+
+/* ---- 좁은 화면 ---- */
+@media (max-width: 1100px) {
+  .mi-cols { grid-template-columns: 1fr 1fr; }
+  /* 구성 목록은 마지막에 — 기체를 모르는 채로 남의 구성부터 보여 줄 이유가 없다 */
+  .mi-builds { grid-column: 1 / -1; }
+  .mi-blist { max-height: none; }
+}
+@media (max-width: 760px) {
+  .mi-cols { grid-template-columns: 1fr; }
+  .mi-band { flex-direction: column; align-items: stretch; }
+  .mi-img { width: 100%; flex: 0 0 auto; height: 150px; }
+  .mi-id h2 { font-size: 17px; }
+}
