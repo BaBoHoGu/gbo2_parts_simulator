@@ -350,6 +350,60 @@
     return { skills, mult, mults, threshold, cuts };
   }
 
+  /* 누적치 감소 스킬의 **조건 축**.
+     같은 축 안에서는 하나만 성립하고, 축이 다르면 함께 성립한다.
+       · 행동(act) — 정지·이동·격투는 동시에 할 수 없다
+       · 부위(part) — 두 군데를 한 번에 맞을 수 없다
+       · 공중·변형·HP·발동 — 각각 따로다. **행동과도 함께 성립한다**
+         (공중에서 고속이동하는 멧사 F02형이 그 예다 — V·테일(공중) ×0.5 와
+          매뉴버(이동중) ×0.7 이 같이 걸려 ×0.35 가 된다)
+     하나만 고르면 이런 기체를 적게 잡고, 다 곱하면 정지하면서 격투하는
+     있을 수 없는 수가 나온다. 축으로 나누는 것이 그 사이다. */
+  const STG_AXIS = {
+    '정지중': 'act', '이동중': 'act', '격투중': 'act',
+    '부위피격': 'part', '공중': 'air', '변형중': 'form',
+    'HP조건': 'hp', '발동중': 'buff'
+  };
+
+  /**
+   * 기체 정보 칸에 적을 누적치 내성의 **폭** — 기본과 최대.
+   *
+   * 기본 = 조건 없이 늘 걸리는 것만 (임계형 + 「상시」 감소)
+   * 최대 = 기본 + **축마다 가장 센 것 하나씩** 곱한 값
+   *
+   * 최대가 어느 스킬들에서 나오는 값인지 이름을 같이 적는다 —
+   * 수만 적으면 「언제 그 값인지」를 알 수 없어 거짓말이 된다.
+   *
+   * 파츠 화면의 성능표는 지금처럼 체크박스로 사용자가 상황을 고르게 둔다:
+   * 거기서는 구성을 만드는 중이라 상황을 아는 사람이 고르는 쪽이 정확하다.
+   */
+  function staggerRange(ms, lv) {
+    const skills = staggerSkillsOf(ms, lv);
+    // 임계형은 조건이 없다(늘 걸린다). 여럿이면 가장 높은 것.
+    let threshold = 100;
+    for (const sk of skills) if (sk.threshold != null) threshold = Math.max(threshold, sk.threshold);
+
+    let baseMult = 1;
+    const bestBy = new Map();          // 축 → 그 축에서 가장 센 스킬
+    for (const sk of skills) {
+      if (!(sk.mult < 1)) continue;
+      if (sk.cond === '상시') { baseMult *= sk.mult; continue; }
+      // 모르는 조건은 제 이름을 축으로 쓴다 — 조용히 상시로 넘기면 없는 값을 만든다.
+      const ax = STG_AXIS[sk.cond] || sk.cond;
+      const prev = bestBy.get(ax);
+      if (!prev || sk.mult < prev.mult) bestBy.set(ax, sk);
+    }
+    const picks = [...bestBy.values()];
+    let maxMult = baseMult;
+    for (const sk of picks) maxMult *= sk.mult;
+
+    return {
+      base: Math.round(threshold / baseMult),
+      max: Math.round(threshold / maxMult),
+      picks, threshold, skills
+    };
+  }
+
   /** 받는 누적치(よろけ値) — 스킬 배수를 감소 큰 순으로 하나씩 곱하고 매번 소수점 이하 내림. */
   function staggerPerHit(base, mults) {
     let v = base;
@@ -1362,7 +1416,7 @@
     return String(fit.length ? fit[fit.length - 1] : lvs[0]);
   }
 
-  /* ---------- 스러스터 지표 ---------- */
+  /* ---------- 슬러스터 지표 ---------- */
   // 위키 83(전투 시스템) 실측표. 초기소비·소비속도는 % 가 아니라 '스라값 그 자체'(절대값)다.
   //   「初期消費量はスラスター値そのもの（固定値）」「回復速度は全機固定で約5/s」
   // 열은 표준/강습/적성 셋뿐이라, 적성이 있으면 적성 · 없고 강습이면 강습 · 그 외 표준을 쓴다
@@ -1373,7 +1427,7 @@
   };
   const THR_RECOVER = 5;                 // 스라값/초 — 전 기체 공통
   const OH_SEC = 7, OH_SEC_GROUND_ADAPT = 6.3;   // 지상적성만 10% 짧다(우주적성은 효과 없음)
-  // 부스트 계열 스킬은 '효과가 끝나면' 스러스터 OH 복귀가 21초로 늘어난다(기본의 3배).
+  // 부스트 계열 스킬은 '효과가 끝나면' 슬러스터 OH 복귀가 21초로 늘어난다(기본의 3배).
   // 스킬 설명에 「効果終了時のOH回復時間は21秒」 로 못박혀 있는 셋만 잡는다 — 합쳐 38기.
   // 발동 중에만 걸리는 값이라 지표를 갈아치우지 않고, 옆에 따로 적어 준다.
   const OH_LONG_SKILLS = ['EXブースト', 'オーバーブースト', 'シューティングブースト'];
@@ -1422,7 +1476,7 @@
     return null;
   }
 
-  /** 스러스터 관련 파츠 효과 — 회복속도%·OH단축%·소비경감%(초기/이동중). 모두 가산 중복. */
+  /** 슬러스터 관련 파츠 효과 — 회복속도%·OH단축%·소비경감%(초기/이동중). 모두 가산 중복. */
   function thrusterPartFx(equipped) {
     let recover = 0, oh = 0, cutInit = 0, cutRate = 0;
     for (const p of equipped || []) {
@@ -1443,7 +1497,7 @@
   }
 
   /**
-   * 환경(지상/우주)별 스러스터 지표.
+   * 환경(지상/우주)별 슬러스터 지표.
    *   부스트 지속 = (스라값 − 초기소비) ÷ 소비속도
    *   완충 시간   = 스라값 ÷ 회복속도
    *   OH 복귀     = 기준초 × (1 − 단축%)
@@ -1617,7 +1671,7 @@
   const DEBUFF_RULES = [
     [/炎上/, '연소'],
     [/速度デバフ|移動速度低下|速度低下/, '속도↓'],
-    [/スラスター消費量増加/, '스러스터↑'],
+    [/スラスター消費量増加/, '슬러스터↑'],
     [/スラスターOH時間増加/, 'OH↑'],
     [/射撃補正低下/, '사격↓'],
     [/格闘補正低下/, '격투↓'],
@@ -2060,13 +2114,13 @@
         if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
       } else if (ohBack) {
         // E팩 탄창식 빔은 OH 가 아니라 리로드 — 리로드 파츠(퀵로더 등)로 줄고 '리로드'로 표기한다.
-        // 진짜 열무기만: 보조 제네레이터(빔)·대용량 보급 팩(전 무장)이 OH 복귀를 줄인다(스러스터 OH 와 별개).
+        // 진짜 열무기만: 보조 제네레이터(빔)·대용량 보급 팩(전 무장)이 OH 복귀를 줄인다(슬러스터 OH 와 별개).
         const cut = D.timeCutFor(wm, isEpack ? 'reloadTime' : 'weaponOH', w);
         last.append(document.createTextNode(jaUnits(D.shortenTimeText(ohBack, cut))));
         if (cut) last.append(el('span', 'w-gain', ' (-' + cut + '%)'));
         last.append(el('span', 'w-sub', isEpack ? '리로드' : 'OH복귀'));
         // 오버로드·사이코뮤 증폭장치를 쓴 뒤에는 이 값이 2배가 된다. 발동 중에만 걸리는
-        // 사후 대가라 표의 값을 갈아치우지 않고, 스러스터 OH 처럼 옆에 따로 적는다.
+        // 사후 대가라 표의 값을 갈아치우지 않고, 슬러스터 OH 처럼 옆에 따로 적는다.
         // (E팩 탄창식 빔은 「残弾式ビーム兵装非対応」 — 여기선 애초에 '리로드'로 나온다)
         if (!isEpack && ohX2 && (!ohX2.psycommuOnly || w.psycommu)) {
           const n = Number((String(ohBack).match(/([\d.]+)/) || [])[1]);
@@ -2510,7 +2564,7 @@
       `임계 ${stg.threshold}%` + (stg.mult < 1 ? ` · 받는 누적 ×${+stg.mult.toFixed(3)}` : '')));
     body.append(sr);
 
-    // 스러스터 지표 — 부스트 지속 · 완충 · OH 복귀. 지상/우주 각각(환경적성·강습 보정이 다르다).
+    // 슬러스터 지표 — 부스트 지속 · 완충 · OH 복귀. 지상/우주 각각(환경적성·강습 보정이 다르다).
     {
       const thr = r.total.thruster || 0;
       // 소수 한 자리로 통일한다 — 16.2 와 15.6 이 둘 다 '16초' 로 보이면 변화가 가려진다
@@ -2522,7 +2576,7 @@
         if (!m) continue;
         const row = el('div', 'dura-row thr-row');
         const colKoTag = m.col === 'adapt' ? '적성' : m.col === 'assault' ? '강습' : null;
-        const lb = el('span', 'dura-lb', '스러스터 ' + label);
+        const lb = el('span', 'dura-lb', '슬러스터 ' + label);
         // 어느 기준으로 낸 값인지 화면에 적는다 — 지상적성 기체는 OH 가 7 이 아니라 6.3초라
         // 근거가 안 보이면 혼자 다른 값처럼 읽힌다(툴팁은 폰에서 안 뜬다).
         if (colKoTag) lb.append(el('span', 'thr-col', colKoTag));
@@ -2544,8 +2598,8 @@
         if (ohLong) row.append(el('span', 'thr-ohlong', ohLong + ' 후 ' + OH_LONG_SEC + '초'));
         const colKo = m.col === 'adapt' ? '환경적성' : m.col === 'assault' ? '강습 보정' : '표준';
         row.title = '위키 실측 기준(' + colKo + ')\n'
-          + '· 부스트 지속 = (스러스터 ' + thr + ' − 초기소비) ÷ 소비속도\n'
-          + '· 풀회복 = 게이지 0 → 가득 (스러스터 ÷ 5/초, 회복 파츠 반영)\n'
+          + '· 부스트 지속 = (슬러스터 ' + thr + ' − 초기소비) ÷ 소비속도\n'
+          + '· 풀회복 = 게이지 0 → 가득 (슬러스터 ÷ 5/초, 회복 파츠 반영)\n'
           + '· OH 복귀 = ' + m.base.oh + '초 × (1 − 단축 파츠)'
           + (ohLong ? '\n※ ' + ohLong + ' 효과가 끝난 뒤에는 OH 복귀가 ' + OH_LONG_SEC
               + '초 (스킬 설명에 명시된 고정값 — 위 단축 파츠와 별개).' : '')
@@ -2908,7 +2962,7 @@
       lt('내성 ' + Math.round(stg.threshold / stg.mult) + '%    임계 ' + stg.threshold + '%'
         + (stg.mult < 1 ? '    받는 누적 ×' + (+stg.mult.toFixed(3)) : ''), rxi + 78, ry + 4, fnt(13), CO.text);
       ry += 20;
-      // 스러스터 지표 — 성능표와 같은 값(부스트·풀회복·OH). 출격 가능한 환경만.
+      // 슬러스터 지표 — 성능표와 같은 값(부스트·풀회복·OH). 출격 가능한 환경만.
       {
         const thrV = r.total.thruster || 0;
         const sec1 = v => v == null ? '—' : (Math.round(v * 10) / 10).toFixed(1) + '초';
@@ -2917,9 +2971,9 @@
           if (env === 'space' && m['出撃_宇宙可'] === false) continue;
           const tm = thrusterMetrics(m, thrV, state.equipped, env);
           if (!tm) continue;
-          lt('스러스터 ' + lb, rxi, ry + 4, fnt(12, '700'), CO.muted);
+          lt('슬러스터 ' + lb, rxi, ry + 4, fnt(12, '700'), CO.muted);
           lt('부스트 ' + sec1(tm.boost) + '    풀회복 ' + sec1(tm.full) + '    OH ' + sec1(tm.oh),
-            rxi + 96, ry + 4, fnt(13), CO.text);   // '스러스터 지상' 이 길어 78 이면 값과 붙는다
+            rxi + 96, ry + 4, fnt(13), CO.text);   // '슬러스터 지상' 이 길어 78 이면 값과 붙는다
           ry += 20;
         }
       }
@@ -6326,10 +6380,31 @@
     row('격투 보정', n(m['格闘補正']), '格闘補正');
     row('스피드', n(m['スピード']), 'スピード');
     row('고속이동', n(m['高速移動']), '高速移動');
-    row('스러스터', n(m['スラスター']), 'スラスター');
+    row('슬러스터', n(m['スラスター']), 'スラスター');
     row('선회(지상)', n(m['旋回_地上_通常時']), '旋回_地上_通常時');
     row('선회(우주)', n(m['旋回_宇宙_通常時']), '旋回_宇宙_通常時');
     row('재출격', m['再出撃時間'] == null ? '—' : m['再出撃時間'] + '초');
+
+    // 누적치 — 기본과 최대. 최대는 어느 스킬·조건에서 나오는 값인지 같이 적는다.
+    const stg = staggerRange(m, msLevel(m));
+    const sr = el('div', 'mi-st mi-stg');
+    sr.append(el('i', '', '누적치 내성'));
+    const sv = el('b');
+    sv.append(document.createTextNode(stg.base + '%'));
+    if (stg.max > stg.base) {
+      sv.append(el('span', 'mi-stg-arrow', ' → '));
+      sv.append(el('span', 'mi-stg-max', stg.max + '%'));
+    }
+    sr.append(sv);
+    if (stg.max > stg.base && stg.picks.length) {
+      sr.append(el('span', 'mi-stg-note',
+        stg.picks.map(x => x.ko + (x.cond ? ' · ' + x.cond : '')).join(' + ')));
+      sr.title = '최대치는 위 스킬들이 함께 걸렸을 때입니다.\n'
+        + '같은 갈래의 조건은 동시에 성립하지 않아(정지·이동·격투 중 하나, 피격 부위 하나) '
+        + '갈래마다 가장 센 것 하나씩만 셉니다.\n'
+        + '갈래가 다르면 함께 걸립니다 — 공중에서 고속이동하면 둘 다 적용됩니다.';
+    }
+    box.append(sr);
 
     // 파츠 칸은 칸 수 자체가 뜻이라 막대가 아니라 **눈금**으로 그린다.
     // 「17칸」보다 ▮ 열일곱이 한눈에 들어온다(게임 화면도 그렇게 보여 준다).
@@ -6598,7 +6673,7 @@
     }
     if (e.speed) num.push('스피드 ' + sg(e.speed));
     if (e.hispeed) num.push('고속이동 ' + sg(e.hispeed));
-    if (e.thruster) num.push('스러스터 ' + sg(e.thruster));
+    if (e.thruster) num.push('슬러스터 ' + sg(e.thruster));
     if (e.turn) num.push('선회 ' + sg(e.turn));
     if (e.hpUp) num.push('HP ' + sg(e.hpUp));
     const how = [skillDur(sk), sk.hp ? 'HP ' + sk.hp + '% 이하' : null, sk.manual ? '수동' : null]
