@@ -1,28 +1,12 @@
 [
  {
-  "at": 1789047231647,
-  "author": "테스트",
-  "desc": "테스트",
-  "exp": "拡張スキル無し",
-  "expLv": 5,
-  "free": true,
-  "id": "f612b2396eace14212f789ebd19feff4",
-  "ipHead": "112.184",
-  "ms": "FAエンゲージガンダム［Cプラン］_LV1",
-  "parts": [
-   "強化フレーム_LV4"
-  ],
-  "stage": 6,
-  "title": "테스트",
-  "ver": "2026-09-10-1"
- },
- {
   "at": 1789002735469,
   "author": ".",
   "desc": ".",
   "exp": "MS戦複合拡張",
   "expLv": 5,
   "free": false,
+  "hasPw": false,
   "id": "a4cada8aa817a7c4",
   "ipHead": "",
   "ms": "ペーネロペー_LV2",
@@ -47,6 +31,7 @@
   "exp": "パーツ拡張[HP]",
   "expLv": 5,
   "free": false,
+  "hasPw": false,
   "id": "661272dc350efdbe",
   "ipHead": "",
   "ms": "FAエンゲージガンダム［Cプラン］_LV1",
@@ -71,6 +56,7 @@
   "exp": "格闘補正拡張",
   "expLv": 5,
   "free": false,
+  "hasPw": false,
   "id": "88bec992ba0d135c",
   "ipHead": "",
   "ms": "スサノオ_LV1",
@@ -95,6 +81,7 @@
   "exp": "射撃補正拡張",
   "expLv": 5,
   "free": false,
+  "hasPw": false,
   "id": "24cc9ae8ca5f2926",
   "ipHead": "",
   "ms": "ガンダムデルタカイ_LV1",
