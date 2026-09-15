@@ -2332,6 +2332,18 @@
   /** 무장 행 아래에 위키의 설명과 표 값을 그대로 펼친다. */
   function openWeaponDetail(row, w, d, lv) {
     row.classList.add('open');
+    // 격투 방향별 피해는 **장착 구성**(stats())에 묶여 있어 여기서만 붙는다.
+    row.after(weaponDetailBox(w, d, lv, true));
+  }
+
+  /**
+   * 무장 상세 — 파츠 화면의 무장 표와 기체 정보 칸이 **같은 것**을 쓴다.
+   * 따로 만들면 같은 무장을 두 화면이 다르게 설명하게 된다.
+   * @param {boolean} withMelee 격투 방향별 피해를 붙일지.
+   *   그 표는 지금 장착한 구성의 격투 보정을 쓰므로(stats()), 구성이 없는
+   *   기체 정보 칸에서는 붙이지 않는다.
+   */
+  function weaponDetailBox(w, d, lv, withMelee) {
     const box = el('div', 'weapon-detail');
 
     const head = el('div', 'wd-head');
@@ -2396,7 +2408,7 @@
     }
 
     // 격투 무장: 방향별 피해 + 연격 보정 (격투보정·파츠·스킬 반영)
-    if (w.type === 'melee' && w.melee && d.power != null) box.append(meleeSection(w, d.power));
+    if (withMelee && w.type === 'melee' && w.melee && d.power != null) box.append(meleeSection(w, d.power));
 
     // 위키 설명 원문 (계산에 안 들어가는 부가 효과까지 전부)
     if (w.info && w.info['備考']) {
@@ -2414,7 +2426,7 @@
       }
       box.append(note);
     }
-    row.after(box);
+    return box;
   }
 
   const MELEE_LABEL = {
@@ -6291,6 +6303,8 @@
   let infoWpnMode = 'all';
   // 정보 칸의 스킬 상태 필터. 무장 쪽과 따로 둔다 — 보는 대상이 달라 같이 움직일 이유가 없다.
   let infoSkMode = 'all';
+  // 스킬 분류 필터 — 'all' 또는 원문 분류 키(足回り·攻撃…).
+  let infoSkCat = 'all';
 
   function openInfo(m) {
     if (!m) return;
@@ -6577,33 +6591,14 @@
       }
       d.append(pv);
 
-      // 눌러야 상세가 나온다. 무장 표(파츠 화면)와 같은 한글 備考 칩을 쓴다 —
-      // 두 화면이 같은 무장을 다른 말로 설명하면 안 된다.
+      // 눌러야 상세가 나온다. 파츠 화면의 무장 표와 **같은 상세**를 쓴다 —
+      // 두 화면이 같은 무장을 다르게 설명하면 안 된다.
       d.onclick = () => {
         const open = d.classList.toggle('on');
-        for (const x of box.querySelectorAll('.mi-wdesc')) x.remove();
+        for (const x of box.querySelectorAll('.weapon-detail')) x.remove();
         for (const x of box.querySelectorAll('.mi-w.on')) if (x !== d) x.classList.remove('on');
         if (!open) return;
-        const wrap = el('div', 'mi-wdesc');
-        const nums = [];
-        const gv = (...k) => wField(lvl, w.info, ...k);
-        const push = (lb, v) => { if (v) nums.push(lb + ' ' + jaUnits(v)); };
-        push('사거리', gv('射程'));
-        push('쿨타임', gv('クールタイム'));
-        push('발사간격', gv('発射間隔'));
-        push('탄수', gv('弾数', 'OHまでの弾数'));
-        push('리로드', gv('リロード時間', 'OH復帰 時間', 'OH復帰時間'));
-        push('히트율', gv('ヒート率'));
-        if (nums.length) wrap.append(el('div', 'mi-wnums', nums.join(' · ')));
-        const note = noteText((w.info && w.info['備考']) || '');
-        const items = note.split(' / ').map(x => x.trim()).filter(Boolean);
-        if (items.length) {
-          const cw = el('div', 'wd-note-chips');
-          for (const t of items) cw.append(el('span', 'wd-chip' + noteChipCls(t), noKeepSlash(t)));
-          wrap.append(cw);
-        }
-        if (!nums.length && !items.length) wrap.append(el('div', 'mi-wnums', '추가 정보가 없습니다.'));
-        d.after(wrap);
+        d.after(weaponDetailBox(w, lvl || {}, keys.length ? (fit.length ? fit[fit.length - 1] : keys[0]) : lv, false));
       };
       box.append(d);
     }
@@ -6623,7 +6618,10 @@
         const altMd = modes.find(isAltSkillMode);
         const altLb = (altMd && SKILL_MODE_KO[altMd.mode]) || '변형';
         const lb = /(중|시|후)$/.test(altLb) ? altLb : altLb + ' 시';
-        for (const [v, label] of [['all', '모든 상태'], ['normal', '통상'], ['alt', lb]]) {
+        // 「모든 상태」는 두지 않는다 — 스킬은 상태마다 아예 다른 묶음이라
+        // 합쳐 놓으면 어느 쪽 스킬인지 알 수 없다(사용자 결정).
+        if (infoSkMode === 'all') infoSkMode = 'normal';
+        for (const [v, label] of [['normal', '통상'], ['alt', lb]]) {
           const b = el('button', 'seg-btn' + (infoSkMode === v ? ' on' : ''), label);
           b.onclick = () => { infoSkMode = v; renderInfoSkills(m); };
           seg.append(b);
@@ -6659,29 +6657,49 @@
     const order = ['足回り', '攻撃', '防御', '移動', '格闘', '射撃', 'その他', ''];
     const byCat = new Map();
     for (const sk of picked) { if (!byCat.has(sk.cat)) byCat.set(sk.cat, []); byCat.get(sk.cat).push(sk); }
-    for (const cat of [...byCat.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b))) {
-      box.append(el('div', 'mi-skcat', SKILL_CAT_KO[cat] || cat || '기타'));
-      const ch = el('div', 'mi-skchips');
+    const cats = [...byCat.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
+    // 분류 칩 — 스킬이 스물 가까이 되면 한 덩어리로는 못 읽는다.
+    // 「기타」로 뭉뚱그리지 않고 이 기체에 실제로 있는 분류만 띄운다.
+    const catBar = $('#infoSkCats');
+    if (catBar) {
+      catBar.innerHTML = '';
+      catBar.hidden = cats.length < 2;
+      if (cats.length >= 2) {
+        if (infoSkCat !== 'all' && !cats.includes(infoSkCat)) infoSkCat = 'all';
+        const mk = (v, label, n) => {
+          const b = el('button', 'mi-skcatbtn' + (infoSkCat === v ? ' on' : ''), label);
+          b.append(el('u', '', String(n)));
+          b.onclick = () => { infoSkCat = v; renderInfoSkills(m); };
+          catBar.append(b);
+        };
+        mk('all', '전체', picked.length);
+        for (const c of cats) mk(c, SKILL_CAT_KO[c] || c || '기타', byCat.get(c).length);
+      } else infoSkCat = 'all';
+    }
+
+    for (const cat of cats) {
+      if (infoSkCat !== 'all' && infoSkCat !== cat) continue;
+      // 하나만 고른 상태에서는 소제목이 군더더기다
+      if (infoSkCat === 'all') box.append(el('div', 'mi-skcat', SKILL_CAT_KO[cat] || cat || '기타'));
+      // 칩을 하나씩 늘어놓으면 이름이 길 때 줄이 어긋난다 — 무장처럼 줄로 세운다.
       for (const sk of byCat.get(cat)) {
-        const chip = el('button', 'wd-chip mi-skchip', skTr(sk.name) + (sk.lv ? ' ' + sk.lv : ''));
-        // 눌러야 설명이 나온다 — 열여섯 개를 다 펼쳐 두면 읽을 수가 없다.
-        chip.onclick = () => {
-          const open = chip.classList.toggle('on');
-          const next = ch.nextElementSibling;
-          if (next && next.classList.contains('mi-skdesc')) next.remove();
+        const r = el('div', 'mi-skrow');
+        r.append(el('span', 'nm', skTr(sk.name)));
+        if (sk.lv) r.append(el('span', 'lv', sk.lv));
+        r.onclick = () => {
+          const open = r.classList.toggle('on');
+          for (const x of box.querySelectorAll('.mi-skdesc')) x.remove();
+          for (const x of box.querySelectorAll('.mi-skrow.on')) if (x !== r) x.classList.remove('on');
           if (!open) return;
-          for (const c of box.querySelectorAll('.mi-skchip.on')) if (c !== chip) c.classList.remove('on');
-          for (const d of box.querySelectorAll('.mi-skdesc')) d.remove();
-          chip.classList.add('on');
           const d = el('div', 'mi-skdesc');
           if (sk.eff) d.append(el('div', 'mi-skeff', skTr(sk.eff)));
           if (sk.desc) d.append(el('div', 'mi-skdd', skTr(sk.desc)));
           if (!sk.eff && !sk.desc) d.append(el('div', 'mi-skdd', '설명이 없습니다.'));
-          ch.after(d);
+          r.after(d);
         };
-        ch.append(chip);
+        box.append(r);
       }
-      box.append(ch);
     }
   }
 

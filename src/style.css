@@ -2858,7 +2858,7 @@ body.info-open .sel-info { display: flex; }
    **폭을 고정**하고 남는 폭을 전부 왼쪽에 준다. 왼쪽이 넓어지면 무장·스킬이
    2열로 펴져 세로가 줄고, 좁으면 한 열로 돌아간다. */
 .mi-cols {
-  display: grid; grid-template-columns: minmax(0, 1fr) 262px 262px;
+  display: grid; grid-template-columns: 296px minmax(0, 1fr) 248px;
   gap: 9px; align-items: start;
 }
 /* 두 열로 펴 봤더니 칸이 좁아 무장 이름이 「더블 …」로 뭉개졌다.
@@ -3099,3 +3099,33 @@ body.info-open .sel-info { display: flex; }
   background: rgba(120, 180, 255, .14); border-radius: 2px; padding: 1px 4px;
 }
 .mi-w b.charged { color: #8fc0ff; }
+
+
+/* ---- 스킬 분류 칩 ---- */
+.mi-skcats { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+.mi-skcatbtn {
+  display: inline-flex; align-items: baseline; gap: 4px;
+  font-size: 10.5px; padding: 3px 9px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 11px;
+  background: transparent; color: var(--muted);
+}
+.mi-skcatbtn u { font-style: normal; text-decoration: none; font-size: 9.5px; color: var(--dim); }
+.mi-skcatbtn:hover { color: var(--text); border-color: var(--muted); }
+.mi-skcatbtn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
+.mi-skcatbtn.on u { color: rgba(26, 29, 43, .65); }
+
+/* ---- 스킬 줄 ----
+   칩을 늘어놓으면 이름이 길 때 줄이 어긋난다 — 무장처럼 줄로 세운다. */
+.mi-skrow {
+  display: flex; align-items: center; gap: 6px; min-width: 0; cursor: pointer;
+  padding: 5px 7px; margin-bottom: 3px;
+  background: rgba(255, 255, 255, .03); border-radius: 3px;
+}
+.mi-skrow:hover { background: rgba(255, 255, 255, .06); }
+.mi-skrow.on { background: rgba(255, 201, 60, .1); }
+.mi-skrow .nm { flex: 1; min-width: 0; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi-skrow .lv { font-size: 10px; color: var(--dim); white-space: nowrap; }
+
+/* 무장 상세가 파츠 화면과 같은 것이라 기둥 안에서도 읽히게 조인다 */
+.mi-wpn .weapon-detail { margin: 2px 0 4px; }
+.mi-wpn .weapon-detail .wd-grid { grid-template-columns: 1fr; }
