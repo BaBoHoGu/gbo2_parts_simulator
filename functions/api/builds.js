@@ -5,7 +5,7 @@
 import { json, bad, CORS, whoOf, ipHeadOf } from '../lib/util.js';
 import { MS, PARTS, EXP, PAID } from '../lib/dict.js';
 import { ensureSchema } from '../lib/schema.js';
-import { TITLE_RE, AUTHOR_RE, DESC_RE } from '../lib/util.js';
+import { TITLE_RE, AUTHOR_RE, DESC_RE, PW_RE, pwHashOf } from '../lib/util.js';
 
 const LIMIT = 300;          // 목록에서 돌려줄 최근 구성 수 (Firebase 의 CFG.limit 과 같다)
 const THROTTLE_MS = 60_000; // 1분에 한 건 (rules.json throttle)
@@ -15,7 +15,7 @@ export const onRequestOptions = () => new Response(null, { status: 204, headers:
 export async function onRequestGet({ env }) {
   await ensureSchema(env);
   const { results } = await env.DB.prepare(
-    `SELECT id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, ip_head, at
+    `SELECT id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, ip_head, pw_hash, at
        FROM builds
       WHERE id NOT IN (SELECT id FROM blocked)
       ORDER BY at DESC
@@ -26,7 +26,10 @@ export async function onRequestGet({ env }) {
       id: r.id, ms: r.ms, stage: r.stage, exp: r.exp, expLv: r.exp_lv,
       parts: JSON.parse(r.parts), title: r.title, author: r.author,
       desc: r.descr || '', free: r.free === 1, ver: r.ver || '',
-      ipHead: r.ip_head || '', at: r.at
+      ipHead: r.ip_head || '', at: r.at,
+      // 비밀번호가 걸린 구성인지만 알린다 — 값은 절대 내보내지 않는다.
+      // 이 열이 생기기 전 구성은 false 라, 화면이 「본인 삭제」를 안 내민다.
+      hasPw: !!r.pw_hash
     }))
   });
 }
@@ -59,6 +62,11 @@ export async function onRequestPost({ request, env }) {
   if (!DESC_RE.test(desc)) return bad('desc', '설명이 올바르지 않습니다 (60자까지)');
   const ver = String(b.ver || '').slice(0, 12);
 
+  // ── 비밀번호 ── 올린 사람이 스스로 내릴 때 쓴다. 필수다 —
+  // 선택으로 두면 대부분 안 걸고, 나중에 지우려 할 때 방법이 없다.
+  const pw = String(b.pw || '');
+  if (!PW_RE.test(pw)) return bad('pw', '비밀번호가 올바르지 않습니다 (공백 없이 4~20자)');
+
   // ── 무과금 ── 앱이 보낸 값을 믿지 않고 서버가 파츠 표로 직접 정한다.
   // Firebase 로는 못 하던 검증이다(규칙이 파츠 표를 들고 있을 수 없었다).
   const free = parts.every(p => !PAID.has(p)) ? 1 : 0;
@@ -76,11 +84,16 @@ export async function onRequestPost({ request, env }) {
   const id = await fingerprint(ms, stage, exp, expLv, parts);
   const dup = await env.DB.prepare('SELECT id FROM builds WHERE id = ?').bind(id).first();
   if (dup) return bad('dup', '이미 올라온 구성입니다');
+  // 관리자가 내린 구성은 다시 올라오지 못한다. 여기를 안 보면 blocked 는 목록에서
+  // 가리기만 할 뿐이라, 같은 구성을 다시 올리면 표에 되살아난다(화면에만 안 보인다).
+  const gone = await env.DB.prepare('SELECT id FROM blocked WHERE id = ?').bind(id).first();
+  if (gone) return bad('blocked', '관리자가 내린 구성입니다 — 다시 올릴 수 없습니다', 403);
 
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO builds (id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, who, ip_head, at)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .bind(id, ms, stage, exp, expLv, JSON.stringify(parts), title, author, desc || null, free, ver, who, ipHead, now),
+    env.DB.prepare(`INSERT INTO builds (id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, who, ip_head, pw_hash, at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .bind(id, ms, stage, exp, expLv, JSON.stringify(parts), title, author, desc || null, free, ver, who, ipHead,
+            await pwHashOf(env, id, pw), now),
     env.DB.prepare('INSERT INTO throttle (who, at) VALUES (?,?) ON CONFLICT(who) DO UPDATE SET at = excluded.at')
       .bind(who, now)
   ]);

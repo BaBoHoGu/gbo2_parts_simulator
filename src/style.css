@@ -3191,3 +3191,6 @@ body.info-open .sel-info { display: flex; }
 .stg-chk.locked { cursor: default; opacity: .92; }
 .stg-chk.locked input { cursor: default; }
 .stg-cats-hint { font-size: 10.5px; color: var(--dim); margin: 0 0 4px; }
+
+/* 삭제용 비밀번호 — 관리자 비밀번호로 오해하지 않게 한 줄 덧붙인다 */
+.up-pwnote { display: block; margin: -4px 0 8px; color: var(--dim); font-size: 10.5px; }

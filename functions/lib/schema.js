@@ -25,13 +25,19 @@ const DDL = [
      PRIMARY KEY (kind, target, dev))`,
   `CREATE INDEX IF NOT EXISTS votes_target ON votes (kind, target)`,
   /* 하루 한도를 셀 때 쓰는 길 — (기기, 갈래, 시각) */
-  `CREATE INDEX IF NOT EXISTS votes_dev ON votes (dev, kind, at)`
+  `CREATE INDEX IF NOT EXISTS votes_dev ON votes (dev, kind, at)`,
+  /* 비밀번호 시도 횟수 — 올린 사람이 스스로 지울 때 쓰는 비밀번호는 짧다(4자부터).
+     막지 않으면 몇 초 만에 다 눌러 볼 수 있으므로 IP 해시별로 센다. */
+  `CREATE TABLE IF NOT EXISTS pwtry (who TEXT PRIMARY KEY, n INTEGER NOT NULL, at INTEGER NOT NULL)`
 ];
 
 /* 나중에 늘어난 열. D1(SQLite)에는 ADD COLUMN IF NOT EXISTS 가 없어서, 이미 있으면
    나는 오류를 삼킨다 — 여기서 막히면 갤러리 전체가 멈춘다. */
 const ALTERS = [
-  'ALTER TABLE builds ADD COLUMN ip_head TEXT'
+  'ALTER TABLE builds ADD COLUMN ip_head TEXT',
+  /* 올린 사람이 스스로 내릴 때 쓰는 비밀번호. 원문이 아니라 해시만 둔다.
+     이 열이 생기기 전에 올라온 구성은 NULL 이라 본인 삭제가 안 된다(관리자만 가능). */
+  'ALTER TABLE builds ADD COLUMN pw_hash TEXT'
 ];
 
 export async function ensureSchema(env) {

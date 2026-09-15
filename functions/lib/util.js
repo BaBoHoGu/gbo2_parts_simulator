@@ -90,24 +90,52 @@ export async function issueAdminToken(env, ttlMs = 12 * 3600 * 1000) {
   return `${exp}.${await hmac(env, 'admin:' + exp)}`;
 }
 
-/** 헤더의 Bearer 토큰이 우리가 서명한 것이고 아직 안 지났는가. */
+/** 헤더의 Bearer 토큰이 우리가 서명한 것이고 아직 안 지났는가.
+ *
+ *  **던지지 않는다.** 시크릿이 안 걸린 환경에서는 importKey 가 「HMAC key length (0)」
+ *  로 터지는데, 그러면 이 함수를 부르는 요청이 통째로 500 이 됐다. 관리자 삭제만이
+ *  아니라 **비밀번호로 지우는 일반 사용자까지** 같이 죽는다(그 길도 여기를 먼저 지난다).
+ *  권한이 없으면 없다고 답하는 것이 맞지, 요청을 죽일 일이 아니다. */
 export async function isAdmin(request, env) {
+  if (!env.SIGN_KEY) return false;        // 시크릿이 없으면 관리자도 없다
   const h = request.headers.get('Authorization') || '';
   const t = h.startsWith('Bearer ') ? h.slice(7) : '';
   const [expStr, sig] = t.split('.');
   const exp = Number(expStr);
   if (!exp || !sig || Date.now() > exp) return false;
-  const want = await hmac(env, 'admin:' + exp);
-  // 길이가 다르면 즉시 다르다 — 같은 길이일 때만 상수 시간 비교로 넘어간다
-  if (want.length !== sig.length) return false;
-  let diff = 0;
-  for (let i = 0; i < want.length; i++) diff |= want.charCodeAt(i) ^ sig.charCodeAt(i);
-  return diff === 0;
+  let want;
+  try { want = await hmac(env, 'admin:' + exp); }
+  catch (e) { return false; }
+  return sameSecret(want, sig);
 }
 
 /* ---------- 값 검증 ----------
  * rules.json 과 같은 범위. 앱에서도 한 번 걸러 주지만 그건 안내용이고,
  * 실제로 막는 것은 여기다. */
+/* ---------- 올린 사람의 비밀번호 ----------
+ * 관리자 비밀번호와 **아무 관계가 없다**. 이건 「내가 올린 글을 내가 내린다」는
+ * 게시판의 그 비밀번호다 — 짧고, 구성 하나에만 걸리고, 잊어도 관리자가 지워 준다.
+ *
+ * 왜 해시를 한 번만 도는가(PBKDF2 가 아니라):
+ *   · 소금이 우리 시크릿(WHO_SALT)이라 표가 통째로 새도 밖에서는 미리 계산할 수 없다.
+ *   · 구성 id 를 같이 섞어 같은 비밀번호라도 구성마다 다른 값이 된다.
+ *   · 온라인으로 눌러 보는 것은 pwtry 로 막는다(10분에 5번).
+ *   · 워커의 CPU 시간이 짧아 수만 번 도는 유도는 삭제 한 번을 통째로 실패시킨다.
+ * 지키는 대상이 「남의 글을 못 지우게」이지 계정이 아니라서 이 정도가 맞다. */
+export const PW_RE = /^\S{4,20}$/;
+
+export async function pwHashOf(env, id, pw) {
+  return (await sha256Hex(pw + '|pw|' + id + '|' + (env.WHO_SALT || 'gbo2'))).slice(0, 32);
+}
+
+/** 길이가 같을 때만 상수 시간으로 비교한다(관리자 토큰과 같은 방식). */
+export function sameSecret(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 export const TITLE_RE  = /^[가-힣ㄱ-ㅎA-Za-z0-9 ·\-_.,!?()[\]]{1,20}$/;
 export const AUTHOR_RE = /^[가-힣ㄱ-ㅎA-Za-z0-9 ._-]{1,12}$/;
 export const DESC_RE   = /^[가-힣ㄱ-ㅎA-Za-z0-9 ·\-_.,!?()[\]/+~]{0,60}$/;

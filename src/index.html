@@ -432,6 +432,12 @@
     <label>설명 (선택) <span class="note" id="uploadDescCount">0/60</span>
       <input type="text" id="uploadDesc" maxlength="60" placeholder="예: 관통 경감 장갑으로 조사빔 버티기">
     </label>
+    <!-- 삭제용 비밀번호 — 게시판의 그 비밀번호다. 관리자 비밀번호와 아무 관계가 없다.
+         서버에는 해시만 남고, 잊으면 관리자에게 부탁하는 수밖에 없다. -->
+    <label>삭제용 비밀번호 <span class="req">필수</span> <span class="note">공백 없이 4~20자</span>
+      <input type="password" id="uploadPw" maxlength="20" autocomplete="new-password" placeholder="나중에 이 구성을 내릴 때 씁니다">
+    </label>
+    <div class="note up-pwnote">이 구성을 내릴 때 필요합니다 — 잊으면 관리자에게 부탁해야 합니다.</div>
     <div class="admin-foot">
       <span class="note" id="uploadMsg"></span>
       <span class="grow"></span>

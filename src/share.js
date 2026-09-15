@@ -98,7 +98,7 @@ const postJson = (path, body, headers = {}) => req(CFG.api + path, {
  * @param {string} title 사용자가 적은 제목
  * @returns {Promise<{ok:boolean, code?:string, msg:string}>}
  */
-async function upload(bld, title, desc, author) {
+async function upload(bld, title, desc, author, pw) {
   if (!bld || !bld.ms) return { ok: false, code: 'noms', msg: '먼저 기체를 선택하세요' };
   const parts = (bld.parts || []).filter(Boolean);
   // 파츠가 없는 구성은 공유할 내용이 없다. 서버 규칙도 p0 를 필수로 두어 이중으로 막는다.
@@ -118,6 +118,12 @@ async function upload(bld, title, desc, author) {
   if (a.length > 12) return { ok: false, code: 'author', msg: '이름은 12자까지입니다' };
   if (a && !/^[가-힣ㄱ-ㅎA-Za-z0-9 ._-]*$/.test(a))
     return { ok: false, code: 'author', msg: '이름에 쓸 수 없는 문자가 있습니다' };
+  // 비밀번호 — 올린 사람이 스스로 내릴 때 쓴다. 필수다(선택으로 두면 대부분
+  // 안 걸고, 나중에 지우려 할 때 방법이 없다). 서버도 같은 범위로 다시 본다.
+  const w = String(pw == null ? '' : pw);
+  if (!w) return { ok: false, code: 'pw', msg: '삭제용 비밀번호를 입력하세요' };
+  if (!/^\S{4,20}$/.test(w))
+    return { ok: false, code: 'pw', msg: '비밀번호는 공백 없이 4~20자입니다' };
   const d = (desc || '').trim();
   if (d.length > 60) return { ok: false, code: 'desc', msg: '설명은 60자까지입니다' };
   if (d && !/^[가-힣ㄱ-ㅎA-Za-z0-9 ·\-_.,!?()[\]/+~]*$/.test(d))
@@ -133,6 +139,7 @@ async function upload(bld, title, desc, author) {
     title: t,
     author: a,
     desc: d,
+    pw: w,
     ver: B.stamp || B.date || ''
   });
 
@@ -163,6 +170,8 @@ function toBuild(v) {
     // 올린 사람 IP 앞자리(220.80). 서버가 정하고 앱은 그대로 보여만 준다.
     ipHead: v.ipHead || '',
     free: v.free === true,
+    // 비밀번호가 걸린 구성인가 — 값이 아니라 걸렸는지만 온다.
+    hasPw: v.hasPw === true,
     at: Number(v.at) || 0,
     ver: v.ver || ''
   };
@@ -215,15 +224,31 @@ function adminLogout() { admin = null; }
 // 삭제 버튼을 누르는 일이 없게.
 const isAdmin = () => !!(admin && Date.now() - admin.at < 50 * 60 * 1000);
 
-/** 구성 하나 삭제 (관리자만). 서버가 토큰 서명을 다시 확인한다. */
-async function remove(id) {
-  if (!isAdmin()) return { ok: false, msg: '관리자만 지울 수 있습니다' };
+/**
+ * 구성 하나 삭제. 두 길이 있고 **서로 관계가 없다**.
+ *   · 관리자로 로그인해 있으면 토큰으로 지운다 — 비밀번호를 묻지 않는다.
+ *   · 아니면 올릴 때 건 비밀번호로 지운다.
+ * 어느 쪽이든 서버가 다시 확인한다. 여기서 보내는 값은 안내용이 아니라 증거다.
+ */
+async function remove(id, pw) {
+  if (isAdmin()) {
+    const r = await req(CFG.api + '/builds/' + encodeURIComponent(id), {
+      method: 'DELETE', headers: { Authorization: 'Bearer ' + admin.token }
+    });
+    return (r.ok && r.json && r.json.ok)
+      ? { ok: true, msg: '삭제했습니다' }
+      : { ok: false, msg: (r.json && r.json.msg) || '삭제하지 못했습니다' };
+  }
+  const w = String(pw == null ? '' : pw);
+  if (!/^\S{4,20}$/.test(w)) return { ok: false, code: 'pw', msg: '비밀번호를 입력하세요' };
   const r = await req(CFG.api + '/builds/' + encodeURIComponent(id), {
-    method: 'DELETE', headers: { Authorization: 'Bearer ' + admin.token }
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pw: w })
   });
   return (r.ok && r.json && r.json.ok)
     ? { ok: true, msg: '삭제했습니다' }
-    : { ok: false, msg: (r.json && r.json.msg) || '삭제하지 못했습니다' };
+    : { ok: false, code: r.json && r.json.code, msg: (r.json && r.json.msg) || '삭제하지 못했습니다' };
 }
 
 /* ---------- 업데이트 확인 (PC) ---------- */

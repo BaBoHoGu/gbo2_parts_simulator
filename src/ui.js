@@ -4254,11 +4254,21 @@
         desc: bld.desc,
         author: bld.author,
         ipHead: bld.ipHead,
-        // 관리자로 로그인했을 때만 ✕ 가 붙는다. 서버 규칙이 admins 목록으로 다시 확인하므로
-        // 버튼이 보인다고 지워지는 게 아니라, 실제 권한이 있어야 지워진다.
-        onDel: (S && S.isAdmin()) ? async () => {
-          if (!confirm(`「${bld.name}」 구성을 갤러리에서 지울까요?`)) return;
-          const r = await S.remove(bld.id);
+        // ✕ 는 두 경우에 붙는다 — 관리자이거나, 비밀번호가 걸린 구성이거나.
+        // 버튼이 보인다고 지워지는 게 아니다. 관리자는 토큰을, 올린 사람은 비밀번호를
+        // 서버가 다시 확인한다. 관리자로 로그인해 있으면 비밀번호를 묻지 않는다
+        // — 관리자에게는 이 기능이 생기기 전과 똑같이 보인다.
+        onDel: (S && (S.isAdmin() || bld.hasPw)) ? async () => {
+          if (S.isAdmin()) {
+            if (!confirm(`「${bld.name}」 구성을 갤러리에서 지울까요?`)) return;
+            const r = await S.remove(bld.id);
+            toast(r.msg);
+            if (r.ok) { galleryList = galleryList.filter(x => x.id !== bld.id); renderGallery(); }
+            return;
+          }
+          const pw = prompt(`「${bld.name}」 구성을 내립니다.\n올릴 때 정한 비밀번호를 입력하세요.`);
+          if (pw == null) return;                       // 취소
+          const r = await S.remove(bld.id, pw.trim());
           toast(r.msg);
           if (r.ok) { galleryList = galleryList.filter(x => x.id !== bld.id); renderGallery(); }
         } : null,
@@ -4841,6 +4851,7 @@
         : (paid.length + '종: ' + paid.slice(0, 3).join(', ') + (paid.length > 3 ? ' 외 ' + (paid.length - 3) + '종' : ''));
       fnote.title = paid.length ? paid.join(', ') : '';
     }
+    $('#uploadPw').value = '';
     $('#uploadGo').disabled = !(state.ms && parts);
     setTimeout(() => $('#uploadAuthor').focus(), 30);
   }
@@ -4852,22 +4863,26 @@
     const title = $('#uploadTitle').value || '';
     const desc = $('#uploadDesc').value || '';
     const author = $('#uploadAuthor').value || '';
+    const pw = $('#uploadPw').value || '';
     // 작성자를 먼저 묻는 순서라 검사도 같은 순서로 — 위에서부터 채우게 된다
     if (!author.trim()) { $('#uploadMsg').textContent = '작성자를 입력하세요'; $('#uploadAuthor').focus(); return; }
     if (!title.trim()) { $('#uploadMsg').textContent = '제목을 입력하세요'; $('#uploadTitle').focus(); return; }
-    // 무과금 여부는 올리는 순간의 장착 파츠에서 다시 읽는다 — 팝업을 열어 둔 채
-    // 파츠를 바꿨을 수 있고, 화면에 적힌 값을 믿을 이유가 없다.
-    const free = state.equipped.length > 0 && !paidPartsIn(state.equipped).length;
+    if (!/^\S{4,20}$/.test(pw)) {
+      $('#uploadMsg').textContent = '삭제용 비밀번호를 공백 없이 4~20자로 입력하세요';
+      $('#uploadPw').focus(); return;
+    }
+    // 무과금 여부는 보내지 않는다 — 서버가 장착 파츠를 파츠 표와 대조해 직접 정한다.
     const btn = $('#uploadGo');
     btn.disabled = true; btn.textContent = '올리는 중…';
     $('#uploadMsg').textContent = '';
-    const r = await S.upload(serialize(), title, desc, author, free);
+    const r = await S.upload(serialize(), title, desc, author, pw);
     btn.disabled = false; btn.textContent = '올리기';
     if (r.ok) {
       openUpload(false);
       // 이름만 남긴다 — 제목·설명은 구성마다 다르지만 이름은 늘 같다
       try { localStorage.setItem(AUTHOR_KEY, author.trim()); } catch { /* 무시 */ }
       $('#uploadTitle').value = ''; $('#uploadDesc').value = '';
+      $('#uploadPw').value = '';       // 비밀번호는 절대 남기지 않는다(이름과 달리 기억해 두지도 않는다)
       toast(r.msg);
       galleryList = [];
       if (state.view === 'gallery') loadGallery();   // 안 보이는 목록을 그릴 이유가 없다
