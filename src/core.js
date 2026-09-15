@@ -187,13 +187,25 @@ const HARO_V_BONUS = {
   '支援': { armorRange: 3, armorBeam: 3, armorMelee: 3 }
 };
 
-/** 레벨링크 시스템: 기체 LV에 비례해 스탯이 오른다. `stats` 는 스탯키→파츠필드. */
+/** 레벨링크 시스템 — 파츠 설명 그대로:
+ *    「機体と主兵装のLVが一致すると効果量が上昇し、LVが高いほど効果量も高くなる」
+ *  즉 **기체 LV 와 주무장 LV 가 같을 때만** 아래 보너스가 붙고, 다르면 파츠 기본값뿐이다.
+ *  (위키에 수치표가 없다. 여기 값은 공식 사이트 계산기에서 그대로 옮긴 것이고,
+ *   그 계산기는 무장 LV = 기체 LV 를 전제해 **불일치 자체를 다루지 않는다**.
+ *   불일치 때 기본값만 남는다는 것은 설명문을 곧이곧대로 읽은 것이다.)
+ *  `stats` 는 스탯키→파츠필드. */
 const LEVEL_LINK_RULES = {
+  // 격투·사격은 기본값(+5)이 파츠 데이터(melee·shoot)에 들어 있다.
   '格闘': { stats: { meleeCorrection: 'melee' }, bonus: lv => lv * 2 + 1 },
   '射撃': { stats: { shoot: 'shoot' }, bonus: lv => lv * 2 + 1 },
+  // 장갑만 다르다 — 파츠 데이터에 armor_* 가 아예 없고, 기본값 +2 가 예전 표
+  // [4,5,6,7,8] 안에 접혀 있었다. 일치할 때만 보면 같은 값이라 여태 드러나지 않았지만,
+  // 어긋났을 때 기본값만 남기려면 둘을 갈라 놔야 한다(안 그러면 2 가 아니라 0 이 된다).
+  // 갈라 놓아도 일치할 때의 합은 그대로다: 2+[2,3,4,5,6] = [4,5,6,7,8].
   '装甲': {
     stats: { armorRange: 'armor_range', armorBeam: 'armor_beam', armorMelee: 'armor_melee' },
-    bonus: lv => [4, 5, 6, 7, 8][Math.min(lv - 1, 4)]
+    base: 2,
+    bonus: lv => [2, 3, 4, 5, 6][Math.min(lv - 1, 4)]
   }
 };
 
@@ -342,7 +354,12 @@ function calcSlots(ms, equipped, stage, fullstDefs) {
  * @param {'normal'|'transform'} [form] 변형 시 수치로 볼지 (기본 통상)
  * @param {object} [skill] 기체 스킬 발동분 { shoot, meleeCorrection, ... } — 상한은 그대로 적용된다
  */
-function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill) {
+/**
+ * @param {number|null} [weaponLv]  주무장 LV. 안 넘기면 기체 LV 와 같다고 본다 —
+ *   예전 호출부(저장 구성·비교·최적화·원본 대조)는 이 값을 모르고, 게임에서도
+ *   기본이 일치이므로 그 자리에서는 지금까지와 **한 글자도 달라지지 않는다**.
+ */
+function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill, weaponLv) {
   if (!ms) {
     const z = zeroStats();
     return {
@@ -392,13 +409,16 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
       continue;
     }
 
-    // 레벨링크 시스템: 기체 LV에 비례한 보너스가 파츠 고유값에 더해진다
+    // 레벨링크 시스템: 기체 LV 와 주무장 LV 가 **같을 때만** 보너스가 붙는다.
+    // 파츠 칸이 맞아서 달아 두기만 한 경우(무장 LV 가 낮은 경우)는 기본값뿐이다.
     const link = p.name.match(/^レベルリンクシステム\[(.+)\]_LV1$/);
     const linkRule = link && LEVEL_LINK_RULES[link[1]];
     if (linkRule) {
-      const bonus = linkRule.bonus(level || 1);
+      const linked = weaponLv == null || Number(weaponLv) === level;
+      const bonus = linked ? linkRule.bonus(level || 1) : 0;
       for (const [key, field] of Object.entries(linkRule.stats)) {
-        partBonus[key] += (typeof p[field] === 'number' ? p[field] : 0) + bonus;
+        const flat = typeof p[field] === 'number' ? p[field] : (linkRule.base || 0);
+        partBonus[key] += flat + bonus;
       }
       continue;
     }

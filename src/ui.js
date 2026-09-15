@@ -643,6 +643,9 @@
     locked: new Set(),
     banned: new Set(),      // 기본 제외한 파츠 — 영구 저장, 우클릭·모달로 토글, 모든 기체 공통
     staggerOn: new Set(),   // 켜 둔 누적치(스태거) 스킬 이름 — 내구 지표·피탄 시뮬 공통
+    // 무장 LV. null 이면 기체 LV 를 따라간다(게임의 기본이자 여태의 동작).
+    // 숫자면 그 LV 로 무장을 본다 — 기체 LV 보다 높게는 못 간다(그런 무장은 없다).
+    weaponLv: null,
     stage: 6,
     expansion: C.EXPANSION_NONE,
     expLevel: C.MAX_EXPANSION_LEVEL,   // 확장 스킬 레벨 (LV1~LV5)
@@ -1001,7 +1004,7 @@
 
   const stats = (skill = skillStatBonus()) =>
     C.calcStats(state.ms, state.equipped, state.stage, state.expansion, partsByCat, fullst,
-      state.expLevel, state.form, skill);
+      state.expLevel, state.form, skill, wantWeaponLv());
 
   /* ---------- 기체 목록 ---------- */
 
@@ -1191,6 +1194,7 @@
     // 방어 스킬 체크는 스킬 "이름"으로 저장돼 있어, 안 지우면 이름이 같은 스킬(데미지 컨트롤·
     // 마뉴버아머 등)이 다른 기체에서 저절로 켜진 채로 내구 지표·피탄 수치를 바꿔 버린다.
     state.staggerOn.clear();
+    state.weaponLv = null;      // 무장 LV 는 기체마다 다시 고른다(LV 상한이 기체마다 다르다)
     clearAutoResults();
     clearTargets();             // 목표는 그 기체의 절댓값이라 다른 기체로 가져가면 못 맞춘다
     resetEnhance();             // 다른 기체를 고르면 확장·강화 설정을 초기값으로 되돌린다
@@ -1473,17 +1477,46 @@
   };
   function msWeapons() { return state.ms ? weaponsOfMs(state.ms) : []; }
 
+  /** 지금 보고 있는 무장 LV — 고른 값이 있으면 그것, 없으면 기체 LV. */
+  function wantWeaponLv() {
+    const msLv = state.ms ? msLevel(state.ms) : 1;
+    // 기체보다 높은 무장 LV 는 존재하지 않는다 — 기체를 바꿔 LV 가 내려가면 같이 내린다.
+    return state.weaponLv != null ? Math.min(state.weaponLv, msLv) : msLv;
+  }
+
   /**
-   * 무장 레벨은 기체 레벨을 따라간다.
-   * 기체 LV 보다 높은 무장 LV 는 쓰지 않고, 그보다 낮으면 가진 것 중 가장 높은 레벨을 쓴다.
+   * 무장 레벨은 기본적으로 기체 레벨을 따라가되, 사용자가 따로 고를 수 있다.
+   * 고른 LV 보다 높은 무장 LV 는 쓰지 않고, 그보다 낮으면 가진 것 중 가장 높은 레벨을 쓴다.
    * (무장이 기체보다 적은 레벨만 가진 경우가 있다)
    */
   function weaponLevel(w) {
     const lvs = Object.keys(w.levels).map(Number).sort((a, b) => a - b);
     if (!lvs.length) return null;
-    const want = state.ms ? msLevel(state.ms) : lvs[0];
+    const want = wantWeaponLv();
     const fit = lvs.filter(l => l <= want);
     return String(fit.length ? fit[fit.length - 1] : lvs[0]);
+  }
+
+  /** 무장 LV 칸을 그린다. 기체가 LV1 뿐이면 고를 것이 없으므로 숨긴다. */
+  function renderWeaponLvSeg() {
+    const box = $('#weaponLv');
+    if (!box) return;
+    const msLv = state.ms ? msLevel(state.ms) : 1;
+    box.innerHTML = '';
+    if (!state.ms || msLv < 2) { box.hidden = true; return; }
+    box.hidden = false;
+    const cur = state.weaponLv;
+    const mk = (v, label, title) => {
+      const b = el('button', 'seg-btn' + (cur === v ? ' on' : ''), label);
+      b.title = title;
+      b.onclick = () => { state.weaponLv = v; renderAll(); };
+      box.append(b);
+    };
+    mk(null, '무장 LV' + msLv, '기체와 같은 LV — 게임의 기본입니다');
+    for (let l = msLv - 1; l >= 1; l--) {
+      mk(l, 'LV' + l, '무장만 LV' + l + ' 로 봅니다 (기체는 LV' + msLv + ' 그대로)'
+        + String.fromCharCode(10) + '레벨링크 시스템 파츠는 LV 가 어긋나면 기본값만 붙습니다');
+    }
   }
 
   /* ---------- 슬러스터 지표 ---------- */
@@ -1945,6 +1978,7 @@
       weaponMode = v;
       renderWeapons();
     });
+    renderWeaponLvSeg();
     const list0 = all.filter(w => weaponInMode(w, weaponMode));
     $('#weaponCount').textContent = all.length
       ? (list0.length === all.length ? `${all.length}종` : `${list0.length} / ${all.length}종`)

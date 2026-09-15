@@ -327,6 +327,10 @@
         <span class="right w-tools">
           <!-- 상태 필터 — 변형·변신이 있는 기체에만 뜬다. 「모든 상태」는 통상+변형을 합친 것. -->
           <span class="seg mode-seg" id="weaponMode" title="어느 상태의 무장을 볼지" hidden></span>
+          <!-- 무장 LV — 기체 LV 와 따로 고른다. 기체는 LV4 인데 그 무장은 LV3 까지만
+               가진(또는 LV3 만 가진) 경우의 피해량을 보려는 것이다. 레벨링크 시스템
+               파츠의 「기체와 주무장 LV 일치」 판정도 여기를 본다. -->
+          <span class="seg wlv-seg" id="weaponLv" title="무장 LV — 기체 LV 와 다르게 볼 수 있습니다" hidden></span>
           <span class="seg sort-seg" id="weaponSort" title="무장 정렬 기준"></span>
           <span class="skill-box posture-box" id="postureBox">
             <button type="button" class="skill-btn" id="postureBtn" title="사격 자세·스코프 — 피해에 보정을 얹습니다">
