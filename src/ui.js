@@ -6545,7 +6545,9 @@
     const img = $('#infoImg');
     const box = img && img.parentNode;
     // 좁은 화면에서는 기둥이 한 줄로 쌓여 맞출 것이 없다.
-    if (mid.getBoundingClientRect().width > 0 && left.getBoundingClientRect().top !== mid.getBoundingClientRect().top) {
+    // 「윗변이 같은가」로 봤더니 두 기둥만 나란한 중간 폭에서 넓은 화면으로 잘못 보고
+    // 그림 높이를 박아 칸이 들쭉날쭉해졌다 — CSS 가 쌓기 시작하는 값과 같은 기준을 본다.
+    if (window.innerWidth <= 1100) {
       if (box) box.style.removeProperty('height');
       left.style.removeProperty('--mi-h');
       return;

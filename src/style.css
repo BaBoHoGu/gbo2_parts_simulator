@@ -2978,16 +2978,25 @@ body.info-open .sel-info { display: flex; }
   .sel-info { position: fixed; inset: 0; z-index: 60; border-left: 0; background: var(--bg); }
   .mi-blist { max-height: none; }
 }
+/* 좁은 화면 — 2열로 두니 칸 높이가 제각각이라 빈 자리가 생기고 눈이 갈피를 못 잡았다.
+   한 줄로 쭉 세워 위에서 아래로 한 번에 읽히게 한다. */
 @media (max-width: 1100px) {
-  .mi-cols { grid-template-columns: 1fr 1fr; }
-  .mi-cols > .mi-col:nth-child(3) { order: -1; grid-column: 1 / -1; }
-  .mi-cols > .mi-col:nth-child(3) { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; align-items: start; }
-}
-@media (max-width: 760px) {
   .mi-cols { grid-template-columns: 1fr; }
-  .mi-cols > .mi-col:nth-child(3) { grid-template-columns: 1fr; }
+  .mi-col { display: contents; }          /* 기둥을 풀어 칸들이 한 줄로 이어지게 */
+  /* 어느 기체인지부터 보여 준다 — 무장 수치부터 나오면 갈피를 못 잡는다 */
+  .mi-cols > .mi-col:nth-child(3) { order: -1; }
+  /* 페이지 스크롤 안에 또 스크롤이 있으면 손가락이 어디를 미는지 알 수 없다 */
+  .mi-wpn, .mi-sk, .mi-blist { height: auto; max-height: none; overflow: visible; }
+
+  /* display:contents 로 기둥이 풀리면 칸들이 DOM 순서대로 선다 —
+     그러면 무장 수치가 먼저 나와 어느 기체인지 모른 채 읽게 된다. 순서를 정해 준다. */
+  .mi-cols > .mi-col:nth-child(3) > .mi-card { order: -3; }
+  .mi-cols > .mi-col:nth-child(2) > .panel { order: -2; }
+  .mi-cols > .mi-col:nth-child(1) > .panel { order: -1; }
+  .mi-cols > .mi-col:nth-child(3) > .mi-fullst { order: 1; }
+  .mi-builds { order: 2; }
+  .mi-card .mi-img { height: 190px; }
   .mi-card h2 { font-size: 17px; }
-  .mi-card .mi-img { height: 150px; }
 }
 
 
@@ -3110,13 +3119,12 @@ body.info-open .sel-info { display: flex; }
 /* 높이의 기준은 늘 **가운데 기둥**이다. 왼쪽 두 칸을 그 높이에 맞춰 55:45 로 나눈다.
    무장을 넓게 잡는 이유는 눌러서 상세를 펼치면 길어지기 때문이다 —
    짧은 기체라 남더라도 그대로 둔다(펼칠 자리를 미리 비워 두는 것이다). */
-.mi-cols > .mi-col:first-child { --mi-h: 640px; }
-.mi-wpn { height: calc(var(--mi-h) * .55); overflow-y: auto; }
-.mi-sk { height: calc(var(--mi-h) * .45); overflow-y: auto; }
-/* 좁은 화면에서는 기둥이 한 줄로 쌓여 맞출 것이 없다 — 고정 높이를 풀어 준다 */
-@media (max-width: 1100px) {
-  .mi-wpn, .mi-sk { height: auto; max-height: 420px; }
+@media (min-width: 1101px) {
+  .mi-cols > .mi-col:first-child { --mi-h: 640px; }
+  .mi-wpn { height: calc(var(--mi-h) * .55); overflow-y: auto; }
+  .mi-sk { height: calc(var(--mi-h) * .45); overflow-y: auto; }
 }
+
 
 /* 누적치 스킬을 글자가 아니라 칩으로 */
 .mi-sg-by { display: flex; flex-wrap: wrap; gap: 3px; overflow: visible; }
