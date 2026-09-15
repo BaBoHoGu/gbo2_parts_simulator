@@ -83,25 +83,11 @@
         <button type="button" class="btn-primary small" id="infoGo">파츠 고르기 ›</button>
       </div>
       <div class="mi-body" id="infoBody" hidden>
-    <!-- 기체 띠 — 그림·이름·코스트·LV·출격/적성/판정력 -->
-    <div class="panel mi-band">
-      <div class="mi-img"><img id="infoImg" alt="" loading="lazy"></div>
-      <div class="mi-id">
-        <h2 id="infoName"></h2>
-        <div class="mi-tags" id="infoTags"></div>
-        <div class="mi-lvs" id="infoLvs"></div>
-        <div class="h-facts" id="infoFacts"></div>
-        <div class="h-facts" id="infoFacts2"></div>
-        <!-- 기체 추천·비추. 구성 투표와 한도를 나눠 쓰지 않는다(각각 하루 5·3). -->
-        <div class="mi-vote" id="infoVote"></div>
-      </div>
-    </div>
-    <!-- 성능·파츠칸 / 무장·스킬 / 올라온 구성 -->
+    <!-- 레퍼런스(GBO TIER)와 같은 3열.
+         좌: 무장·스킬 / 중: 성능·파츠칸 / 우: 기체 신분증·강화 리스트.
+         기체 카드를 오른쪽 기둥에 두는 이유 — 위를 가로지르는 띠로 두면
+         세로를 다 먹고, 정작 옆 기둥들과 높이가 안 맞아 빈 구멍이 생긴다. -->
     <div class="mi-cols">
-      <div class="mi-col">
-        <div class="panel"><h2>성능</h2><div class="mi-stats" id="infoStats"></div></div>
-        <div class="panel"><h2>파츠 칸</h2><div class="mi-slots" id="infoSlots"></div></div>
-      </div>
       <div class="mi-col">
         <div class="panel">
           <h2><span id="infoWpnH">무장</span>
@@ -110,9 +96,26 @@
         </div>
         <div class="panel"><h2 id="infoSkH">스킬</h2><div class="mi-sk" id="infoSk"></div></div>
       </div>
-      <div class="panel mi-fullst">
-        <h2>강화 리스트 <span class="right" id="infoFsNote"></span></h2>
-        <div class="mi-fslist" id="infoFullst"></div>
+      <div class="mi-col">
+        <div class="panel"><h2>성능</h2><div class="mi-stats" id="infoStats"></div></div>
+        <div class="panel"><h2>파츠 칸</h2><div class="mi-slots" id="infoSlots"></div></div>
+      </div>
+      <div class="mi-col">
+        <!-- 기체 신분증 — 그림·이름·코스트·LV·출격/적성/판정력·추천 -->
+        <div class="panel mi-card">
+          <div class="mi-img"><img id="infoImg" alt="" loading="lazy"></div>
+          <h2 id="infoName"></h2>
+          <div class="mi-tags" id="infoTags"></div>
+          <div class="mi-lvs" id="infoLvs"></div>
+          <div class="h-facts" id="infoFacts"></div>
+          <div class="h-facts" id="infoFacts2"></div>
+          <!-- 기체 추천·비추. 구성 투표와 한도를 나눠 쓰지 않는다(각각 하루 5·3). -->
+          <div class="mi-vote" id="infoVote"></div>
+        </div>
+        <div class="panel mi-fullst">
+          <h2>강화 리스트 <span class="right" id="infoFsNote"></span></h2>
+          <div class="mi-fslist" id="infoFullst"></div>
+        </div>
       </div>
       <div class="panel mi-builds">
         <h2>추천 파츠 세팅 <span id="infoBuildCnt"></span></h2>

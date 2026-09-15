@@ -6345,6 +6345,22 @@
     }
   }
 
+  /**
+   * 이 무장이 거는 것 — 경직 / 강경직 / 다운.
+   * 한글 備考(noteText)에서 읽는다. 무장 상세의 칩과 **같은 말**을 봐야
+   * 두 화면이 다른 말을 하지 않는다.
+   * 강경직이 있으면 경직은 적지 않는다 — 둘 다 붙으면 줄만 길어진다.
+   */
+  function weaponTagsOf(w) {
+    const t = noteText((w.info && w.info['備考']) || '');
+    if (!t) return [];
+    const out = [];
+    if (/강경직/.test(t)) out.push({ t: '강경직', cls: 't-stag2' });
+    else if (/경직\s*있음|즉시\s*발사\s*경직|집속\s*시\s*경직/.test(t)) out.push({ t: '경직', cls: 't-stag' });
+    if (/다운/.test(t)) out.push({ t: '다운', cls: 't-down' });
+    return out;
+  }
+
   // 무장 속성 → 한글 한 낱말. 무장 표의 유형 칸과 같은 말을 쓴다.
   const MI_ATTR_KO = { beam: '빔', solid: '실탄', melee: '격투', shield: '실드', other: '기타' };
 
@@ -6368,6 +6384,8 @@
       const nmEl = el('span', 'nm', wn);
       nmEl.title = wn;              // 줄여 놓았으니 전체 이름은 올려 보면 나온다
       d.append(nmEl);
+      // 무엇을 거는 무장인가 — 경직·강경직·다운. 목록에서 「눕히는 무장」을 바로 찾게 한다.
+      for (const t of weaponTagsOf(w)) d.append(el('span', 'mi-wtag ' + t.cls, t.t));
       // 상태를 가리는 무장이면 어느 상태인지 적어 준다 — 합쳐 보고 있을 때 특히 필요하다
       const md = weaponModeOf(w);
       if (md) d.append(el('span', 'mi-wmode', md.label));

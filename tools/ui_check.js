@@ -177,16 +177,16 @@ async function runView(view) {
     await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) c.click(); });
     await sleep(1400);
     const mi = await pg.evaluate(() => {
-      const band = document.querySelector('.mi-band');
-      if (!band) return { found: false };
-      const r = band.getBoundingClientRect();
+      const card = document.querySelector('.mi-card');
+      if (!card) return { found: false };
+      const r = card.getBoundingClientRect();
       return {
-        found: true, h: Math.round(r.height), need: band.scrollHeight,
+        found: true, h: Math.round(r.height), need: card.scrollHeight,
         name: (document.querySelector('#infoName') || {}).textContent || '',
         stats: document.querySelectorAll('#infoStats .mi-st').length
       };
     });
-    check(view.tag, '[기체정보] 기체 띠가 안 눌림', mi.found && mi.h >= mi.need - 2, JSON.stringify(mi));
+    check(view.tag, '[기체정보] 기체 카드가 안 눌림', mi.found && mi.h >= mi.need - 2, JSON.stringify(mi));
     check(view.tag, '[기체정보] 이름·성능이 채워짐', !!(mi.name && mi.stats === 12), JSON.stringify(mi));
     // 칸 안에서 넘쳐 나가는 것이 없어야 한다 (무장 2열에서 실제로 넘친 적이 있다)
     const ovf = await pg.evaluate(() => {
