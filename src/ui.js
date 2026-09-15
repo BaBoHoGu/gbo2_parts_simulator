@@ -1477,7 +1477,7 @@
   };
   function msWeapons() { return state.ms ? weaponsOfMs(state.ms) : []; }
 
-  /** 지금 보고 있는 무장 LV — 고른 값이 있으면 그것, 없으면 기체 LV. */
+  /** 고른 **주무장** LV — 고른 값이 있으면 그것, 없으면 기체 LV. */
   function wantWeaponLv() {
     const msLv = state.ms ? msLevel(state.ms) : 1;
     // 기체보다 높은 무장 LV 는 존재하지 않는다 — 기체를 바꿔 LV 가 내려가면 같이 내린다.
@@ -1485,14 +1485,20 @@
   }
 
   /**
-   * 무장 레벨은 기본적으로 기체 레벨을 따라가되, 사용자가 따로 고를 수 있다.
+   * 무장 레벨.
+   *
+   * **주무장만** 따로 고를 수 있다. 부무장(실드·기타 포함)은 늘 기체 LV 를 따라간다 —
+   * 게임에서 따로 떼어 낮출 수 있는 것이 주무장뿐이고, 레벨링크 시스템 파츠가 보는
+   * 것도 「機体と**主兵装**のLV」다.
+   *
    * 고른 LV 보다 높은 무장 LV 는 쓰지 않고, 그보다 낮으면 가진 것 중 가장 높은 레벨을 쓴다.
    * (무장이 기체보다 적은 레벨만 가진 경우가 있다)
    */
   function weaponLevel(w) {
     const lvs = Object.keys(w.levels).map(Number).sort((a, b) => a - b);
     if (!lvs.length) return null;
-    const want = wantWeaponLv();
+    const msLv = state.ms ? msLevel(state.ms) : lvs[0];
+    const want = w.section === '主兵装' ? wantWeaponLv() : msLv;
     const fit = lvs.filter(l => l <= want);
     return String(fit.length ? fit[fit.length - 1] : lvs[0]);
   }
@@ -1512,10 +1518,12 @@
       b.onclick = () => { state.weaponLv = v; renderAll(); };
       box.append(b);
     };
-    mk(null, '무장 LV' + msLv, '기체와 같은 LV — 게임의 기본입니다');
+    const NL = String.fromCharCode(10);
+    mk(null, '주무장 LV' + msLv, '기체와 같은 LV — 게임의 기본입니다');
     for (let l = msLv - 1; l >= 1; l--) {
-      mk(l, 'LV' + l, '무장만 LV' + l + ' 로 봅니다 (기체는 LV' + msLv + ' 그대로)'
-        + String.fromCharCode(10) + '레벨링크 시스템 파츠는 LV 가 어긋나면 기본값만 붙습니다');
+      mk(l, 'LV' + l, '주무장만 LV' + l + ' 로 봅니다 (기체는 LV' + msLv + ' 그대로)' + NL
+        + '부무장은 늘 기체 LV 를 따라갑니다' + NL
+        + '레벨링크 시스템 파츠는 LV 가 어긋나면 기본값만 붙습니다');
     }
   }
 
@@ -3729,6 +3737,7 @@
       banned: [...state.banned],   // 기본 제외한 파츠는 자동 구성에서도 빠진다
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       form: state.form,             // 변형 화면을 보고 있으면 변형 수치로 최적화한다
+      weaponLv: wantWeaponLv(),     // 주무장 LV 도 화면과 같은 기준으로 (레벨링크 파츠 판정)
       restarts: 1
     };
     // 파생 지표(공격 지표·내구 지표) 목표가 하나라도 있으면 계산 훅을 넘긴다 (없으면 오버헤드 0).
@@ -3785,7 +3794,7 @@
         let bestAbs = -1e9;
         for (const e of expList) {
           if (isPer(e)) continue;
-          const st = C.calcStats(state.ms, base.parts, state.stage, e, partsByCat, fullst, expLevel, opts.form, opts.skill);
+          const st = C.calcStats(state.ms, base.parts, state.stage, e, partsByCat, fullst, expLevel, opts.form, opts.skill, opts.weaponLv);
           const a = absScore(st.total, obj.weights);
           if (a > bestAbs) { bestAbs = a; exp = e; }
         }
@@ -3954,7 +3963,7 @@
     const out = c.parts.map(p => {
       const without = c.parts.filter(q => q.name !== p.name);
       // 자동 구성과 같은 모드로 재야 기여도가 맞는다 (변형 화면이면 변형 수치)
-      const st = C.calcStats(state.ms, without, state.stage, exp, partsByCat, fullst, expLv, state.form, skill).total;
+      const st = C.calcStats(state.ms, without, state.stage, exp, partsByCat, fullst, expLv, state.form, skill, wantWeaponLv()).total;
       const woDv = derivedMetrics(without, st);
       // 원시 스탯 상승분
       const rawDiffs = C.STAT_KEYS.map(k => ({ k, d: (full[k] || 0) - (st[k] || 0) })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
@@ -6234,6 +6243,9 @@
     state.openWeapons = [];
     state.skillPicks.clear();
     state.staggerOn.clear();    // 불러온 구성도 방어 스킬 체크는 새로 시작한다(이전 기체 것이 남지 않게)
+    // 주무장 LV 도 마찬가지다. 안 되돌리면 남이 올린 구성을 **내가 보던 LV** 로 그려
+    // 위력도 레벨링크 보너스도 그 구성의 값이 아니게 된다.
+    state.weaponLv = null;
     clearAutoResults();         // 이전 기체의 자동 구성 후보가 남아 잘못 적용되지 않게 지운다
     clearTargets();             // 목표도 마찬가지 — 이전 기체 기준 절댓값이라 그대로 두면 못 맞춘다
     // expLevel 이 없던 시절의 저장본은 앱 기본값(최대 레벨)으로 맞춘다
@@ -6975,6 +6987,9 @@
     state.equipped = [];
     state.skillPicks.clear();
     state.locked.clear();
+    // 고를 수 있는 LV 범위가 기체 LV 에 달려 있다. 안 지우면 LV 를 내렸을 때 고른 값이
+    // 범위 밖으로 남아, 동작은 「기체와 같음」인데 칸에는 아무것도 안 켜진 채가 된다.
+    state.weaponLv = null;
     clearAutoResults();
     // LV 이 바뀌면 HP·내성이 통째로 달라져 목표 절댓값도 뜻을 잃는다
     const cleared = clearTargets();

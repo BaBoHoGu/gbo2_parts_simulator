@@ -77,14 +77,17 @@ function isValidSet(ms, set, stage, fullstDefs) {
 /* ---------- 평가 ---------- */
 
 function makeScorer(ms, opts, partsByCat, fullstDefs) {
-  const { stage, expansion, expLevel, weights = {}, minimums, maximums, skill, derived, form } = opts;
+  const { stage, expansion, expLevel, weights = {}, minimums, maximums, skill, derived, form, weaponLv } = opts;
   // 스킬을 켠 채로 자동 구성하면 그 보정까지 감안해 최적화한다 (상한에 걸려 파츠 선택이 달라진다)
   // form 도 마찬가지 — 변형 화면을 보며 자동 구성을 돌리면 변형 수치로 최적화해야 한다.
   // (예전엔 늘 통상으로 계산해, 변형 기체 154기에서 화면과 다른 기준으로 파츠를 골랐다)
-  const base = calcStats(ms, [], stage, expansion, partsByCat, fullstDefs, expLevel, form, skill).total;
+  // weaponLv 도 화면과 같아야 한다 — 주무장 LV 를 낮춰 둔 채 자동 구성을 돌리면
+  // 레벨링크 시스템 파츠는 기본값만 붙는데, 여기서 최대치로 세면 **화면에 없는 이득**을
+  // 보고 그 파츠를 고른다(고른 근거와 보이는 수치가 어긋난다).
+  const base = calcStats(ms, [], stage, expansion, partsByCat, fullstDefs, expLevel, form, skill, weaponLv).total;
 
   return function score(set) {
-    const res = calcStats(ms, set, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill);
+    const res = calcStats(ms, set, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill, weaponLv);
     // 파생 지표(공격 지표·내구 지표)는 파츠 효과를 UI 에서 계산해 넘겨준다(있을 때만).
     const dv = derived ? derived(set, res.total) : null;
     const valOf = k => (dv && k in dv) ? dv[k] : res.total[k];
