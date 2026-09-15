@@ -3182,3 +3182,7 @@ body.info-open .sel-info { display: flex; }
 .stg-cats[hidden] { display: none; }
 .stg-cats { margin: 2px 0 2px 19px; }
 .stg-cats .mi-sg-btns { margin: 0 0 4px; }
+
+/* 상시 발동 스킬은 끌 수 없다 — 체크는 「고를 수 있다」는 뜻이라 오해를 부른다 */
+.stg-chk.locked { cursor: default; opacity: .92; }
+.stg-chk.locked input { cursor: default; }

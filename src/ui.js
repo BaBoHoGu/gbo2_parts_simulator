@@ -358,7 +358,9 @@
     const skills = staggerSkillsOf(ms, lv, form);
     let mult = 1, threshold = 100; const cuts = [], mults = [];
     for (const s of skills) {
-      if (!on.has(s.name)) continue;
+      // 상시 발동(데미지 컨트롤 등)은 체크와 무관하게 늘 걸린다 —
+      // 끌 수 있게 두면 안 켠 채로 낮은 수치를 읽고 그것이 맞는 줄 안다.
+      if (s.cond !== '상시' && !on.has(s.name)) continue;
       if (s.mult < 1) { mult *= s.mult; mults.push(s.mult); }   // 감소 배수
       if (s.threshold != null) threshold = Math.max(threshold, s.threshold);
       cuts.push(...s.cuts.map(c => ({ ...c, from: s.name })));   // 어느 스킬 몫인지 남긴다(완충재 강화 판정용)
@@ -420,6 +422,9 @@
     let baseMult = 1;
     for (const sk of skills) if (sk.mult < 1 && sk.cond === '상시') baseMult *= sk.mult;
     if (ifld && useIField) baseMult *= ifld.mult;
+    // 조건 없이 늘 값을 만드는 것들 — 임계를 정한 스킬과 상시 감소 스킬.
+    const always = skills.filter(sk =>
+      (sk.cond === '상시' && sk.mult < 1) || (sk.threshold != null && sk.threshold === threshold && threshold > 100));
 
     const axisOf = sk => STG_AXIS[sk.cond] || sk.cond;
     const pickBest = allow => {
@@ -438,7 +443,9 @@
       const picks = c.all ? pickBest(null) : pickBest(c.conds);
       let mult = baseMult;
       for (const sk of picks) mult *= sk.mult;
-      const named = (ifld && useIField) ? [ifld, ...picks] : picks;
+      // 통상 칸이 비면 「아무것도 안 걸린 값」으로 읽힌다 — 실제로는 데미지 컨트롤
+      // 같은 상시 스킬이 이미 들어간 값이다. 늘 걸리는 것도 같이 적는다.
+      const named = [...(ifld && useIField ? [ifld] : []), ...always, ...picks];
       return { key: c.key, value: Math.round(threshold / mult), picks: named };
     });
     cats.iField = ifld;
@@ -598,9 +605,11 @@
     const skills = staggerSkillsOf(ms, lv, form);
     if (skills.length > 1) wrap.append(el('span', 'stg-hint', '※ 동시에 발동 가능한 조건만 체크하세요'));
     for (const s of skills) {
-      const lab = el('label', 'stg-chk' + (on.has(s.name) ? ' on' : ''));
-      lab.title = s.cond + ' 발동';
-      const box = el('input'); box.type = 'checkbox'; box.checked = on.has(s.name);
+      const always = s.cond === '상시';       // 늘 걸리는 것은 선택지가 아니다
+      const lab = el('label', 'stg-chk' + (always || on.has(s.name) ? ' on' : '') + (always ? ' locked' : ''));
+      lab.title = always ? '상시 발동 — 늘 반영됩니다' : s.cond + ' 발동';
+      const box = el('input'); box.type = 'checkbox'; box.checked = always || on.has(s.name);
+      box.disabled = always;
       box.onchange = () => { box.checked ? on.add(s.name) : on.delete(s.name); onChange(); };
       const tags = [];
       if (s.threshold != null) tags.push(`임계 ${s.threshold}%`);
@@ -2724,8 +2733,8 @@
     // (안 적으면 켜 둔 것을 잊고 잘못된 수치를 읽는다).
     const cl = staggerCheckList(state.ms, lv, () => renderAll());
     if (cl.count) {
-      const names = staggerSkillsOf(state.ms, lv).map(x => x.name);
-      const onCount = names.filter(n => state.staggerOn.has(n)).length;
+      const sks = staggerSkillsOf(state.ms, lv);
+      const onCount = sks.filter(x => x.cond === '상시' || state.staggerOn.has(x.name)).length;
       const head = el('button', 'dura-row stg-head' + (defSkillOpen ? ' open' : ''));
       head.type = 'button';
       head.setAttribute('aria-expanded', defSkillOpen ? 'true' : 'false');
