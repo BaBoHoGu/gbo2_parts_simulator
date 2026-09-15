@@ -3098,8 +3098,12 @@ body.info-open .sel-info { display: flex; }
    무장을 넓게 잡는 이유는 눌러서 상세를 펼치면 길어지기 때문이다 —
    짧은 기체라 남더라도 그대로 둔다(펼칠 자리를 미리 비워 두는 것이다). */
 .mi-cols > .mi-col:first-child { --mi-h: 640px; }
-.mi-wpn { max-height: calc(var(--mi-h) * .55); overflow-y: auto; }
-.mi-sk { max-height: calc(var(--mi-h) * .45); overflow-y: auto; }
+.mi-wpn { height: calc(var(--mi-h) * .55); overflow-y: auto; }
+.mi-sk { height: calc(var(--mi-h) * .45); overflow-y: auto; }
+/* 좁은 화면에서는 기둥이 한 줄로 쌓여 맞출 것이 없다 — 고정 높이를 풀어 준다 */
+@media (max-width: 1100px) {
+  .mi-wpn, .mi-sk { height: auto; max-height: 420px; }
+}
 
 /* 누적치 스킬을 글자가 아니라 칩으로 */
 .mi-sg-by { display: flex; flex-wrap: wrap; gap: 3px; overflow: visible; }

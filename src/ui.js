@@ -6560,7 +6560,9 @@
       const h = Math.max(120, Math.min(420, want - rest));
       box.style.height = h + 'px';
     }
-    // 왼쪽: 남는 높이를 55:45 로
+    // 왼쪽: 머리·제목이 차지하는 몫을 뺀 나머지를 55:45 로 채운다.
+    // 두 칸은 고정 높이(height)다 — max-height 로 두면 내용이 짧을 때 안 늘어나
+    // 기둥이 짧게 끝난다(무장 5종 기체에서 534 vs 700 으로 벌어졌다).
     const head = left.getBoundingClientRect().height
       - ($('#infoWpn') ? $('#infoWpn').getBoundingClientRect().height : 0)
       - ($('#infoSk') ? $('#infoSk').getBoundingClientRect().height : 0);
