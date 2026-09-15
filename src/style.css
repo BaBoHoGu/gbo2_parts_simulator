@@ -2851,12 +2851,18 @@ body.info-open .sel-info { display: flex; }
 .mi-lv.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
 
 /* ---- 기둥 ----
-   레퍼런스와 같은 3열: 무장·스킬 / 성능·파츠칸 / 기체 신분증·강화.
-   무장 설명이 가장 길어 왼쪽을 넓게 잡는다. 구성 목록만 아래 전체 폭. */
+   레퍼런스와 같은 3열: 무장·스킬 / 성능·파츠칸·누적치 / 기체 신분증·강화.
+
+   비율로 3등분하면 기체마다 남는 기둥이 뒤바뀐다 — 무장 10종·스킬 19종이면
+   왼쪽이 넘치고, 무장 4종이면 왼쪽이 266px 빈다. 중앙·우측은 내용이 고정이라
+   **폭을 고정**하고 남는 폭을 전부 왼쪽에 준다. 왼쪽이 넓어지면 무장·스킬이
+   2열로 펴져 세로가 줄고, 좁으면 한 열로 돌아간다. */
 .mi-cols {
-  display: grid; grid-template-columns: 1.15fr 1fr 1fr;
+  display: grid; grid-template-columns: minmax(0, 1fr) 262px 262px;
   gap: 9px; align-items: start;
 }
+/* 두 열로 펴 봤더니 칸이 좁아 무장 이름이 「더블 …」로 뭉개졌다.
+   이름이 가장 중요한 정보라 쓸 수 없다 — 대신 목록을 스크롤로 잘라 높이를 맞춘다. */
 .mi-builds { grid-column: 1 / -1; }
 
 /* ---- 기체 신분증 (오른쪽 기둥 맨 위) ---- */
@@ -3054,3 +3060,42 @@ body.info-open .sel-info { display: flex; }
 }
 .mi-sg-btn:hover { color: var(--text); border-color: var(--muted); }
 .mi-sg-btn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
+
+/* ---- 눌러서 펼치는 무장·스킬 ----
+   목록만으로는 「무엇을 하는 무장인가」를 알 수 없고, 다 펼쳐 두면 읽을 수가 없다. */
+.mi-w { cursor: pointer; }
+.mi-w:hover { background: rgba(255, 255, 255, .06); }
+.mi-w.on { background: rgba(255, 201, 60, .1); }
+.mi-wdesc { padding: 6px 8px 8px; }
+.mi-wnums { font-size: 10.5px; color: var(--muted); margin-bottom: 5px; }
+.mi-wdesc .wd-note-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+
+.mi-skchip { cursor: pointer; border: 1px solid transparent; font: inherit; }
+.mi-skchip.on { background: rgba(255, 201, 60, .14); color: var(--text); }
+.mi-skdesc {
+  margin: 4px 0 2px; padding: 7px 9px;
+  background: rgba(0, 0, 0, .22); border-radius: 3px;
+}
+.mi-skeff { font-size: 11px; line-height: 1.6; }
+.mi-skdd { font-size: 10.5px; color: var(--muted); line-height: 1.6; margin-top: 4px; }
+
+/* 길어지면 그 칸만 스크롤한다 — 기둥 전체가 늘어나면 옆 기둥과 어긋난다.
+   무장 10종·스킬 19종이면 왼쪽이 870px 까지 자라 옆 기둥(≈620)과 250px 이 벌어졌다. */
+.mi-wpn, .mi-sk { max-height: 288px; overflow-y: auto; }
+
+/* 누적치 스킬을 글자가 아니라 칩으로 */
+.mi-sg-by { display: flex; flex-wrap: wrap; gap: 3px; overflow: visible; }
+.mi-sg-chip {
+  font-size: 9.5px; color: var(--muted); white-space: nowrap;
+  background: rgba(255, 255, 255, .06); border-radius: 8px; padding: 1px 7px;
+}
+/* 변형에서 값이 달라지는 항목 */
+.mi-st.alt > b { color: var(--accent); }
+
+
+/* 집속해야 쏘는 무장 — 논차지 위력이 없어 「—」로 보이던 자리 */
+.mi-wchg {
+  font-size: 9px; font-weight: 700; color: #8fc0ff; white-space: nowrap;
+  background: rgba(120, 180, 255, .14); border-radius: 2px; padding: 1px 4px;
+}
+.mi-w b.charged { color: #8fc0ff; }

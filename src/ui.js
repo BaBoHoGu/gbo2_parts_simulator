@@ -6289,6 +6289,8 @@
   let infoMs = null;
   // 정보 칸의 무장 상태 필터. 무장 표와 따로 둔다 — 화면이 달라 같이 움직일 이유가 없다.
   let infoWpnMode = 'all';
+  // 정보 칸의 스킬 상태 필터. 무장 쪽과 따로 둔다 — 보는 대상이 달라 같이 움직일 이유가 없다.
+  let infoSkMode = 'all';
 
   function openInfo(m) {
     if (!m) return;
@@ -6382,15 +6384,55 @@
     };
   })();
 
+  // 정보 칸의 성능을 통상으로 볼지 변형으로 볼지. 기체가 바뀌어도 유지한다.
+  let infoForm = 'normal';
+
+  /* 변형 수치는 네 가지만 따로 있다(스피드·고속이동·선회 지상/우주).
+     트랜잠처럼 変形 스탯이 없는 기체는 override 의 _altMode 가 절댓값을 들고 있다
+     — 거기엔 사격·격투 보정도 들어 있다. 둘 다 없으면 통상 값을 그대로 쓴다. */
+  const INFO_ALT_KEY = {
+    'スピード': 'speed', '高速移動': 'highSpeedMovement',
+    '旋回_地上_通常時': 'turnPerformanceGround', '旋回_宇宙_通常時': 'turnPerformanceSpace',
+    '射撃補正': 'shoot', '格闘補正': 'meleeCorrection'
+  };
+  const INFO_TF_FIELD = {
+    'スピード': 'スピード_変形時', '高速移動': '高速移動_変形時',
+    '旋回_地上_通常時': '旋回_地上_変形時', '旋回_宇宙_通常時': '旋回_宇宙_変形時'
+  };
+  function infoStatOf(m, field, form) {
+    if (form !== 'alt') return m[field];
+    const alt = m._altMode, k = INFO_ALT_KEY[field];
+    if (alt && k && alt[k] != null) return alt[k];
+    const tf = INFO_TF_FIELD[field];
+    if (tf && m[tf] != null) return m[tf];
+    return m[field];
+  }
+
   function renderInfoStats(m) {
     const box = $('#infoStats');
     box.innerHTML = '';
+
+    // 통상/변형 — 변형 수치가 있는 기체에만. 「모든 상태」는 없다(수치는 하나여야 한다).
+    const alt = altModeOf(m);
+    const seg = $('#infoStatMode');
+    if (seg) {
+      seg.innerHTML = '';
+      seg.hidden = !alt;
+      if (!alt) infoForm = 'normal';
+      else for (const [v, label] of [['normal', '통상'], ['alt', alt.label]]) {
+        const b = el('button', 'seg-btn' + (infoForm === v ? ' on' : ''), label);
+        b.onclick = () => { infoForm = v; renderInfoStats(m); };
+        seg.append(b);
+      }
+    }
     const row = (k, v, field) => {
       const d = el('div', 'mi-st');
+      // 통상과 값이 다르면 눈에 띄게 — 변형으로 무엇이 달라지는지가 요점이다
+      if (field && infoForm === 'alt' && infoStatOf(m, field, 'alt') !== m[field]) d.classList.add('alt');
       d.append(el('i', '', k), el('b', '', v));
       // 막대는 기준이 있는 항목에만. 재출격처럼 '작을수록 좋은' 값엔 안 붙인다.
       const cap = field && MI_SCALE[field];
-      const raw = field && Number(m[field]);
+      const raw = field && Number(infoStatOf(m, field, infoForm));
       if (cap && raw) {
         const bar = el('span', 'mi-bar');
         const fill = el('i');
@@ -6401,17 +6443,18 @@
       box.append(d);
     };
     const n = v => (v == null ? '—' : Number(v).toLocaleString());
-    row('HP', n(m.HP), 'HP');
-    row('내실탄 보정', n(m['耐実弾補正']), '耐実弾補正');
-    row('내빔 보정', n(m['耐ビーム補正']), '耐ビーム補正');
-    row('내격투 보정', n(m['耐格闘補正']), '耐格闘補正');
-    row('사격 보정', n(m['射撃補正']), '射撃補正');
-    row('격투 보정', n(m['格闘補正']), '格闘補正');
-    row('스피드', n(m['スピード']), 'スピード');
-    row('고속이동', n(m['高速移動']), '高速移動');
-    row('슬러스터', n(m['スラスター']), 'スラスター');
-    row('선회(지상)', n(m['旋回_地上_通常時']), '旋回_地上_通常時');
-    row('선회(우주)', n(m['旋回_宇宙_通常時']), '旋回_宇宙_通常時');
+    const f = k => n(infoStatOf(m, k, infoForm));
+    row('HP', f('HP'), 'HP');
+    row('내실탄 보정', f('耐実弾補正'), '耐実弾補正');
+    row('내빔 보정', f('耐ビーム補正'), '耐ビーム補正');
+    row('내격투 보정', f('耐格闘補正'), '耐格闘補正');
+    row('사격 보정', f('射撃補正'), '射撃補正');
+    row('격투 보정', f('格闘補正'), '格闘補正');
+    row('스피드', f('スピード'), 'スピード');
+    row('고속이동', f('高速移動'), '高速移動');
+    row('슬러스터', f('スラスター'), 'スラスター');
+    row('선회(지상)', f('旋回_地上_通常時'), '旋回_地上_通常時');
+    row('선회(우주)', f('旋回_宇宙_通常時'), '旋回_宇宙_通常時');
     row('재출격', m['再出撃時間'] == null ? '—' : m['再出撃時間'] + '초');
 
     renderInfoStagger(m);
@@ -6475,8 +6518,13 @@
       r.append(el('i', '', c.key));
       r.append(el('b', '', c.value + '%'));
       // 통상보다 높을 때만 무엇이 올렸는지 적는다 — 같은 값이면 적을 게 없다.
-      r.append(el('span', 'mi-sg-by', c.picks.length ? c.picks.map(x => x.ko).join(' + ') : ''));
-      if (c.picks.length) r.title = c.picks.map(x => x.ko + ' · ' + x.cond).join('\n');
+      const by = el('span', 'mi-sg-by');
+      for (const x of c.picks) {
+        const chip = el('span', 'mi-sg-chip', x.ko);
+        chip.title = x.ko + ' · ' + x.cond;
+        by.append(chip);
+      }
+      r.append(by);
       box.append(r);
     }
     const note = $('#infoStgNote');
@@ -6519,8 +6567,44 @@
       const keys = Object.keys(w.levels || {}).map(Number).sort((a, b) => a - b);
       const fit = keys.filter(k => k <= lv);
       const lvl = keys.length ? w.levels[String(fit.length ? fit[fit.length - 1] : keys[0])] : null;
-      const pw = lvl && lvl.power;
-      d.append(el('b', '', pw ? Number(pw).toLocaleString() : '—'));
+      const pw = lvl && (lvl.power || lvl.powerCharged);
+      const onlyCharged = !!(lvl && !lvl.power && lvl.powerCharged);
+      const pv = el('b', '', pw ? Number(pw).toLocaleString() : '—');
+      if (onlyCharged) {
+        pv.classList.add('charged');
+        pv.title = '집속해야 쏘는 무장이라 집속 위력을 적습니다';
+        d.append(el('span', 'mi-wchg', '집속'));
+      }
+      d.append(pv);
+
+      // 눌러야 상세가 나온다. 무장 표(파츠 화면)와 같은 한글 備考 칩을 쓴다 —
+      // 두 화면이 같은 무장을 다른 말로 설명하면 안 된다.
+      d.onclick = () => {
+        const open = d.classList.toggle('on');
+        for (const x of box.querySelectorAll('.mi-wdesc')) x.remove();
+        for (const x of box.querySelectorAll('.mi-w.on')) if (x !== d) x.classList.remove('on');
+        if (!open) return;
+        const wrap = el('div', 'mi-wdesc');
+        const nums = [];
+        const gv = (...k) => wField(lvl, w.info, ...k);
+        const push = (lb, v) => { if (v) nums.push(lb + ' ' + jaUnits(v)); };
+        push('사거리', gv('射程'));
+        push('쿨타임', gv('クールタイム'));
+        push('발사간격', gv('発射間隔'));
+        push('탄수', gv('弾数', 'OHまでの弾数'));
+        push('리로드', gv('リロード時間', 'OH復帰 時間', 'OH復帰時間'));
+        push('히트율', gv('ヒート率'));
+        if (nums.length) wrap.append(el('div', 'mi-wnums', nums.join(' · ')));
+        const note = noteText((w.info && w.info['備考']) || '');
+        const items = note.split(' / ').map(x => x.trim()).filter(Boolean);
+        if (items.length) {
+          const cw = el('div', 'wd-note-chips');
+          for (const t of items) cw.append(el('span', 'wd-chip' + noteChipCls(t), noKeepSlash(t)));
+          wrap.append(cw);
+        }
+        if (!nums.length && !items.length) wrap.append(el('div', 'mi-wnums', '추가 정보가 없습니다.'));
+        d.after(wrap);
+      };
       box.append(d);
     }
   }
@@ -6529,8 +6613,28 @@
     const box = $('#infoSk');
     box.innerHTML = '';
     const modes = msSkillsData[baseName(m.MS名)] || [];
-    // 모드를 다 합친다. 첫 모드만 보면 변형 기체(64기)의 변형 스킬이 통째로 안 보인다.
-    const skills = modes.flatMap(md => md.skills || []);
+
+    // 모든 상태 / 통상 / 변형 — 무장 쪽과 같은 말을 쓴다.
+    const seg = $('#infoSkMode');
+    if (seg) {
+      seg.innerHTML = '';
+      seg.hidden = modes.length < 2;
+      if (modes.length >= 2) {
+        const altMd = modes.find(isAltSkillMode);
+        const altLb = (altMd && SKILL_MODE_KO[altMd.mode]) || '변형';
+        const lb = /(중|시|후)$/.test(altLb) ? altLb : altLb + ' 시';
+        for (const [v, label] of [['all', '모든 상태'], ['normal', '통상'], ['alt', lb]]) {
+          const b = el('button', 'seg-btn' + (infoSkMode === v ? ' on' : ''), label);
+          b.onclick = () => { infoSkMode = v; renderInfoSkills(m); };
+          seg.append(b);
+        }
+      } else infoSkMode = 'all';
+    }
+    // 「모든 상태」는 통상+변형을 합친 것이다. 첫 모드만 보면 변형 기체(64기)의
+    // 변형 스킬이 통째로 안 보인다.
+    const want = modes.filter(md => infoSkMode === 'all'
+      || (infoSkMode === 'alt' ? isAltSkillMode(md) : !isAltSkillMode(md)));
+    const skills = (want.length ? want : modes).flatMap(md => md.skills || []);
     if (!skills.length) {
       $('#infoSkH').textContent = '스킬';
       box.append(el('div', 'detail-empty', '스킬 정보가 없습니다.'));
@@ -6559,7 +6663,23 @@
       box.append(el('div', 'mi-skcat', SKILL_CAT_KO[cat] || cat || '기타'));
       const ch = el('div', 'mi-skchips');
       for (const sk of byCat.get(cat)) {
-        ch.append(el('span', 'wd-chip', skTr(sk.name) + (sk.lv ? ' ' + sk.lv : '')));
+        const chip = el('button', 'wd-chip mi-skchip', skTr(sk.name) + (sk.lv ? ' ' + sk.lv : ''));
+        // 눌러야 설명이 나온다 — 열여섯 개를 다 펼쳐 두면 읽을 수가 없다.
+        chip.onclick = () => {
+          const open = chip.classList.toggle('on');
+          const next = ch.nextElementSibling;
+          if (next && next.classList.contains('mi-skdesc')) next.remove();
+          if (!open) return;
+          for (const c of box.querySelectorAll('.mi-skchip.on')) if (c !== chip) c.classList.remove('on');
+          for (const d of box.querySelectorAll('.mi-skdesc')) d.remove();
+          chip.classList.add('on');
+          const d = el('div', 'mi-skdesc');
+          if (sk.eff) d.append(el('div', 'mi-skeff', skTr(sk.eff)));
+          if (sk.desc) d.append(el('div', 'mi-skdd', skTr(sk.desc)));
+          if (!sk.eff && !sk.desc) d.append(el('div', 'mi-skdd', '설명이 없습니다.'));
+          ch.after(d);
+        };
+        ch.append(chip);
       }
       box.append(ch);
     }
