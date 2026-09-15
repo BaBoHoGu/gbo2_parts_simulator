@@ -44,7 +44,13 @@ const norm = s => String(s)
   .replace(/[・･·]/g, '')
   .replace(/[（）()［］\[\]｛｝{}]/g, '')
   .replace(/[\s　]/g, '')
-  .toLowerCase();
+  // 공식이 하이픈 자리에 장음 「ー」를 쓴다(「ＥｘーＳガンダム」 vs 「Ex-Sガンダム」).
+  // 붙임표 종류를 하나로 모은다.
+  .replace(/[ー－‐-‒–—―ｰ-]/g, '-')
+  .toLowerCase()
+  .replace(/ζ/g, 'z')      // ζ (Ζ 를 소문자화한 것)
+  .replace(/ν/g, 'v')      // ν
+  .replace(/ξ/g, 'xi');    // ξ
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -55,8 +61,21 @@ const norm = s => String(s)
   // 링크와 이름을 한 정규식으로 이으면 매치가 겹쳐 뒤 항목이 밀린다(592 중 501 만 잡혔다).
   const official = [];
   for (const block of list.split(/<li[\s>]/)) {
-    const c = /ms_detail\.php\?ms=([a-z0-9]+)/.exec(block);
-    const n = /<dt><span>([^<]+)<\/span><\/dt>/.exec(block);
+    // 코드에 대문자가 섞인다 — [a-z0-9] 로 잡으면 앞부분만 잘려 34기가 404 났다.
+    const c = /ms_detail\.php\?ms=([A-Za-z0-9]+)/.exec(block);
+    // 긴 이름은 <br> 로 줄이 나뉜다(「ベルガ・ギロス<br>[Ｂ・Ｖ仕様]」).
+    // [^<]+ 로 잡으면 그런 38기가 통째로 빠진다 — 태그를 지우고 읽는다.
+    const n = /<dt><span>([\s\S]*?)<\/span>/.exec(block);
+    if (n) n[1] = n[1]
+      .replace(/<[^>]+>/g, '')
+      // 로마 숫자가 &#8544;(Ⅰ)·&#8545;(Ⅱ) 처럼 엔티티로 들어 있다.
+      // 안 풀면 자쿠 계열 12기가 통째로 빠진다.
+      .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+      .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+      // 숫자 말고 **이름** 엔티티도 쓴다(「&Xi;ガンダム」).
+      .replace(/&(Xi|Zeta|nu|xi|zeta|Nu);/g,
+        (_, k) => ({ Xi: 'Ξ', xi: 'ξ', Zeta: 'Ζ', zeta: 'ζ', Nu: 'Ν', nu: 'ν' }[k]))
+      .replace(/&amp;/g, '&').trim();
     if (c && n) official.push({ code: c[1], name: n[1].trim() });
   }
   console.log(`  공식 기체 ${official.length}기`);
