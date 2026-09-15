@@ -550,6 +550,26 @@
     try { localStorage.setItem(DEF_SKILL_KEY, defSkillOpen ? '1' : '0'); } catch (e) {}
   }
 
+  /* 누적치 내성 펼침 — 접으면 「통상」 한 줄, 펴면 다섯 상황을 모두 보여 준다.
+     기체 정보 화면과 같은 값이라 같은 계산(staggerByCategory)을 쓴다.
+     방어 스킬 체크와는 무관하다 — 저 체크는 「지금 이 구성」의 실효값이고,
+     이쪽은 「이 기체가 그 상황에서 갖는 내성」이라 섞으면 둘 다 못 읽는다. */
+  const BLD_STG_KEY = 'gbo2.bldStgOpen';
+  const BLD_IFLD_KEY = 'gbo2.bldIField';
+  let bldStgOpen = false, bldIField = false;
+  try {
+    bldStgOpen = localStorage.getItem(BLD_STG_KEY) === '1';
+    bldIField = localStorage.getItem(BLD_IFLD_KEY) === '1';
+  } catch (e) {}
+  function setBldStgOpen(v) {
+    bldStgOpen = !!v;
+    try { localStorage.setItem(BLD_STG_KEY, bldStgOpen ? '1' : '0'); } catch (e) {}
+  }
+  function setBldIField(v) {
+    bldIField = !!v;
+    try { localStorage.setItem(BLD_IFLD_KEY, bldIField ? '1' : '0'); } catch (e) {}
+  }
+
   /* 무장 칸 접힘 — 파츠를 고를 때는 무장 표가 자리만 차지한다.
      방어 스킬 목록과 같은 방식으로 localStorage 에 기억한다. */
   const WEAPON_FOLD_KEY = 'gbo2.weaponFold';
@@ -2587,7 +2607,6 @@
     body.append(atk);
 
     // 내구 지표 — 스탯 행들과 같은 흐름(마지막 행). 체크한 방어 스킬(피해경감)만큼 실효 HP 가 오른다.
-    const stg = activeStaggerMods(state.ms, lv);
     const duraCuts = damageCutsOf(state.equipped, { lv, skillMs: state.ms });
     const du = el('div', 'dura-row');
     du.append(el('span', 'dura-lb', '내구 지표'));
@@ -2606,16 +2625,54 @@
     }
     body.append(du);
 
-    // 누적치(스태거) — 임계·감소 스킬을 반영한 실효 내성. 무장별 다운은 '피탄 시뮬'에서.
-    const sr = el('div', 'dura-row stagger-row');
-    sr.append(el('span', 'dura-lb', '누적치'));
-    const scell = el('span', 'dura-cell');
-    scell.append(el('span', 'dura-k', '내성'));
-    scell.append(el('span', 'dura-v', Math.round(stg.threshold / stg.mult) + '%'));
-    sr.append(scell);
-    sr.append(el('span', 'stagger-detail',
-      `임계 ${stg.threshold}%` + (stg.mult < 1 ? ` · 받는 누적 ×${+stg.mult.toFixed(3)}` : '')));
-    body.append(sr);
+    // 누적치(스태거) 내성 — 접으면 「통상」 한 줄, 펴면 다섯 상황.
+    // 무장별 다운은 '피탄 시뮬'에서.
+    {
+      const cats = staggerByCategory(state.ms, lv, bldIField);
+      const head = el('button', 'dura-row stagger-row stg-head' + (bldStgOpen ? ' open' : ''));
+      head.type = 'button';
+      head.setAttribute('aria-expanded', bldStgOpen ? 'true' : 'false');
+      head.append(el('span', 'stg-caret', bldStgOpen ? '▾' : '▸'));
+      head.append(el('span', 'dura-lb', '누적치'));
+      const scell = el('span', 'dura-cell');
+      scell.append(el('span', 'dura-k', bldStgOpen ? '통상' : '내성'));
+      scell.append(el('span', 'dura-v', cats[0].value + '%'));
+      head.append(scell);
+      const top = Math.max(...cats.map(c => c.value));
+      head.append(el('span', 'stagger-detail',
+        bldStgOpen ? '다섯 상황 · 방어 스킬 체크와 무관'
+          : (top > cats[0].value ? `펴면 상황별 (최대 ${top}%)` : '펴면 상황별')));
+      head.onclick = () => { setBldStgOpen(!bldStgOpen); renderAll(); };
+      body.append(head);
+
+      const sgw = el('div', 'stg-cats mi-sglist');
+      sgw.hidden = !bldStgOpen;
+      if (cats.iField) {
+        const b = el('button', 'mi-sg-btn' + (bldIField ? ' on' : ''), 'I필드');
+        b.type = 'button';
+        b.title = cats.iField.ko + ' — 빔이 그 부위에 맞았을 때만 걸립니다.'
+          + String.fromCharCode(10)
+          + '켜면 다섯 칸 모두에 반영합니다.';
+        b.onclick = () => { setBldIField(!bldIField); renderAll(); };
+        const bar = el('div', 'mi-sg-btns');
+        bar.append(b);
+        sgw.append(bar);
+      }
+      for (const c of cats) {
+        const row = el('div', 'mi-sg' + (c.key === '최대' ? ' top' : ''));
+        row.append(el('i', '', c.key));
+        row.append(el('b', '', c.value + '%'));
+        const by = el('span', 'mi-sg-by');
+        for (const x of c.picks) {
+          const chip = el('span', 'mi-sg-chip', x.ko);
+          chip.title = x.ko + ' · ' + x.cond;
+          by.append(chip);
+        }
+        row.append(by);
+        sgw.append(row);
+      }
+      body.append(sgw);
+    }
 
     // 슬러스터 지표 — 부스트 지속 · 완충 · OH 복귀. 지상/우주 각각(환경적성·강습 보정이 다르다).
     {
@@ -6547,7 +6604,7 @@
     // 좁은 화면에서는 기둥이 한 줄로 쌓여 맞출 것이 없다.
     // 「윗변이 같은가」로 봤더니 두 기둥만 나란한 중간 폭에서 넓은 화면으로 잘못 보고
     // 그림 높이를 박아 칸이 들쭉날쭉해졌다 — CSS 가 쌓기 시작하는 값과 같은 기준을 본다.
-    if (window.innerWidth <= 1100) {
+    if (window.innerWidth <= 1436) {
       if (box) box.style.removeProperty('height');
       left.style.removeProperty('--mi-h');
       return;

@@ -2980,7 +2980,11 @@ body.info-open .sel-info { display: flex; }
 }
 /* 좁은 화면 — 2열로 두니 칸 높이가 제각각이라 빈 자리가 생기고 눈이 갈피를 못 잡았다.
    한 줄로 쭉 세워 위에서 아래로 한 번에 읽히게 한다. */
-@media (max-width: 1100px) {
+/* 기준이 1100px 이면 타블렛에서 깨진다 — 정보 칸은 창이 아니라 창의 6/10 이라,
+   창 1200px 이면 정보 칸은 720px 이고 가운데 기둥은 139px 만 남아 머리줄이
+   세로로 밀렸다. 3열은 296+300+248+간격 = 약 862px 이 있어야 서고,
+   그러려면 창이 862÷0.6 ≈ 1437px 이어야 한다. */
+@media (max-width: 1436px) {
   .mi-cols { grid-template-columns: 1fr; }
   .mi-col { display: contents; }          /* 기둥을 풀어 칸들이 한 줄로 이어지게 */
   /* 어느 기체인지부터 보여 준다 — 무장 수치부터 나오면 갈피를 못 잡는다 */
@@ -3119,7 +3123,7 @@ body.info-open .sel-info { display: flex; }
 /* 높이의 기준은 늘 **가운데 기둥**이다. 왼쪽 두 칸을 그 높이에 맞춰 55:45 로 나눈다.
    무장을 넓게 잡는 이유는 눌러서 상세를 펼치면 길어지기 때문이다 —
    짧은 기체라 남더라도 그대로 둔다(펼칠 자리를 미리 비워 두는 것이다). */
-@media (min-width: 1101px) {
+@media (min-width: 1437px) {
   .mi-cols > .mi-col:first-child { --mi-h: 640px; }
   .mi-wpn { height: calc(var(--mi-h) * .55); overflow-y: auto; }
   .mi-sk { height: calc(var(--mi-h) * .45); overflow-y: auto; }
@@ -3172,3 +3176,9 @@ body.info-open .sel-info { display: flex; }
 /* 무장 상세가 파츠 화면과 같은 것이라 기둥 안에서도 읽히게 조인다 */
 .mi-wpn .weapon-detail { margin: 2px 0 4px; }
 .mi-wpn .weapon-detail .wd-grid { grid-template-columns: 1fr; }
+
+/* ---- 파츠 화면의 누적치 내성 (펼침) ----
+   기체 정보와 같은 다섯 줄이지만, 여기서는 성능표 안이라 들여쓰기로 머리줄에 붙인다. */
+.stg-cats[hidden] { display: none; }
+.stg-cats { margin: 2px 0 2px 19px; }
+.stg-cats .mi-sg-btns { margin: 0 0 4px; }
