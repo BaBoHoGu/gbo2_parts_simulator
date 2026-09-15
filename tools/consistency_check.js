@@ -48,15 +48,19 @@ const tfName = tfMs ? (dict[String(tfMs.MS名).replace(/_LV\d+$/, '')] || String
 
   const pick = async q => {
     await pg.evaluate(() => {
-      const b = [...document.querySelectorAll('button')].find(x => /기체 다시|다른 기체/.test(x.textContent));
-      if (b) b.click();
+      const b = document.querySelector('#backToSelect');
+      if (b && !document.body.classList.contains('view-select')) b.click();
     });
-    await sleep(400);
-    await pg.evaluate(t => { const e = document.querySelector('#msQuery'); e.value = t; e.dispatchEvent(new Event('input', { bubbles: true })); }, q);
+    await sleep(500);
+    await pg.evaluate(t => { const e = document.querySelector('#msQuery'); if (e) { e.value = t; e.dispatchEvent(new Event('input', { bubbles: true })); } }, q);
     await sleep(900);
-    const ok = await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) { c.click(); return true; } return false; });
+    const hit = await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) { c.click(); return true; } return false; });
+    if (!hit) return false;
+    await sleep(1200);
+    // 카드는 정보 칸만 연다. 파츠 화면으로는 「파츠 고르기」가 데려간다.
+    await pg.evaluate(() => { const b = document.querySelector('#infoGo'); if (b) b.click(); });
     await sleep(1400);
-    return ok;
+    return pg.evaluate(() => document.body.classList.contains('view-build'));
   };
   const perfStats = () => pg.evaluate(() => {
     const o = {};

@@ -998,15 +998,14 @@
 
       card.append(info);
 
-      // ⓘ — 파츠로 바로 가지 않고 기체를 먼저 훑어본다.
-      // 카드 자체는 종전대로 파츠 화면으로 간다: 아는 기체를 고를 때마다
-      // 한 번 더 누르게 만들 이유가 없다.
-      const ib = el('button', 'ms-info', 'ⓘ');
-      ib.title = '기체 정보 보기';
-      ib.onclick = ev => { ev.stopPropagation(); openInfo(m, 'select'); };
-      card.append(ib);
-
-      card.onclick = () => selectMs(m);
+      // 카드를 누르면 오른쪽 칸에 정보가 나온다. 파츠로는 거기서 넘어간다.
+      // 이미 고른 카드를 또 누르면 곧바로 파츠로 간다 — 아는 기체를 고를 때
+      // 두 번 누르는 게 번거로우니 지름길을 둔다.
+      card.classList.toggle('sel', !!(infoMs && infoMs.MS名 === m.MS名));
+      card.onclick = () => {
+        if (infoMs && infoMs.MS名 === m.MS名) { infoGoBuild(); return; }
+        openInfo(m);
+      };
       box.append(card);
     }
 
@@ -1035,12 +1034,12 @@
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
     if (view === 'select' && changed) { renderMsList(); renderViewChips(); }
-    for (const v of ['select', 'build', 'gallery', 'codex', 'info'])
+    for (const v of ['select', 'build', 'gallery', 'codex'])
       document.body.classList.toggle('view-' + v, view === v);
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
       li.classList.toggle('on', li.dataset.step === view));
     // 화면 전환 시 스크롤을 위로 되돌린다
-    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex'), info: $('#screenInfo') }[view] || $('#screenSelect');
+    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex') }[view] || $('#screenSelect');
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
@@ -1748,6 +1747,59 @@
     return 0;
   }
 
+  // 어느 상태의 무장을 볼지. 'all'(통상+변형) · 'normal' · 'alt'.
+  // 보여 줄 줄을 고르는 값일 뿐이라 기체가 바뀌어도 그대로 둔다.
+  let weaponMode = 'all';
+
+  /* ---------- 무장의 상태(통상 / 변형·변신 …) ----------
+     위키는 무장 備考 맨 앞에 ＜通常時＞·＜変形時＞·＜通常時/変形時＞ 처럼 적어 둔다.
+     3,787종 중 392종(66기체)이 그렇고, 표기가 없는 무장은 어느 상태에서나 쓴다.
+     같은 무장의 수치가 상태마다 달라지는 것이 아니라 **쓸 수 있느냐**의 문제라,
+     보여 줄 줄을 고르는 필터로 충분하다 — 성능·스킬 쪽 모드와 값이 어긋날 일이 없다. */
+  const W_MODE_RE = /^\s*[＜<]([^＞>]+)[＞>]/;
+  function weaponModeOf(w) {
+    const note = String((w.info && w.info['備考']) || '');
+    const m = W_MODE_RE.exec(note);
+    if (!m) return null;                       // 상태를 안 가리는 무장
+    const parts = m[1].replace(/使用可$/, '').split(/[/／]/).map(x => x.trim()).filter(Boolean);
+    return {
+      normal: parts.some(x => /^通常/.test(x)),
+      alt: parts.some(x => !/^通常/.test(x)),
+      label: parts.map(x => SKILL_MODE_KO[x] || x.replace(/時$/, '')).join('/')
+    };
+  }
+  /** 이 기체에 상태를 가리는 무장이 하나라도 있는가 — 없으면 칩을 띄울 이유가 없다. */
+  const hasWeaponModes = list => (list || []).some(w => weaponModeOf(w));
+  /** 지금 고른 상태에서 보여 줄 무장인가. 'all' 은 통상+변형을 합친 것이다. */
+  function weaponInMode(w, mode) {
+    if (mode === 'all') return true;
+    const md = weaponModeOf(w);
+    if (!md) return true;                      // 표기 없는 무장은 어느 쪽에서나 보인다
+    return mode === 'normal' ? md.normal : md.alt;
+  }
+  /**
+   * 「모든 상태 / 통상 / 변형 시」 칩을 그린다. 무장 표와 기체 정보가 같은 것을 쓴다.
+   * @param {Element} box  칩을 담을 자리
+   * @param {object} ms    기체 (라벨을 이 기체의 모드 이름으로 정한다)
+   * @param {object[]} list 무장 목록
+   * @param {string} cur   지금 고른 값
+   * @param {(v:string)=>void} onPick
+   */
+  function renderWeaponModeSeg(box, ms, list, cur, onPick) {
+    if (!box) return;
+    box.innerHTML = '';
+    const alt = altModeOf(ms);
+    // 모드가 없거나, 상태를 가리는 무장이 없으면 고를 것이 없다.
+    if (!alt || !hasWeaponModes(list)) { box.hidden = true; return; }
+    box.hidden = false;
+    const altLabel = /(중|시|후)$/.test(alt.label) ? alt.label : alt.label + ' 시';
+    for (const [v, label] of [['all', '모든 상태'], ['normal', '통상'], ['alt', altLabel]]) {
+      const b = el('button', 'seg-btn' + (cur === v ? ' on' : ''), label);
+      b.onclick = () => onPick(v);
+      box.append(b);
+    }
+  }
+
   /* ---------- 모드(변형·시스템발동 등) ---------- */
   // 変形(msData 변형 스탯)뿐 아니라, 変形 스탯이 없는 트랜잠(システム発動中) 기체도
   // override 의 _altMode(그 모드 스탯 절대값)로 통상/그 모드를 전환한다. 무장은 나누지 않는다.
@@ -1763,8 +1815,16 @@
   function renderWeapons() {
     const box = $('#weaponList');
     box.innerHTML = '';
-    const list0 = msWeapons();    // 무장은 모드로 나누지 않고 전부 보여 준다(보기 편하게)
-    $('#weaponCount').textContent = list0.length ? `${list0.length}종` : '';
+    const all = msWeapons();
+    // 「모든 상태」가 기본이다 — 통상+변형을 합쳐 보여 준다.
+    renderWeaponModeSeg($('#weaponMode'), state.ms, all, weaponMode, v => {
+      weaponMode = v;
+      renderWeapons();
+    });
+    const list0 = all.filter(w => weaponInMode(w, weaponMode));
+    $('#weaponCount').textContent = all.length
+      ? (list0.length === all.length ? `${all.length}종` : `${list0.length} / ${all.length}종`)
+      : '';
 
     if (!list0.length) {
       box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
@@ -5583,7 +5643,7 @@
   }
 
   /* ---------- 기체 스킬 목록 (무장 헤더 '스킬' 버튼) ---------- */
-  const SKILL_MODE_KO = { '通常時': '통상', '変形時': '변형', '変身時': '변신', 'システム発動中': '시스템 발동중', '飛行時': '비행', '': '통상' };
+  const SKILL_MODE_KO = { '通常時': '통상', '変形時': '변형', '変身時': '변신', 'システム発動中': '시스템 발동 중', '飛行時': '비행', '': '통상' };
   const SKILL_CAT_KO = { '足回り': '기동', '攻撃': '공격', '防御': '방어', 'その他': '기타', '移動': '이동', '格闘': '격투', '射撃': '사격', '': '기타' };
   const skTr = s => (s ? (skillText[s] || s) : '');            // 스킬 텍스트 번역 (없으면 원문)
   // 활성 모드 탭은 따로 두지 않고 state.form(성능의 통상/변신 토글)에서 파생한다.
@@ -6138,23 +6198,27 @@
   }
 
   /* ===================== 기체 정보 화면 =====================
-     기체를 고른 뒤 파츠로 넘어가기 전에 훑어보는 자리.
-     거쳐야만 하는 단계는 아니다 — 기체 카드의 ⓘ 로 들어온다.
-     아는 기체를 고를 때마다 한 번 더 누르게 만들 이유가 없어서다. */
+     기체 선택 화면의 **오른쪽 칸**이다. 왼쪽에서 고르면 여기가 채워진다 —
+     화면을 옮겨 다니지 않으므로 기체를 여러 개 견주기 좋다.
+     좁은 화면에서는 나란히 둘 폭이 없어 이 칸이 목록 위를 덮는다. */
 
-  // 지금 정보 화면에서 보고 있는 기체. state.ms 와 따로 둔다 —
-  // 여기서 LV 을 바꿔 보는 것이 아직 고르지 않은 구성을 건드리면 안 된다.
+  // 오른쪽 칸이 보여 주는 기체. state.ms(구성 중인 기체)와 따로 둔다 —
+  // 여기서 LV 을 바꿔 보는 것이 아직 시작도 안 한 구성을 건드리면 안 된다.
   let infoMs = null;
-  // 정보 화면에 들어오기 전 화면. 「돌아가기」가 그리로 되돌린다.
-  let infoBefore = 'select';
+  // 정보 칸의 무장 상태 필터. 무장 표와 따로 둔다 — 화면이 달라 같이 움직일 이유가 없다.
+  let infoWpnMode = 'all';
 
-  function openInfo(m, from) {
+  function openInfo(m) {
     if (!m) return;
     infoMs = m;
-    infoBefore = from || state.view || 'select';
-    setView('info');
+    // 화면을 옮기지 않는다 — 오른쪽 칸을 채울 뿐이다.
+    // 좁은 화면에서는 그 칸이 목록 위를 덮는다(CSS 가 body.info-open 을 본다).
+    document.body.classList.add('info-open');
+    $('#infoBody').hidden = false;
     renderInfo();
-    // 갤러리 구성은 화면을 여는 김에 받아 둔다(캐시가 있으면 그것부터 보인다)
+    // 고른 카드에 테두리를 준다. 목록을 다시 그려야 옛 선택이 풀린다.
+    renderMsList();
+    // 갤러리 구성은 칸을 여는 김에 받아 둔다(캐시가 있으면 그것부터 보인다)
     if (S && !galleryList.length) {
       galleryList = S.readCache();
       renderInfoBuilds();
@@ -6165,7 +6229,7 @@
     loadVotes('build').then(renderInfoBuilds);
   }
 
-  /** 정보 화면에서 「파츠 고르기」 — 보고 있던 LV 그대로 파츠 화면으로 넘어간다. */
+  /** 「파츠 고르기」 — 오른쪽 칸에서 보던 LV 그대로 파츠 화면으로 넘어간다. */
   function infoGoBuild() {
     if (!infoMs) return;
     selectMs(infoMs);
@@ -6218,36 +6282,65 @@
     renderInfoStats(m);
     renderInfoWeapons(m);
     renderInfoSkills(m);
+    renderInfoFullst(m);
     renderInfoBuilds();
   }
+
+  /* 막대의 기준값. 상한이 있는 스탯은 상한(core 의 DEFAULT_LIMITS)을 쓰고,
+     상한이 없는 것(HP·고속이동·선회)은 데이터 전체의 최댓값을 쓴다.
+     기준이 없으면 막대가 뜻을 잃는다 — 「이 기체가 전체에서 어디쯤인가」가 요점이다. */
+  const MI_SCALE = (() => {
+    const max = f => msData.reduce((a, x) => Math.max(a, Number(x[f]) || 0), 0);
+    return {
+      HP: max('HP'), 耐実弾補正: 50, 耐ビーム補正: 50, 耐格闘補正: 50,
+      射撃補正: 100, 格闘補正: 100, スピード: 200,
+      高速移動: max('高速移動'), スラスター: 100,
+      旋回_地上_通常時: max('旋回_地上_通常時'), 旋回_宇宙_通常時: max('旋回_宇宙_通常時')
+    };
+  })();
 
   function renderInfoStats(m) {
     const box = $('#infoStats');
     box.innerHTML = '';
-    const row = (k, v) => {
+    const row = (k, v, field) => {
       const d = el('div', 'mi-st');
       d.append(el('i', '', k), el('b', '', v));
+      // 막대는 기준이 있는 항목에만. 재출격처럼 '작을수록 좋은' 값엔 안 붙인다.
+      const cap = field && MI_SCALE[field];
+      const raw = field && Number(m[field]);
+      if (cap && raw) {
+        const bar = el('span', 'mi-bar');
+        const fill = el('i');
+        fill.style.width = Math.min(100, (raw / cap) * 100).toFixed(1) + '%';
+        bar.append(fill);
+        d.append(bar);
+      }
       box.append(d);
     };
     const n = v => (v == null ? '—' : Number(v).toLocaleString());
-    row('HP', n(m.HP));
-    row('내실탄 보정', n(m['耐実弾補正']));
-    row('내빔 보정', n(m['耐ビーム補正']));
-    row('내격투 보정', n(m['耐格闘補正']));
-    row('사격 보정', n(m['射撃補正']));
-    row('격투 보정', n(m['格闘補正']));
-    row('스피드', n(m['スピード']));
-    row('고속이동', n(m['高速移動']));
-    row('스러스터', n(m['スラスター']));
-    row('선회(지상)', n(m['旋回_地上_通常時']));
-    row('선회(우주)', n(m['旋回_宇宙_通常時']));
+    row('HP', n(m.HP), 'HP');
+    row('내실탄 보정', n(m['耐実弾補正']), '耐実弾補正');
+    row('내빔 보정', n(m['耐ビーム補正']), '耐ビーム補正');
+    row('내격투 보정', n(m['耐格闘補正']), '耐格闘補正');
+    row('사격 보정', n(m['射撃補正']), '射撃補正');
+    row('격투 보정', n(m['格闘補正']), '格闘補正');
+    row('스피드', n(m['スピード']), 'スピード');
+    row('고속이동', n(m['高速移動']), '高速移動');
+    row('스러스터', n(m['スラスター']), 'スラスター');
+    row('선회(지상)', n(m['旋回_地上_通常時']), '旋回_地上_通常時');
+    row('선회(우주)', n(m['旋回_宇宙_通常時']), '旋回_宇宙_通常時');
     row('재출격', m['再出撃時間'] == null ? '—' : m['再出撃時間'] + '초');
 
+    // 파츠 칸은 칸 수 자체가 뜻이라 막대가 아니라 **눈금**으로 그린다.
+    // 「17칸」보다 ▮ 열일곱이 한눈에 들어온다(게임 화면도 그렇게 보여 준다).
     const sb = $('#infoSlots');
     sb.innerHTML = '';
     for (const [k, v] of [['근접', m['近スロット']], ['중거리', m['中スロット']], ['원거리', m['遠スロット']]]) {
       const d = el('div', 'mi-slot');
       d.append(el('i', '', k), el('b', '', v == null ? '—' : String(v)));
+      const pips = el('span', 'mi-pips');
+      for (let i = 0; i < Math.min(Number(v) || 0, 30); i++) pips.append(el('u'));
+      d.append(pips);
       sb.append(d);
     }
   }
@@ -6258,13 +6351,26 @@
   function renderInfoWeapons(m) {
     const box = $('#infoWpn');
     box.innerHTML = '';
-    const list = weaponsOfMs(m);
-    $('#infoWpnH').textContent = '무장' + (list.length ? ' ' + list.length + '종' : '');
+    const all = weaponsOfMs(m);
+    renderWeaponModeSeg($('#infoWpnMode'), m, all, infoWpnMode, v => {
+      infoWpnMode = v;
+      renderInfoWeapons(m);
+    });
+    const list = all.filter(w => weaponInMode(w, infoWpnMode));
+    $('#infoWpnH').textContent = '무장' + (all.length
+      ? (list.length === all.length ? ' ' + all.length + '종' : ' ' + list.length + ' / ' + all.length + '종')
+      : '');
     if (!list.length) { box.append(el('div', 'detail-empty', '무장 정보가 없습니다.')); return; }
     const lv = msLevel(m);
     for (const w of list) {
       const d = el('div', 'mi-w');
-      d.append(el('span', 'nm', T.weaponName ? T.weaponName(w.name) : w.name));
+      const wn = T.weaponName ? T.weaponName(w.name) : w.name;
+      const nmEl = el('span', 'nm', wn);
+      nmEl.title = wn;              // 줄여 놓았으니 전체 이름은 올려 보면 나온다
+      d.append(nmEl);
+      // 상태를 가리는 무장이면 어느 상태인지 적어 준다 — 합쳐 보고 있을 때 특히 필요하다
+      const md = weaponModeOf(w);
+      if (md) d.append(el('span', 'mi-wmode', md.label));
       // 실드는 attr 가 비어 있고 type 에만 들어 있다 — 무장 표와 같은 판정을 쓴다
       const at = (w.attr === 'shield' || w.type === 'shield') ? 'shield' : w.attr;
       d.append(el('span', 'ty', MI_ATTR_KO[at] || '—'));
@@ -6283,8 +6389,9 @@
     const box = $('#infoSk');
     box.innerHTML = '';
     const modes = msSkillsData[baseName(m.MS名)] || [];
-    const mode = modes[0];
-    if (!mode || !mode.skills || !mode.skills.length) {
+    // 모드를 다 합친다. 첫 모드만 보면 변형 기체(64기)의 변형 스킬이 통째로 안 보인다.
+    const skills = modes.flatMap(md => md.skills || []);
+    if (!skills.length) {
       $('#infoSkH').textContent = '스킬';
       box.append(el('div', 'detail-empty', '스킬 정보가 없습니다.'));
       return;
@@ -6292,7 +6399,7 @@
     // 스킬 목록 패널과 같은 규칙으로 이 LV 의 구간 하나씩만 고른다.
     const lv = msLevel(m);
     const groups = new Map();
-    for (const sk of mode.skills) {
+    for (const sk of skills) {
       const key = sk.cat + '|' + sk.name;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(sk);
@@ -6316,6 +6423,37 @@
       }
       box.append(ch);
     }
+  }
+
+  /**
+   * 강화 리스트 — 풀강까지 6단계에 무엇이 붙는지.
+   * 파츠 화면의 「강화 ?」 모달과 **같은 효과 변환기**(fullstEffText)를 쓴다.
+   * 따로 만들면 한쪽만 표기가 어긋난다.
+   */
+  function renderInfoFullst(m) {
+    const box = $('#infoFullst');
+    if (!box) return;
+    box.innerHTML = '';
+    const list = Array.isArray(m.fullst) ? m.fullst : [];
+    $('#infoFsNote').textContent = list.length ? list.length + '단계' : '';
+    if (!list.length) {
+      box.append(el('div', 'detail-empty', '이 기체는 강화 리스트 자료가 없습니다.'));
+      return;
+    }
+    list.forEach((entry, i) => {
+      const row = el('div', 'mi-fs');
+      row.append(el('i', '', String(i + 1).padStart(2, '0')));
+      const mid = el('span', 'mi-fs-mid');
+      mid.append(el('b', '', T.fullstName(entry.name) + ' LV' + entry.level));
+      const def = fullst.find(d => d.name === entry.name);
+      const lv = def && (def.levels || []).find(l => Number(l.level) === Number(entry.level));
+      const effs = lv ? fullstEffText(lv.effects) : [];
+      mid.append(el('span', 'mi-fs-eff', effs.length ? effs.map(e => e.txt).join(' · ') : '값 없음'));
+      row.append(mid);
+      // 위키가 이 LV 의 필요 강화값을 안 적어 둔 기체가 있다. 0 으로 보이면 거짓이다.
+      row.append(el('span', 'mi-fs-pt', entry.points == null ? '—' : entry.points.toLocaleString()));
+      box.append(row);
+    });
   }
 
   /**
@@ -6774,8 +6912,14 @@
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
 
-    // ── 기체 정보 화면 ──
-    $('#infoBack').onclick = () => setView(infoBefore === 'info' ? 'select' : infoBefore);
+    // ── 기체 정보 칸 ──
+    // 좁은 화면에서만 보이는 닫기. 고른 기체는 그대로 둔다 — 닫았다고
+    // 선택까지 풀면 다시 열었을 때 빈 칸이 나와 당황스럽다.
+    $('#infoClose').onclick = () => {
+      document.body.classList.remove('info-open');
+      infoMs = null;
+      renderMsList();        // 카드 테두리도 같이 푼다
+    };
     $('#infoGo').onclick = infoGoBuild;
 
     // 표가 들어오거나 바뀌면 지금 보고 있는 화면만 다시 그린다.
@@ -6783,9 +6927,9 @@
     // 옛 줄의 콜백이 쌓인다. 화면 단위로 한 번만 걸어 두면 그럴 일이 없다.
     voteRedraw.build.push(() => {
       if (state.view === 'gallery') renderGallery();
-      else if (state.view === 'info') renderInfoBuilds();
+      else if (infoMs) renderInfoBuilds();
     });
-    voteRedraw.ms.push(() => { if (state.view === 'info') renderInfo(); });
+    voteRedraw.ms.push(() => { if (infoMs) renderInfo(); });
     $('#stageHelp').onclick = () => openStageHelp(true);
     $('#stageHelpClose').onclick = () => openStageHelp(false);
     $('#stageHelpBack').onclick = () => openStageHelp(false);

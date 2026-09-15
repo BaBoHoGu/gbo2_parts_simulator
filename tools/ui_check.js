@@ -171,10 +171,10 @@ async function runView(view) {
     await pg.addStyleTag({ content: INSET_CSS });     // ③ 검사를 위해 상단 인셋 강제
     await step(pg, view, '선택화면');
 
-    // ── 기체 정보 화면 (기체 카드의 ⓘ) ──
+    // ── 기체 정보 칸 (기체 카드를 누르면 오른쪽에 열린다) ──
     // 스크롤되는 세로 flex 상자라 자식이 찌그러지기 쉽다 — 폰 폭에서 기체 띠가
     // 306px → 2px 로 눌려 그림·이름이 통째로 사라진 적이 있다. 높이를 직접 잰다.
-    await pg.evaluate(() => { const b = document.querySelector('.ms-card .ms-info'); if (b) b.click(); });
+    await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) c.click(); });
     await sleep(1400);
     const mi = await pg.evaluate(() => {
       const band = document.querySelector('.mi-band');
@@ -188,19 +188,28 @@ async function runView(view) {
     });
     check(view.tag, '[기체정보] 기체 띠가 안 눌림', mi.found && mi.h >= mi.need - 2, JSON.stringify(mi));
     check(view.tag, '[기체정보] 이름·성능이 채워짐', !!(mi.name && mi.stats === 12), JSON.stringify(mi));
+    // 칸 안에서 넘쳐 나가는 것이 없어야 한다 (무장 2열에서 실제로 넘친 적이 있다)
+    const ovf = await pg.evaluate(() => {
+      const bad = [];
+      document.querySelectorAll('.sel-info .panel').forEach(pn => {
+        const r = pn.getBoundingClientRect();
+        pn.querySelectorAll('*').forEach(e => {
+          const q = e.getBoundingClientRect();
+          if (q.width && q.right > r.right + 1) bad.push((e.className || e.tagName) + ' +' + Math.round(q.right - r.right));
+        });
+      });
+      return [...new Set(bad)];
+    });
+    check(view.tag, '[기체정보] 칸 밖으로 넘친 것 없음', ovf.length === 0, ovf.slice(0, 4).join(' | '));
     await step(pg, view, '기체정보');
-    if (!(mi.found && mi.h >= mi.need - 2)) await shot(pg, view.tag + '_기체정보');
+    if (!(mi.found && mi.h >= mi.need - 2) || ovf.length) await shot(pg, view.tag + '_기체정보');
     // 「파츠 고르기」로 빌드 화면까지 이어지는지도 본다
     await pg.evaluate(() => { const b = document.querySelector('#infoGo'); if (b) b.click(); });
-    await sleep(1400);
+    await sleep(1600);
     check(view.tag, '[기체정보] 「파츠 고르기」가 빌드 화면으로 이어짐',
       await pg.evaluate(() => document.body.classList.contains('view-build')));
-    await pg.evaluate(() => { const b = document.querySelector('#backToSelect'); if (b) b.click(); });
-    await sleep(900);
 
     // ── 빌드 화면 ──
-    await pg.evaluate(() => document.querySelector('.ms-card').click());
-    await sleep(1600);
     await step(pg, view, '빌드화면');
 
     // ② 폰 크기면 모바일 레이아웃이 걸려야 한다 (pointer 와 무관하게)

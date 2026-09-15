@@ -125,7 +125,6 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accen
 /* 파츠 적용 단계에서만 보이는 버튼(자동 구성·저장·공유) */
 body.view-select .step-only,
 body.view-codex .step-only,
-body.view-info .step-only,
 body.view-gallery .step-only { display: none; }
 
 /* ============ 화면 전환 ============ */
@@ -137,8 +136,7 @@ body.view-gallery .step-only { display: none; }
 body.view-select  .screen:not(#screenSelect),
 body.view-build   .screen:not(#screenBuild),
 body.view-gallery .screen:not(#screenGallery),
-body.view-codex   .screen:not(#screenCodex),
-body.view-info    .screen:not(#screenInfo) { display: none; }
+body.view-codex   .screen:not(#screenCodex) { display: none; }
 
 /* ---- ① 기체 선택 ---- */
 .screen-select { display: flex; flex-direction: column; }
@@ -2788,17 +2786,43 @@ body.drawer-open .m-actionbar { display: none !important; }
 
 
 /* ============ ⑤ 기체 정보 ============
-   파츠로 넘어가기 전에 이 기체가 무엇인지 훑는 자리.
-   상단 띠(기체) + 3기둥(성능·파츠칸 / 무장·스킬 / 올라온 구성).
-   구성 목록을 아래가 아니라 **옆**에 세운 이유: 아래에 두면 위 세 기둥의
-   높이가 제각각이라 앞에 빈 구멍이 크게 생기고, 스크롤도 새로 생긴다. */
-.screen-info { display: flex; flex-direction: column; }
-.screen-info .select-title { align-items: center; }
-.screen-info .select-title .right { display: flex; gap: 6px; margin-left: auto; }
+   따로 떨어진 화면이 아니라 **기체 선택 화면의 오른쪽 칸**이다.
+   왼쪽에서 고르면 오른쪽에 바로 나온다 — 화면을 옮겨 다니지 않는다.
+   폭은 4:6. 목록은 카드 두 줄이 서고, 정보 쪽은 두 기둥이 선다. */
+/* 평소에는 목록이 화면을 다 쓴다. 기체를 고르면 그때 오른쪽 칸이 **열린다**
+   — 자동 구성 드로어와 같은 방식이다. 자리를 늘 비워 두면 목록이 좁아지기만 한다. */
+.sel-2col {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 1fr;
+  transition: grid-template-columns .18s ease;
+}
+body.info-open .sel-2col { grid-template-columns: 4fr 6fr; }
+/* 왼쪽 칸 = 머리줄(제목·필터·검색) + 목록. 머리줄이 위를 가로지르지 않으므로
+   오른쪽 정보 칸이 맨 위부터 시작해 세로를 다 쓴다. */
+.sel-left { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.sel-left > .ms-grid { padding: 14px 20px 24px; }
+body.info-open .sel-left > .ms-grid { padding-right: 10px; }
+.sel-info {
+  display: none;
+  min-width: 0; min-height: 0;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: rgba(0, 0, 0, .12);
+}
+body.info-open .sel-info { display: flex; }
+/* 머리줄 — 닫기(폰) · 제목 · 파츠 고르기 */
+.si-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+}
+.si-title { font-size: 13px; font-weight: 700; letter-spacing: .3px; }
+.si-bar .btn-primary { margin-left: auto; }
+.si-close { display: inline-flex; }
+/* display:flex 가 UA 의 [hidden] 을 덮는다 — .panel 에서도 겪은 함정이다. */
+.mi-body[hidden] { display: none; }
 .mi-body {
   flex: 1; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 9px;
-  padding: 9px; max-width: 1440px; margin: 0 auto; width: 100%;
+  display: flex; flex-direction: column; gap: 9px; padding: 9px; width: 100%;
 }
 /* 스크롤되는 세로 flex 상자에서는 자식이 기본으로 **찌그러진다**.
    폰 폭에서 기체 띠가 306px → 2px 로 눌려 그림과 이름이 통째로 사라졌다.
@@ -2826,11 +2850,14 @@ body.drawer-open .m-actionbar { display: none !important; }
 .mi-lv:hover { color: var(--text); border-color: var(--accent); }
 .mi-lv.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
 
-/* ---- 3기둥 ---- */
+/* ---- 기둥 ----
+   오른쪽 칸은 화면의 60% 뿐이라 셋으로 나누면 한 기둥이 290px 밖에 안 된다.
+   둘로 나누고 구성 목록은 아래 전체 폭으로 깐다. */
 .mi-cols {
-  display: grid; grid-template-columns: 1fr 1fr 1.15fr;
+  display: grid; grid-template-columns: 1fr 1fr;
   gap: 9px; align-items: start;
 }
+.mi-builds { grid-column: 1 / -1; }
 .mi-col { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
 .mi-sub { font-size: 11px; color: var(--dim); margin: -3px 0 7px; }
 
@@ -2842,6 +2869,14 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 .mi-st i { font-style: normal; color: var(--muted); font-size: 11.5px; }
 .mi-st b { font-size: 13px; white-space: nowrap; }
+/* 막대 — 숫자만으로는 「이 기체가 전체에서 어디쯤인가」가 안 보인다.
+   기준은 상한이 있으면 상한, 없으면 데이터 전체의 최댓값(MI_SCALE). */
+.mi-bar {
+  flex: 0 0 100%; height: 3px; border-radius: 2px;
+  background: rgba(255, 255, 255, .07); overflow: hidden; margin-top: 2px;
+}
+.mi-bar i { display: block; height: 100%; background: var(--accent); opacity: .75; }
+.mi-st { flex-wrap: wrap; }
 
 /* ---- 파츠 칸 ---- */
 .mi-slots { display: flex; gap: 9px; }
@@ -2851,14 +2886,25 @@ body.drawer-open .m-actionbar { display: none !important; }
 }
 .mi-slot i { display: block; font-style: normal; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
 .mi-slot b { font-size: 19px; color: var(--accent); }
+/* 칸 수는 눈금으로 — 「17칸」보다 ▮ 열일곱이 한눈에 들어온다 */
+.mi-pips {
+  display: flex; flex-wrap: wrap; gap: 1.5px;
+  justify-content: center; margin-top: 5px; padding: 0 6px;
+}
+.mi-pips u { width: 3px; height: 9px; border-radius: 1px; background: var(--accent); opacity: .55; }
 
-/* ---- 무장 ---- */
-.mi-wpn { display: flex; flex-direction: column; gap: 4px; }
+/* ---- 무장 ----
+   세로 목록이면 7종이 7줄이라 세로를 다 먹는다. 두 열로 묶어 절반으로 줄인다. */
+.mi-wpn { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+@media (max-width: 760px) { .mi-wpn { grid-template-columns: 1fr; } }
 .mi-w {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 8px; min-width: 0;
   padding: 6px 8px; background: rgba(255, 255, 255, .03); border-radius: 3px;
 }
-.mi-w .nm { flex: 1; min-width: 0; font-size: 12px; word-break: keep-all; }
+.mi-w .nm {
+  flex: 1; min-width: 0; font-size: 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .mi-w .ty {
   font-size: 10.5px; color: var(--muted); border: 1px solid var(--line);
   border-radius: 2px; padding: 1px 5px; white-space: nowrap;
@@ -2878,11 +2924,13 @@ body.drawer-open .m-actionbar { display: none !important; }
 .mi-blist { max-height: 560px; overflow-y: auto; }
 .mi-blist .saved-card { margin: 0; }
 
-/* ---- 좁은 화면 ---- */
+/* ---- 좁은 화면 ----
+   1100px 아래로는 나란히 둘 폭이 없다. 오른쪽 칸이 목록 위를 덮게 하고
+   기체를 고를 때만 연다(body.info-open). 닫기 버튼이 그때 나타난다. */
 @media (max-width: 1100px) {
-  .mi-cols { grid-template-columns: 1fr 1fr; }
-  /* 구성 목록은 마지막에 — 기체를 모르는 채로 남의 구성부터 보여 줄 이유가 없다 */
-  .mi-builds { grid-column: 1 / -1; }
+  body.info-open .sel-2col { grid-template-columns: 1fr; }
+  body.info-open .sel-2col > .ms-grid { padding-right: 20px; }
+  .sel-info { position: fixed; inset: 0; z-index: 60; border-left: 0; background: var(--bg); }
   .mi-blist { max-height: none; }
 }
 @media (max-width: 760px) {
@@ -2915,3 +2963,32 @@ body.drawer-open .m-actionbar { display: none !important; }
 .mi-vote { display: flex; align-items: center; gap: 8px; }
 .mi-vote-lb { font-size: 11px; color: var(--muted); }
 .mi-vote .vote-bar { padding: 4px 0 0; }
+
+/* ---- 강화 리스트 (기체 정보) ----
+   파츠 화면의 「강화 ?」 모달과 같은 내용을 한 줄씩 눕혀 담는다. */
+.mi-fslist { display: flex; flex-direction: column; gap: 3px; }
+.mi-fs {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 5px 7px; background: rgba(255, 255, 255, .03); border-radius: 3px;
+}
+.mi-fs > i {
+  font-style: normal; font-size: 10px; color: var(--dim);
+  font-variant-numeric: tabular-nums; flex: 0 0 auto;
+}
+.mi-fs-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.mi-fs-mid b { font-size: 11.5px; font-weight: 600; }
+.mi-fs-eff { font-size: 10.5px; color: var(--muted); }
+.mi-fs-pt {
+  font-size: 11px; color: var(--dim); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 무장 상태 필터 — 「모든 상태 / 통상 / 변형 시」 */
+.mode-seg { display: inline-flex; gap: 0; }
+.mode-seg .seg-btn { font-size: 10.5px; padding: 3px 9px; }
+.panel > h2 .mode-seg { margin-left: auto; }
+/* 상태를 가리는 무장에 붙는 작은 표 — 합쳐 볼 때 어느 상태인지 알려 준다 */
+.mi-wmode {
+  font-size: 9.5px; color: var(--dim); white-space: nowrap;
+  border: 1px solid var(--line); border-radius: 2px; padding: 0 4px;
+}
