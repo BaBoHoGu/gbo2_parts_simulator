@@ -4186,6 +4186,8 @@
   let galleryCost = 'all';   // 'all' | 750… | 'low'(≤250)
   let galleryLv = 'all';     // 'all' | 1 | 2 | 3 | '4+'
   let galleryRarity = 'all'; // 'all' | 1~5
+  let galleryFree = 'all';   // 'all' | 'free'(무과금 구성만)
+  let galleryStage = 'all';  // 'all' | 0 미강화 | 4 4단계 | 6 풀강
   let galleryLoading = false;
 
   const relTime = ms => {
@@ -4222,6 +4224,10 @@
         || voteUp(b.id) - voteUp(a.id) || b.at - a.at);
       list.reverse();
     }
+    // 구성 자체의 성질 — 기체를 찾을 필요가 없다(옛 구성도 제대로 걸린다).
+    // free 는 서버가 파츠 표로 정해 보낸 값이라 카드의 「무과금」 딱지와 늘 같다.
+    if (galleryFree === 'free') list = list.filter(b => b.free);
+    if (galleryStage !== 'all') list = list.filter(b => Number(b.stage) === galleryStage);
     // 기체 기준 필터들 — 카드의 기체를 찾아 한 번에 거른다
     if (galleryAttr || galleryCost !== 'all' || galleryLv !== 'all' || galleryRarity !== 'all') {
       list = list.filter(b => {
@@ -7411,6 +7417,15 @@
     galChips('#galleryCostChips', COST_CHIPS, () => galleryCost, v => { galleryCost = v; });
     galChips('#galleryLvChips', LEVEL_CHIPS, () => galleryLv, v => { galleryLv = v; });
     galChips('#galleryRarityChips', RARITY_CHIPS, () => galleryRarity, v => { galleryRarity = v; });
+    galChips('#galleryFreeChips',
+      [{ label: '전체', v: 'all' }, { label: '무과금', v: 'free' }],
+      () => galleryFree, v => { galleryFree = v; });
+    // 칩 글자를 STAGE_LABEL 에서 가져온다 — 카드 꼬리표와 **같은 말**이어야 한다.
+    // 여기만 「0강·4강·6강」으로 적으면 카드는 「미강화」인데 칩은 「0강」이라 둘이 다른
+    // 것을 고르는 것처럼 보인다.
+    galChips('#galleryStageChips',
+      [{ label: '전체', v: 'all' }].concat([0, 4, 6].map(v => ({ label: STAGE_LABEL[v], v }))),
+      () => galleryStage, v => { galleryStage = v; });
     $('#galleryAdmin').onclick = adminSignIn;
     $('#adminGo').onclick = adminSubmit;
     $('#adminCancel').onclick = () => openAdmin(false);
