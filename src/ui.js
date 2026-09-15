@@ -97,6 +97,10 @@
   // 자동 배타 대신 라벨만 보여 주고 사용자가 양립 가능한 것만 고르게 한다.
   function staggerCond(blob) {
     if (/機体HPへのダメージと[^。]*への負荷/.test(blob)) return '부위피격';   // 脚部/頭部… 특수완충재(그 부위 피격 시)
+    // 「対象部位にビーム属性の射撃攻撃を受けた際」 — 아래 일반 규칙은 へ/に 바로 뒤에
+    // 攻撃 가 와야 잡는데 여기는 「に + ビーム属性の射撃 + 攻撃」 이라 새어 나가 '상시' 가 됐다.
+    // 그 바람에 I필드의 피해 −70% 가 기체 전체에 늘 걸리는 것으로 잡혔다(하이젠슬레이Ⅱ 라 등).
+    if (/対象部位[にへ]/.test(blob)) return '부위피격';
     // 「〜へ攻撃を受けた際」 와 「〜に攻撃を受けた際」 — 조사만 다르고 뜻은 같다.
     // へ 만 보다가 に 를 쓰는 3건(바이아란 커스텀 2호기 양팔부 장갑 등)이 '상시' 로 새어,
     // 부위에 맞았을 때만 걸리는 경감이 기체 전체 내구 지표를 30% 올려 버렸다.
@@ -350,58 +354,82 @@
     return { skills, mult, mults, threshold, cuts };
   }
 
-  /* 누적치 감소 스킬의 **조건 축**.
-     같은 축 안에서는 하나만 성립하고, 축이 다르면 함께 성립한다.
-       · 행동(act) — 정지·이동·격투는 동시에 할 수 없다
-       · 부위(part) — 두 군데를 한 번에 맞을 수 없다
-       · 공중·변형·HP·발동 — 각각 따로다. **행동과도 함께 성립한다**
-         (공중에서 고속이동하는 멧사 F02형이 그 예다 — V·테일(공중) ×0.5 와
-          매뉴버(이동중) ×0.7 이 같이 걸려 ×0.35 가 된다)
-     하나만 고르면 이런 기체를 적게 잡고, 다 곱하면 정지하면서 격투하는
-     있을 수 없는 수가 나온다. 축으로 나누는 것이 그 사이다. */
+  /* 누적치를 읽는 다섯 가지 상황.
+     조건을 아무렇게나 곱하면 정지하면서 격투하는 있을 수 없는 수가 나오고,
+     하나만 고르면 공중에서 고속이동하는 기체를 적게 잡는다.
+     그래서 **실제로 겪는 상황**을 다섯으로 끊고, 상황마다 성립하는 조건만 센다.
+
+       통상 — 아무것도 안 할 때. 조건 없는 것(상시)만.
+       지상 — 지상에서 고속이동하거나 정지사격할 때.
+       공중 — 공중에서 고속이동할 때. 활공기구(공중)와 매뉴버(이동중)가 같이 걸린다.
+       근접 — 격투 중.
+       최대 — 축 규칙대로 전부. 부위 피격·발동 중처럼 좁은 조건이 여기에만 들어간다.
+
+     I필드는 따로 다룬다 — 빔이 그 부위에 맞았을 때만 걸리는 좁은 조건이라 늘 켜 두면
+     거짓이 되고, 최대에만 묻어 두면 안 보인다. **버튼으로 켜고 끄고**, 켜면 다섯 칸
+     모두에 반영한다(「I필드가 걸린 상태로 본다」는 뜻이다).
+
+     같은 축 안에서는 하나만 성립하고(정지·이동·격투 중 하나, 피격 부위 하나),
+     축이 다르면 함께 성립한다. */
   const STG_AXIS = {
     '정지중': 'act', '이동중': 'act', '격투중': 'act',
     '부위피격': 'part', '공중': 'air', '변형중': 'form',
     'HP조건': 'hp', '발동중': 'buff'
   };
+  const STG_CATS = [
+    { key: '통상', conds: [] },
+    { key: '지상', conds: ['이동중', '정지중'] },
+    { key: '공중', conds: ['공중', '이동중'] },
+    { key: '근접', conds: ['격투중'] },
+    { key: '최대', all: true }
+  ];
 
   /**
-   * 기체 정보 칸에 적을 누적치 내성의 **폭** — 기본과 최대.
+   * 다섯 상황의 누적치 내성. 각 항목은 {key, value, picks}.
    *
-   * 기본 = 조건 없이 늘 걸리는 것만 (임계형 + 「상시」 감소)
-   * 최대 = 기본 + **축마다 가장 센 것 하나씩** 곱한 값
-   *
-   * 최대가 어느 스킬들에서 나오는 값인지 이름을 같이 적는다 —
-   * 수만 적으면 「언제 그 값인지」를 알 수 없어 거짓말이 된다.
-   *
-   * 파츠 화면의 성능표는 지금처럼 체크박스로 사용자가 상황을 고르게 둔다:
-   * 거기서는 구성을 만드는 중이라 상황을 아는 사람이 고르는 쪽이 정확하다.
+   * 값은 임계 ÷ (받는 누적 배수) — 파츠 화면의 성능표와 **같은 식**이다.
+   * (고트라탄으로 대조함: 130% → 260% → 520%)
+   * 어느 스킬이 그 값을 만들었는지 picks 에 담아 화면에 같이 적는다.
+   * 수만 적으면 언제 그 값인지 알 수 없어 거짓이 된다.
    */
-  function staggerRange(ms, lv) {
-    const skills = staggerSkillsOf(ms, lv);
+  /** 누적치를 줄이는 I필드 스킬. 없으면 null. */
+  const iFieldOf = skills => skills.find(sk => sk.mult < 1 && /I *フィールド|Ｉ *フィールド/.test(sk.name)) || null;
+
+  function staggerByCategory(ms, lv, useIField) {
+    const all = staggerSkillsOf(ms, lv);
+    const ifld = iFieldOf(all);
+    // I필드는 버튼이 정한다 — 후보에서 빼 두고, 켜져 있으면 모든 칸에 곱한다.
+    const skills = ifld ? all.filter(sk => sk !== ifld) : all;
     // 임계형은 조건이 없다(늘 걸린다). 여럿이면 가장 높은 것.
     let threshold = 100;
-    for (const sk of skills) if (sk.threshold != null) threshold = Math.max(threshold, sk.threshold);
-
+    for (const sk of all) if (sk.threshold != null) threshold = Math.max(threshold, sk.threshold);
+    // 조건 없는 감소는 어느 상황에서나 곱한다.
     let baseMult = 1;
-    const bestBy = new Map();          // 축 → 그 축에서 가장 센 스킬
-    for (const sk of skills) {
-      if (!(sk.mult < 1)) continue;
-      if (sk.cond === '상시') { baseMult *= sk.mult; continue; }
-      // 모르는 조건은 제 이름을 축으로 쓴다 — 조용히 상시로 넘기면 없는 값을 만든다.
-      const ax = STG_AXIS[sk.cond] || sk.cond;
-      const prev = bestBy.get(ax);
-      if (!prev || sk.mult < prev.mult) bestBy.set(ax, sk);
-    }
-    const picks = [...bestBy.values()];
-    let maxMult = baseMult;
-    for (const sk of picks) maxMult *= sk.mult;
+    for (const sk of skills) if (sk.mult < 1 && sk.cond === '상시') baseMult *= sk.mult;
+    if (ifld && useIField) baseMult *= ifld.mult;
 
-    return {
-      base: Math.round(threshold / baseMult),
-      max: Math.round(threshold / maxMult),
-      picks, threshold, skills
+    const axisOf = sk => STG_AXIS[sk.cond] || sk.cond;
+    const pickBest = allow => {
+      const best = new Map();
+      for (const sk of skills) {
+        if (!(sk.mult < 1) || sk.cond === '상시') continue;
+        if (allow && !allow.includes(sk.cond)) continue;
+        const ax = axisOf(sk);            // 모르는 조건은 제 이름을 축으로 — 상시로 넘기면 없는 값이 된다
+        const prev = best.get(ax);
+        if (!prev || sk.mult < prev.mult) best.set(ax, sk);
+      }
+      return [...best.values()];
     };
+
+    const cats = STG_CATS.map(c => {
+      const picks = c.all ? pickBest(null) : pickBest(c.conds);
+      let mult = baseMult;
+      for (const sk of picks) mult *= sk.mult;
+      const named = (ifld && useIField) ? [ifld, ...picks] : picks;
+      return { key: c.key, value: Math.round(threshold / mult), picks: named };
+    });
+    cats.iField = ifld;
+    return cats;
   }
 
   /** 받는 누적치(よろけ値) — 스킬 배수를 감소 큰 순으로 하나씩 곱하고 매번 소수점 이하 내림. */
@@ -6334,6 +6362,7 @@
     vb.innerHTML = '';
     vb.append(el('span', 'mi-vote-lb', '이 기체'), voteBar('ms', baseName(m.MS名)));
     renderInfoStats(m);
+    renderInfoStagger(m);
     renderInfoWeapons(m);
     renderInfoSkills(m);
     renderInfoFullst(m);
@@ -6385,26 +6414,7 @@
     row('선회(우주)', n(m['旋回_宇宙_通常時']), '旋回_宇宙_通常時');
     row('재출격', m['再出撃時間'] == null ? '—' : m['再出撃時間'] + '초');
 
-    // 누적치 — 기본과 최대. 최대는 어느 스킬·조건에서 나오는 값인지 같이 적는다.
-    const stg = staggerRange(m, msLevel(m));
-    const sr = el('div', 'mi-st mi-stg');
-    sr.append(el('i', '', '누적치 내성'));
-    const sv = el('b');
-    sv.append(document.createTextNode(stg.base + '%'));
-    if (stg.max > stg.base) {
-      sv.append(el('span', 'mi-stg-arrow', ' → '));
-      sv.append(el('span', 'mi-stg-max', stg.max + '%'));
-    }
-    sr.append(sv);
-    if (stg.max > stg.base && stg.picks.length) {
-      sr.append(el('span', 'mi-stg-note',
-        stg.picks.map(x => x.ko + (x.cond ? ' · ' + x.cond : '')).join(' + ')));
-      sr.title = '최대치는 위 스킬들이 함께 걸렸을 때입니다.\n'
-        + '같은 갈래의 조건은 동시에 성립하지 않아(정지·이동·격투 중 하나, 피격 부위 하나) '
-        + '갈래마다 가장 센 것 하나씩만 셉니다.\n'
-        + '갈래가 다르면 함께 걸립니다 — 공중에서 고속이동하면 둘 다 적용됩니다.';
-    }
-    box.append(sr);
+    renderInfoStagger(m);
 
     // 파츠 칸은 칸 수 자체가 뜻이라 막대가 아니라 **눈금**으로 그린다.
     // 「17칸」보다 ▮ 열일곱이 한눈에 들어온다(게임 화면도 그렇게 보여 준다).
@@ -6434,6 +6444,43 @@
     else if (/경직\s*있음|즉시\s*발사\s*경직|집속\s*시\s*경직/.test(t)) out.push({ t: '경직', cls: 't-stag' });
     if (/다운/.test(t)) out.push({ t: '다운', cls: 't-down' });
     return out;
+  }
+
+  // I필드를 켜 두고 볼 것인가. 기체를 바꿔도 유지한다 — 보는 방식이지 구성이 아니다.
+  let infoIField = false;
+
+  /** 누적치 내성 — 다섯 상황을 한 칸에. 값을 만든 스킬을 같이 적는다. */
+  function renderInfoStagger(m) {
+    const box = $('#infoStagger');
+    if (!box) return;
+    box.innerHTML = '';
+    const cats = staggerByCategory(m, msLevel(m), infoIField);
+
+    // I필드가 있는 기체에만 버튼을 띄운다.
+    const bar = $('#infoStgBtns');
+    if (bar) {
+      bar.innerHTML = '';
+      bar.hidden = !cats.iField;
+      if (cats.iField) {
+        const b = el('button', 'mi-sg-btn' + (infoIField ? ' on' : ''), 'I필드');
+        b.title = cats.iField.ko + ' — 빔이 그 부위에 맞았을 때만 걸립니다.\n'
+          + '켜면 다섯 칸 모두에 반영합니다.';
+        b.onclick = () => { infoIField = !infoIField; renderInfoStagger(m); };
+        bar.append(b);
+      }
+    }
+    const top = Math.max(...cats.map(c => c.value));
+    for (const c of cats) {
+      const r = el('div', 'mi-sg' + (c.key === '최대' ? ' top' : ''));
+      r.append(el('i', '', c.key));
+      r.append(el('b', '', c.value + '%'));
+      // 통상보다 높을 때만 무엇이 올렸는지 적는다 — 같은 값이면 적을 게 없다.
+      r.append(el('span', 'mi-sg-by', c.picks.length ? c.picks.map(x => x.ko).join(' + ') : ''));
+      if (c.picks.length) r.title = c.picks.map(x => x.ko + ' · ' + x.cond).join('\n');
+      box.append(r);
+    }
+    const note = $('#infoStgNote');
+    if (note) note.textContent = top > cats[0].value ? '통상 ' + cats[0].value + '% 기준' : '';
   }
 
   // 무장 속성 → 한글 한 낱말. 무장 표의 유형 칸과 같은 말을 쓴다.
