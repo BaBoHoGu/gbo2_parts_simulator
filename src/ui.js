@@ -2634,9 +2634,12 @@
     }
     body.append(du);
 
-    // 누적치(스태거) 내성 — 접으면 「통상」 한 줄, 펴면 다섯 상황.
-    // 무장별 다운은 '피탄 시뮬'에서.
+    // 누적치(스태거) 내성 — 머리줄은 **지금 이 구성**의 값이라 방어 스킬 체크를
+    // 그대로 반영한다. 펴서 나오는 다섯 상황은 「이 기체가 그 상황에서 갖는 값」이라
+    // 체크와 무관하다. 무장별 다운은 '피탄 시뮬'에서.
     {
+      const stg = activeStaggerMods(state.ms, lv);
+      const stgNow = Math.round(stg.threshold / stg.mult);
       const cats = staggerByCategory(state.ms, lv, bldIField);
       const head = el('button', 'dura-row stagger-row stg-head' + (bldStgOpen ? ' open' : ''));
       head.type = 'button';
@@ -2644,18 +2647,21 @@
       head.append(el('span', 'stg-caret', bldStgOpen ? '▾' : '▸'));
       head.append(el('span', 'dura-lb', '누적치'));
       const scell = el('span', 'dura-cell');
-      scell.append(el('span', 'dura-k', bldStgOpen ? '통상' : '내성'));
-      scell.append(el('span', 'dura-v', cats[0].value + '%'));
+      scell.append(el('span', 'dura-k', '내성'));
+      scell.append(el('span', 'dura-v', stgNow + '%'));
       head.append(scell);
       const top = Math.max(...cats.map(c => c.value));
       head.append(el('span', 'stagger-detail',
-        bldStgOpen ? '다섯 상황 · 방어 스킬 체크와 무관'
-          : (top > cats[0].value ? `펴면 상황별 (최대 ${top}%)` : '펴면 상황별')));
+        `임계 ${stg.threshold}%` + (stg.mult < 1 ? ` · 받는 누적 ×${+stg.mult.toFixed(3)}` : '')
+        + (bldStgOpen ? '' : top > stgNow ? ` · 펴면 상황별 (최대 ${top}%)` : ' · 펴면 상황별')));
       head.onclick = () => { setBldStgOpen(!bldStgOpen); renderAll(); };
       body.append(head);
 
       const sgw = el('div', 'stg-cats mi-sglist');
       sgw.hidden = !bldStgOpen;
+      // 머리줄(체크 반영)과 값이 다를 수 있다 — 왜 다른지 적어 두지 않으면 둘 중
+      // 하나가 틀린 것으로 읽힌다.
+      sgw.append(el('div', 'stg-cats-hint', '※ 아래 다섯 줄은 기체가 가진 값입니다 — 방어 스킬 체크와 무관'));
       if (cats.iField) {
         const b = el('button', 'mi-sg-btn' + (bldIField ? ' on' : ''), 'I필드');
         b.type = 'button';
