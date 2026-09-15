@@ -3014,7 +3014,11 @@ body.info-open .sel-info { display: flex; }
   border: 1px solid var(--line); border-radius: 3px;
   background: transparent; color: var(--dim);
 }
-.vote-btn i { font-style: normal; font-size: 9px; }
+/* 화살표는 정렬·증감으로도 읽힌다 — 손가락은 뜻이 하나다.
+   안 누른 쪽까지 원색이면 눈이 시끄러우므로, 고른 것만 색을 돌려준다. */
+.vote-btn i { font-style: normal; font-size: 12px; line-height: 1;
+  filter: grayscale(1); opacity: .7; transition: filter .12s, opacity .12s; }
+.vote-btn.on i, .vote-btn:hover:not(:disabled) i { filter: none; opacity: 1; }
 .vote-btn b { font-size: 11.5px; }
 .vote-btn:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
 .vote-btn:disabled { opacity: .5; cursor: default; }

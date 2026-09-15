@@ -6019,7 +6019,7 @@
         };
         return b;
       };
-      bar.append(mk(1, '▲', up), mk(-1, '▼', down));
+      bar.append(mk(1, '👍', up), mk(-1, '👎', down));
     };
     draw();
     bar._draw = draw;
