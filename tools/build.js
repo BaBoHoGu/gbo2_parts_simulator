@@ -133,6 +133,19 @@ const WEB = process.argv.includes('--web');
 
 // 이미지를 data URI 로 인라인 — 진짜 단일 파일이 되고, file:// 에서도 캔버스 오염 없이
 // PNG 카드에 기체·파츠 이미지를 그릴 수 있다. 키는 '<dir>/<NFC파일명>.webp'.
+/* 공식 일러스트 — **내용을 담지 않는다.** 474장 11MB 라 HTML 에 넣으면
+   OTA 다운로드가 매 갱신 그만큼 커진다. 사이트(dist/web/illust)에만 올리고
+   앱은 URL 로 부른다. 여기서는 「어느 기체에 그림이 있는가」만 넘겨,
+   없는 기체(84기)는 아예 부르지 않게 한다 — 헛된 404 를 막는다. */
+const ILLUST_SRC = path.join(ROOT, 'assets', 'illust');
+const illust = {};
+if (fs.existsSync(ILLUST_SRC)) {
+  for (const f of fs.readdirSync(ILLUST_SRC)) {
+    if (!/\.webp$/i.test(f)) continue;
+    illust[f.replace(/\.webp$/i, '').normalize('NFC')] = 1;
+  }
+}
+
 const IMG_SRC = path.join(ROOT, 'assets', 'images');
 const images = {};
 let imgCount = 0, imgBytes = 0;
@@ -184,6 +197,7 @@ const html = read('src', 'index.html')
   .replace('/*__BUILD__*/', () => inline('GBO2_BUILD', buildMeta))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills, recycle }))
   .replace('/*__IMAGES__*/', () => inline('GBO2_IMAGES', images))
+  .replace('/*__ILLUST__*/', () => inline('GBO2_ILLUST', illust))
   .replace('/*__WEAPONS__*/', () => inline('GBO2_WEAPONS', weapons))
   .replace('/*__SKILLS__*/', () => inline('GBO2_SKILLS', skills))
   .replace('/*__I18N_DATA__*/', () => inline('GBO2_I18N', i18n))
@@ -210,6 +224,9 @@ fs.mkdirSync(DIST, { recursive: true });
 // 사이트판은 반대로 여기에 이미지를 깐다 — 지웠다 다시 깔아 지워진 이미지가 남지 않게 한다.
 fs.rmSync(path.join(DIST, 'images'), { recursive: true, force: true });
 if (WEB && fs.existsSync(IMG_SRC)) fs.cpSync(IMG_SRC, path.join(DIST, 'images'), { recursive: true });
+// 일러스트는 사이트에만 올린다(앱은 이 주소를 URL 로 부른다)
+fs.rmSync(path.join(DIST, 'illust'), { recursive: true, force: true });
+if (WEB && fs.existsSync(ILLUST_SRC)) fs.cpSync(ILLUST_SRC, path.join(DIST, 'illust'), { recursive: true });
 if (WEB) {
   fs.writeFileSync(path.join(DIST, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
   // GitHub Pages 는 기본으로 Jekyll 을 돌리는데, Jekyll 은 '_' 로 시작하는 파일을 빼 버린다.

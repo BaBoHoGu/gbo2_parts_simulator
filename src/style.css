@@ -2868,9 +2868,13 @@ body.info-open .sel-info { display: flex; }
 /* ---- 기체 신분증 (오른쪽 기둥 맨 위) ---- */
 .mi-card h2 { font-size: 15px; margin: 9px 0 6px; }
 .mi-card .mi-img {
-  width: 100%; height: 118px; flex: 0 0 auto;
+  width: 100%; aspect-ratio: 3 / 4; height: auto; flex: 0 0 auto;
   border-radius: 3px 3px 0 0;
 }
+/* 공식 일러스트는 세로가 긴 그림이라 칸을 채운다. 썸네일로 떨어졌을 때는
+   작은 그림을 늘리면 흐려지므로 원래 비율대로 가운데 둔다. */
+.mi-card .mi-img img { object-fit: contain; }
+.mi-card .mi-img.illust img { object-fit: cover; object-position: center top; }
 .mi-card .mi-tags { margin-bottom: 6px; }
 .mi-card .mi-lvs { margin-bottom: 6px; }
 .mi-col { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
@@ -2904,7 +2908,7 @@ body.info-open .sel-info { display: flex; }
 /* ---- 파츠 칸 ----
    게임 화면처럼 성능표 아래에 이어 붙는다(PARTS SLOT). */
 .mi-slot-lb {
-  font-size: 10px; color: var(--dim); letter-spacing: .6px;
+  font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .6px;
   margin: 9px 0 5px; padding-top: 7px; border-top: 1px solid var(--line-soft, rgba(255,255,255,.08));
 }
 .mi-slots { display: flex; flex-direction: column; gap: 4px; }
@@ -2912,10 +2916,10 @@ body.info-open .sel-info { display: flex; }
   display: flex; align-items: center; gap: 7px;
   padding: 5px 7px; background: rgba(255, 255, 255, .03); border-radius: 3px;
 }
-.mi-slot i { font-style: normal; color: var(--muted); font-size: 11px; flex: 0 0 34px; }
+.mi-slot i { font-style: normal; color: var(--muted); font-size: 12px; flex: 0 0 38px; font-weight: 700; }
 .mi-slot b {
-  font-size: 14px; color: var(--accent); flex: 0 0 22px; text-align: right;
-  font-variant-numeric: tabular-nums;
+  font-size: 18px; font-weight: 800; color: var(--accent);
+  flex: 0 0 28px; text-align: right; font-variant-numeric: tabular-nums;
 }
 /* 칸 수는 눈금으로 — 「23칸」보다 ▮ 스물셋이 한눈에 들어온다 */
 .mi-pips { display: flex; flex-wrap: wrap; gap: 1.5px; flex: 1; min-width: 0; }
@@ -3090,9 +3094,12 @@ body.info-open .sel-info { display: flex; }
 .mi-skeff { font-size: 11px; line-height: 1.6; }
 .mi-skdd { font-size: 10.5px; color: var(--muted); line-height: 1.6; margin-top: 4px; }
 
-/* 길어지면 그 칸만 스크롤한다 — 기둥 전체가 늘어나면 옆 기둥과 어긋난다.
-   무장 10종·스킬 19종이면 왼쪽이 870px 까지 자라 옆 기둥(≈620)과 250px 이 벌어졌다. */
-.mi-wpn, .mi-sk { max-height: 288px; overflow-y: auto; }
+/* 높이의 기준은 늘 **가운데 기둥**이다. 왼쪽 두 칸을 그 높이에 맞춰 55:45 로 나눈다.
+   무장을 넓게 잡는 이유는 눌러서 상세를 펼치면 길어지기 때문이다 —
+   짧은 기체라 남더라도 그대로 둔다(펼칠 자리를 미리 비워 두는 것이다). */
+.mi-cols > .mi-col:first-child { --mi-h: 640px; }
+.mi-wpn { max-height: calc(var(--mi-h) * .55); overflow-y: auto; }
+.mi-sk { max-height: calc(var(--mi-h) * .45); overflow-y: auto; }
 
 /* 누적치 스킬을 글자가 아니라 칩으로 */
 .mi-sg-by { display: flex; flex-wrap: wrap; gap: 3px; overflow: visible; }

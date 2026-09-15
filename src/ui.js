@@ -35,6 +35,19 @@
     ? IMG_BASE + key
     : (IMG_MAP[key] || IMG_MAP[key.replace(/\/[^/]+$/, '/_default.webp')] || '');
   const msImg = name => imgUrl(`ms/${baseName(name).normalize('NFC')}.webp`);
+
+  /* 공식 일러스트 — 사이트에 따로 올려 두고 **URL 로** 부른다.
+     원본이 750x800 PNG 라 508장이면 61MB, 360px WebP 로 줄여도 10MB 다.
+     단일 HTML 에 넣으면 OTA 다운로드가 매 갱신 그만큼 커진다.
+     <img> 는 CORS 를 타지 않아 APK·PC(file://)에서도 인터넷만 되면 뜨고,
+     안 되면 onerror 로 기존 썸네일로 떨어진다. */
+  const ILLUST_BASE = 'https://gbo2-parts.pages.dev/illust/';
+  const illustSet = window.GBO2_ILLUST || null;     // 빌드가 넣어 주는 '있는 기체' 목록
+  const illustUrl = name => {
+    const b = baseName(name).normalize('NFC');
+    if (illustSet && !illustSet[b]) return null;    // 공식에 없는 기체는 아예 안 부른다
+    return ILLUST_BASE + encodeURIComponent(b) + '.webp';
+  };
   const partImg = name => imgUrl(`parts/${name.normalize('NFC')}.webp`);
   const defaultImg = dir => imgUrl(`${dir}/_default.webp`);
 
@@ -6339,8 +6352,18 @@
     if (!m) return;
     const img = $('#infoImg');
     if (img) {
-      img.onerror = () => { img.onerror = null; img.src = defaultImg('ms'); };
-      img.src = msImg(m.MS名);
+      const box = img.parentNode;
+      const thumb = () => {
+        box.classList.remove('illust');
+        img.onerror = () => { img.onerror = null; img.src = defaultImg('ms'); };
+        img.src = msImg(m.MS名);
+      };
+      const url = illustUrl(m.MS名);
+      if (url) {
+        box.classList.add('illust');
+        img.onerror = thumb;          // 공식에 없는 기체(84기)·오프라인이면 썸네일로
+        img.src = url;
+      } else thumb();
     }
 
     // 이름은 위키로 이어 준다 — 성능 머리와 같은 방식
@@ -6383,6 +6406,7 @@
     renderInfoSkills(m);
     renderInfoFullst(m);
     renderInfoBuilds();
+    fitInfoHeights();
   }
 
   /* 막대의 기준값. 상한이 있는 스탯은 상한(core 의 DEFAULT_LIMITS)을 쓰고,
@@ -6505,6 +6529,43 @@
 
   // I필드를 켜 두고 볼 것인가. 기체를 바꿔도 유지한다 — 보는 방식이지 구성이 아니다.
   let infoIField = false;
+
+  /**
+   * 높이의 기준은 **가운데 기둥**이다.
+   *   · 오른쪽 — 그림을 늘렸다 줄여 기둥을 가운데에 맞춘다(공식 일러스트는 세로가 길어
+   *     그냥 두면 혼자 튀어나간다).
+   *   · 왼쪽 — 남는 높이를 무장 55 : 스킬 45 로 나눈다. 무장을 넓게 잡는 이유는
+   *     눌러서 상세를 펼치면 길어지기 때문이다 — 짧은 기체라 남아도 그대로 둔다.
+   * 한 번만 재고 끝낸다. 맞춘 뒤 다시 재면 값이 오가며 깜빡인다.
+   */
+  function fitInfoHeights() {
+    const cols = [...document.querySelectorAll('.mi-cols > .mi-col')];
+    if (cols.length < 3) return;
+    const left = cols[0], mid = cols[1], right = cols[2];
+    const img = $('#infoImg');
+    const box = img && img.parentNode;
+    // 좁은 화면에서는 기둥이 한 줄로 쌓여 맞출 것이 없다.
+    if (mid.getBoundingClientRect().width > 0 && left.getBoundingClientRect().top !== mid.getBoundingClientRect().top) {
+      if (box) box.style.removeProperty('height');
+      left.style.removeProperty('--mi-h');
+      return;
+    }
+    if (box) box.style.removeProperty('height');
+    left.style.setProperty('--mi-h', '640px');
+    const want = mid.getBoundingClientRect().height;
+
+    // 오른쪽: 그림 높이를 조절해 기둥을 가운데에 맞춘다
+    if (box) {
+      const rest = right.getBoundingClientRect().height - box.getBoundingClientRect().height;
+      const h = Math.max(120, Math.min(420, want - rest));
+      box.style.height = h + 'px';
+    }
+    // 왼쪽: 남는 높이를 55:45 로
+    const head = left.getBoundingClientRect().height
+      - ($('#infoWpn') ? $('#infoWpn').getBoundingClientRect().height : 0)
+      - ($('#infoSk') ? $('#infoSk').getBoundingClientRect().height : 0);
+    left.style.setProperty('--mi-h', Math.max(280, want - head) + 'px');
+  }
 
   /** 누적치 내성 — 다섯 상황을 한 칸에. 값을 만든 스킬을 같이 적는다. */
   function renderInfoStagger(m) {
