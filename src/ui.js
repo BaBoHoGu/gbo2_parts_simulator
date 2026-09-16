@@ -1696,6 +1696,15 @@
       return { key: 'recover', v: +m[1], always: false };
     if ((m = /オーバーヒート[^]{0,20}?回復時間[^\d]{0,12}(\d+)\s*[%％]\s*短縮/.exec(seg)))
       return { key: 'oh', v: +m[1], always: false };
+    /* 「…을 쓰기 시작할 때」 드는 몫은 초기소비다. 계속 소비(高速移動中)와 같은 축으로
+       읽으면 한 스킬 안에서 55%+50% 처럼 더해져 100% 를 넘는다(空中制御プログラム LV4).
+
+       같은 뜻을 데이터가 네 가지로 적는다 — 전수로 세어 확인했다:
+         「使用したとき」175 · 「使用した時」67 · 「行った直後」13 · 「使用した際」1
+       하나만 잡으면 나머지가 조용히 계속소비로 샌다(실제로 「行った直後」가 그랬다).
+       ジャンプ時·タックル発生時 는 조건이 달라(점프·태클) 여기 넣지 않는다. */
+    if ((m = /(?:使用した(?:とき|時|際)|行った直後)[^。]{0,16}?消費量[^\d]{0,8}(\d+)\s*[%％]\s*軽減/.exec(seg)))
+      return { key: 'cutInit', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
     if ((m = /スラスター(?:の)?消費(?:量)?[^\d]{0,12}(\d+)\s*[%％]\s*軽減/.exec(seg)) ||
         (m = /スラスター消費(?:量)?\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
       return { key: 'cutRate', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
@@ -1755,14 +1764,30 @@
     return out;
   }
 
+  /** 체크 열쇠 — **이름이 아니라 「이름|조건」**이다.
+   *  한 스킬이 조건이 다른 효과를 여럿 가진다(고성능 분사 제어 장치: 착지캔슬 초기소비 75%
+   *  · 공중 초기소비 50% · 공중 소비속도 50%). 이름으로 묶으면 한 줄만 눌러도 셋이 다 켜져,
+   *  동시에 성립하지 않는 상황이 합산된다 — 초기소비 125% 가 되어 부스트가 8.1 → 20.9초로
+   *  튀었다(계산이 음수로 넘어간다). 상황 단위로 켠다. */
+  const thrKeyOf = x => x.name + '|' + (x.cond || '');
+
+  /** 경감·상승 합이 계산을 뒤집지 못하게 묶는다.
+   *  소비를 100% 이상 줄이면 초기소비·소비속도가 음수가 되어 부스트 지속이 뒤집힌다.
+   *  게임에 그런 값은 없으므로, 합이 그만큼 나오면 **화면에 묶였다고 적고** 95% 로 자른다
+   *  (조용히 자르면 왜 다른지 알 수 없다). */
+  const THR_CUT_MAX = 95;
+
   /** 켜 둔(또는 상시인) 스러스터 스킬만 모아 파츠와 같은 모양으로 낸다. */
   function thrusterSkillFx(ms, lv, env, on, form) {
-    const fx = { cutInit: 0, cutRate: 0, recover: 0, oh: 0, used: [] };
+    const fx = { cutInit: 0, cutRate: 0, recover: 0, oh: 0, used: [], capped: [] };
     for (const s of thrusterSkillsOf(ms, lv, form)) {
-      if (s.env && s.env !== env) continue;            // 환경이 다르면 안 걸린다
-      if (s.cond && !(on && on.has(s.name))) continue;  // 조건부는 체크해야 걸린다
+      if (s.env && s.env !== env) continue;                  // 환경이 다르면 안 걸린다
+      if (s.cond && !(on && on.has(thrKeyOf(s)))) continue;   // 조건부는 그 상황을 체크해야 걸린다
       fx[s.key] += s.v;
       fx.used.push(s);
+    }
+    for (const k of ['cutInit', 'cutRate']) {
+      if (fx[k] > THR_CUT_MAX) { fx.capped.push(k); fx[k] = THR_CUT_MAX; }
     }
     return fx;
   }
@@ -2961,6 +2986,10 @@
               ? '\n· 스킬 반영: ' + m.fx.skill.used.map(x => skTr(x.name)
                   + ' ' + THR_KEY_KO[x.key] + ' ' + x.v + '%' + (x.cond ? '(' + x.cond + ')' : '')).join(' · ')
               : '')
+          + (m.fx.skill && m.fx.skill.capped && m.fx.skill.capped.length
+              ? '\n※ ' + m.fx.skill.capped.map(k => THR_KEY_KO[k]).join('·') + ' 합이 너무 커 '
+                + THR_CUT_MAX + '% 로 묶었습니다 — 동시에 성립하지 않는 상황을 함께 체크했을 수 있습니다.'
+              : '')
           + (ohLong ? '\n※ ' + ohLong + ' 효과가 끝난 뒤에는 OH 복귀가 ' + OH_LONG_SEC
               + '초 (스킬 설명에 명시된 고정값 — 위 단축 파츠와 별개).' : '')
           + (isTankMs(state.ms) ? '\n※ 탱크형은 소비속도가 위키 미확정이라 부스트 지속을 내지 않는다.' : '');
@@ -2975,7 +3004,8 @@
       const conds = all.filter(x => x.cond);
       const always = all.filter(x => !x.cond);
       if (conds.length || always.length) {
-        const onCount = conds.filter(x => state.thrusterOn.has(x.name)).length;
+        const condKeys = [...new Set(conds.map(thrKeyOf))];
+        const onCount = condKeys.filter(k => state.thrusterOn.has(k)).length;
         const head = el('button', 'dura-row stg-head' + (thrSkillOpen ? ' open' : ''));
         head.type = 'button';
         head.setAttribute('aria-expanded', thrSkillOpen ? 'true' : 'false');
@@ -2984,7 +3014,7 @@
         head.append(el('span', 'stagger-detail',
           (always.length ? always.length + '개 상시 반영 중' : '')
           + (always.length && conds.length ? ' · ' : '')
-          + (conds.length ? (onCount ? onCount + '개 체크됨' : conds.length + '개 · 체크 시 반영') : '')));
+          + (condKeys.length ? (onCount ? onCount + '개 체크됨' : condKeys.length + '개 · 체크 시 반영') : '')));
         head.onclick = () => { setThrSkillOpen(!thrSkillOpen); renderAll(); };
         body.append(head);
 
@@ -3000,17 +3030,26 @@
             el('span', 'stg-cond', x.env ? (x.env === 'space' ? '우주' : '지상') : '상시'));
           wrap.append(lab);
         }
+        // 같은 스킬·같은 상황의 효과는 **한 줄로 묶는다.** 예전에는 효과마다 한 줄이라
+        // 같은 이름이 두세 줄 나왔고, 하나를 켜면 나머지도 같이 켜져 보였다.
+        const byCond = new Map();
         for (const x of conds) {
-          const lab = el('label', 'stg-chk' + (state.thrusterOn.has(x.name) ? ' on' : ''));
-          lab.title = x.seg;
-          const box = el('input'); box.type = 'checkbox'; box.checked = state.thrusterOn.has(x.name);
+          const k = thrKeyOf(x);
+          if (!byCond.has(k)) byCond.set(k, { key: k, ko: x.ko, cond: x.cond, env: x.env, fx: [], seg: x.seg });
+          byCond.get(k).fx.push(x);
+        }
+        for (const g of byCond.values()) {
+          const on = state.thrusterOn.has(g.key);
+          const lab = el('label', 'stg-chk' + (on ? ' on' : ''));
+          lab.title = g.seg;
+          const box = el('input'); box.type = 'checkbox'; box.checked = on;
           box.onchange = () => {
-            box.checked ? state.thrusterOn.add(x.name) : state.thrusterOn.delete(x.name);
+            box.checked ? state.thrusterOn.add(g.key) : state.thrusterOn.delete(g.key);
             renderAll();
           };
-          lab.append(box, el('span', 'stg-nm', x.ko),
-            el('span', 'stg-tag', THR_KEY_KO[x.key] + ' ' + x.v + '%'),
-            el('span', 'stg-cond', x.cond + (x.env ? '·' + (x.env === 'space' ? '우주' : '지상') : '')));
+          lab.append(box, el('span', 'stg-nm', g.ko),
+            el('span', 'stg-tag', g.fx.map(f => THR_KEY_KO[f.key] + ' ' + f.v + '%').join(' · ')),
+            el('span', 'stg-cond', g.cond + (g.env ? '·' + (g.env === 'space' ? '우주' : '지상') : '')));
           wrap.append(lab);
         }
         body.append(wrap);

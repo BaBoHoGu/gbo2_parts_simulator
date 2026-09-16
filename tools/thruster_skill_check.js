@@ -60,7 +60,7 @@ const LIST = process.argv.includes('--list');
     for (const form of ['normal', 'transform'])
       for (const m of U.msData())
         for (const s of U.thrusterSkillsOf(m, U.msLevel(m), form))
-          out.push({ form, ms: m.MS名, name: s.name, ko: s.ko, key: s.key, v: s.v,
+          out.push({ form, ms: m.MS名, name: s.name, ko: s.ko, lv: s.lv, key: s.key, v: s.v,
             cond: s.cond, env: s.env, seg: s.seg });
     return out;
   });
@@ -70,7 +70,7 @@ const LIST = process.argv.includes('--list');
   // 이름+LV+효과 단위로 접는다
   const uniq = new Map();
   for (const r of rows) {
-    const k = [r.form, r.name, r.key, r.v, r.cond || '', r.env || ''].join('|');
+    const k = [r.form, r.name, r.lv || '', r.key, r.v, r.cond || '', r.env || ''].join('|');
     if (!uniq.has(k)) uniq.set(k, { ...r, n: 0 });
     uniq.get(k).n++;
   }
@@ -99,6 +99,38 @@ const LIST = process.argv.includes('--list');
         { 읽어냄: keys, 기대: ALWAYS[form][nm] });
     }
   }
+
+  console.log('');
+  console.log('== 체크가 상황 단위인가 ==');
+  // 한 스킬이 조건이 다른 효과를 여럿 가질 수 있다. 체크를 **이름**으로 묶으면 한 줄만
+  // 눌러도 동시에 성립하지 않는 상황이 같이 켜져, 경감 합이 100% 를 넘고 계산이 음수로
+  // 넘어간다(실제로 133기에서 그랬다 — 부스트 8.1 → 20.9초).
+  const pairs = {};
+  for (const x of all.filter(y => y.cond)) {
+    const k = x.form + '|' + x.name;
+    (pairs[k] = pairs[k] || new Set()).add(x.cond);
+  }
+  const multi = Object.entries(pairs).filter(function (e) { return e[1].size > 1; });
+  console.log('  조건을 둘 이상 가진 스킬 ' + multi.length + '종 — 이름으로 묶이면 안 된다');
+  ok('조건부 효과에 조건이 빠짐없이 붙어 있다',
+    all.filter(x => x.cond).every(x => typeof x.cond === 'string' && x.cond.length > 0));
+
+  console.log('');
+  console.log('== 합이 계산을 뒤집지 않는가 ==');
+  // 같은 상황 안에서의 합만 본다 — 서로 다른 상황을 함께 켜는 것은 사용자의 선택이고,
+  // 그때는 앱이 95% 로 묶고 그 사실을 화면에 적는다.
+  const bySit = {};
+  for (const x of all.filter(y => y.cond)) {
+    // LV 을 열쇠에 넣는다 — 같은 이름·조건이라도 LV 이 다르면 **다른 항목**이다.
+    // 안 넣으면 LV1 25% + LV2 50% + LV3 75% 를 한 덩어리로 세어 150% 라고 말한다.
+    const k = x.form + '|' + x.name + '|' + x.lv + '|' + x.cond + '|' + x.key;
+    bySit[k] = (bySit[k] || 0) + x.v;
+  }
+  const overOne = Object.entries(bySit).filter(function (e) {
+    return /cutInit|cutRate/.test(e[0]) && e[1] >= 100;
+  });
+  ok('한 상황 안의 경감 합이 100% 미만', overOne.length === 0,
+    overOne.slice(0, 4).map(function (e) { return e[0] + ' = ' + e[1] + '%'; }).join(' / '));
 
   console.log('\n== 값이 제정신인가 ==');
   ok('경감·상승은 1~100% 안', all.every(x => x.v > 0 && x.v <= 150), all.filter(x => !(x.v > 0 && x.v <= 150)));
