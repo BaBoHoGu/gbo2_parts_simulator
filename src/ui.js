@@ -2949,6 +2949,8 @@
     const expLabel = state.expansion === C.EXPANSION_NONE ? '없음'
       : (C.EXPANSION_LABEL[state.expansion] || state.expansion) + ' LV' + state.expLevel;
     const formLabel = (state.form !== 'normal' && alt) ? alt.label : null;
+    // 주무장 LV 가 기체 LV 와 다를 때만 카드에 적는다.
+    const wlvNote = wantWeaponLv() !== lv ? '주무장 LV' + wantWeaponLv() : '';
 
     const wrapLines = (ctx, text, font, maxW) => {
       ctx.font = font;
@@ -2995,8 +2997,16 @@
         ctx.fillStyle = '#10151c'; ctx.textAlign = 'left'; ctx.fillText(bt, bx + 9, byy + 14);
       }
       ly += TH + 14;
-      lt('강화 ' + STAGE_LABEL[state.stage] + '    확장 ' + expLabel + (formLabel ? '    ' + formLabel : ''),
-        lx, ly + 4, fnt(12), CO.muted);
+      const headTxt = '강화 ' + STAGE_LABEL[state.stage] + '    확장 ' + expLabel
+        + (formLabel ? '    ' + formLabel : '');
+      lt(headTxt, lx, ly + 4, fnt(12), CO.muted);
+      // 주무장 LV 를 낮춰 둔 채 카드를 내보내면, 받아 본 사람은 기체 LV 로 읽는다.
+      // 무장 위력만이 아니라 레벨링크 파츠가 기본값만 붙어 **성능 수치까지** 달라지므로
+      // 요약 카드에도 반드시 적어야 한다. 기본값(기체와 같음)일 때는 적지 않는다 —
+      // 늘 붙어 있으면 눈에 안 들어와 경고 구실을 못 한다.
+      if (wlvNote) {
+        lt(wlvNote, lx + textW(headTxt + '    ', fnt(12), 0), ly + 4, fnt(12, '700'), CO.accent);
+      }
       ly += 16; rule(ly, lx, lR); ly += 14;
 
       // 파츠 슬롯 게이지 (근/중/원)
@@ -3201,6 +3211,11 @@
       let wy = wpTop + IP + 4;
       dtext('무장 내역', wx0, wy + 8, fnt(13, '700'), CO.text);
       dtext('(피해량은 파츠·스킬·자세 반영)', wx0 + 82, wy + 8, fnt(11), CO.dim);
+      if (wlvNote) {
+        ctx.font = fnt(11);
+        const nw = ctx.measureText('(피해량은 파츠·스킬·자세 반영)').width;
+        dtext('· ' + wlvNote + ' (부무장은 기체 LV)', wx0 + 82 + nw + 8, wy + 8, fnt(11, '700'), CO.accent);
+      }
       wy += 24;
       const hf = fnt(11);
       dtext('구분', cSec, wy + 8, hf, CO.dim);
