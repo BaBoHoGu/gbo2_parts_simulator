@@ -140,6 +140,7 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accen
 /* 파츠 적용 단계에서만 보이는 버튼(자동 구성·저장·공유) */
 body.view-select .step-only,
 body.view-codex .step-only,
+body.view-token .step-only,
 body.view-gallery .step-only { display: none; }
 
 /* ============ 화면 전환 ============ */
@@ -151,7 +152,14 @@ body.view-gallery .step-only { display: none; }
 body.view-select  .screen:not(#screenSelect),
 body.view-build   .screen:not(#screenBuild),
 body.view-gallery .screen:not(#screenGallery),
+body.view-token   .screen:not(#screenToken),
 body.view-codex   .screen:not(#screenCodex) { display: none; }
+
+/* ---- ⑤ 토큰 계산기 ----
+   계산기 본체는 제 스타일을 #screenToken 안에 가둬 들고 있다(token.css).
+   여기서는 앱의 화면 틀에 앉히는 것만 한다. */
+.screen-token { display: flex; flex-direction: column; }
+.token-body { flex: 1; min-height: 0; overflow-y: auto; }
 
 /* ---- ① 기체 선택 ---- */
 .screen-select { display: flex; flex-direction: column; }

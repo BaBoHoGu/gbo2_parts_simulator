@@ -1200,17 +1200,18 @@
 
   function setView(view) {
     const changed = state.view !== view;
-    if ((view === 'gallery' || view === 'codex') && changed) viewBefore = state.view;
+    if ((view === 'gallery' || view === 'codex' || view === 'token') && changed) viewBefore = state.view;
     state.view = view;
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
     if (view === 'select' && changed) { renderMsList(); renderViewChips(); }
-    for (const v of ['select', 'build', 'gallery', 'codex'])
+    for (const v of ['select', 'build', 'gallery', 'codex', 'token'])
       document.body.classList.toggle('view-' + v, view === v);
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
       li.classList.toggle('on', li.dataset.step === view));
     // 화면 전환 시 스크롤을 위로 되돌린다
-    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex') }[view] || $('#screenSelect');
+    const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex'),
+      token: $('#screenToken') }[view] || $('#screenSelect');
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
@@ -7917,6 +7918,9 @@
     // 공유 갤러리 (전체 화면)
     $('#codexBtn').onclick = () => openCodex(true);
     $('#codexBack').onclick = () => openCodex(false);
+    // 토큰 계산기 — 화면만 바꾼다. 계산기는 제 스크립트가 알아서 돈다(token.js).
+    $('#tokenBtn').onclick = () => setView('token');
+    $('#tokenBack').onclick = () => setView(viewBefore || 'select');
     $('#codexSearch').oninput = ev => { codexQ = ev.target.value; renderCodexList(); };
     $('#galleryBtn').onclick = () => openGallery(true);
     $('#galleryBack').onclick = () => openGallery(false);

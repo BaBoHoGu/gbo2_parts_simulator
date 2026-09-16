@@ -194,6 +194,7 @@ const html = read('src', 'index.html')
   .replace('/*__FAVICON__*/', () => 'data:image/png;base64,'
     + fs.readFileSync(path.join(ROOT, 'assets', 'favicon.png')).toString('base64'))
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
+  .replace('/*__TOKEN_CSS__*/', () => read('src', 'token.css'))
   .replace('/*__BUILD__*/', () => inline('GBO2_BUILD', buildMeta))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills, recycle }))
   .replace('/*__IMAGES__*/', () => inline('GBO2_IMAGES', images))
@@ -201,14 +202,20 @@ const html = read('src', 'index.html')
   .replace('/*__WEAPONS__*/', () => inline('GBO2_WEAPONS', weapons))
   .replace('/*__SKILLS__*/', () => inline('GBO2_SKILLS', skills))
   .replace('/*__I18N_DATA__*/', () => inline('GBO2_I18N', i18n))
+  .replace('/*__PICKUPS__*/', () => inline('GBO2_PICKUPS',
+    JSON.parse(read('data', 'pickups.json'))))
   .replace('/*__CORE__*/', () => read('src', 'core.js'))
   .replace('/*__I18N__*/', () => read('src', 'i18n.js'))
   .replace('/*__OPT__*/', () => read('src', 'optimizer.js'))
   .replace('/*__DAMAGE__*/', () => read('src', 'damage.js'))
   .replace('/*__SHARE__*/', () => read('src', 'share.js'))
-  .replace('/*__UI__*/', () => read('src', 'ui.js'));
+  .replace('/*__UI__*/', () => read('src', 'ui.js'))
+  // 토큰 계산기는 제 IIFE 로 돌아간다 — ui.js 와 변수를 나누지 않는다.
+  .replace('/*__TOKEN__*/', () => read('src', 'token.js'))
+  .replace('/*__TOKEN_BODY__*/', () => read('src', 'token.body.html'));
 
-for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__SHARE__', '__UI__']) {
+for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__SHARE__', '__UI__',
+  '__TOKEN_CSS__', '__TOKEN__', '__TOKEN_BODY__', '__PICKUPS__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 
