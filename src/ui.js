@@ -889,6 +889,37 @@
   const reasonText = chk => (chk.code ? EQUIP_REASON[chk.code](chk.param) : '');
 
   /** 파츠 표시용 파생값 — 상세 패널과 목록 타일이 같은 규칙을 쓰도록 한곳에 둔다. */
+  /* ---------- 계산에 안 들어가는 효과 ----------
+   * 파츠 설명은 위키 원문 그대로 보여 주는데, 그중에는 **앱이 아예 모델링하지 않는 축**이
+   * 섞여 있다. 그대로 두면 사용자는 효과가 있는 줄 알고 슬롯을 쓴다 —
+   * 「다리 특수 장갑 LV4」는 근5 중2 를 먹고 「피해 7% 경감」이라 적혀 있는데
+   * 실제로는 어떤 수치도 움직이지 않는다.
+   *
+   * 미구현이라 나쁜 것이 아니다. 전부 **일부러 안 다루기로 한 축**이다:
+   *   · 부위(국부) — 부위 파괴를 모델링하지 않는다. 08-31 사용자 결정(재론 금지).
+   *   · 상태이상 시간 — 지속·회복 시간을 다루지 않는다.
+   * 잘못은 그 사실을 **말하지 않는 것**이다. 강화 단계 화면은 이미 밝히고 있는데
+   * (「이 효과는 계산에 반영되지 않습니다」) 커스텀 파츠에만 없었다.
+   *
+   * 새 축을 구현하면 여기서 그 줄을 지운다 — 남겨 두면 거짓말이 된다.
+   * tools/part_effect_check.js 가 이 표와 실제 동작을 대조한다. */
+  const UNMODELLED_FX = [
+    { re: /に充てられるHP/, ko: '부위 HP 비율',
+      why: '다리·머리·등이 따로 가진 HP 는 다루지 않습니다(부위 파괴 미모델링).' },
+    { re: /被弾時[、,]?\s*機体HPへのダメージを/, ko: '부위 피격 경감',
+      why: '그 부위에 맞았을 때만 걸리는 값이라, 어디에 맞는지 알 수 없는 시뮬레이터에서는 반영하지 않습니다.' },
+    { re: /部位ダメージ量/, ko: '부위 피해량',
+      why: '부위 파괴 쪽 값이라 기체 HP 피해에는 영향이 없습니다.' },
+    { re: /状態異常の回復時間/, ko: '상태이상 회복 시간',
+      why: '상태이상의 시간 축은 다루지 않습니다.' }
+  ];
+
+  /** 이 파츠 설명에서 계산에 안 들어가는 효과들. 없으면 빈 배열. */
+  function unmodelledOf(part) {
+    const d = String((part && part.description) || '');
+    return UNMODELLED_FX.filter(x => x.re.test(d));
+  }
+
   function partView(p) {
     const lv = lvOf(p.name);
     const fullNm = T.partName(p.name);
@@ -1417,6 +1448,20 @@
       tx.append(withNumbers(desc));
       eff.append(tx);
       box.append(eff);
+    }
+
+    // 계산에 안 들어가는 효과가 있으면 밝힌다. 설명만 보고 슬롯을 쓰는 일이 없게.
+    const un = unmodelledOf(part);
+    if (un.length) {
+      const w = el('div', 'd-unmod');
+      w.append(el('b', '', '계산에 반영되지 않는 효과'));
+      for (const x of un) {
+        const row = el('div', 'd-unmod-row');
+        row.append(el('span', 'd-unmod-k', x.ko));
+        row.append(el('span', 'd-unmod-why', x.why));
+        w.append(row);
+      }
+      box.append(w);
     }
   }
 

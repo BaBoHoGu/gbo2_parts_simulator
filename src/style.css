@@ -3269,3 +3269,15 @@ body.info-open .sel-info { display: flex; }
 .pietan-ep-row.off:hover { background: transparent; }
 .pietan-ep-cost { font-size: var(--fs-3xs); color: var(--dim); white-space: nowrap; margin-left: auto; }
 .pietan-ep-no { font-size: var(--fs-3xs); color: var(--bad); white-space: nowrap; }
+
+/* ---- 계산에 반영되지 않는 파츠 효과 ----
+   경고가 아니라 **사실 고지**다. 빨강으로 두면 「망가졌다」로 읽히므로 차분하게. */
+.d-unmod {
+  margin-top: 9px; padding: 8px 10px;
+  border: 1px solid var(--line); border-left: 3px solid var(--dim);
+  border-radius: 5px; background: rgba(255, 255, 255, .02);
+}
+.d-unmod > b { display: block; font-size: var(--fs-3xs); color: var(--muted); margin-bottom: 4px; }
+.d-unmod-row { display: flex; gap: 7px; align-items: baseline; margin-top: 3px; }
+.d-unmod-k { flex: 0 0 auto; font-size: var(--fs-3xs); font-weight: 700; color: var(--accent); }
+.d-unmod-why { font-size: var(--fs-3xs); color: var(--dim); line-height: 1.5; }
