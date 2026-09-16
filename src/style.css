@@ -1883,15 +1883,22 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   #pietanModal .am-head button { flex: 0 0 auto; white-space: nowrap; }
   /* 긴 안내문은 좁은 화면에서 세로를 크게 먹는다 — 필요할 때만 보이게 접어 둔다 */
   #pietanModal .pietan-hint { display: none; }
-  /* 목록·결과가 남은 높이를 갖도록 */
+  /* 폰 세로에서는 **모달 하나만** 스크롤한다.
+     예전에는 목록(297px)·결과(249px)·방어 스킬이 각자 스크롤을 갖고 있어, 844px 화면 안에
+     스크롤이 셋이었다 — 손가락이 무엇을 미는지 알 수 없고, 칸마다 몇 줄씩만 보였다.
+     머리줄만 붙여 두고(sticky) 나머지는 자연 높이로 쭉 세운다. */
+  #pietanModal { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #pietanModal .am-head {
+    position: sticky; top: 0; z-index: 3;
+    background: var(--panel-2); border-bottom: 1px solid var(--line);
+  }
   #pietanModal .pietan-cols {
-    flex: 1 1 auto; min-height: 0;
+    flex: 0 0 auto; min-height: 0;
     display: flex; flex-direction: column; gap: 8px;
   }
-  /* 방어 스킬 두 묶음이 세로를 다 먹지 않게 — 폰에선 더 낮게 잡고 이 영역만 스크롤 */
-  #pietanModal .pietan-stagger { max-height: 18vh; }
-  #pietanModal .pietan-list { flex: 1 1 auto; min-height: 132px; overflow-y: auto; }
-  #pietanModal .pietan-result { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  #pietanModal .pietan-stagger { max-height: none; overflow: visible; }
+  #pietanModal .pietan-list,
+  #pietanModal .pietan-result { flex: 0 0 auto; min-height: 0; max-height: none; overflow: visible; }
   /* 가로(낮은 높이)에선 상단 정보 블록을 더 줄인다 */
   @media (max-height: 460px) {
     #pietanModal .pietan-stagger { max-height: 84px; overflow-y: auto; }
@@ -1929,9 +1936,13 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 #pietanModal .pietan-ctrl,
 #pietanModal .pietan-hint,
 #pietanModal #pietanQuery { flex: 0 0 auto; }
-#pietanModal .pietan-cols { flex: 1 1 auto; min-height: 0; overflow: hidden; }
-#pietanModal .pietan-list { max-height: none; min-height: 0; }
-#pietanModal .pietan-result { align-self: stretch; min-height: 0; overflow-y: auto; }
+/* 이 셋은 **넓은 화면 전용**이다. 미디어 쿼리 안에 있어도 이 줄이 뒤에 있으면 순서로 이겨,
+   폰 세로에서 「모달 하나만 스크롤」 규칙을 조용히 덮어 버린다(글자 크기 때 밟은 것과 같은 함정). */
+@media (min-width: 701px) {
+  #pietanModal .pietan-cols { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+  #pietanModal .pietan-list { max-height: none; min-height: 0; }
+  #pietanModal .pietan-result { align-self: stretch; min-height: 0; overflow-y: auto; }
+}
 
 /* 방어 스킬 묶음 — 적 / 내 것을 두 줄로 쌓는다. 스킬이 많으면 이 영역만 스크롤. */
 .pietan-stagger { flex-basis: 100%; flex-direction: column; flex-wrap: nowrap; align-items: stretch;
@@ -3214,3 +3225,13 @@ body.info-open .sel-info { display: flex; }
 /* 무장 LV 칸 — 기체 LV 와 다를 때는 한눈에 보여야 한다(기본값이 아니라는 표시) */
 .wlv-seg .seg-btn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
 .wlv-seg .seg-btn:first-child.on { background: transparent; color: var(--text); border-color: var(--line); }
+
+/* 피탄 — 적 무장 목록 머리글. 값이 아니라 이름표라 눈에 덜 띄게 둔다. */
+.pietan-whead {
+  cursor: default; background: transparent;
+  color: var(--dim); font-size: var(--fs-3xs);
+  padding-top: 4px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.pietan-whead:hover { background: transparent; }
+.pietan-whead .pietan-wn { font-weight: 700; }

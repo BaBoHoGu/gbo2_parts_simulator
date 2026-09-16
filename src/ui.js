@@ -5718,6 +5718,13 @@
     const inp = $('#pietanCorr'); if (inp) inp.value = pietanCorr;
   }
 
+  /** 안내문 — 아직 아무것도 안 골랐을 때만 띄운다.
+   *  고른 뒤에도 남겨 두면 두 줄이 늘 자리를 먹는데, 그때는 이미 다 아는 말이다. */
+  function renderPietanHint() {
+    const h = document.getElementById('pietanHint');
+    if (h) h.hidden = !!pietanMs;
+  }
+
   function renderPietanDura() {
     const box = $('#pietanDura'); if (!box) return;
     const r = stats();
@@ -5733,6 +5740,14 @@
       cell.append(el('span', 'pietan-dura-v', enduranceOf(r.total, dattr, cuts).toLocaleString()));
       box.append(cell);
     }
+    // 전제를 여기 적는다 — 이게 아래 모든 수치의 뜻을 정하는데, 예전에는 결과 맨 아래
+    // 회색 작은 글씨라 제일 안 보였다.
+    const basis = pietanBasisNote();
+    if (basis) {
+      const b = el('span', 'pietan-basis' + (basis.on ? ' on' : ''), basis.text);
+      b.title = basis.title;
+      box.append(b);
+    }
   }
 
   function selectPietanMs(base) {
@@ -5746,7 +5761,7 @@
     pietanAttrTouched = false; pietanAutoAttr();  // 상성도 다시 자동
     pietanEnemySkills.clear(); pietanEnemyDef.clear();
     pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
-    renderPietanChecks(); renderPietanLeft(); renderPietanResult();
+    renderPietanHint(); renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
   }
 
   /** 적을 내 저장 빌드(파츠 적용)로 선택. */
@@ -5758,7 +5773,7 @@
     pietanCorrTouched = false; pietanAttrTouched = false; pietanAutoAttr();
     pietanEnemySkills.clear(); pietanEnemyDef.clear();
     pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
-    renderPietanChecks(); renderPietanLeft(); renderPietanResult();
+    renderPietanHint(); renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
   }
 
   function renderPietanLeft() {
@@ -5814,18 +5829,43 @@
         const lv = msLevel(m);
         const b = el('button', 'seg-btn' + (m === pietanMs ? ' on' : ''), 'LV' + lv);
         b.onclick = () => { pietanMs = m; pietanMsLv = lv; pietanPick = null; pietanGoalHits = 0; pietanEnemyDef.clear();
-          renderPietanChecks(); renderPietanLeft(); renderPietanResult(); };
+          renderPietanHint(); renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult(); };
         seg.append(b);
       }
       box.append(seg);
     }
 
     const wl = enemyWeaponsOfMs(pietanMs, pietanMsLv);
+    // 머리글을 단다 — 오른쪽 칸에도 「발」이 있는데 **뜻이 반대**다(저쪽은 내가 격파하는 발수).
+    // 숫자만 두면 같은 화면의 두 '발' 이 무엇인지 구분되지 않는다.
+    if (wl.length && state.ms) {
+      const hrow = el('div', 'pietan-row pietan-whead');
+      hrow.append(el('span', 'w-type', ''));
+      hrow.append(el('span', 'pietan-wn', '적 무장'));
+      hrow.append(el('span', 'pietan-wp', '위력'));
+      hrow.append(el('span', 'pietan-wh', '내가 버팀'));
+      box.append(hrow);
+    }
+    // 무장마다 「내가 몇 발 버티는지」를 목록에서 바로 보여 준다.
+    // 예전에는 위력만 적어 두어, 무엇이 제일 위험한지 알려면 하나씩 눌러 봐야 했다 —
+    // 화면은 이미 내 내구를 알고 있으니 여기서 답하는 것이 맞다.
+    const canHits = !!state.ms;
     for (const w of wl) {
       const row = el('div', 'pietan-row' + (pietanPick && pietanPick.name === w.name ? ' on' : ''));
       row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
       row.append(el('span', 'pietan-wn', T.weaponName(w.name)));
       row.append(el('span', 'pietan-wp', (w.power || w.charged).toLocaleString()));
+      if (canHits) {
+        let inc = null;
+        try { inc = pietanIncoming(w, 0, 0); } catch (e) { inc = null; }
+        const n = inc && inc.hits;
+        const c = el('span', 'pietan-wh' + (n != null && n <= 3 ? ' hot' : ''), n != null ? n + '발' : '—');
+        c.title = n != null
+          ? '이 무장에 ' + n + '발까지 버팁니다 (전탄 명중 가정)'
+            + (inc.stagN ? '\n경직까지 ' + inc.stagN + '발' : '')
+          : '피해를 낼 수 없는 무장입니다';
+        row.append(c);
+      }
       row.onclick = () => { pietanPick = w; pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0; pietanAutoCorr(); renderPietanLeft(); renderPietanResult(); };
       box.append(row);
     }
@@ -5852,13 +5892,42 @@
     box.innerHTML = '';
     if (pietanMs) renderPietanEnemySkills(box);                      // 적 공격 스킬 체크(조합)
     if (pietanPick) renderPietanIncoming(box);                       // 상대 무장 → 나
-    else box.append(el('div', 'pietan-empty', pietanMs ? '왼쪽에서 적 무장을 선택하세요.' : '왼쪽에서 적 기체를 선택하세요.'));
+    else if (!pietanMs) {
+      // 기체조차 안 골랐으면 안내가 필요하다. 폰은 목록이 **위**에 있어 「왼쪽」이 거짓말이다.
+      box.append(el('div', 'pietan-empty',
+        (matchMedia('(max-width: 700px)').matches ? '위에서' : '왼쪽에서') + ' 적 기체를 선택하세요.'));
+    }
+    // 무장을 안 골랐을 때는 빈 상자를 두지 않는다 — 그 아래 「내 무장 → 적 격파」가 이미
+    // 답을 들고 있는데, 130px 짜리 안내판이 그것을 아래로 밀어내고 있었다.
     if (pietanMs && state.ms) renderPietanOutgoing(box);             // 내 무장 → 상대 (TTK 역방향)
   }
 
-  /** 상대 무장 → 나 (받는 피해·격파·경직). */
-  function renderPietanIncoming(box) {
-    const w = pietanPick, r = stats();
+  /**
+   * 상대 무장 하나가 나에게 주는 몫을 통째로 계산한다.
+   *
+   * 목록(왼쪽)과 상세(오른쪽)가 **같은 함수**를 쓴다. 목록에 발 수를 적으려고 계산을
+   * 한 벌 더 쓰면 언젠가 어긋난다 — 이 화면에서 이미 한 번 물렸다(같은 '발' 이 한쪽은
+   * 1히트, 한쪽은 전탄이었다).
+   *
+   * @param {object} w  적 무장
+   * @param {number} [vIdx] 격투 변형 index (기본: 지금 고른 것)
+   * @param {number} [dIdx] 격투 방향 index (기본: 지금 고른 것)
+   */
+  /** 지금 이 화면이 어느 전제로 계산하고 있는가 — 한 줄로. 수치의 뜻을 정하는 말이라
+   *  맨 아래 회색 주석이 아니라 내구 지표 옆에 둔다. */
+  function pietanBasisNote() {
+    if (!pietanMs) return null;
+    const NL = String.fromCharCode(10);
+    return pietanBuild
+      ? { on: true, text: '상대 파츠 반영',
+          title: '고른 저장 구성의 파츠를 양방향으로 반영합니다 — 내구·공격보정·피해경감·특공.' }
+      : { on: false, text: '상대 파츠 없음',
+          title: '상대는 기본(파츠 없음·강화6) 기준입니다.' + NL
+            + '상대 파츠까지 반영하려면 그 구성을 저장한 뒤, 목록 맨 위 「내 저장 구성」에서 고르세요.' };
+  }
+
+  function pietanIncoming(w, vIdx, dIdx) {
+    const r = stats();
     const key = ARMOR_KEY[w.attr] || 'armorRange';
     const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
     const stg = activeStaggerMods(state.ms, state.ms ? msLevel(state.ms) : 1);   // 내 누적치 스킬
@@ -5868,10 +5937,12 @@
     const isMelee = w.attr === 'melee';
     // 격투 변형(기본/헤비어택)·방향(N격/횡격/하격) — 무장 데이터의 방향별 배율(ccd)을 적용한다.
     const variants = isMelee && w.variants && w.variants.length ? w.variants : null;
-    if (variants && pietanVariant >= variants.length) pietanVariant = 0;
-    const dirs = variants ? variants[pietanVariant].direction : null;
-    if (dirs && pietanDir >= dirs.length) pietanDir = 0;
-    const meleeCcd = dirs && dirs[pietanDir] ? dirs[pietanDir].hits : [1];
+    let vi = vIdx == null ? pietanVariant : vIdx;
+    if (variants && vi >= variants.length) vi = 0;
+    const dirs = variants ? variants[vi].direction : null;
+    let di = dIdx == null ? pietanDir : dIdx;
+    if (dirs && di >= dirs.length) di = 0;
+    const meleeCcd = dirs && dirs[di] ? dirs[di].hits : [1];
     // 체크한 적 공격 스킬 반영 — 보정 합·피해% 곱
     const eatk = enemyAttackEffect(isMelee ? 'melee' : 'shoot');
     const eCorr = pietanCorr + eatk.corr;
@@ -5911,6 +5982,18 @@
     // 경직 = 임계 ÷ 히트당 누적치. 감소 스킬은 감소 큰 순으로 하나씩 곱하고 매번 소수점 이하 내림.
     const perHitStagger = w.stagger > 0 ? staggerPerHit(w.stagger, stg.mults) : 0;
     const stagN = perHitStagger > 0 ? Math.ceil(stg.threshold / perHitStagger) : null;
+    return { eff, stg, isMelee, variants, dirs, vi, di, meleeCcd, eatk, eCorr, eMul, eEq,
+      eAttrBonus, ePartPct, nNc, nCh, oneHit, inFx, fxAdd, dmg, hits, chgOne, chgDmg, chgHits,
+      perHitStagger, stagN };
+  }
+
+  /** 상대 무장 → 나 (받는 피해·격파·경직). */
+  function renderPietanIncoming(box) {
+    const w = pietanPick;
+    const I = pietanIncoming(w);
+    const { eff, isMelee, variants, dirs, eatk, eCorr, eAttrBonus, ePartPct,
+      inFx, dmg, hits, chgDmg, chgHits, stagN } = I;
+    pietanVariant = I.vi; pietanDir = I.di;   // 범위를 벗어난 선택은 계산이 0 으로 되돌린다
 
     const hd = el('div', 'pietan-rhd');
     hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
@@ -6076,11 +6159,9 @@
       tbl.append(row);
     }
     box.append(tbl);
+    // 상대 파츠 전제는 위 내구 지표 줄의 배지가 말한다 — 같은 말을 두 곳에 두지 않는다.
     box.append(el('div', 'pietan-foot',
-      (pietanBuild
-        ? '※ 상대는 그 구성의 파츠를 양방향 반영(내구·공격보정·피해경감·특공). '
-        : '※ 상대는 기본(파츠 없음·강화6) 내구 기준. ')
-      + '체크한 적 방어 스킬만큼 내 피해가 깎인다. '
+      '※ 체크한 적 방어 스킬만큼 내 피해가 깎인다. '
       + '내 위력은 파츠·스킬·상성 반영(국부보정 미반영). 전탄 명중 가정.'));
   }
 
@@ -6094,7 +6175,7 @@
       $('#pietanCorr').value = pietanCorr;
       pietanAutoAttr();                 // 내 기체 기준 상성 재계산(수동 변경 전까지)
       syncPietanAttrSeg();
-      renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
+      renderPietanHint(); renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
     }
   }
 

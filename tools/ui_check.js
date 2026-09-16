@@ -296,14 +296,24 @@ async function runView(view) {
     await step(pg, view, '피탄시뮬');
     const pt = await pg.evaluate(probeSafeTop, '#pietanModal', INSET);
     check(view.tag, '[피탄시뮬] 상단 안전영역 존중', pt.found && pt.ok, JSON.stringify(pt));
-    // 모달이 화면 밖으로 늘어지지 않고 안쪽이 스크롤되는가
+    // 모달이 화면 밖으로 늘어지지 않고, 아래쪽 내용에 **닿을 수 있는가**.
+    //
+    // 예전에는 「결과 칸이 화면 안에 들어오는가」로 쟀는데, 그것은 옛 방식(칸마다 따로
+    // 스크롤)을 전제한 것이다. 폰 세로는 이제 **모달 하나만** 스크롤하므로 결과 칸이
+    // 화면 아래로 넘어가는 것이 정상이고, 스크롤해서 닿으면 된다.
+    // 그래서 재는 것을 「닿을 수 있는가」로 바꾼다 — 방식이 아니라 뜻을 잰다.
     const fit = await pg.evaluate(() => {
       const m = document.querySelector('#pietanModal'), r = m.getBoundingClientRect();
       const res = m.querySelector('.pietan-result');
-      return { below: Math.round(r.bottom - innerHeight),
-        resBelow: res ? Math.round(res.getBoundingClientRect().bottom - innerHeight) : 0 };
+      const scrolls = m.scrollHeight > m.clientHeight + 2
+        || [...m.querySelectorAll('*')].some(x => x.scrollHeight > x.clientHeight + 2
+          && getComputedStyle(x).overflowY !== 'visible');
+      const resBelow = res ? Math.round(res.getBoundingClientRect().bottom - innerHeight) : 0;
+      return { below: Math.round(r.bottom - innerHeight), resBelow, scrolls };
     });
-    check(view.tag, '[피탄시뮬] 모달이 화면 안에 들어옴', fit.below <= 1 && fit.resBelow <= 1, JSON.stringify(fit));
+    check(view.tag, '[피탄시뮬] 모달이 화면 안에 들어옴', fit.below <= 1, JSON.stringify(fit));
+    check(view.tag, '[피탄시뮬] 아래 내용에 닿을 수 있음',
+      fit.resBelow <= 1 || fit.scrolls, JSON.stringify(fit));
     if (!(pt.ok && fit.below <= 1)) await shot(pg, view.tag + '_피탄');
     await pg.evaluate(() => document.querySelector('#pietanClose').click());
     await sleep(600);
