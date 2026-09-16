@@ -557,6 +557,17 @@
     try { localStorage.setItem(DEF_SKILL_KEY, defSkillOpen ? '1' : '0'); } catch (e) {}
   }
 
+  /* 스러스터 스킬 목록 펼침 — 방어 스킬과 같은 방식. */
+  const THR_SKILL_KEY = 'gbo2.thrSkillOpen';
+  let thrSkillOpen = false;
+  try { thrSkillOpen = localStorage.getItem(THR_SKILL_KEY) === '1'; } catch (e) {}
+  function setThrSkillOpen(v) {
+    thrSkillOpen = !!v;
+    try { localStorage.setItem(THR_SKILL_KEY, thrSkillOpen ? '1' : '0'); } catch (e) {}
+  }
+  /** 스러스터 효과 축 → 화면에 적을 말. */
+  const THR_KEY_KO = { cutInit: '초기소비', cutRate: '소비속도', recover: '회복속도', oh: 'OH복귀' };
+
   /* 누적치 내성 펼침 — 접으면 「통상」 한 줄, 펴면 다섯 상황을 모두 보여 준다.
      기체 정보 화면과 같은 값이라 같은 계산(staggerByCategory)을 쓴다.
      방어 스킬 체크와는 무관하다 — 저 체크는 「지금 이 구성」의 실효값이고,
@@ -643,6 +654,8 @@
     locked: new Set(),
     banned: new Set(),      // 기본 제외한 파츠 — 영구 저장, 우클릭·모달로 토글, 모든 기체 공통
     staggerOn: new Set(),   // 켜 둔 누적치(스태거) 스킬 이름 — 내구 지표·피탄 시뮬 공통
+    // 켜 둔 스러스터 스킬 이름 — 상황 한정인 것만 여기 들어간다(상시는 늘 걸린다).
+    thrusterOn: new Set(),
     // 무장 LV. null 이면 기체 LV 를 따라간다(게임의 기본이자 여태의 동작).
     // 숫자면 그 LV 로 무장을 본다 — 기체 LV 보다 높게는 못 간다(그런 무장은 없다).
     weaponLv: null,
@@ -1194,6 +1207,7 @@
     // 방어 스킬 체크는 스킬 "이름"으로 저장돼 있어, 안 지우면 이름이 같은 스킬(데미지 컨트롤·
     // 마뉴버아머 등)이 다른 기체에서 저절로 켜진 채로 내구 지표·피탄 수치를 바꿔 버린다.
     state.staggerOn.clear();
+    state.thrusterOn.clear();   // 스러스터 스킬 체크도 기체마다 다시 — 스킬 이름으로 저장된다
     state.weaponLv = null;      // 무장 LV 는 기체마다 다시 고른다(LV 상한이 기체마다 다르다)
     clearAutoResults();
     clearTargets();             // 목표는 그 기체의 절댓값이라 다른 기체로 가져가면 못 맞춘다
@@ -1588,6 +1602,126 @@
   }
 
   /** 슬러스터 관련 파츠 효과 — 회복속도%·OH단축%·소비경감%(초기/이동중). 모두 가산 중복. */
+  /* ---------- 스러스터 스킬 ----------
+   * 파츠(thrusterPartFx)는 이미 반영하는데 **스킬은 통째로 빠져 있었다.**
+   * 축은 파츠와 같다 — 초기소비 / 계속소비 / 회복속도 / OH 복귀.
+   *
+   * 어려운 점은 수치가 아니라 **언제 걸리는가**다. 대부분이 상황 한정
+   * (공중·태클·착지캔슬·발동중)이라 평지 고속이동에 일괄 적용하면 실제보다 좋게 나온다.
+   * 그래서 원칙을 이렇게 세웠다: **모르면 「조건 있음」으로 둔다.**
+   * 조건 있는 것은 사용자가 체크해야 걸리니 틀려도 수치가 부풀지 않지만,
+   * 상시로 잘못 두면 아무도 모르게 좋게 나온다.
+   *
+   * 상시로 인정하는 모양은 원문을 직접 읽고 고른 둘뿐이다:
+   *   A. 「高速移動開始時の…消費量を N% 軽減」 — 다른 말이 섞여 있어도 앞 절이 고속이동이다
+   *      (変形機構最適化制御: 「高速移動開始時の…と変形時から…を 60% 軽減」)
+   *   B. 「高速移動と…を使用した時」 — 고속이동 그 자체를 가리킨다
+   *      (廃熱効率適正化: 「高速移動とジャンプを使用した時、初期消費量을 N% 軽減」)
+   * 「宇宙において」처럼 환경을 가리는 말은 상시도 조건도 아니라 **환경축**으로 뺀다 —
+   * 슬러스터 지표가 이미 지상·우주를 따로 내므로 그쪽에서 가린다. */
+
+  const THR_COND = [
+    [/空中|ジャンプ中|ジャンプ時|フライトモード|飛行/, '공중'],
+    [/着地/, '착지캔슬'],
+    [/変形時|変形中|変形する/, '변형중'],
+    [/回避|ステップ/, '회피'],
+    [/タックル/, '태클'],
+    [/オーバーヒート時/, 'OH중'],
+    [/発動|以下になった|スキル「[^」]+」|体勢中|状態から/, '발동중']
+  ];
+  const thrCondOf = seg => { for (const [re, ko] of THR_COND) if (re.test(seg)) return ko; return null; };
+  const thrEnvOf = seg => /宇宙にお|宇宙での/.test(seg) ? 'space'
+    : /地上にお|地上での/.test(seg) ? 'ground' : null;
+
+  const THR_ALWAYS_START = /高速移動開始時[^。]{0,40}?消費量を\s*(\d+)\s*[%％]\s*軽減/;
+  const THR_ALWAYS_USE = /高速移動と[^。]{0,12}を使用した時/;
+
+  /** 한 조각에서 스러스터 효과 하나를 읽는다. 없으면 null. */
+  function thrReadSeg(seg) {
+    let m;
+    if ((m = THR_ALWAYS_START.exec(seg))) return { key: 'cutInit', v: +m[1], always: true };
+    if ((m = /初期消費量[^\d]{0,12}(\d+)\s*[%％]\s*軽減/.exec(seg)) ||
+        (m = /初期消費量\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
+      return { key: 'cutInit', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+    if ((m = /継続消費量[^\d]{0,12}(\d+)\s*[%％]\s*軽減/.exec(seg)) ||
+        (m = /継続消費量\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
+      return { key: 'cutRate', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+    if ((m = /回復速度[^\d]{0,12}(\d+)\s*[%％]\s*(?:上昇|増加)/.exec(seg)) ||
+        (m = /回復速度\s*[+＋]\s*(\d+)\s*[%％]/.exec(seg)))
+      return { key: 'recover', v: +m[1], always: false };
+    if ((m = /オーバーヒート[^]{0,20}?回復時間[^\d]{0,12}(\d+)\s*[%％]\s*短縮/.exec(seg)))
+      return { key: 'oh', v: +m[1], always: false };
+    if ((m = /スラスター(?:の)?消費(?:量)?[^\d]{0,12}(\d+)\s*[%％]\s*軽減/.exec(seg)) ||
+        (m = /スラスター消費(?:量)?\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
+      return { key: 'cutRate', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+    return null;
+  }
+
+  /** 설명을 조각으로 나눈다. 불릿(・…)은 **직전 머리줄의 조건**을 물려받는다 —
+   *  「発動中は」 다음 줄에 「・スラスター消費 －25%」가 오는 꼴이 아주 많다. */
+  function thrSegments(blob) {
+    const raw = String(blob).split(/[／]|\s\/\s|。|\n/).map(x => x.trim()).filter(Boolean);
+    const out = [];
+    let carried = null;
+    for (const seg of raw) {
+      const bullet = /^[・･]/.test(seg);
+      const own = thrCondOf(seg);
+      const hasNum = /\d+\s*[%％]/.test(seg);
+      // 조건 없는 불릿은 상시가 아니라 **발동중**으로 본다. 이 글투에서 불릿은 늘
+      // 어떤 머리줄 아래에 있고, 머리줄을 못 읽었다고 상시로 올리면 수치가 부푼다.
+      const cond = own || carried || (bullet ? '발동중' : null);
+      out.push({ seg, cond, env: thrEnvOf(seg) });
+      if (!bullet) {
+        if (own && (!hasNum || /[、,]$/.test(seg))) carried = own;
+        else if (hasNum) carried = null;   // 조건과 값이 한 줄에 끝났다 — 다음 줄로 새지 않게
+      }
+    }
+    return out;
+  }
+
+  /** 이 기체가 그 LV 에서 가진, 스러스터에 영향 주는 스킬 목록.
+   *  각 항목 {name, ko, key, v, cond, env} — cond 가 null 이면 늘 걸린다. */
+  function thrusterSkillsOf(ms, lv, form) {
+    if (!ms) return [];
+    const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || [], form);
+    const groups = new Map();
+    for (const mode of modes) for (const sk of (mode.skills || [])) {
+      if (!groups.has(sk.name)) groups.set(sk.name, []);
+      groups.get(sk.name).push(sk);
+    }
+    const out = [];
+    for (const cands of groups.values()) {
+      const sk = pickByMsLv(cands, lv);
+      if (!sk) continue;
+      const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
+      if (!/スラスター/.test(blob)) continue;
+      const seen = new Set();
+      for (const { seg, cond, env } of thrSegments(blob)) {
+        const r = thrReadSeg(seg);
+        if (!r) continue;
+        const c = r.always ? null : cond;
+        const sig = r.key + ':' + r.v + ':' + (c || '') + ':' + (env || '');
+        if (seen.has(sig)) continue;
+        seen.add(sig);
+        out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '',
+          key: r.key, v: r.v, cond: c, env, seg });
+      }
+    }
+    return out;
+  }
+
+  /** 켜 둔(또는 상시인) 스러스터 스킬만 모아 파츠와 같은 모양으로 낸다. */
+  function thrusterSkillFx(ms, lv, env, on, form) {
+    const fx = { cutInit: 0, cutRate: 0, recover: 0, oh: 0, used: [] };
+    for (const s of thrusterSkillsOf(ms, lv, form)) {
+      if (s.env && s.env !== env) continue;            // 환경이 다르면 안 걸린다
+      if (s.cond && !(on && on.has(s.name))) continue;  // 조건부는 체크해야 걸린다
+      fx[s.key] += s.v;
+      fx.used.push(s);
+    }
+    return fx;
+  }
+
   function thrusterPartFx(equipped) {
     let recover = 0, oh = 0, cutInit = 0, cutRate = 0;
     for (const p of equipped || []) {
@@ -1614,12 +1748,21 @@
    *   OH 복귀     = 기준초 × (1 − 단축%)
    * 소비속도는 2족 기준이라 탱크는 지속 시간을 내지 않는다(위키도 값에 ? 를 달아 뒀다).
    */
-  function thrusterMetrics(ms, thrusterVal, equipped, env) {
+  function thrusterMetrics(ms, thrusterVal, equipped, env, skillOpt) {
     if (!ms || !thrusterVal) return null;
     const t = THRUSTER_TBL[env];
     const adapt = env === 'ground' ? ms['環境適正_地上'] : ms['環境適正_宇宙'];
     const col = adapt ? 'adapt' : (ms['属性'] === '強襲' ? 'assault' : 'std');
-    const fx = thrusterPartFx(equipped);
+    const pfx = thrusterPartFx(equipped);
+    // 스킬분 — 상시인 것과 사용자가 체크한 것만. 파츠와 같은 축이라 그대로 더한다.
+    const sfx = skillOpt
+      ? thrusterSkillFx(ms, skillOpt.lv, env, skillOpt.on, skillOpt.form)
+      : { cutInit: 0, cutRate: 0, recover: 0, oh: 0, used: [] };
+    const fx = {
+      cutInit: pfx.cutInit + sfx.cutInit, cutRate: pfx.cutRate + sfx.cutRate,
+      recover: pfx.recover + sfx.recover, oh: pfx.oh + sfx.oh,
+      part: pfx, skill: sfx
+    };
     const init = t.init[col] * (1 - fx.cutInit / 100);
     const rate = t.rate[col] * (1 - fx.cutRate / 100);
     const boost = (!isTankMs(ms) && thrusterVal > init && rate > 0)
@@ -2739,7 +2882,8 @@
       for (const [env, label] of [['ground', '지상'], ['space', '우주']]) {
         if (env === 'ground' && state.ms['出撃_地上可'] === false) continue;
         if (env === 'space' && state.ms['出撃_宇宙可'] === false) continue;
-        const m = thrusterMetrics(state.ms, thr, state.equipped, env);
+        const m = thrusterMetrics(state.ms, thr, state.equipped, env,
+          { lv, on: state.thrusterOn, form: state.form });
         if (!m) continue;
         const row = el('div', 'dura-row thr-row');
         const colKoTag = m.col === 'adapt' ? '적성' : m.col === 'assault' ? '강습' : null;
@@ -2768,10 +2912,63 @@
           + '· 부스트 지속 = (슬러스터 ' + thr + ' − 초기소비) ÷ 소비속도\n'
           + '· 풀회복 = 게이지 0 → 가득 (슬러스터 ÷ 5/초, 회복 파츠 반영)\n'
           + '· OH 복귀 = ' + m.base.oh + '초 × (1 − 단축 파츠)'
+          + (m.fx.skill && m.fx.skill.used.length
+              ? '\n· 스킬 반영: ' + m.fx.skill.used.map(x => skTr(x.name)
+                  + ' ' + THR_KEY_KO[x.key] + ' ' + x.v + '%' + (x.cond ? '(' + x.cond + ')' : '')).join(' · ')
+              : '')
           + (ohLong ? '\n※ ' + ohLong + ' 효과가 끝난 뒤에는 OH 복귀가 ' + OH_LONG_SEC
               + '초 (스킬 설명에 명시된 고정값 — 위 단축 파츠와 별개).' : '')
           + (isTankMs(state.ms) ? '\n※ 탱크형은 소비속도가 위키 미확정이라 부스트 지속을 내지 않는다.' : '');
         body.append(row);
+      }
+    }
+
+    // 스러스터 스킬 — 상황 한정인 것만 체크로 켠다. 상시는 위 수치에 이미 들어가 있다.
+    // 방어 스킬과 같은 방식이다: 자리를 아끼려고 접고, 접힌 채로도 몇 개 켰는지 적는다.
+    {
+      const all = thrusterSkillsOf(state.ms, lv, state.form);
+      const conds = all.filter(x => x.cond);
+      const always = all.filter(x => !x.cond);
+      if (conds.length || always.length) {
+        const onCount = conds.filter(x => state.thrusterOn.has(x.name)).length;
+        const head = el('button', 'dura-row stg-head' + (thrSkillOpen ? ' open' : ''));
+        head.type = 'button';
+        head.setAttribute('aria-expanded', thrSkillOpen ? 'true' : 'false');
+        head.append(el('span', 'stg-caret', thrSkillOpen ? '▾' : '▸'));
+        head.append(el('span', 'dura-lb', '슬러스터 스킬'));
+        head.append(el('span', 'stagger-detail',
+          (always.length ? always.length + '개 상시 반영 중' : '')
+          + (always.length && conds.length ? ' · ' : '')
+          + (conds.length ? (onCount ? onCount + '개 체크됨' : conds.length + '개 · 체크 시 반영') : '')));
+        head.onclick = () => { setThrSkillOpen(!thrSkillOpen); renderAll(); };
+        body.append(head);
+
+        const wrap = el('div', 'stagger-skills thr-skills');
+        wrap.hidden = !thrSkillOpen;
+        if (conds.length) wrap.append(el('span', 'stg-hint', '※ 지금 상황에 맞는 것만 체크하세요'));
+        for (const x of always) {
+          const lab = el('label', 'stg-chk on locked');
+          lab.title = '조건 없이 늘 걸립니다';
+          const box = el('input'); box.type = 'checkbox'; box.checked = true; box.disabled = true;
+          lab.append(box, el('span', 'stg-nm', x.ko),
+            el('span', 'stg-tag', THR_KEY_KO[x.key] + ' ' + x.v + '%'),
+            el('span', 'stg-cond', x.env ? (x.env === 'space' ? '우주' : '지상') : '상시'));
+          wrap.append(lab);
+        }
+        for (const x of conds) {
+          const lab = el('label', 'stg-chk' + (state.thrusterOn.has(x.name) ? ' on' : ''));
+          lab.title = x.seg;
+          const box = el('input'); box.type = 'checkbox'; box.checked = state.thrusterOn.has(x.name);
+          box.onchange = () => {
+            box.checked ? state.thrusterOn.add(x.name) : state.thrusterOn.delete(x.name);
+            renderAll();
+          };
+          lab.append(box, el('span', 'stg-nm', x.ko),
+            el('span', 'stg-tag', THR_KEY_KO[x.key] + ' ' + x.v + '%'),
+            el('span', 'stg-cond', x.cond + (x.env ? '·' + (x.env === 'space' ? '우주' : '지상') : '')));
+          wrap.append(lab);
+        }
+        body.append(wrap);
       }
     }
 
@@ -3146,7 +3343,8 @@
         for (const [env, lb] of [['ground', '지상'], ['space', '우주']]) {
           if (env === 'ground' && m['出撃_地上可'] === false) continue;
           if (env === 'space' && m['出撃_宇宙可'] === false) continue;
-          const tm = thrusterMetrics(m, thrV, state.equipped, env);
+          const tm = thrusterMetrics(m, thrV, state.equipped, env,
+            { lv, on: state.thrusterOn, form: state.form });
           if (!tm) continue;
           lt('슬러스터 ' + lb, rxi, ry + 4, fnt(12, '700'), CO.muted);
           lt('부스트 ' + sec1(tm.boost) + '    풀회복 ' + sec1(tm.full) + '    OH ' + sec1(tm.oh),
@@ -6261,6 +6459,7 @@
     // 주무장 LV 도 마찬가지다. 안 되돌리면 남이 올린 구성을 **내가 보던 LV** 로 그려
     // 위력도 레벨링크 보너스도 그 구성의 값이 아니게 된다.
     state.weaponLv = null;
+    state.thrusterOn.clear();
     clearAutoResults();         // 이전 기체의 자동 구성 후보가 남아 잘못 적용되지 않게 지운다
     clearTargets();             // 목표도 마찬가지 — 이전 기체 기준 절댓값이라 그대로 두면 못 맞춘다
     // expLevel 이 없던 시절의 저장본은 앱 기본값(최대 레벨)으로 맞춘다
@@ -7005,6 +7204,7 @@
     // 고를 수 있는 LV 범위가 기체 LV 에 달려 있다. 안 지우면 LV 를 내렸을 때 고른 값이
     // 범위 밖으로 남아, 동작은 「기체와 같음」인데 칸에는 아무것도 안 켜진 채가 된다.
     state.weaponLv = null;
+    state.thrusterOn.clear();   // LV 이 바뀌면 스킬 구성도 바뀐다
     clearAutoResults();
     // LV 이 바뀌면 HP·내성이 통째로 달라져 목표 절댓값도 뜻을 잃는다
     const cleared = clearTargets();
@@ -7870,4 +8070,14 @@
   state.ms = msData.find(m => T.msName(m.MS名).startsWith('건담 ')) || msData[0];
   renderAll();
   setView('select');
+
+  /* 점검 도구용 최소 창구. 화면을 거치지 않고는 전 기체를 훑을 수 없는데,
+     파서를 도구 쪽에 베껴 두면 앱과 조용히 갈라진다(09-08 교훈의 같은 부류).
+     여기로 내보내는 것은 **읽기 전용 조회**뿐이다 — 상태를 바꾸는 것은 넣지 않는다. */
+  window.GBO2UiTest = {
+    msData: () => msData,
+    msLevel,
+    thrusterSkillsOf,
+    thrusterSkillFx
+  };
 })();
