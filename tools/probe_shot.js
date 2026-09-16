@@ -22,6 +22,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(4500);
   // 기체를 고르고 무장을 모두 편다 (인자로 넘긴 셀렉터가 무장 쪽일 때)
   await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) c.click(); });
+  // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+  await sleep(900);
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1100);
   await sleep(2500);
   await pg.evaluate(() => { const b = document.getElementById('weaponFold'); if (b && !document.querySelector('.build-weapons .panel.folded')) b.click(); });
   await sleep(700);

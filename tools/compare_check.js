@@ -34,6 +34,10 @@ const check = (label, ok, extra) => {
   await pg.evaluate(() => { const q = document.querySelector('#msQuery'); q.value = '짐 스나이퍼'; q.dispatchEvent(new Event('input', { bubbles: true })); });
   await sleep(700);
   await pg.evaluate(() => document.querySelector('.ms-card').click());
+  // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+  await sleep(900);
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1100);
   await sleep(1200);
 
   // 비교 대상이 4개는 있어야 하므로, 앱의 저장 기능을 그대로 써서 구성을 만든다

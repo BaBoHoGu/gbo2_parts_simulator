@@ -20,6 +20,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(5000);
   // 「이미지」 버튼은 step-only 라 기체를 먼저 골라야 나타난다
   await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) c.click(); });
+  // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+  await sleep(900);
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1100);
   await sleep(2500);
   // 자동 구성으로 파츠를 채운다 — 빈 카드는 실제 쓰임새가 아니다
   await pg.evaluate(() => {

@@ -40,6 +40,10 @@ const readTimes = () => [...document.querySelectorAll('#weaponList > *')]
   await sleep(1500);
 
   await pg.evaluate(() => document.querySelector('.ms-card').click());
+  // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+  await sleep(900);
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1100);
   await sleep(800);
 
   // 「공격」 파츠를 하나 장착한다 (사격 강화 프로그램 계열).

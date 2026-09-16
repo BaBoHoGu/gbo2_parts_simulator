@@ -45,6 +45,10 @@ const names = () => [...document.querySelectorAll('#partList .part-tile .pt-nm')
   await pg.evaluate(() => { const q = document.querySelector('#msQuery'); q.value = '짐 스나이퍼'; q.dispatchEvent(new Event('input', { bubbles: true })); });
   await sleep(800);
   await pg.evaluate(() => document.querySelector('.ms-card').click());
+  // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+  await sleep(900);
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1100);
   await sleep(1400);
 
   // ① 장착해도 순서 유지

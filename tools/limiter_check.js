@@ -32,6 +32,10 @@ const check = (label, ok, extra) => {
   await pg.evaluate(() => { const q = document.querySelector('#msQuery'); q.value = '슈퍼 건담'; q.dispatchEvent(new Event('input', { bubbles: true })); });
   await sleep(700);
   await pg.evaluate(() => document.querySelector('.ms-card').click());
+  // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+  await sleep(900);
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1100);
   await sleep(1000);
 
   // 빔 OH 를 줄이는 파츠(보조 제네레이터)를 낀다

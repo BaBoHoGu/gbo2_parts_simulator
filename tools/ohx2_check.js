@@ -58,6 +58,10 @@ console.log('  2배 대상 ' + expect.length + '기 / 오버로드지만 비대�
     await pg.evaluate(s => { const e = document.querySelector('#msQuery'); e.value = s; e.dispatchEvent(new Event('input', { bubbles: true })); }, q);
     await sleep(900);
     const ok = await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) { c.click(); return true; } return false; });
+    // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+    await sleep(900);
+    await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+    await sleep(1100);
     if (!ok) return null;
     await sleep(1500);
     return pg.evaluate(() => ({

@@ -5700,6 +5700,15 @@
   /** 적이 낀 파츠. */
   function enemyEquipped() { return pietanEnemy.parts; }
 
+  /** 그 기체·강화에서 **실제로 들어가는 것만** 순서대로 남긴다.
+   *  저장 구성을 불러올 때(statsForBuild)와 같은 방식이다 — 규칙을 두 벌로 두지 않는다. */
+  function keepEquippable(ms, wanted, stage) {
+    const out = [];
+    for (const pt of wanted)
+      if (C.checkEquip(pt, ms, out, C.calcSlots(ms, out, stage, fullst)).ok) out.push(pt);
+    return out;
+  }
+
   /** 적에게 파츠를 끼울 수 있는지 — 내 구성과 **같은 규칙**을 쓴다(슬롯·중복·8개·카테고리). */
   function enemyCanEquip(part) {
     if (!pietanMs) return { ok: false, code: 'noms' };
@@ -5884,7 +5893,14 @@
     qEl.hidden = true;
     const hd = el('div', 'pietan-mshead');
     const back = el('button', 'pietan-back', '‹ 다른 기체');
-    back.onclick = () => { pietanMs = null; pietanPick = null; renderPietanLeft(); renderPietanResult(); };
+    back.onclick = () => {
+      pietanMs = null; pietanPick = null;
+      // 상대 파츠도 같이 치운다 — 안 그러면 기체 목록으로 돌아왔는데 앞 상대의 파츠가
+      // 화면에 그대로 남는다(칸을 다시 그리지 않아 숨겨지지도 않았다).
+      pietanEnemy = { parts: [], stage: 6, expansion: null, expLevel: null };
+      pietanBuild = null;
+      pietanRedrawAll();
+    };
     hd.append(back);
     hd.append(el('b', 'pietan-msnm', T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')));
     box.append(hd);
@@ -5895,8 +5911,14 @@
       for (const m of arr) {
         const lv = msLevel(m);
         const b = el('button', 'seg-btn' + (m === pietanMs ? ' on' : ''), 'LV' + lv);
-        b.onclick = () => { pietanMs = m; pietanMsLv = lv; pietanPick = null; pietanGoalHits = 0; pietanEnemyDef.clear();
-          pietanRedrawAll(); };
+        b.onclick = () => {
+          pietanMs = m; pietanMsLv = lv; pietanPick = null; pietanGoalHits = 0; pietanEnemyDef.clear();
+          // LV 이 바뀌면 슬롯 칸수가 달라진다. 그대로 두면 「원 12/6」처럼 **게임에 없는
+          // 구성**으로 수치가 나온다. 내 구성 쪽(switchLevel)이 장착을 비우는 것과 같은 이유다.
+          // 다만 통째로 버리지 않고, 새 LV 에서도 들어가는 것만 순서대로 남긴다.
+          pietanEnemy.parts = keepEquippable(m, pietanEnemy.parts, pietanEnemy.stage);
+          pietanRedrawAll();
+        };
         seg.append(b);
       }
       box.append(seg);

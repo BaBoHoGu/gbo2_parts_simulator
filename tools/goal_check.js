@@ -31,6 +31,10 @@ const check = (label, ok, extra) => {
   await pg.evaluate(() => { const q = document.querySelector('#msQuery'); q.value = '짐 스나이퍼'; q.dispatchEvent(new Event('input', { bubbles: true })); });
   await sleep(700);
   await pg.evaluate(() => document.querySelector('.ms-card').click());
+  // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+  await sleep(900);
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1100);
   await sleep(1000);
 
   // 피탄 시뮬에서 적 기체·무장 선택
@@ -38,9 +42,11 @@ const check = (label, ok, extra) => {
   await sleep(600);
   await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '자쿠'; q.dispatchEvent(new Event('input')); });
   await sleep(700);
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row'); if (r) r.click(); });
+  // 머리글(.pietan-whead)도 같은 .pietan-row 를 쓴다 — 그것을 누르면 아무 일도 안 일어나고
+  // 무장을 고른 줄 알고 넘어간다. 진짜 줄만 누른다.
+  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row:not(.pietan-whead)'); if (r) r.click(); });
   await sleep(900);
-  await pg.evaluate(() => { const r = [...document.querySelectorAll('#pietanModal .pietan-row')].pop(); if (r) r.click(); });
+  await pg.evaluate(() => { const r = [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')].pop(); if (r) r.click(); });
   await sleep(900);
 
   const before = await pg.evaluate(() => {

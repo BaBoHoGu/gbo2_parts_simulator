@@ -34,7 +34,12 @@ const pickMs = async (pg, q) => {
   await pg.evaluate(s => { const e = document.querySelector('#msQuery'); e.value = s; e.dispatchEvent(new Event('input', { bubbles: true })); }, q);
   await sleep(900);
   const ok = await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) { c.click(); return true; } return false; });
-  await sleep(1400);
+  await sleep(1100);
+  // 카드를 누르면 **기체 정보 칸이 열릴 뿐** 기체가 바뀌지 않는다(그 화면이 생긴 뒤로).
+  // 「파츠 고르기」까지 눌러야 state.ms 가 바뀐다 — 안 누르면 이 검사는 바뀌지 않은
+  // 기체를 놓고 「목표가 안 지워졌다」고 말하게 된다.
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1300);
   return ok;
 };
 
@@ -72,13 +77,13 @@ const pickMs = async (pg, q) => {
   // 건탱크의 「120mm 캐논 x2」 는 2발 동시발사 — 1히트가 아니라 1발 기준이어야 한다
   await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '건탱크'; q.dispatchEvent(new Event('input')); });
   await sleep(800);
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row'); if (r) r.click(); });
+  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row:not(.pietan-whead)'); if (r) r.click(); });
   await sleep(1200);
   // 무장을 훑어 동시발사 표기가 붙은 것을 찾는다
   const inc = await pg.evaluate(async () => {
-    const rows = [...document.querySelectorAll('#pietanModal .pietan-row')];
+    const rows = [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')];
     for (let i = 0; i < rows.length; i++) {
-      [...document.querySelectorAll('#pietanModal .pietan-row')][i].click();
+      [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')][i].click();
       await new Promise(r => setTimeout(r, 500));
       const m = [...document.querySelectorAll('#pietanModal .pietan-metric')].find(x => /격파까지/.test(x.textContent));
       const t = m ? m.textContent.replace(/\s+/g, ' ').trim() : '';
@@ -102,12 +107,12 @@ const pickMs = async (pg, q) => {
   await sleep(400);
   await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '액트 자쿠'; q.dispatchEvent(new Event('input')); });
   await sleep(800);
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row'); if (r) r.click(); });
+  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row:not(.pietan-whead)'); if (r) r.click(); });
   await sleep(1200);
   const soi = await pg.evaluate(async () => {
-    const n = document.querySelectorAll('#pietanModal .pietan-row').length;
+    const n = document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)').length;
     for (let i = 0; i < n; i++) {
-      [...document.querySelectorAll('#pietanModal .pietan-row')][i].click();
+      [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')][i].click();
       await new Promise(r => setTimeout(r, 500));
       const chip = document.querySelector('#pietanModal .w-fixed');
       if (!chip) continue;
@@ -126,9 +131,9 @@ const pickMs = async (pg, q) => {
   // ── ② 목표: 걸고 → 기체 바꾸면 사라지는가 ───────────────────────
   await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '자쿠'; q.dispatchEvent(new Event('input')); });
   await sleep(800);
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row'); if (r) r.click(); });
+  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row:not(.pietan-whead)'); if (r) r.click(); });
   await sleep(900);
-  await pg.evaluate(() => { const r = [...document.querySelectorAll('#pietanModal .pietan-row')].pop(); if (r) r.click(); });
+  await pg.evaluate(() => { const r = [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')].pop(); if (r) r.click(); });
   await sleep(900);
   const set = await pg.evaluate(() => {
     const g = document.querySelector('.pietan-goal');

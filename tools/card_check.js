@@ -31,6 +31,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await pg.goto(URL, { waitUntil: 'load', timeout: 120000 });
   await sleep(1500);
   await pg.evaluate(() => document.querySelector('.ms-card').click());
+  // 카드를 누르면 기체 정보 칸이 열릴 뿐이다 — 「파츠 고르기」까지 눌러야 기체가 바뀐다.
+  await sleep(900);
+  await pg.evaluate(() => { const g = document.querySelector('#infoGo'); if (g) g.click(); });
+  await sleep(1100);
   await sleep(800);
 
   // 피해경감 파츠를 하나 껴서 화면과 카드가 갈라지는 조건을 만든다.
