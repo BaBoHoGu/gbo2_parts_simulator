@@ -1,6 +1,78 @@
 {
- "pickupsUpdated": "2026-08-29",
+ "pickupsUpdated": "2026-09-17",
  "pickups": [
+  {
+   "name": "정비사 증원 티켓[★★★]",
+   "consoleStart": "2026-09-17",
+   "consoleEnd": "2026-09-24",
+   "start": "2026-11-19",
+   "end": "2026-11-26",
+   "tokens": 90,
+   "url": "https://bo2.ggame.jp/kr/info/?p=196644"
+  },
+  {
+   "name": "정비사 증원 티켓[★★★★]",
+   "consoleStart": "2026-09-17",
+   "consoleEnd": "2026-09-24",
+   "start": "2026-11-19",
+   "end": "2026-11-26",
+   "tokens": 90,
+   "url": "https://bo2.ggame.jp/kr/info/?p=196655"
+  },
+  {
+   "name": "정비사 증원 티켓[★★★★★]",
+   "consoleStart": "2026-09-17",
+   "consoleEnd": "2026-09-24",
+   "start": "2026-11-19",
+   "end": "2026-11-26",
+   "tokens": 90,
+   "url": "https://bo2.ggame.jp/kr/info/?p=196668"
+  },
+  {
+   "name": "골드 스모",
+   "consoleStart": "2026-09-10",
+   "consoleEnd": "2026-09-17",
+   "start": "2026-11-12",
+   "end": "2026-11-19",
+   "tokens": 120,
+   "url": "https://bo2.ggame.jp/kr/info/?p=196534"
+  },
+  {
+   "name": "개량 키트[★★★]",
+   "consoleStart": "2026-09-10",
+   "consoleEnd": "2026-09-17",
+   "start": "2026-11-12",
+   "end": "2026-11-19",
+   "tokens": 90,
+   "url": "https://bo2.ggame.jp/kr/info/?p=196607"
+  },
+  {
+   "name": "개량 키트[★★★★]",
+   "consoleStart": "2026-09-10",
+   "consoleEnd": "2026-09-17",
+   "start": "2026-11-12",
+   "end": "2026-11-19",
+   "tokens": 90,
+   "url": "https://bo2.ggame.jp/kr/info/?p=196618"
+  },
+  {
+   "name": "개량 키트[★★★★★]",
+   "consoleStart": "2026-09-10",
+   "consoleEnd": "2026-09-17",
+   "start": "2026-11-12",
+   "end": "2026-11-19",
+   "tokens": 90,
+   "url": "https://bo2.ggame.jp/kr/info/?p=196631"
+  },
+  {
+   "name": "커스텀 파츠",
+   "consoleStart": "2026-09-03",
+   "consoleEnd": "2026-09-10",
+   "start": "2026-11-05",
+   "end": "2026-11-12",
+   "tokens": null,
+   "url": "https://bo2.ggame.jp/kr/info/?p=196139"
+  },
   {
    "name": "건담 <ruby>DX<rt>더블 엑스</rt></ruby>",
    "consoleStart": "2026-08-27",
@@ -135,64 +207,45 @@
    "end": "2026-09-24",
    "tokens": 120,
    "url": "https://bo2.ggame.jp/kr/info/?p=191177"
-  },
+  }
+ ],
+ "steamUpdated": "2026-09-17",
+ "steamNews": [
   {
    "name": "리그 콘티오",
-   "consoleStart": "2026-07-09",
-   "consoleEnd": "2026-07-16",
    "start": "2026-09-10",
    "end": "2026-09-17",
    "tokens": 120,
-   "url": "https://bo2.ggame.jp/kr/info/?p=190627"
+   "url": "https://store.steampowered.com/news/app/1367080/view/669502126020362443?l=koreana"
   },
   {
-   "name": "기라 줄루(CM)",
-   "consoleStart": "2026-07-09",
-   "consoleEnd": "2026-07-16",
-   "start": "2026-09-10",
-   "end": "2026-09-17",
-   "tokens": 120,
-   "url": "https://bo2.ggame.jp/kr/info/?p=190639"
-  },
-  {
-   "name": "【8주년 전월제】 MS 확정 스페셜",
-   "consoleStart": "2026-07-09",
-   "consoleEnd": "2026-07-16",
+   "name": "건담 하지로보시 LV1 & LV2",
    "start": "2026-09-10",
    "end": "2026-09-17",
    "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=190654"
+   "url": "https://store.steampowered.com/news/app/1367080/view/669502126020362443?l=koreana"
   },
   {
-   "name": "【8주년 전월제】 커스텀 파츠",
-   "consoleStart": "2026-07-02",
-   "consoleEnd": "2026-07-09",
+   "name": "건담 하지로보시 LV2",
+   "start": "2026-09-10",
+   "end": "2026-09-17",
+   "tokens": 180,
+   "url": "https://store.steampowered.com/news/app/1367080/view/669502126020362443?l=koreana"
+  },
+  {
+   "name": "【복각】 윙 건담 제로",
    "start": "2026-09-03",
    "end": "2026-09-10",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=190254"
+   "tokens": 270,
+   "url": "https://store.steampowered.com/news/app/1367080/view/667249691758428712?l=koreana"
   },
   {
    "name": "풀 아머 ENGAGE 건담[A 플랜] LV2",
-   "consoleStart": "2026-07-02",
-   "consoleEnd": "2026-07-09",
    "start": "2026-09-03",
    "end": "2026-09-10",
    "tokens": 120,
-   "url": "https://bo2.ggame.jp/kr/info/?p=190278"
+   "url": "https://store.steampowered.com/news/app/1367080/view/667249691758428712?l=koreana"
   },
-  {
-   "name": "【8주년 전월제】 커스텀 파츠",
-   "consoleStart": "2026-06-25",
-   "consoleEnd": "2026-07-02",
-   "start": "2026-08-27",
-   "end": "2026-09-03",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=188853"
-  }
- ],
- "steamUpdated": "2026-08-29",
- "steamNews": [
   {
    "name": "【가을 축제 전월제】: 건담 DX",
    "start": "2026-08-27",
@@ -227,62 +280,6 @@
    "end": "2026-08-27",
    "tokens": 180,
    "url": "https://store.steampowered.com/news/app/1367080/view/681885122980479331?l=koreana"
-  },
-  {
-   "name": "내러티브 건담[B2장비]",
-   "start": "2026-08-13",
-   "end": "2026-08-20",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/701024152480383969?l=koreana"
-  },
-  {
-   "name": "가자CZ",
-   "start": "2026-08-13",
-   "end": "2026-08-20",
-   "tokens": 90,
-   "url": "https://store.steampowered.com/news/app/1367080/view/701024152480383969?l=koreana"
-  },
-  {
-   "name": "톨기스Ⅲ LV1 & LV2",
-   "start": "2026-08-13",
-   "end": "2026-08-20",
-   "tokens": null,
-   "url": "https://store.steampowered.com/news/app/1367080/view/701024152480383969?l=koreana"
-  },
-  {
-   "name": "톨기스Ⅲ LV2",
-   "start": "2026-08-13",
-   "end": "2026-08-20",
-   "tokens": 180,
-   "url": "https://store.steampowered.com/news/app/1367080/view/701024152480383969?l=koreana"
-  },
-  {
-   "name": "유니콘 건담[하이퍼 메가 런처 장비]",
-   "start": "2026-08-06",
-   "end": "2026-08-13",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/701024152480383196?l=koreana"
-  },
-  {
-   "name": "【복각】 크로스본 건담 X1 개량형",
-   "start": "2026-08-06",
-   "end": "2026-08-13",
-   "tokens": 285,
-   "url": "https://store.steampowered.com/news/app/1367080/view/701024152480383196?l=koreana"
-  },
-  {
-   "name": "Z건담[I필드 클로&I필드 블래스터 장비]",
-   "start": "2026-07-30",
-   "end": "2026-08-06",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/684135019607753329?l=koreana"
-  },
-  {
-   "name": "【복각】 크로스본 건담 X2 개량형",
-   "start": "2026-07-30",
-   "end": "2026-08-06",
-   "tokens": 285,
-   "url": "https://store.steampowered.com/news/app/1367080/view/684135019607753329?l=koreana"
   }
  ]
 }

@@ -458,6 +458,18 @@ if ($Rebuild) {
   if ($Check) { $nodeArgs += '--check' }
 }
 
+# 토큰 계산기의 픽업 일정도 같이 받아 온다. 기체·파츠와 달리 이건 토큰 저장소의
+# 갱신기(update_pickups.ps1)가 긁어 오고, 파츠는 그 산출물만 data/pickups.json 으로 받는다.
+# 빌드 전에 해야 새 일정이 이번 배포본에 실린다. 실패해도 막지 않는다 — 못 받은 날은
+# 마지막으로 받아 둔 일정이 그대로 실릴 뿐이고, 그 때문에 배포를 멈출 이유가 없다.
+if (-not $Rebuild -and -not $Check) {
+  Write-Host ''
+  Write-Host '토큰 픽업 일정' -ForegroundColor Cyan
+  try { & $node (Join-Path $PSScriptRoot 'tools\pickups.js') } catch {
+    Write-Host "  건너뜀 — $($_.Exception.Message)" -ForegroundColor DarkGray
+  }
+}
+
 $code = 0
 try {
   & $node @nodeArgs
