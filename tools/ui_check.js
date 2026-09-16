@@ -289,11 +289,28 @@ async function runView(view) {
     await sleep(1000);
     await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); if (q) { q.value = '자쿠'; q.dispatchEvent(new Event('input')); } });
     await sleep(800);
-    await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row'); if (r) r.click(); });
+    const clickRow = () => pg.evaluate(() => {
+      // 목록 머리글(.pietan-whead)도 같은 .pietan-row 를 쓴다 — 그것을 누르면 아무 일도
+      // 안 일어나고, 무장을 고른 줄 알고 넘어가게 된다(실제로 그래서 상세 칸의 예외를
+      // 놓쳤다). 머리글은 빼고 진짜 줄만 누른다.
+      const r = [...document.querySelectorAll('#pietanModal .pietan-row')]
+        .find(x => !x.classList.contains('pietan-whead'));
+      if (r) r.click();
+      return !!r;
+    });
+    await clickRow();
     await sleep(1200);
-    await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row'); if (r) r.click(); });
+    await clickRow();
     await sleep(1000);
     await step(pg, view, '피탄시뮬');
+    // 무장을 골랐으면 상세가 **실제로 그려져야** 한다. 렌더 중 예외가 나면 칸만 비는데,
+    // 배치만 재는 검사로는 그것이 통과해 버린다.
+    const detail = await pg.evaluate(() => {
+      const r = document.querySelector('#pietanResult');
+      return { head: !!(r && r.querySelector('.pietan-rhd')),
+        kill: !!(r && /격파까지/.test(r.innerText)) };
+    });
+    check(view.tag, '[피탄시뮬] 무장 상세가 그려짐', detail.head && detail.kill, JSON.stringify(detail));
     const pt = await pg.evaluate(probeSafeTop, '#pietanModal', INSET);
     check(view.tag, '[피탄시뮬] 상단 안전영역 존중', pt.found && pt.ok, JSON.stringify(pt));
     // 모달이 화면 밖으로 늘어지지 않고, 아래쪽 내용에 **닿을 수 있는가**.

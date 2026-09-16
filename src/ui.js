@@ -5540,7 +5540,11 @@
   let pietanEnemySkills = new Set();  // 체크한 적 공격 스킬 이름들 (여러 개 조합 가능)
   let pietanEnemyDef = new Set();     // 체크한 적 방어 스킬 이름들 — 내 무장의 피해를 깎는다
   let pietanShield = false;           // 「실드로 막음」 — 실드 HP 로 받는 계산을 함께 보여 준다
-  let pietanBuild = null;        // 적이 저장 빌드일 때 그 빌드(파츠 포함), 아니면 null
+  /* 적의 세팅 — **여기 하나가 출처다.**
+     저장 구성을 고르면 여기에 부어 넣고(시작점), 그 뒤로는 화면에서 바로 고친다.
+     예전에는 「저장 구성일 때만 파츠가 있다」라, 상대 파츠를 보려면 먼저 저장해야 했다. */
+  let pietanEnemy = { parts: [], stage: 6, expansion: null, expLevel: null };
+  let pietanBuild = null;        // 어디서 온 세팅인지 이름표(저장 구성에서 왔으면 그 구성)
   let pietanVariant = 0;         // 선택한 격투 변형 인덱스 (기본/헤비어택…)
   let pietanDir = 0;             // 선택한 격투 방향 인덱스 (N격/횡격/하격…)
 
@@ -5633,21 +5637,33 @@
   /** 적 기체의 기본 공격보정(파츠 없음·강화6) — 무장 종류에 맞는 값을 공격보정에 자동 채운다. */
   /** 적 총 스탯 — 저장 빌드면 그 파츠 반영, 아니면 기본(파츠 없음·강화6). */
   function enemyStatsTotal() {
-    const bs = enemyBuildStats(); if (bs) return bs.r.total;
-    return C.calcStats(pietanMs, [], 6, C.EXPANSION_NONE, partsByCat, fullst, C.MAX_EXPANSION_LEVEL, null, null).total;
+    return enemyStats().total;
   }
-  /** 적 저장 빌드의 계산 결과(파츠 포함). 렌더마다 calcStats 를 다시 돌리지 않게 캐시한다. */
-  let pietanBuildStats = null;
-  function enemyBuildStats() {
-    if (!pietanBuild) return null;
-    if (!pietanBuildStats || pietanBuildStats.bld !== pietanBuild)
-      pietanBuildStats = { bld: pietanBuild, bs: statsForBuild(pietanBuild) };
-    return pietanBuildStats.bs;
+  /** 적의 계산 결과. 렌더마다 calcStats 를 다시 돌리지 않게 캐시한다.
+   *  캐시 열쇠는 「기체 + 파츠 이름들 + 강화·확장」 — 이 중 하나만 바뀌어도 다시 센다. */
+  let pietanStatsCache = null;
+  function enemyStats() {
+    const key = (pietanMs ? pietanMs.MS名 : '') + '|' + pietanEnemy.parts.map(p => p.name).join(',')
+      + '|' + pietanEnemy.stage + '|' + pietanEnemy.expansion + '|' + pietanEnemy.expLevel;
+    if (pietanStatsCache && pietanStatsCache.key === key) return pietanStatsCache.r;
+    const r = C.calcStats(pietanMs, pietanEnemy.parts, pietanEnemy.stage,
+      pietanEnemy.expansion || C.EXPANSION_NONE, partsByCat, fullst,
+      pietanEnemy.expLevel || C.MAX_EXPANSION_LEVEL, null, null);
+    pietanStatsCache = { key, r };
+    return r;
   }
-  /** 적이 낀 파츠 — 기본 기체(저장 구성이 아님)면 빈 배열. */
-  function enemyEquipped() {
-    const bs = enemyBuildStats();
-    return (bs && bs.equipped) || [];
+  /** 적이 낀 파츠. */
+  function enemyEquipped() { return pietanEnemy.parts; }
+
+  /** 적에게 파츠를 끼울 수 있는지 — 내 구성과 **같은 규칙**을 쓴다(슬롯·중복·8개·카테고리). */
+  function enemyCanEquip(part) {
+    if (!pietanMs) return { ok: false, code: 'noms' };
+    return C.checkEquip(part, pietanMs, pietanEnemy.parts,
+      C.calcSlots(pietanMs, pietanEnemy.parts, pietanEnemy.stage, fullst));
+  }
+  /** 적 슬롯 사용량 — 화면에 「근 3/25」처럼 적는다. */
+  function enemySlots() {
+    return C.calcSlots(pietanMs, pietanEnemy.parts, pietanEnemy.stage, fullst);
   }
   function enemyBaseCorr() {
     const t = enemyStatsTotal();
@@ -5756,12 +5772,13 @@
     pietanMs = arr[arr.length - 1] || null;      // 기본은 최고 LV
     pietanMsLv = pietanMs ? msLevel(pietanMs) : 1;
     pietanPick = null;
-    pietanBuild = null;                           // 기본 기체(파츠 없음)
+    pietanBuild = null;                           // 어디서 온 것도 아니다
+    pietanEnemy = { parts: [], stage: 6, expansion: null, expLevel: null };
     pietanCorrTouched = false;                    // 새 기체는 공격보정 다시 자동
     pietanAttrTouched = false; pietanAutoAttr();  // 상성도 다시 자동
     pietanEnemySkills.clear(); pietanEnemyDef.clear();
     pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
-    renderPietanHint(); renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
+    pietanRedrawAll();
   }
 
   /** 적을 내 저장 빌드(파츠 적용)로 선택. */
@@ -5769,11 +5786,16 @@
     const ms = msData.find(m => m.MS名 === bld.ms);
     if (!ms) { toast('이 구성의 기체를 찾을 수 없습니다'); return; }
     pietanMs = ms; pietanMsBase = baseName(ms.MS名); pietanMsLv = msLevel(ms);
+    // 저장 구성은 시작점이다 — 부어 넣은 뒤로는 화면에서 바로 고칠 수 있다.
+    const bs = statsForBuild(bld);
+    pietanEnemy = bs
+      ? { parts: [...bs.equipped], stage: bs.stage, expansion: bs.expansion, expLevel: bs.expLevel }
+      : { parts: [], stage: 6, expansion: null, expLevel: null };
     pietanBuild = bld; pietanPick = null;
     pietanCorrTouched = false; pietanAttrTouched = false; pietanAutoAttr();
     pietanEnemySkills.clear(); pietanEnemyDef.clear();
     pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
-    renderPietanHint(); renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
+    pietanRedrawAll();
   }
 
   function renderPietanLeft() {
@@ -5829,7 +5851,7 @@
         const lv = msLevel(m);
         const b = el('button', 'seg-btn' + (m === pietanMs ? ' on' : ''), 'LV' + lv);
         b.onclick = () => { pietanMs = m; pietanMsLv = lv; pietanPick = null; pietanGoalHits = 0; pietanEnemyDef.clear();
-          renderPietanHint(); renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult(); };
+          pietanRedrawAll(); };
         seg.append(b);
       }
       box.append(seg);
@@ -5870,6 +5892,103 @@
       box.append(row);
     }
     if (!wl.length) box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
+  }
+
+  /* 적 파츠 고르기 팝업이 열려 있는가 + 검색어. 모달 안의 작은 칸이라 상태는 여기 둔다. */
+  let pietanPartOpen = false, pietanPartQ = '';
+
+  /** 「상대 파츠」 칸 — 낀 파츠 칩 + 슬롯 + 고르기. */
+  function renderPietanEparts() {
+    const box = $('#pietanEparts'); if (!box) return;
+    box.innerHTML = '';
+    if (!pietanMs) { box.hidden = true; return; }
+    box.hidden = false;
+
+    const head = el('div', 'pietan-ep-head');
+    head.append(el('span', 'pietan-ctrl-lb', '상대 파츠'));
+    const sl = enemySlots();
+    // 슬롯을 적어 둔다 — 안 적으면 「왜 이 파츠가 안 들어가지」를 알 수 없다.
+    const slot = el('span', 'pietan-ep-slot',
+      `근 ${sl.close}/${sl.maxClose} · 중 ${sl.mid}/${sl.maxMid} · 원 ${sl.long}/${sl.maxLong}`);
+    slot.title = '강화 ' + (STAGE_LABEL[pietanEnemy.stage] || pietanEnemy.stage) + ' 기준입니다.';
+    head.append(slot);
+    const add = el('button', 'tool-btn pietan-ep-add', pietanPartOpen ? '✕ 닫기' : '+ 파츠');
+    add.type = 'button';
+    add.onclick = () => { pietanPartOpen = !pietanPartOpen; renderPietanEparts(); };
+    head.append(add);
+    if (pietanEnemy.parts.length) {
+      const clr = el('button', 'tool-btn pietan-ep-clr', '전체 해제');
+      clr.type = 'button';
+      clr.onclick = () => { pietanEnemy.parts = []; pietanRedrawAll(); };
+      head.append(clr);
+    }
+    box.append(head);
+
+    const chips = el('div', 'pietan-ep-chips');
+    if (!pietanEnemy.parts.length) {
+      chips.append(el('span', 'pietan-ep-none', '없음 — 기본(파츠 없음) 기준으로 계산합니다'));
+    }
+    for (const pt of pietanEnemy.parts) {
+      const c = el('button', 'pietan-ep-chip', T.partName(pt.name));
+      c.type = 'button';
+      c.title = '눌러서 뺍니다';
+      c.append(el('i', '', '✕'));
+      c.onclick = () => {
+        pietanEnemy.parts = pietanEnemy.parts.filter(x => x.name !== pt.name);
+        pietanRedrawAll();
+      };
+      chips.append(c);
+    }
+    box.append(chips);
+
+    if (!pietanPartOpen) return;
+    const pick = el('div', 'pietan-ep-pick');
+    const q = el('input', 'pietan-ep-q');
+    q.type = 'search'; q.placeholder = '파츠 검색 (이름 / 효과)'; q.value = pietanPartQ;
+    q.oninput = () => { pietanPartQ = q.value; renderPietanEpartList(list); };
+    pick.append(q);
+    const list = el('div', 'pietan-ep-list');
+    pick.append(list);
+    box.append(pick);
+    renderPietanEpartList(list);
+    setTimeout(() => q.focus(), 20);
+  }
+
+  /** 고르기 목록. 못 끼우는 파츠는 **숨기지 않고 이유를 적는다** —
+   *  없으면 「왜 안 보이지」가 되고, 회색으로 두면 「왜 안 눌리지」가 된다. */
+  function renderPietanEpartList(list) {
+    list.innerHTML = '';
+    const q = pietanPartQ.trim().toLowerCase();
+    const all = Object.values(partsByCat).flat();
+    let rows = all;
+    if (q) rows = rows.filter(pt => matches(searchIndex(T.partName(pt.name) + ' ' + pt.name
+      + ' ' + T.partDesc(pt.name, pt.description)), q));
+    const CAP = 60;
+    let n = 0;
+    for (const pt of rows) {
+      if (n >= CAP) break;
+      const can = enemyCanEquip(pt);
+      const row = el('button', 'pietan-ep-row' + (can.ok ? '' : ' off'));
+      row.type = 'button';
+      row.append(img(partImg(pt.name), 'part', pt.name));
+      row.append(el('span', 'pietan-wn', T.partName(pt.name)));
+      row.append(el('span', 'pietan-ep-cost', `근${pt.close || 0} 중${pt.mid || 0} 원${pt.long || 0}`));
+      if (!can.ok) row.append(el('span', 'pietan-ep-no', reasonText(can)));   // 내 구성과 같은 문구 표를 쓴다
+      else row.onclick = () => {
+        pietanEnemy.parts = [...pietanEnemy.parts, pt];
+        pietanRedrawAll();
+      };
+      list.append(row);
+      n++;
+    }
+    if (!n) list.append(el('div', 'empty-state', '검색 결과가 없습니다.'));
+    else if (rows.length > CAP) list.append(el('div', 'pietan-more', `+${rows.length - CAP}개 — 검색으로 좁히세요`));
+  }
+
+  /** 적 세팅이 바뀌면 화면 전체를 다시 그린다 — 수치·목록·전제 배지가 모두 달라진다. */
+  function pietanRedrawAll() {
+    renderPietanHint(); renderPietanDura(); renderPietanEparts();
+    renderPietanChecks(); renderPietanLeft(); renderPietanResult();
   }
 
   function renderPietanChecks() {
@@ -5918,12 +6037,14 @@
   function pietanBasisNote() {
     if (!pietanMs) return null;
     const NL = String.fromCharCode(10);
-    return pietanBuild
-      ? { on: true, text: '상대 파츠 반영',
-          title: '고른 저장 구성의 파츠를 양방향으로 반영합니다 — 내구·공격보정·피해경감·특공.' }
+    const n = pietanEnemy.parts.length;
+    return n
+      ? { on: true, text: '상대 파츠 ' + n + '개',
+          title: '상대 파츠를 양방향으로 반영합니다 — 내구·공격보정·피해경감·특공.'
+            + (pietanBuild ? NL + '「' + pietanBuild.name + '」 에서 가져왔습니다.' : '') }
       : { on: false, text: '상대 파츠 없음',
           title: '상대는 기본(파츠 없음·강화6) 기준입니다.' + NL
-            + '상대 파츠까지 반영하려면 그 구성을 저장한 뒤, 목록 맨 위 「내 저장 구성」에서 고르세요.' };
+            + '아래 「상대 파츠」 에서 끼우면 바로 반영됩니다.' };
   }
 
   function pietanIncoming(w, vIdx, dIdx) {
@@ -5984,15 +6105,17 @@
     const stagN = perHitStagger > 0 ? Math.ceil(stg.threshold / perHitStagger) : null;
     return { eff, stg, isMelee, variants, dirs, vi, di, meleeCcd, eatk, eCorr, eMul, eEq,
       eAttrBonus, ePartPct, nNc, nCh, oneHit, inFx, fxAdd, dmg, hits, chgOne, chgDmg, chgHits,
-      perHitStagger, stagN };
+      condCuts, dmgFactor, eMult, perHitStagger, stagN };
   }
 
   /** 상대 무장 → 나 (받는 피해·격파·경직). */
   function renderPietanIncoming(box) {
     const w = pietanPick;
     const I = pietanIncoming(w);
-    const { eff, isMelee, variants, dirs, eatk, eCorr, eAttrBonus, ePartPct,
-      inFx, dmg, hits, chgDmg, chgHits, stagN } = I;
+    // 화면에 근거를 적을 때 계산 안의 값이 그대로 필요하다 — 다시 세지 말고 받아 쓴다.
+    const { eff, stg, isMelee, variants, dirs, meleeCcd, eatk, eCorr, eMul, eEq, eAttrBonus,
+      ePartPct, nNc, nCh, oneHit, inFx, fxAdd, dmg, hits, chgOne, chgDmg, chgHits,
+      condCuts, dmgFactor, eMult, perHitStagger, stagN } = I;
     pietanVariant = I.vi; pietanDir = I.di;   // 범위를 벗어난 선택은 계산이 0 으로 되돌린다
 
     const hd = el('div', 'pietan-rhd');
@@ -6011,7 +6134,7 @@
     box.append(hd);
     if (pietanMs) box.append(el('div', 'pietan-msctx',
       `${T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')} · LV${pietanMsLv}`
-      + (pietanBuild ? ' · 내 구성(파츠)' : '')
+      + (pietanEnemy.parts.length ? ' · 상대 파츠 ' + pietanEnemy.parts.length + '개' : '')
       + (eAttrBonus !== (D.ATTR_BONUS[pietanAttr] || 0) ? ' · 적 카테고리 특공' : '')
       + (ePartPct ? ` · 적 파츠 피해 +${ePartPct}%` : '')
       + ` · 공격보정 ${eCorr}`
@@ -6175,7 +6298,7 @@
       $('#pietanCorr').value = pietanCorr;
       pietanAutoAttr();                 // 내 기체 기준 상성 재계산(수동 변경 전까지)
       syncPietanAttrSeg();
-      renderPietanHint(); renderPietanDura(); renderPietanChecks(); renderPietanLeft(); renderPietanResult();
+      pietanRedrawAll();
     }
   }
 

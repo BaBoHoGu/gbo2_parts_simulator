@@ -3235,3 +3235,37 @@ body.info-open .sel-info { display: flex; }
 }
 .pietan-whead:hover { background: transparent; }
 .pietan-whead .pietan-wn { font-weight: 700; }
+
+/* ---- 피탄: 상대 파츠 ----
+   저장 구성을 만들지 않고도 여기서 바로 끼운다. 내 구성과 같은 규칙으로 걸러 낸다. */
+.pietan-eparts { padding: 0 16px 6px; }
+.pietan-ep-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pietan-ep-slot { font-size: var(--fs-3xs); color: var(--dim); font-variant-numeric: tabular-nums; }
+.pietan-ep-add, .pietan-ep-clr { margin-left: 0; }
+.pietan-ep-clr { color: var(--muted); }
+.pietan-ep-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.pietan-ep-none { font-size: var(--fs-3xs); color: var(--dim); }
+.pietan-ep-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--fs-3xs); padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--text);
+  cursor: pointer;
+}
+.pietan-ep-chip:hover { border-color: var(--bad); color: var(--bad); }
+.pietan-ep-chip i { font-style: normal; color: var(--dim); font-size: var(--fs-3xs); }
+.pietan-ep-pick { margin-top: 6px; border: 1px solid var(--line); border-radius: 9px; padding: 7px; }
+.pietan-ep-q { width: 100%; }
+.pietan-ep-list { max-height: 30vh; overflow-y: auto; margin-top: 6px; }
+.pietan-ep-row {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  padding: 4px 6px; border: 0; background: transparent; color: var(--text);
+  font: inherit; text-align: left; cursor: pointer; border-radius: 5px;
+}
+.pietan-ep-row:hover { background: rgba(255, 255, 255, .06); }
+.pietan-ep-row img { width: 26px; height: 26px; border-radius: 3px; flex: 0 0 26px; }
+/* 못 끼우는 것은 숨기지 않고 **이유를 적는다** — 없으면 「왜 안 보이지」가 되고,
+   회색으로만 두면 「왜 안 눌리지」가 된다. */
+.pietan-ep-row.off { cursor: default; opacity: .55; }
+.pietan-ep-row.off:hover { background: transparent; }
+.pietan-ep-cost { font-size: var(--fs-3xs); color: var(--dim); white-space: nowrap; margin-left: auto; }
+.pietan-ep-no { font-size: var(--fs-3xs); color: var(--bad); white-space: nowrap; }
