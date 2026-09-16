@@ -1,5 +1,8 @@
 
   #screenToken * { box-sizing: border-box; }
+  /* 브라우저가 그리는 것들(날짜 선택 팝업·숫자 스피너·스크롤바)은 CSS 로 색을 못 준다.
+     color-scheme 로 어둡다고 알려 줘야 흰 달력이 튀어나오지 않는다. */
+  #screenToken { color-scheme: dark; }
   #screenToken {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
     background: var(--bg);
@@ -45,6 +48,12 @@
   #screenToken .rules-table td:last-child { text-align: right; font-weight: bold; color: var(--info); }
 
   #screenToken label.field { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  /* 입력칸은 색을 명시해야 한다 — 안 주면 브라우저 기본인 흰 바탕·검은 글씨가
+     그대로 남아 어두운 화면에 흰 상자가 뜬다. 실제로 메모칸이 그랬다. */
+  #screenToken input[type=date], #screenToken input[type=number],
+  #screenToken input[type=text], #screenToken .memo-area, #screenToken select {
+    background: var(--panel-2); color: var(--text);
+  }
   #screenToken input[type=date], #screenToken input[type=number] {
     width: 100%; padding: 9px; border: 1px solid var(--line);
     border-radius: 6px; font-size: 14px; margin-bottom: 1rem;
@@ -76,12 +85,12 @@
 
   #screenToken .result {
     background: linear-gradient(135deg, var(--panel-3), var(--panel-2));
-    border: 2px solid var(--info); border-radius: 10px;
+    border: 2px solid var(--accent); border-radius: 10px;
     padding: 1.5rem; text-align: center;
   }
   #screenToken .result .label { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
   #screenToken #resultToken {
-    font-size: 52px; font-weight: bold; color: var(--info);
+    font-size: 52px; font-weight: bold; color: var(--accent);
     font-family: 'Courier New', monospace; line-height: 1;
   }
   #screenToken #resultDays { font-size: 13px; color: var(--muted); margin-top: 8px; }
@@ -102,8 +111,17 @@
   /* 목표 관리 / 기록 공통 */
   #screenToken .btn {
     display: inline-block; padding: 8px 14px; border: none;
-    border-radius: 6px; background: var(--info); color: var(--panel);
+    border-radius: 6px; background: var(--accent); color: var(--panel);
     font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  /* 표 안 버튼은 줄마다 하나씩 붙어 열두 개가 줄줄이 선다. 다 칠하면 표가 아니라
+     버튼 목록으로 보여서, 여기서는 테두리만 두고 글자에 색을 남긴다. */
+  #screenToken .data-table .btn {
+    background: transparent; color: var(--accent);
+    border: 1px solid var(--accent); padding: 4px 10px;
+  }
+  #screenToken .data-table .btn.danger {
+    background: transparent; color: var(--bad); border-color: var(--bad);
   }
   #screenToken .btn.secondary { background: var(--dim); }
   #screenToken .btn.danger { background: var(--bad); padding: 4px 9px; font-size: 12px; }
@@ -124,6 +142,13 @@
   #screenToken .link-list { list-style: none; margin: 0; padding: 0; font-size: 14px; }
   #screenToken .link-list li { padding: 8px 0; border-bottom: 1px solid var(--panel-2); }
   #screenToken .link-list li:last-child { border-bottom: none; }
+  /* 링크 — 밝은 테마에서는 브라우저 기본 파랑(#0000ee)이 흰 바탕과 잘 대비됐지만,
+     어두운 바탕으로 옮기니 명도차가 19 까지 떨어져 거의 안 보였다(34곳).
+     파츠의 링크 색(--info)으로 맞춘다. 픽업 이름은 표 안에서 줄이 빽빽하므로
+     밑줄은 올려놓을 때만 — 늘 그으면 표가 시끄럽다. */
+  #screenToken a { color: var(--info); text-decoration: none; }
+  #screenToken a:hover { color: var(--accent); text-decoration: underline; }
+  #screenToken a:visited { color: var(--info); }
   #screenToken .link-list a { color: var(--info); text-decoration: none; font-weight: 500; }
   #screenToken .link-list a:hover { text-decoration: underline; }
   #screenToken .link-list .note { color: var(--dim); font-size: 12px; font-weight: normal; }

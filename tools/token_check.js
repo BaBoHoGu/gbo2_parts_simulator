@@ -121,7 +121,15 @@ const ok = (label, cond, extra) => {
       const own = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
       if (!own) continue;
       const cs = getComputedStyle(el);
-      const bg = L(cs.backgroundColor), fg = L(cs.color);
+      // 배경이 투명하면 **조상까지 올라가** 실제로 깔린 색을 찾는다.
+      // 건너뛰면 링크처럼 배경 없는 글자를 통째로 안 보게 된다 —
+      // 실제로 그래서 「어두운 바탕에 기본 파랑 링크」 34곳을 놓쳤다.
+      let bg = null;
+      for (let e = el; e; e = e.parentElement) {
+        const v = L(getComputedStyle(e).backgroundColor);
+        if (v != null) { bg = v; break; }
+      }
+      const fg = L(cs.color);
       if (bg == null || fg == null) continue;
       if (Math.abs(bg - fg) < 45)
         out.push((el.className || el.tagName) + ' 배경 ' + cs.backgroundColor + ' 글자 ' + cs.color);
@@ -129,6 +137,21 @@ const ok = (label, cond, extra) => {
     return [...new Set(out)];
   });
   ok('글자가 배경에 묻히지 않는다', unreadable.length === 0, unreadable.slice(0, 4).join(' / '));
+
+  // 입력칸은 위 검사에 안 걸린다 — 제 글자가 텍스트 노드가 아니라 value·placeholder 라
+  // `own` 에서 걸러진다. 그래서 흰 메모칸이 그대로 남아 있었다. 따로 본다.
+  const pale = await pg.evaluate(() => {
+    const out = [];
+    for (const el of document.querySelectorAll('#screenToken input:not([type=checkbox]), #screenToken textarea, #screenToken select')) {
+      const c = getComputedStyle(el).backgroundColor;
+      const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || '');
+      if (!m) continue;
+      if (+m[1] * 0.299 + +m[2] * 0.587 + +m[3] * 0.114 > 120)
+        out.push((el.id || el.className || el.tagName) + ' ' + c);
+    }
+    return [...new Set(out)];
+  });
+  ok('입력칸이 어두운 테마를 따른다', pale.length === 0, pale.slice(0, 4).join(' / '));
 
   ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].slice(0, 3).join(' | '));
 
