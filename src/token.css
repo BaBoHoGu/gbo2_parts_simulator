@@ -153,6 +153,60 @@
     }
   }
 
+  /* ---- 미래시 ----
+     달력처럼 주 단위 칸에 막대를 얹는다. 좁은 화면에서는 가로로 밀어 본다 —
+     주를 접어 버리면 「언제가 몰리는지」가 안 보여 그릴 이유가 없어진다. */
+  #screenToken .future-wrap { overflow-x: auto; }
+  #screenToken #futureChart { --fw-lab: 150px; min-width: 520px; }
+  #screenToken .fw-row { display: flex; align-items: center; height: 26px; }
+  #screenToken .fw-label {
+    flex: 0 0 var(--fw-lab); width: var(--fw-lab); padding-right: 8px;
+    font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--text);
+  }
+  /* 기체는 굵게 — 티켓·키트·이벤트 배너와 섞여 있어 눈이 기체를 먼저 찾게 한다 */
+  #screenToken .fw-label.mech { font-weight: 700; }
+  #screenToken .fw-label.past { color: var(--dim); font-weight: 400; }
+  #screenToken .fw-track { position: relative; flex: 1 1 0; min-width: 0; height: 100%; }
+  /* 「오늘」 이 들어갈 한 줄을 위에 둔다 — 월 이름과 같은 높이면 겹친다. */
+  #screenToken .fw-headrow { height: 46px; padding-top: 16px; }
+  #screenToken .fw-head { display: flex; border-bottom: 1px solid var(--line); height: 100%; align-items: flex-end; padding-bottom: 3px; }
+  #screenToken .fw-cell { flex: 1 1 0; min-width: 0; text-align: center; font-size: 11px; color: var(--dim); line-height: 1.15; }
+  #screenToken .fw-cell b { display: block; color: var(--accent); font-size: 11px; }
+  #screenToken .fw-cell.fw-month { border-left: 1px solid var(--line); }
+  #screenToken .fw-rows { position: relative; padding-top: 3px; }
+  #screenToken .fw-bar {
+    position: absolute; top: 3px; height: 20px;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 6px; border-radius: 4px;
+    background: rgba(255, 201, 60, .18); border: 1px solid var(--accent);
+  }
+  #screenToken .fw-bar.past { background: var(--panel-2); border-color: var(--line); }
+  #screenToken .fw-tok { color: var(--accent); font-weight: 700; font-size: 11px; }
+  #screenToken .fw-bar.past .fw-tok { color: var(--dim); }
+  #screenToken .fw-today {
+    position: absolute; top: 0; bottom: 0; width: 0;
+    border-left: 2px dashed var(--info); pointer-events: none;
+  }
+  /* 「오늘」 글자는 머리줄에 둔다 — 막대 위에 얹었더니 첫 줄의 토큰 수치를 가렸다. */
+  #screenToken .fw-headrow { position: relative; }
+  #screenToken .fw-todaylab {
+    position: absolute; top: 1px; transform: translateX(-50%);
+    font-size: 10px; color: var(--info); font-weight: 700; white-space: nowrap;
+    background: var(--panel); padding: 0 3px;
+  }
+
+  /* 벗어난 것 — 눈에 띄어야 한다. 이게 이 카드를 여는 이유다. */
+  #screenToken .future-off {
+    margin-bottom: 10px; padding: 9px 11px; border-radius: 6px;
+    background: rgba(255, 107, 107, .10); border: 1px solid var(--bad);
+    font-size: 13px;
+  }
+  #screenToken .future-off-row { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 5px; }
+  #screenToken .fo-nm { font-weight: 600; }
+  #screenToken .fo-d { color: var(--muted); font-size: 12px; }
+  #screenToken .fo-gap { color: var(--bad); font-size: 12px; font-weight: 700; margin-left: auto; }
+
   /* 정보 사이트 링크 목록 */
   #screenToken .link-list { list-style: none; margin: 0; padding: 0; font-size: 14px; }
   #screenToken .link-list li { padding: 8px 0; border-bottom: 1px solid var(--panel-2); }

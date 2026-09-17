@@ -383,6 +383,302 @@
     el.textContent = dateStr + ' (' + ago + (stale ? ' · 갱신 필요' : '') + ')';
     el.className = stale ? 'stale' : '';
   }
+  /* ---------- 미래시 ----------
+   * 콘솔 공지에서 온 「스팀 예상 일정」을 달력처럼 편다. 아래 표와 **같은 데이터**다 —
+   * 표는 줄을 읽어야 알고, 이건 언제가 비고 언제가 몰리는지를 본다.
+   *
+   * 「미래시에서 벗어난 것」도 같이 짚는다. 콘솔 일정은 추정이라 실제 스팀이 앞당겨지거나
+   * 밀린다. 실제로 건담 DX 가 예보 10-29 인데 스팀에는 08-27 에 나왔다 — 스팀 쪽 이름에
+   * 「【가을 축제 전월제】:」 같은 접두사가 붙어 계산기의 이름 대조가 빗나갔기 때문이다.
+   * 그래서 여기서는 **느슨하게** 맞춘다(장식·괄호·공백을 떼고 한쪽이 다른 쪽을 품는지).
+   */
+  const MS_DAY = 86400000;
+
+  /** 이름 대조용 열쇠 — 장식을 다 떼고 남는 글자. */
+  function looseKey(s) {
+    return pickName(s)
+      .replace(/【[^】]*】/g, '')            // 【8주년 대감사제】 같은 머리표
+      .replace(/^[^:：]*[:：]/, '')          // 「가을 축제 전월제:」 같은 접두사
+      .replace(/\[[^\]]*\]/g, '')
+      .replace(/[\s·・()（）]/g, '')
+      .toLowerCase();
+  }
+
+  /* 기체 이름 사전 — 파츠 시뮬레이터가 이미 들고 있는 것을 빌려 쓴다(GBO2_I18N.ms).
+     왜 필요한가: 이름만 맞춰 「벗어남」을 잡으면 **커스텀 파츠·정비사 증원 티켓·개량 키트**
+     처럼 몇 주마다 되풀이되는 품목이 매번 걸린다. 그건 벗어난 게 아니라 원래 반복이다.
+     사용자가 말한 것은 「벗어난 **기체**」이므로, 기체로 아는 이름만 본다.
+     목록을 새로 만들지 않는다 — 두 곳에 같은 목록을 두면 언젠가 어긋난다. */
+  const MS_NAMES = (() => {
+    const out = new Set();
+    const src = (window.GBO2_I18N && window.GBO2_I18N.ms) || {};
+    for (const ja of Object.keys(src)) {
+      const ko = src[ja];
+      if (typeof ko === 'string' && ko) out.add(looseKey(ko));
+    }
+    return out;
+  })();
+
+  /** 이 이름이 기체인가. 사전에 없으면 티켓·키트·이벤트 배너로 본다. */
+  function isMech(name) {
+    const k = looseKey(name);
+    if (!k) return false;
+    if (MS_NAMES.has(k)) return true;
+    // 「데스티니 건담 LV1 & LV2」처럼 뒤에 LV 가 붙는 표기 — 그 부분을 떼고 다시 본다
+    const bare = k.replace(/lv\d+(&lv\d+)?$/,'').replace(/&$/, '');
+    return bare.length > 1 && MS_NAMES.has(bare);
+  }
+
+  /** 예보 하나가 실제 스팀에 이미 나왔는가. 나왔으면 그 스팀 항목을 돌려준다. */
+  function alreadyOnSteam(p) {
+    const k = looseKey(p.name);
+    if (k.length < 2) return null;
+    for (const s of STEAM_NEWS) {
+      const sk = looseKey(s.name);
+      if (!sk) continue;
+      if (sk === k || sk.includes(k) || k.includes(sk)) return s;
+    }
+    return null;
+  }
+
+  function renderFuture() {
+    setUpdated('futureUpdated', typeof PICKUPS_UPDATED === 'string' ? PICKUPS_UPDATED : '');
+    const chart = $('futureChart'), offBox = $('futureOff');
+    if (!chart) return;
+    if (!PICKUPS.length) {
+      chart.innerHTML = '<div class="empty">받아 둔 일정이 없습니다</div>';
+      if (offBox) offBox.innerHTML = '';
+      return;
+    }
+
+    // ── 벗어난 것 ── 예보에 남아 있는데 스팀에는 이미 나온 것
+    const off = [];
+    const rows = [];
+    for (const p of PICKUPS) {
+      const hit = alreadyOnSteam(p);
+      if (hit && hit.start && p.start && hit.start !== p.start && isMech(p.name)) {
+        const d = Math.round((pd(p.start) - pd(hit.start)) / MS_DAY);
+        off.push({ name: pickName(p.name), want: p.start, real: hit.start, days: d, url: hit.url });
+      } else {
+        rows.push(p);
+      }
+    }
+    if (offBox) {
+      offBox.innerHTML = off.length
+        ? '<div class="future-off"><b>⚠ 미래시에서 벗어난 것 ' + off.length + '건</b>'
+          + off.map(o => '<div class="future-off-row"><span class="fo-nm">' + esc(o.name) + '</span>'
+            + '<span class="fo-d">예상 ' + esc(o.want) + ' → 실제 <b>' + esc(o.real) + '</b></span>'
+            + '<span class="fo-gap">' + (o.days > 0 ? o.days + '일 앞당겨짐' : (-o.days) + '일 밀림') + '</span></div>').join('')
+          + '</div>'
+        : '';
+    }
+
+    // ── 타임라인 ── 주 단위 칸. 오늘이 낀 주부터 마지막 픽업까지.
+    const today = pd(todayStr());
+    const all = rows.filter(p => p.start && p.end);
+    if (!all.length) { chart.innerHTML = '<div class="empty">그릴 일정이 없습니다</div>'; return; }
+    let min = Math.min(...all.map(p => +pd(p.start)), +today);
+    const max = Math.max(...all.map(p => +pd(p.end)));
+    // 주의 시작(수요일)에 맞춘다 — 이 게임의 픽업은 수요일에 갈린다
+    const first = new Date(min);
+    while (first.getDay() !== 3) first.setDate(first.getDate() - 1);
+    const weeks = Math.max(1, Math.ceil((max - first) / (7 * MS_DAY)));
+
+    const col = d => (pd(d) - first) / (7 * MS_DAY);
+    // 이름은 **왼쪽 고정 칸**에 둔다. 막대 안에 넣어 봤더니 1주짜리 막대라 폭이 57px 뿐이라
+    // 「고트…」「양산…」처럼 전부 잘렸다 — 무엇이 언제인지가 이 카드의 전부인데 이름이
+    // 안 보이면 그릴 이유가 없다.
+    let head = '';
+    for (let w = 0; w < weeks; w++) {
+      const d = new Date(+first + w * 7 * MS_DAY);
+      const monthHead = w === 0 || d.getDate() <= 7;
+      head += '<div class="fw-cell' + (monthHead ? ' fw-month' : '') + '">'
+        + (monthHead ? '<b>' + (d.getMonth() + 1) + '월</b>' : '')
+        + '<span>' + d.getDate() + '</span></div>';
+    }
+
+    all.sort((a, b) => pd(a.start) - pd(b.start));
+    let rowsHtml = '';
+    for (const p of all) {
+      const a = col(p.start), b = col(p.end);
+      const left = a / weeks * 100, width = Math.max(100 / weeks, (b - a) / weeks * 100);
+      const past = pd(p.end) < today;
+      const mech = isMech(p.name);
+      rowsHtml += '<div class="fw-row">'
+        + '<div class="fw-label' + (past ? ' past' : '') + (mech ? ' mech' : '') + '" title="'
+        + esc(pickName(p.name)) + '">' + esc(pickName(p.name)) + '</div>'
+        + '<div class="fw-track"><div class="fw-bar' + (past ? ' past' : '')
+        + '" style="left:' + left.toFixed(3) + '%;width:' + width.toFixed(3) + '%">'
+        + (p.tokens != null ? '<span class="fw-tok">' + p.tokens + '</span>' : '')
+        + '</div></div></div>';
+    }
+    const todayLeft = (today - first) / (7 * MS_DAY) / weeks * 100;
+    const showToday = todayLeft >= 0 && todayLeft <= 100;
+    const todayX = 'calc(var(--fw-lab) + (100% - var(--fw-lab)) * ' + (todayLeft / 100).toFixed(4) + ')';
+    chart.innerHTML =
+      '<div class="fw-row fw-headrow"><div class="fw-label"></div>'
+      + '<div class="fw-track fw-head">' + head + '</div>'
+      + (showToday ? '<div class="fw-todaylab" style="left:' + (todayLeft).toFixed(3) + '%">오늘</div>' : '')
+      + '</div>'
+      + '<div class="fw-rows">' + rowsHtml
+      + (showToday ? '<div class="fw-today" style="left:' + todayX + '"></div>' : '')
+      + '</div>';
+  }
+
+  /* 미래시를 그림 한 장으로. 화면 DOM 을 옮겨 주는 라이브러리를 쓰지 않고 캔버스에 직접
+     그린다 — 이 앱이 성능 카드에서 쓰는 방식이고, 밖에서 받아 올 것이 없다.
+     배치는 화면과 같게 맞춘다(왼쪽 이름 칸 + 주 눈금 + 막대). */
+  function futurePng() {
+    if (!PICKUPS.length) { alert('받아 둔 일정이 없습니다'); return; }
+    const today = pd(todayStr());
+    const off = [], rows = [];
+    for (const p of PICKUPS) {
+      const hit = alreadyOnSteam(p);
+      if (hit && hit.start && p.start && hit.start !== p.start && isMech(p.name)) {
+        off.push({ name: pickName(p.name), want: p.start, real: hit.start,
+          days: Math.round((pd(p.start) - pd(hit.start)) / MS_DAY) });
+      } else if (p.start && p.end) rows.push(p);
+    }
+    if (!rows.length) { alert('그릴 일정이 없습니다'); return; }
+    rows.sort((a, b) => pd(a.start) - pd(b.start));
+
+    const first = new Date(Math.min.apply(null, rows.map(p => +pd(p.start)).concat([+today])));
+    while (first.getDay() !== 3) first.setDate(first.getDate() - 1);
+    const last = Math.max.apply(null, rows.map(p => +pd(p.end)));
+    const weeks = Math.max(1, Math.ceil((last - first) / (7 * MS_DAY)));
+
+    const S = 2;                       // 2배로 그려 글자가 또렷하게
+    const LAB = 190, CW = 74, PAD = 22;
+    const offH = off.length ? 24 + off.length * 24 + 14 : 0;
+    // 머리줄에 「오늘」 한 줄을 더 둔다 — 월 이름과 같은 높이에 그렸더니 겹쳤다.
+    const headTop = PAD + 30 + 30 + offH + 14;
+    const rowH = 30, footH = 34;
+    const W = PAD * 2 + LAB + CW * weeks;
+    const H = headTop + 52 + rows.length * rowH + footH;
+    const cvs = document.createElement('canvas');
+    cvs.width = W * S; cvs.height = H * S;
+    const g = cvs.getContext('2d');
+    g.scale(S, S);
+    const css = getComputedStyle(document.documentElement);
+    const v = (n, d) => (css.getPropertyValue(n) || '').trim() || d;
+    const C = {
+      bg: v('--bg', '#12141c'), panel2: v('--panel-2', '#262a38'),
+      line: v('--line', '#47526a'), text: v('--text', '#f4f6fb'), muted: v('--muted', '#aab1c4'),
+      dim: v('--dim', '#7b8499'), accent: v('--accent', '#ffc93c'),
+      info: v('--info', '#63b0ff'), bad: v('--bad', '#ff6b6b')
+    };
+    g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+    const F = 'system-ui, -apple-system, "Malgun Gothic", sans-serif';
+
+    let y = PAD;
+    g.fillStyle = C.text; g.font = '700 22px ' + F;
+    g.fillText('미래시 — 콘솔 공지 +9주(약 2개월) 추정', PAD, y + 18);
+    y += 30;
+    g.fillStyle = C.muted; g.font = '13px ' + F;
+    g.fillText('갱신 ' + (PICKUPS_UPDATED || '-') + ' · 오늘 ' + todayStr()
+      + ' · 실제 출현은 달라질 수 있습니다', PAD, y + 12);
+    y += 30;
+
+    if (off.length) {
+      const bh = 24 + off.length * 24;
+      g.fillStyle = 'rgba(255,107,107,.12)'; g.fillRect(PAD, y, W - PAD * 2, bh);
+      g.strokeStyle = C.bad; g.lineWidth = 1; g.strokeRect(PAD + .5, y + .5, W - PAD * 2 - 1, bh - 1);
+      g.fillStyle = C.bad; g.font = '700 14px ' + F;
+      g.fillText('⚠ 미래시에서 벗어난 기체 ' + off.length + '건', PAD + 10, y + 17);
+      let oy = y + 38;
+      for (const o of off) {
+        g.fillStyle = C.text; g.font = '700 13px ' + F;
+        g.fillText(o.name, PAD + 14, oy);
+        g.fillStyle = C.muted; g.font = '12px ' + F;
+        g.fillText('예상 ' + o.want + ' → 실제 ' + o.real, PAD + 14 + 160, oy);
+        g.fillStyle = C.bad; g.font = '700 12px ' + F;
+        const t = o.days > 0 ? o.days + '일 앞당겨짐' : (-o.days) + '일 밀림';
+        g.fillText(t, W - PAD - 14 - g.measureText(t).width, oy);
+        oy += 24;
+      }
+      y += bh + 14;
+    }
+
+    // ── 주 눈금 ──
+    const x0 = PAD + LAB;
+    const gridTop = y;
+    for (let w = 0; w < weeks; w++) {
+      const d = new Date(+first + w * 7 * MS_DAY);
+      const cx = x0 + w * CW + CW / 2;
+      const monthHead = w === 0 || d.getDate() <= 7;
+      if (monthHead) {
+        g.strokeStyle = C.line; g.lineWidth = 1; g.beginPath();
+        g.moveTo(x0 + w * CW + .5, gridTop); g.lineTo(x0 + w * CW + .5, H - footH); g.stroke();
+        g.fillStyle = C.accent; g.font = '700 12px ' + F;
+        const m = (d.getMonth() + 1) + '월';
+        g.fillText(m, cx - g.measureText(m).width / 2, gridTop + 26);
+      }
+      g.fillStyle = C.dim; g.font = '11px ' + F;
+      const dd = String(d.getDate());
+      g.fillText(dd, cx - g.measureText(dd).width / 2, gridTop + 41);
+    }
+    y = gridTop + 48;
+    g.strokeStyle = C.line; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(PAD, y + .5); g.lineTo(W - PAD, y + .5); g.stroke();
+    y += 6;
+
+    // ── 오늘 선 ──
+    const todayX = x0 + (today - first) / (7 * MS_DAY) * CW;
+    if (todayX >= x0 && todayX <= x0 + weeks * CW) {
+      g.save(); g.strokeStyle = C.info; g.lineWidth = 2; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(todayX, gridTop + 4); g.lineTo(todayX, H - footH); g.stroke(); g.restore();
+      g.fillStyle = C.info; g.font = '700 11px ' + F;
+      g.fillText('오늘', todayX + 4, gridTop);
+    }
+
+    // ── 줄 ──
+    for (const p of rows) {
+      const a = (pd(p.start) - first) / (7 * MS_DAY), b = (pd(p.end) - first) / (7 * MS_DAY);
+      const bx = x0 + a * CW, bw = Math.max(CW, (b - a) * CW);
+      const past = pd(p.end) < today;
+      const mech = isMech(p.name);
+      g.fillStyle = past ? C.dim : C.text;
+      g.font = (mech && !past ? '700 ' : '') + '13px ' + F;
+      let nm = pickName(p.name);
+      while (g.measureText(nm).width > LAB - 12 && nm.length > 4) nm = nm.slice(0, -2) + '…';
+      g.fillText(nm, PAD, y + 15);
+      g.fillStyle = past ? C.panel2 : 'rgba(255,201,60,.18)';
+      g.fillRect(bx, y + 2, bw, 20);
+      g.strokeStyle = past ? C.line : C.accent; g.lineWidth = 1;
+      g.strokeRect(bx + .5, y + 2.5, bw - 1, 19);
+      if (p.tokens != null) {
+        g.fillStyle = past ? C.dim : C.accent; g.font = '700 11px ' + F;
+        const t = String(p.tokens);
+        g.fillText(t, bx + bw - 7 - g.measureText(t).width, y + 16);
+      }
+      y += rowH;
+    }
+
+    g.fillStyle = C.dim; g.font = '11px ' + F;
+    g.fillText('GBO2 커스텀 파츠 시뮬레이터 · 토큰 계산기 — 콘솔 공지(bo2.ggame.jp) 기준 추정값입니다',
+      PAD, H - 12);
+
+    savePng(cvs, '미래시_' + todayStr() + '.png');
+  }
+
+  /* 캔버스를 파일로. 안드로이드 앱(WebView)은 blob 다운로드를 못 하므로 브리지로 넘긴다 —
+     파츠 쪽 성능 카드와 같은 길이다. */
+  function savePng(cvs, name) {
+    if (window.AndroidBridge && typeof window.AndroidBridge.saveImage === 'function') {
+      try { window.AndroidBridge.saveImage(cvs.toDataURL('image/png'), name); }
+      catch (e) { alert('이미지 저장에 실패했습니다'); }
+      return;
+    }
+    cvs.toBlob(blob => {
+      if (!blob) { alert('이미지 생성에 실패했습니다'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
+  }
+
   function renderPickups() {
     setUpdated('pickupUpdated', typeof PICKUPS_UPDATED === 'string' ? PICKUPS_UPDATED : '');
     const body = $('pickupList');
@@ -390,7 +686,7 @@
     body.innerHTML = PICKUPS.map((p, i) => {
       // url은 갱신된 저장본에만 있음 — 없으면 링크 없이 이름만 (구버전 데이터 호환)
       const safe = /^https?:\/\//.test(p.url || '') ? p.url : '';
-      const nameCell = safe ? `<a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${esc(p.name)}</a>` : esc(p.name);
+      const nameCell = safe ? `<a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${esc(pickName(p.name))}</a>` : esc(pickName(p.name));
       return `<tr>
       <td>${nameCell}</td>
       <td>${esc(p.start)} ~ ${esc(p.end)}${ddayBadge(p)}<div class="goal-eta">콘솔 개최 ${esc(p.consoleStart || '?')} · 추정</div></td>
@@ -408,7 +704,7 @@
       const safe = /^https?:\/\//.test(s.url || '') ? s.url : '#';
       const period = esc(s.start || '?') + (s.end ? ' ~ ' + esc(s.end) : '');
       return `<tr>
-        <td><a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${esc(s.name || s.title || '')}</a></td>
+        <td><a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${esc(pickName(s.name || s.title || ''))}</a></td>
         <td>${period}${ddayBadge(s)}</td>
         <td class="num">${(s.tokens != null) ? s.tokens : '-'}</td>
       </tr>`;
@@ -422,8 +718,8 @@
     }
     const today = pd(currentDateInput.value);
     const src = [];
-    ((typeof PICKUPS !== 'undefined' && PICKUPS) || []).forEach(p => src.push({ name: p.name, start: p.start, tokens: p.tokens, from: '콘솔' }));
-    ((typeof STEAM_NEWS !== 'undefined' && STEAM_NEWS) || []).forEach(s => src.push({ name: s.name, start: s.start, tokens: s.tokens, from: '스팀' }));
+    ((typeof PICKUPS !== 'undefined' && PICKUPS) || []).forEach(p => src.push({ name: pickName(p.name), start: p.start, tokens: p.tokens, from: '콘솔' }));
+    ((typeof STEAM_NEWS !== 'undefined' && STEAM_NEWS) || []).forEach(s => src.push({ name: pickName(s.name), start: s.start, tokens: s.tokens, from: '스팀' }));
     const seen = {};
     const rows = src.filter(p => {
       if (p.tokens == null || !p.start) return false;
@@ -438,7 +734,7 @@
       const ok = proj >= p.tokens;
       const badge = ok ? '<span class="badge-ok">가능</span>' : `<span class="badge-no">${p.tokens - proj} 부족</span>`;
       return `<tr>
-        <td>${esc(p.name)}<div class="goal-eta">${p.from} · 예상 ${proj}</div></td>
+        <td>${esc(pickName(p.name))}<div class="goal-eta">${p.from} · 예상 ${proj}</div></td>
         <td>${esc(p.start)}${ddayBadge(p)}</td>
         <td class="num">${p.tokens}</td>
         <td>${badge}</td>
@@ -485,7 +781,7 @@
     if (i === null) return;
     const p = PICKUPS[+i];
     resetGoalForm();
-    $('goalName').value = p.name;
+    $('goalName').value = pickName(p.name);
     $('goalStart').value = p.start;
     $('goalEnd').value = p.end;
     // 토큰 미확정 픽업이면 비움 (이전 클릭 값이 남아 잘못 저장되는 것 방지)
@@ -618,6 +914,18 @@
 
   function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+  /* 픽업 이름에는 원문 사이트의 HTML 이 섞여 들어온다 — 「건담 <ruby>DX<rt>더블 엑스</rt></ruby>」
+     처럼. 그대로 esc 하면 태그가 글자로 보인다(실제로 그렇게 나오고 있었다).
+     태그를 **살려서 그리지는 않는다** — 읽는 법(rt)까지 표에 끼면 줄이 길어지고, 무엇보다
+     남의 사이트에서 온 마크업을 그대로 넣는 셈이다. 글자만 남기고 태그는 버린다. */
+  function pickName(s) {
+    return String(s || '')
+      .replace(/<rt>[\s\S]*?<\/rt>/gi, '')   // 읽는 법은 버린다
+      .replace(/<[^>]*>/g, '')                // 남은 태그도 버린다
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   /* ---------- 데이터 백업/복원 ---------- */
   $('exportBtn').addEventListener('click', () => {
     const data = { version: 1, exportedAt: new Date().toISOString(), goals, logs, platinum, memo: $('memo').value };
@@ -677,6 +985,11 @@
     });
   });
 
+  const fpng = $('futurePng');
+  // 이 버튼은 카드 머리줄(h2) 안에 있다. h2 는 접기 토글이라, 막지 않으면 저장하면서 접힌다.
+  if (fpng) fpng.addEventListener('click', ev => { ev.stopPropagation(); futurePng(); });
+
+  renderFuture();
   renderPickups();
   renderSteamNews();
   renderLogs();  // 내부의 calc() → renderDeps()가 목표·백금장도 함께 렌더 (중복 렌더 제거)

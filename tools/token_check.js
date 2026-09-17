@@ -169,6 +169,62 @@ const ok = (label, cond, extra) => {
   });
   ok('카드가 접히고 펴진다', fold.now !== fold.was && fold.back === fold.was, JSON.stringify(fold));
 
+  // ── 미래시 ──
+  const fut = await pg.evaluate(() => {
+    const c = document.querySelector('[data-ck="future"]');
+    if (!c) return { missing: true };
+    return {
+      bars: c.querySelectorAll('.fw-bar').length,
+      labels: [...c.querySelectorAll('.fw-label')].map(e => e.textContent).filter(Boolean),
+      weeks: c.querySelectorAll('.fw-cell').length,
+      today: !!c.querySelector('.fw-today'),
+      offRows: c.querySelectorAll('.future-off-row').length,
+      png: !!c.querySelector('#futurePng')
+    };
+  });
+  ok('미래시 카드가 그려진다', !fut.missing && fut.bars > 3 && fut.weeks > 3,
+    '막대 ' + fut.bars + ' · 주 ' + fut.weeks);
+  ok('미래시에 오늘 표시가 있다', !!fut.today);
+  ok('이미지 저장 버튼이 있다', !!fut.png);
+  /* 이름에 섞여 오는 위키 태그가 글자로 보이면 안 된다 — 실제로 「건담 <ruby>DX…」가 그랬다.
+     **미래시 라벨만 보면 안 잡힌다** — 태그가 있는 건담 DX 는 「벗어남」으로 빠져서 거기
+     안 나온다. 되돌려 보고 나서야 알았다. 토큰 화면 글자를 통째로 훑는다. */
+  const tagged = await pg.evaluate(() => {
+    const out = [];
+    for (const el of document.querySelectorAll('#screenToken *')) {
+      for (const n of el.childNodes) {
+        if (n.nodeType === 3 && /<\/?[a-z][^>]*>/i.test(n.textContent)) out.push(n.textContent.trim().slice(0, 60));
+      }
+    }
+    return [...new Set(out)];
+  });
+  ok('화면 글자에 HTML 태그가 안 보인다', tagged.length === 0, tagged.slice(0, 2).join(' / '));
+  // 「벗어남」은 되풀이 품목(커스텀 파츠·티켓)이 아니라 **기체**만 잡아야 한다
+  const offNames = await pg.evaluate(() =>
+    [...document.querySelectorAll('.future-off-row .fo-nm')].map(e => e.textContent));
+  ok('벗어남은 기체만 잡는다',
+    offNames.every(n => !/커스텀 파츠|티켓|키트|리퀘스트/.test(n)),
+    offNames.join(' / ') || '(없음)');
+
+  // 이미지가 실제로 만들어지는가 — 버튼만 있고 안 그려지면 소용이 없다
+  const pngSize = await pg.evaluate(() => new Promise(res => {
+    const orig = HTMLCanvasElement.prototype.toBlob;
+    let done = false;
+    HTMLCanvasElement.prototype.toBlob = function (cb, type) {
+      done = true; HTMLCanvasElement.prototype.toBlob = orig;
+      const u = this.toDataURL(type || 'image/png');
+      res({ w: this.width, h: this.height, bytes: u.length });
+    };
+    const b = document.querySelector('#futurePng');
+    if (b) b.click();
+    setTimeout(() => { if (!done) { HTMLCanvasElement.prototype.toBlob = orig; res(null); } }, 4000);
+  }));
+  ok('미래시 이미지가 만들어진다', !!pngSize && pngSize.w > 600 && pngSize.bytes > 20000,
+    JSON.stringify(pngSize));
+  // 저장 버튼이 카드 머리줄 안에 있어서, 전파를 안 막으면 저장하면서 카드가 접힌다
+  ok('이미지 저장이 카드를 접지 않는다',
+    await pg.evaluate(() => !document.querySelector('[data-ck="future"]').classList.contains('collapsed')));
+
   ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].slice(0, 3).join(' | '));
 
   await br.close();
