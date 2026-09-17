@@ -221,6 +221,42 @@ async function runView(view) {
     // ── 빌드 화면 ──
     await step(pg, view, '빌드화면');
 
+    /* ⑤ 성능 칸의 접이식(누적치·슬러스터 스킬·방어 스킬)을 펴면 **다른 열이 밀렸다.**
+       성능은 오른쪽 열에서 두 줄에 걸쳐 있어서, 길어지면 그 두 줄이 같이 늘고
+       왼쪽·가운데에 빈 자리가 생긴다(실측: 성능 762 → 1051, 왼쪽 461 → 605).
+       펴는 것은 성능 안의 일이니 성능 안에서 스크롤로 끝나야 한다.
+       (폰은 열이 없이 세로로 쌓이므로 넓은 화면에서만 본다.) */
+    if (!view.mobile && view.w >= 1000) {
+      const grow = await pg.evaluate(async () => {
+        const box = s => { const e = document.querySelector(s); if (!e) return null;
+          return Math.round(e.getBoundingClientRect().height); };
+        const heads = [...document.querySelectorAll('#statBody .stg-head')];
+        if (!heads.length) return { skipped: true };
+        const before = { stats: box('.build-stats'), left: box('.build-left') };
+        for (const h of heads) h.click();
+        await new Promise(r => setTimeout(r, 600));
+        const sb = document.querySelector('#statBody');
+        return { skipped: false, heads: heads.length,
+          before, after: { stats: box('.build-stats'), left: box('.build-left') },
+          scrolls: sb.scrollHeight > sb.clientHeight + 2 };
+      });
+      if (!grow.skipped) {
+        check(view.tag, '[성능] 접이식을 펴도 성능 칸 높이가 그대로',
+          Math.abs(grow.after.stats - grow.before.stats) <= 2, JSON.stringify(grow));
+        check(view.tag, '[성능] 접이식을 펴도 왼쪽 열이 안 밀림',
+          Math.abs(grow.after.left - grow.before.left) <= 2, JSON.stringify(grow));
+        // 높이가 그대로라는 말이 참이 되려면 **넘친 내용이 안에서 스크롤**되어야 한다.
+        // 안 그러면 내용이 잘려 안 보이는 것을 통과라고 부르는 셈이다.
+        check(view.tag, '[성능] 넘친 내용은 성능 안에서 스크롤됨',
+          grow.scrolls, JSON.stringify(grow));
+        // 원래대로 접어 둔다 — 뒤 검사가 이 상태를 물려받지 않게
+        await pg.evaluate(() => {
+          for (const h of document.querySelectorAll('#statBody .stg-head.open')) h.click();
+        });
+        await sleep(400);
+      }
+    }
+
     // ② 폰 크기면 모바일 레이아웃이 걸려야 한다 (pointer 와 무관하게)
     if (view.mobile) {
       const m = await pg.evaluate(() => ({

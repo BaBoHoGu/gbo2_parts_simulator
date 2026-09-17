@@ -177,9 +177,10 @@ const ok = (label, cond, extra) => {
     cls: document.body.className,
     shown: (() => { const b = document.querySelector('#infoBody'); return !!b && !b.hidden; })()
   }));
-  /* ⓘ 를 눌러 정보 칸이 열리면 왼쪽 목록이 좁아져 카드가 **통째로 재배치**된다 —
-     실측으로 첫 카드가 102px 튀었다. 손가락 밑에서 누른 것이 움직이는 셈이라
-     「엉뚱한 게 눌렸다」는 느낌을 준다. 누른 카드는 제자리에 남아야 한다. */
+  /* ⓘ 를 눌러 정보 칸이 열리면 카드가 움직이면 안 된다.
+     **세로만 보다가 놓쳤다.** 세로는 스크롤로 붙들어 놨는데, 목록 칸이 좁아지면 그리드가
+     6열 → 2열로 다시 깔려 **가로로** 44px 가고 스크롤이 300 → 1074 로 튀고 있었다
+     (사용자가 「여전히 변한다」고 다시 짚었다). 세로·가로·스크롤·열 수를 다 본다. */
   const anchored = await pg.evaluate(async () => {
     /* 앞 시험들이 남긴 상태를 먼저 치운다 — 두 번 헛돌았다.
        ① 필터·검색이 걸려 있으면 목록이 짧아 스크롤이 안 된다.
@@ -199,22 +200,42 @@ const ok = (label, cond, extra) => {
     grid.scrollTop = 400;
     await new Promise(r => setTimeout(r, 150));
     if (grid.scrollTop < 100) return { skipped: true, scroll: grid.scrollTop };
-    const card = grid.querySelector('.ms-card');
+    const cols = () => getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+    /* **첫 카드를 고르면 안 된다.** 첫 카드는 어느 배치에서나 1열 왼쪽 끝이라 가로가 늘 같다 —
+       배치를 되돌려 봤더니 가로 검사가 그대로 통과했다(공허). 화면 안에 있고 1열이 아닌 것을 고른다. */
+    const gb = grid.getBoundingClientRect();
+    const card = [...grid.querySelectorAll('.ms-card')].find(c => {
+      const b = c.getBoundingClientRect();
+      return b.top > gb.top + 20 && b.bottom < gb.bottom - 20 && b.left > gb.left + 60;
+    });
+    if (!card) return { skipped: true, scroll: grid.scrollTop, why: '2열 이후 카드가 화면에 없음' };
     const name = card.dataset.ms;
-    const before = card.getBoundingClientRect().top;
+    const b0 = card.getBoundingClientRect();
+    const scroll0 = grid.scrollTop, cols0 = cols();
     card.querySelector('.ms-info').click();
     await new Promise(r => setTimeout(r, 400));
-    let after = null;
+    let b1 = null;
     for (const c of document.querySelectorAll('#msList .ms-card')) {
-      if (c.dataset.ms === name) { after = c.getBoundingClientRect().top; break; }
+      if (c.dataset.ms === name) { b1 = c.getBoundingClientRect(); break; }
     }
-    return { before: Math.round(before), after: after == null ? null : Math.round(after),
-      cls: document.body.className, scroll: grid.scrollTop, cards: grid.querySelectorAll('.ms-card').length };
+    return { before: Math.round(b0.top), after: b1 == null ? null : Math.round(b1.top),
+      leftBefore: Math.round(b0.left), leftAfter: b1 == null ? null : Math.round(b1.left),
+      scrollBefore: scroll0, scrollAfter: grid.scrollTop, cols0, cols1: cols(),
+      cls: document.body.className, scroll: grid.scrollTop,
+      cards: grid.querySelectorAll('.ms-card').length };
   });
-  ok('ⓘ 를 눌러도 누른 카드가 제자리에 있다',
-    !anchored.skipped && anchored.after != null && Math.abs(anchored.after - anchored.before) <= 2,
-    anchored.skipped ? '목록이 짧아 스크롤이 안 됨 — 검사 못 함(스크롤 ' + anchored.scroll + ')'
-      : JSON.stringify(anchored));
+  const anchorNote = anchored.skipped
+    ? '목록이 짧아 스크롤이 안 됨 — 검사 못 함(스크롤 ' + anchored.scroll + ')'
+    : JSON.stringify(anchored);
+  const measured = !anchored.skipped && anchored.after != null;
+  ok('ⓘ 를 눌러도 누른 카드가 세로로 제자리에 있다',
+    measured && Math.abs(anchored.after - anchored.before) <= 2, anchorNote);
+  ok('ⓘ 를 눌러도 누른 카드가 가로로 제자리에 있다',
+    measured && Math.abs(anchored.leftAfter - anchored.leftBefore) <= 2, anchorNote);
+  ok('ⓘ 를 눌러도 목록 스크롤이 튀지 않는다',
+    measured && Math.abs(anchored.scrollAfter - anchored.scrollBefore) <= 2, anchorNote);
+  ok('ⓘ 를 눌러도 목록 열 수가 그대로다',
+    measured && anchored.cols0 === anchored.cols1, anchorNote);
 
   ok('ⓘ 를 누르면 기체 정보가 열린다',
     /info-open/.test(infoOpen.cls) && !/view-build/.test(infoOpen.cls) && infoOpen.shown,

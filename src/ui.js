@@ -1798,6 +1798,33 @@
     return null;
   }
 
+  /** 「…速度 N倍」 — 배수로 적힌 상승.
+   *
+   *  사용자 지적: 특수 긴급 회피 제어는 「3秒間スラスター＆OH復帰速度 2.5倍」로
+   *  **숫자가 분명히 적혀 있다.** 값이 없어 못 넣는 것이 아니었다.
+   *  그리고 OH 복귀는 이미 파츠(냉각 계열)로 재고 있는 축이라, 같은 축에 얹으면 된다.
+   *  다만 몇 초짜리라 늘 걸리지는 않으므로 **조건부(체크식)로만** 넣는다 —
+   *  상시로 두면 아무도 모르게 좋게 나온다.
+   *
+   *  한 조각이 두 축을 함께 올린다(スラスター＝회복속도, OH＝복귀). 그래서 여럿을 낸다.
+   *  「終了後は3倍程度の回復時間を必要とする」(오버부스트 종료 후 벌점)는 速度 가 아니라
+   *  **時間** 이라 여기 걸리지 않는다 — 벌점을 상승으로 읽으면 거꾸로다. */
+  function thrReadMult(seg) {
+    const m = /(?:回復|復帰)速度\s*([\d.]+)\s*倍/.exec(seg);
+    if (!m) return [];
+    const x = Number(m[1]);
+    if (!(x > 1)) return [];
+    const head = seg.slice(0, m.index);          // 무엇의 속도인지는 앞쪽에 적힌다
+    const sec = /([\d.]+)\s*秒間/.exec(seg);
+    const burst = sec ? Number(sec[1]) : null;
+    const out = [];
+    // 회복 속도 N 배 = N 배 빨리 찬다 → +(N−1)×100 %
+    if (/スラ/.test(head)) out.push({ key: 'recover', v: Math.round((x - 1) * 100), burst });
+    // 복귀 속도 N 배 = 복귀 시간이 1/N → (1 − 1/N) 만큼 짧아진다
+    if (/OH|オーバーヒート/.test(head)) out.push({ key: 'oh', v: Math.round((1 - 1 / x) * 100), burst });
+    return out;
+  }
+
   /** 설명을 조각으로 나눈다. 불릿(・…)은 **직전 머리줄의 조건**을 물려받는다 —
    *  「発動中は」 다음 줄에 「・スラスター消費 －25%」가 오는 꼴이 아주 많다. */
   function thrSegments(blob) {
@@ -1838,14 +1865,17 @@
       if (!/スラスター/.test(blob)) continue;
       const seen = new Set();
       for (const { seg, cond, env } of thrSegments(blob)) {
-        const r = thrReadSeg(seg);
-        if (!r) continue;
-        const c = r.always ? null : cond;
-        const sig = r.key + ':' + r.v + ':' + (c || '') + ':' + (env || '');
-        if (seen.has(sig)) continue;
-        seen.add(sig);
-        out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '',
-          key: r.key, v: r.v, cond: c, env, seg });
+        const solo = thrReadSeg(seg);
+        const list = solo ? [solo] : thrReadMult(seg);   // % 로 못 읽으면 배수로 읽어 본다
+        for (const r of list) {
+          // 몇 초짜리는 **절대 상시가 아니다.** 조건을 못 읽었어도 체크식으로 둔다.
+          const c = r.always ? null : (cond || (r.burst ? '발동중' : null));
+          const sig = r.key + ':' + r.v + ':' + (c || '') + ':' + (env || '');
+          if (seen.has(sig)) continue;
+          seen.add(sig);
+          out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '',
+            key: r.key, v: r.v, cond: c, env, seg, burst: r.burst || null });
+        }
       }
     }
     return out;
@@ -1878,12 +1908,11 @@
       const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
       if (!/スラスター/.test(blob)) continue;
       // 어느 쪽으로 움직이는지는 문구로 알 수 있다. 값만 없을 뿐이다.
-      /* 「값이 없다」고만 적으면 거짓이 되는 경우가 있다 — 특수 긴급 회피 제어는
-         「3秒間スラスター＆OH復帰速度 2.5倍」처럼 **숫자가 분명히 있다**(사용자 지적).
-         다만 몇 초짜리 순간 효과라 지속 지표(완충 시간·OH 복귀)에 넣을 것이 아니다.
-         못 넣는 것과 없는 것은 다르므로 나눠 적는다. */
-      const why = /[\d.]+\s*倍/.test(blob) && /(回復|復帰|消費)/.test(blob)
-          ? '몇 초짜리 순간 효과(배수)라 지속 지표에는 넣지 않습니다'
+      /* 「…速度 N倍」는 이제 읽어서 체크식으로 넣는다(특수 긴급 회피 제어).
+         여기 남는 배수는 **반대쪽** — 오버부스트처럼 끝난 뒤 회복이 느려지는 벌점이다.
+         (그쪽은 「효과 뒤 21초」로 따로 적고 있다.) 둘을 같은 말로 적으면 거짓이 된다. */
+      const why = /[\d.]+\s*倍/.test(blob) && /(回復|復帰)時間/.test(blob)
+          ? '효과가 끝난 뒤 회복이 **느려지는** 벌점이라 지속 지표에는 넣지 않습니다'
         : /消費\s*[＋+]\s*\d+\s*[%％]/.test(blob) ? '소비가 **늘어나는** 값이라 넣지 않습니다'
         : /[,，、]\s*[-－]?\s*\d+\s*[%％]/.test(blob) && /消費/.test(blob)
           ? 'LV 마다 값이 여럿 적혀 있어 어느 것인지 알 수 없습니다'
@@ -1960,8 +1989,14 @@
     const sfx = skillOpt
       ? thrusterSkillFx(ms, skillOpt.lv, env, skillOpt.on, skillOpt.form)
       : { cutInit: 0, cutRate: 0, recover: 0, oh: 0, used: [] };
+    /* 소비 경감은 파츠와 스킬이 **겹쳐 더해지지 않는다** — 스킬로 줄인 뒤 남은 값에서
+       파츠가 또 줄인다(사용자 지적, 위키 코멘트도 같은 계산: 廃熱1 + 연소효율 = 0.9×0.9 = 0.81).
+       더해 버리면 10%+10% = 20% 로 4%p 부풀고, **스킬로 이미 많이 줄인 기체일수록** 더 틀린다
+       (70% 경감 기체에 10% 파츠: 더하면 80%, 실제는 73%). 회복·OH 축은 원문에 겹침 규칙이
+       적혀 있지 않아 예전대로 둔다 — 모르는 것을 바꾸지는 않는다. */
+    const stackCut = (a, b) => Math.round((1 - (1 - a / 100) * (1 - b / 100)) * 1000) / 10;
     const fx = {
-      cutInit: pfx.cutInit + sfx.cutInit, cutRate: pfx.cutRate + sfx.cutRate,
+      cutInit: stackCut(sfx.cutInit, pfx.cutInit), cutRate: stackCut(sfx.cutRate, pfx.cutRate),
       recover: pfx.recover + sfx.recover, oh: pfx.oh + sfx.oh,
       part: pfx, skill: sfx
     };
@@ -3182,7 +3217,8 @@
             renderAll();
           };
           lab.append(box, el('span', 'stg-nm', g.ko),
-            el('span', 'stg-tag', g.fx.map(f => THR_KEY_KO[f.key] + ' ' + f.v + '%').join(' · ')),
+            el('span', 'stg-tag', g.fx.map(f => THR_KEY_KO[f.key] + ' ' + f.v + '%'
+              + (f.burst ? ' (' + f.burst + '초)' : '')).join(' · ')),
             el('span', 'stg-cond', g.cond + (g.env ? '·' + (g.env === 'space' ? '우주' : '지상') : '')));
           wrap.append(lab);
         }
@@ -8861,6 +8897,7 @@
     msLevel,
     thrusterSkillsOf,
     thrusterSkillFx,
+    thrusterMetrics,        // 파츠·스킬 경감이 겹치는 방식(곱)을 게이트에서 재려고
     // 주무장 LV 왕복 점검용 — 읽기만 한다
     weaponLv: () => state.weaponLv,
     encodeShare: () => encodeShare()

@@ -217,7 +217,9 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
 .build-left  { grid-column: 1; grid-row: 1; }
 .build-detail { grid-column: 2; grid-row: 1; }
 /* 성능: 오른쪽 열을 넓게 + 두 행에 걸쳐 아래까지 */
-.build-stats { grid-column: 3; grid-row: 1 / 3; }
+/* min-height:0 — 그리드 칸은 기본이 min-height:auto 라, 안쪽에 스크롤을 달아도
+   **칸 자체가** 내용만큼 부풀어 두 줄을 같이 늘린다. 0 으로 풀어야 안쪽 스크롤이 산다. */
+.build-stats { grid-column: 3; grid-row: 1 / 3; min-height: 0; }
 /* 파츠: 왼쪽·가운데 열의 아랫줄만 차지 */
 .build-parts { grid-column: 1 / 3; grid-row: 2; display: flex; flex-direction: column; }
 /* 맨 아래 전체 폭: 자동 구성 결과(있을 때) + 무장을 세로로.
@@ -777,8 +779,13 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
 
 /* ============ 스탯 ============ */
 
-.stat-wrap { display: flex; flex-direction: column; }
-#statBody { flex: 1; display: flex; flex-direction: column; }
+.stat-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+/* 누적치·슬러스터 스킬·방어 스킬을 펴면 성능 칸이 그만큼 길어졌다. 성능은 오른쪽 열에서
+   **두 줄에 걸쳐** 있어서, 길어지면 그 두 줄이 같이 늘고 왼쪽·가운데에 빈 자리가 생겼다
+   (실측: 성능 762 → 1051, 왼쪽 461 → 605). 펴는 것은 성능 안의 일이니 성능 안에서 끝내야 한다.
+   min-height:0 + overflow 로 이 칸의 최소 높이를 0 으로 만들면, 줄 높이는 **다른 열이** 정하고
+   길어진 내용은 여기서 스크롤된다. (폰에서는 부모가 block 이라 flex:1 이 안 먹어 그대로 늘어난다) */
+#statBody { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
 /* 남는 세로 공간을 고르게 나눠 갖되, 너무 벌어지지 않게 상한을 둔다 */
 #statBody .stat-row { flex: 1; max-height: 42px; }
 
@@ -2944,18 +2951,31 @@ body.drawer-open .m-actionbar { display: none !important; }
      카드가 움직인다 — ⓘ 를 눌렀는데 카드가 눌려 파츠로 넘어가는 원인이었다(사용자 확인).
      보기 좋자고 누른 것이 딴 데로 가면 안 된다. 즉시 바꾼다. */
 }
-body.info-open .sel-2col { grid-template-columns: 4fr 6fr; }
+/* 전에는 여기서 칸을 4fr 6fr 로 쪼갰다. 그런데 목록 칸이 좁아지면 그리드가 통째로
+   **다시 깔린다** — 1500px 에서 6열이 2열이 되고, 누른 ⓘ 가 x 228 → 272 로 가고
+   제자리에 붙들려고 넣은 스크롤 보정이 300 → 1074 로 튀었다(실측).
+   손가락 밑에서 목록이 움직이는 것이 「ⓘ 를 눌렀는데 엉뚱한 게 눌린다」의 마지막 원인이다.
+   1100px 아래에서는 앱이 이미 **덮는 방식**을 쓰고 있어 이 문제가 없다(dx 3).
+   위쪽도 같게 맞춘다 — 목록은 폭 그대로 두고, 정보 칸이 오른쪽을 덮는다. */
+body.info-open .sel-2col { grid-template-columns: 1fr; }
+.sel-2col { position: relative; }
 /* 왼쪽 칸 = 머리줄(제목·필터·검색) + 목록. 머리줄이 위를 가로지르지 않으므로
    오른쪽 정보 칸이 맨 위부터 시작해 세로를 다 쓴다. */
 .sel-left { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .sel-left > .ms-grid { padding: 14px 20px 24px; }
-body.info-open .sel-left > .ms-grid { padding-right: 10px; }
+/* 머리줄도 좁히지 않는다. 좁히면 필터가 한 줄 더 접혀 머리줄이 높아지고, 그만큼
+   목록이 통째로 내려간다(실측 66px). 정보 칸이 열린 동안 오른쪽 끝 필터가 가리는 것은
+   감수한다 — 「닫기」로 바로 되돌아온다. 카드가 안 움직이는 쪽이 먼저다. */
+/* 여백도 건드리지 않는다 — 10px 만 바뀌어도 카드가 그만큼 움직인다 */
 .sel-info {
   display: none;
   min-width: 0; min-height: 0;
   flex-direction: column;
   border-left: 1px solid var(--line);
-  background: rgba(0, 0, 0, .12);
+  /* 목록 위를 덮으므로 **불투명**해야 한다 (전에는 나란히 있어 반투명이어도 됐다) */
+  background: var(--bg);
+  position: absolute; top: 0; right: 0; bottom: 0; width: 60%;
+  z-index: 40;
 }
 body.info-open .sel-info { display: flex; }
 /* 머리줄 — 닫기(폰) · 제목 · 파츠 고르기 */

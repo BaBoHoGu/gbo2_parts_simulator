@@ -104,6 +104,47 @@ const LIST = process.argv.includes('--list');
     return hit ? ('읽어 버림 ' + hit.key + ' ' + hit.v) : null;
   });
 
+  /* ── 「…速度 N倍」 ──
+     특수 긴급 회피 제어는 「3秒間スラスター＆OH復帰速度 2.5倍」로 **숫자가 적혀 있다.**
+     예전에는 % 만 읽어 통째로 「계산 안 함」이었다(사용자 지적).
+     2.5배 = 회복속도 +150% · 복귀시간 1/2.5 → 60% 단축. 몇 초짜리라 **조건부**여야 한다 —
+     상시로 새면 아무도 모르게 좋게 나온다. 그래서 cond 가 붙었는지까지 본다. */
+  const burst = await pg.evaluate(() => {
+    const t = window.GBO2UiTest;
+    const ms = t.msData().filter(m => /^V2ガンダム_LV/.test(m.MS名)).pop();
+    if (!ms) return '(기체 없음)';
+    return (t.thrusterSkillsOf(ms, t.msLevel(ms), 'normal') || [])
+      .filter(x => x.name === '特殊緊急回避制御')
+      .map(x => x.key + ':' + x.v + ':' + (x.cond || '상시') + ':' + (x.burst || 0));
+  });
+
+  /* 반대쪽은 읽으면 안 된다 — 오버부스트의 「終了後は3倍程度の回復時間を必要とする」는
+     **벌점**이다. 速度 가 아니라 時間 이라 안 걸려야 한다. 상승으로 읽으면 거꾸로다. */
+  const penalty = await pg.evaluate(() => {
+    const t = window.GBO2UiTest;
+    const ms = t.msData().filter(m => /^ヘイズル・アウスラ_LV/.test(m.MS名)).pop();
+    if (!ms) return '(기체 없음)';
+    const hit = (t.thrusterSkillsOf(ms, t.msLevel(ms), 'normal') || [])
+      .find(x => x.name === 'オーバーブースト');
+    return hit ? ('읽어 버림 ' + hit.key + ' ' + hit.v) : null;
+  });
+
+  /* ── 파츠 경감은 스킬 **뒤에** 곱한다 ──
+     연소 효율 보조 장치(10%)는 스킬과 겹쳐 더해지지 않는다(사용자 지적).
+     V2 의 M 드라이브(계속소비 70%)에 얹으면 80% 가 아니라 1−0.3×0.9 = 73% 다.
+     더하면 부스트 지속이 실제보다 **길게** 나오고, 스킬이 센 기체일수록 더 틀린다. */
+  const stack = await pg.evaluate(() => {
+    const t = window.GBO2UiTest;
+    const ms = t.msData().filter(m => /^V2ガンダム_LV/.test(m.MS名)).pop();
+    if (!ms) return '(기체 없음)';
+    const part = [{ description: '高速移動開始時と高速移動のスラスター消費量を10%軽減' }];
+    const lv = t.msLevel(ms);
+    const on = new Set(['M・ドライブ・ユニット制御機構|발동중']);
+    const only = t.thrusterMetrics(ms, 80, part, 'ground', { lv, on: new Set(), form: 'normal' });
+    const both = t.thrusterMetrics(ms, 80, part, 'ground', { lv, on, form: 'normal' });
+    return { partOnly: only && only.fx.cutRate, withSkill: both && both.fx.cutRate };
+  });
+
   await br.close();
 
   // 이름+LV+효과 단위로 접는다
@@ -200,6 +241,19 @@ const LIST = process.argv.includes('--list');
       k.got === k.v, '기대 ' + k.v + ' · 실제 ' + k.got);
   }
   ok('늘어나는 값(＋)은 읽지 않는다', plusRead === null, String(plusRead));
+
+  ok('배수 표기를 읽는다 — 특수 긴급 회피 제어 회복속도',
+    Array.isArray(burst) && burst.includes('recover:150:회피:3'), JSON.stringify(burst));
+  ok('배수 표기를 읽는다 — 특수 긴급 회피 제어 OH 복귀',
+    Array.isArray(burst) && burst.includes('oh:60:회피:3'), JSON.stringify(burst));
+  // 목록이 비면 every 가 공허하게 참이 된다 — 값이 **있고** 그 값이 상시가 아닌지를 본다
+  ok('몇 초짜리를 상시로 올리지 않는다',
+    Array.isArray(burst) && burst.length === 2 && burst.every(x => !/:상시:/.test(x)),
+    JSON.stringify(burst));
+  ok('끝난 뒤 느려지는 벌점(배수)은 읽지 않는다', penalty === null, String(penalty));
+  ok('파츠 경감만 있을 때 10%', stack && stack.partOnly === 10, JSON.stringify(stack));
+  ok('파츠는 스킬 뒤에 곱한다 (70%+10% → 80 이 아니라 73)',
+    stack && stack.withSkill === 73, JSON.stringify(stack));
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
