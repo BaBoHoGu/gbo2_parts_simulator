@@ -234,6 +234,9 @@
       <div class="hero">
         <div class="hero-top">
           <button id="backToSelect" class="back-btn" title="다른 기체 선택">‹ 기체 변경</button>
+          <!-- 목록으로 되돌아갔다 오지 않고 여기서 바로 바꾼다. 서랍은 왼쪽에서 나온다 —
+               이 버튼이 왼쪽에 있어 손이 가는 방향과 열리는 방향이 같다. -->
+          <button id="msSwapBtn" class="btn-ghost small" title="이 자리에서 다른 기체로 바꿉니다">⇄ 기체 변경</button>
           <div class="grow"></div>
           <button id="clearParts" class="btn-ghost small">전체 해제</button>
         </div>
@@ -382,6 +385,32 @@
 
 <!-- ========== 자동 구성 드로어 ========== -->
 <div class="drawer-back" id="drawerBack"></div>
+
+<!-- 기체 변경 서랍 — 파츠 화면에서 목록을 열어 곧바로 기체를 바꾼다.
+     목록·필터는 기체 선택 화면과 **같은 것**을 쓴다(ui.js 가 한 함수로 두 곳을 그린다).
+     한쪽에서 필터를 만지면 다른 쪽도 같이 움직인다 — 필터가 하나뿐이라서다. -->
+<div class="drawer-back" id="msDrawerBack"></div>
+<aside class="drawer drawer-left" id="msDrawer" aria-label="기체 변경">
+  <h2>기체 변경 <span class="right" id="msDrawerCount"></span>
+    <button type="button" class="btn-ghost small" id="msDrawerClose" title="닫기">닫기</button></h2>
+  <div class="ms-drawer-filters">
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">보기</span><div class="chips" id="dViewChips"></div></div>
+      <div class="filter-group"><span class="filter-lb">속성</span><div class="chips" id="dAttrChips"></div></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">코스트</span><div class="chips" id="dCostChips"></div></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">레벨</span><div class="chips" id="dLevelChips"></div></div>
+      <div class="filter-group"><span class="filter-lb">등급</span><div class="chips" id="dRarityChips"></div></div>
+    </div>
+    <input type="search" id="msDrawerQuery" placeholder="기체명 검색 (자쿠 / ザク / 건담…)">
+  </div>
+  <div class="drawer-body">
+    <div class="ms-grid ms-grid-drawer" id="msDrawerList"></div>
+  </div>
+</aside>
 <aside class="drawer" id="autoDrawer">
   <h2>⚡ 자동 구성 <span class="right"><button id="closeAuto" class="btn-ghost">닫기</button></span></h2>
   <div class="drawer-body">

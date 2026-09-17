@@ -1093,24 +1093,29 @@
   }
 
   /** 보기 칩(전체 / 즐겨찾기 / 최근)을 개수 배지와 함께 그린다. */
+  /** 보기 칩(전체 / 즐겨찾기 / 최근)을 개수 배지와 함께 그린다.
+   *  개수가 바뀌면 글자 자체가 달라지므로 다시 칠하는 것으로는 안 되고 매번 새로 그린다 —
+   *  기체 선택 화면과 「기체 변경」 서랍 두 곳을 같이 그린다. */
   function renderViewChips() {
-    const box = document.getElementById('viewChips');
-    if (!box) return;
-    box.innerHTML = '';
     const items = [
       { v: 'all', label: '전체' },
       { v: 'fav', label: `★ 즐겨찾기${state.favorites.size ? ' ' + state.favorites.size : ''}` },
       { v: 'recent', label: `🕐 최근${state.recent.length ? ' ' + state.recent.length : ''}` }
     ];
-    for (const it of items) {
-      const chip = el('button', 'chip' + (state.msView === it.v ? ' on' : ''), it.label);
-      chip.onclick = () => {
-        state.msView = it.v;
-        state.msLimit = 80;
-        renderViewChips();
-        renderMsList();
-      };
-      box.append(chip);
+    for (const id of ['viewChips', 'dViewChips']) {
+      const box = document.getElementById(id);
+      if (!box) continue;
+      box.innerHTML = '';
+      for (const it of items) {
+        const chip = el('button', 'chip' + (state.msView === it.v ? ' on' : ''), it.label);
+        chip.onclick = () => {
+          state.msView = it.v;
+          state.msLimit = 80;
+          renderViewChips();
+          renderMsList();
+        };
+        box.append(chip);
+      }
     }
   }
 
@@ -1124,8 +1129,31 @@
     box.textContent = `데이터 ${b.stamp || b.date} · 기체 ${b.ms.toLocaleString()} · 파츠 ${b.parts} · 무장 ${b.weapons.toLocaleString()}`;
   }
 
+  /* 기체 목록을 그리는 곳은 이제 둘이다 — 기체 선택 화면과, 파츠 화면의 「기체 변경」 서랍.
+     목록을 한 벌 더 베껴 두면 반드시 어긋나므로(즐겨찾기 배지·더 보기·정렬) **그리는 함수는
+     하나**로 두고 그릴 자리만 등록해 쓴다. renderMsList() 는 등록된 곳을 전부 다시 그린다 —
+     기존 호출부(수십 곳)를 그대로 두려고 인자 없는 모양을 지켰다. */
+  const msListViews = [];
+  function addMsListView(v) { msListViews.push(v); return v; }
+  function dropMsListView(v) {
+    const i = msListViews.indexOf(v);
+    if (i >= 0) msListViews.splice(i, 1);
+  }
+
   function renderMsList() {
-    const box = $('#msList');
+    for (const v of msListViews) drawMsList(v);
+  }
+
+  function drawMsList(view) {
+    const box = $(view.box);
+    if (!box) return;
+    const countBox = view.count ? $(view.count) : null;
+    // 고른 것으로 볼 기준과 눌렀을 때 할 일은 자리마다 다르다.
+    const isSel = view.isSel || (m => !!(infoMs && infoMs.MS名 === m.MS名));
+    const onPick = view.onPick || (m => {
+      if (infoMs && infoMs.MS名 === m.MS名) { infoGoBuild(); return; }
+      openInfo(m);
+    });
     box.innerHTML = '';
     const list = filteredMs();
 
@@ -1134,7 +1162,7 @@
         : state.msView === 'recent' ? '최근 고른 기체가 없습니다.'
         : '조건에 맞는 기체가 없습니다.';
       box.append(el('div', 'empty-state', msg));
-      $('#msCount').textContent = '0기';
+      if (countBox) countBox.textContent = '0기';
       return;
     }
 
@@ -1169,14 +1197,11 @@
 
       card.append(info);
 
-      // 카드를 누르면 오른쪽 칸에 정보가 나온다. 파츠로는 거기서 넘어간다.
+      // 기체 선택 화면에서는 오른쪽 칸에 정보가 나오고, 파츠로는 거기서 넘어간다.
       // 이미 고른 카드를 또 누르면 곧바로 파츠로 간다 — 아는 기체를 고를 때
-      // 두 번 누르는 게 번거로우니 지름길을 둔다.
-      card.classList.toggle('sel', !!(infoMs && infoMs.MS名 === m.MS名));
-      card.onclick = () => {
-        if (infoMs && infoMs.MS名 === m.MS名) { infoGoBuild(); return; }
-        openInfo(m);
-      };
+      // 두 번 누르는 게 번거로우니 지름길을 둔다. 서랍에서는 곧바로 기체를 바꾼다.
+      card.classList.toggle('sel', isSel(m));
+      card.onclick = () => onPick(m);
       box.append(card);
     }
 
@@ -1185,7 +1210,7 @@
       more.onclick = () => { state.msLimit += 120; renderMsList(); };
       box.append(more);
     }
-    $('#msCount').textContent = `${list.length}기`;
+    if (countBox) countBox.textContent = `${list.length}기`;
   }
 
   /* ---------- 화면 전환 ---------- */
@@ -4448,6 +4473,49 @@
     renderAll();
     toast(`${c.label || '구성 ' + (i + 1)} 적용 — 파츠 ${c.parts.length}개`);
   }
+
+  /* 기체 변경 서랍 — 파츠 화면에서 목록을 열어 곧바로 바꾼다.
+     목록은 등록해 두고 그린다. 닫을 때 등록을 빼는 이유: 안 빼면 서랍이 닫힌 뒤에도
+     renderMsList() 가 숨은 칸을 계속 그린다(기체 1,709 개짜리 목록이라 공짜가 아니다). */
+  let msDrawerView = null;
+  function openMsDrawer(open) {
+    const dr = $('#msDrawer');
+    if (!dr) return;
+    if (open && !msDrawerView) {
+      msDrawerView = addMsListView({
+        box: '#msDrawerList', count: '#msDrawerCount',
+        // 서랍에서는 지금 쓰고 있는 기체에 테두리를 준다 (기체 선택 화면은 정보 칸 기준이다)
+        isSel: m => !!(state.ms && state.ms.MS名 === m.MS名),
+        // 누르면 곧바로 바꾼다. selectMs 가 하는 일을 그대로 쓴다 — 목록에서 고르는 것과
+        // 결과가 달라지면 「어느 쪽으로 골랐는지」에 따라 구성이 남거나 사라진다.
+        onPick: m => {
+          const same = state.ms && state.ms.MS名 === m.MS名;
+          openMsDrawer(false);
+          if (same) return;
+          const had = state.equipped.length;
+          selectMs(m);
+          if (had) toast(T.msName(m.MS名) + ' 로 바꿨습니다 — 장착 파츠 ' + had + '개는 초기화됩니다');
+        }
+      });
+    } else if (!open && msDrawerView) {
+      dropMsListView(msDrawerView);
+      msDrawerView = null;
+    }
+    dr.classList.toggle('open', open);
+    $('#msDrawerBack').classList.toggle('open', open);
+    document.body.classList.toggle('drawer-open', open);
+    if (open) {
+      renderMsList();
+      // 필터 상태가 저쪽에서 바뀌었을 수 있다 — 칸을 맞춰 연다.
+      const q = $('#msDrawerQuery'), src = $('#msQuery');
+      if (q && src) q.value = src.value;
+      paintMsChips();
+      setTimeout(() => { if (q) q.focus(); }, 60);
+    }
+  }
+
+  // 칩을 다시 칠하는 일은 초기화 블록 안에 있다. 서랍이 열릴 때도 불러야 해서 밖으로 뺀다.
+  let paintMsChips = () => {};
 
   function openDrawer(open) {
     $('#autoDrawer').classList.toggle('open', open);
@@ -7833,8 +7901,22 @@
     };
 
     // 필터 칩 공통 빌더 — 한 줄의 칩을 만들고 선택 상태를 state[key]에 반영한다
+    /* 같은 필터를 두 곳에 그린다(기체 선택 화면 · 「기체 변경」 서랍). 예전처럼 누른 칩에만
+       손으로 `.on` 을 붙였다 간, 한쪽에서 고른 것이 **다른 쪽 칩에는 안 보인다** —
+       필터는 하나인데 화면이 둘이라고 말하는 셈이다. 그래서 상태에서 다시 칠한다. */
+    const chipGroups = [];
+    paintMsChips = paintChips;
+    function paintChips() {
+      for (const g of chipGroups) {
+        const box = $(g.sel);
+        if (!box) continue;
+        [...box.children].forEach((c, i) => c.classList.toggle('on', state[g.key] === g.items[i].v));
+      }
+    }
     function buildChips(boxSel, items, key, extraClass) {
       const box = $(boxSel);
+      if (!box) return;
+      chipGroups.push({ sel: boxSel, items, key });
       for (const it of items) {
         const cls = 'chip'
           + (extraClass ? ' ' + extraClass(it) : '')
@@ -7843,8 +7925,7 @@
         chip.onclick = () => {
           state[key] = it.v;
           state.msLimit = 80;
-          [...box.children].forEach(c => c.classList.remove('on'));
-          chip.classList.add('on');
+          paintChips();
           renderMsList();
         };
         box.append(chip);
@@ -7859,12 +7940,32 @@
     buildChips('#costChips', COST_CHIPS, 'msCost');
     buildChips('#levelChips', LEVEL_CHIPS, 'msLv');
     buildChips('#rarityChips', RARITY_CHIPS, 'msRarity');
+    // 서랍에도 같은 필터를 단다 — 같은 state 를 보므로 두 벌이 늘 같은 것을 가리킨다.
+    buildChips('#dAttrChips',
+      [{ label: '전체', v: '' }, { label: T.attrName('強襲'), v: '強襲' },
+       { label: T.attrName('汎用'), v: '汎用' }, { label: T.attrName('支援'), v: '支援' }],
+      'msAttr', it => it.v ? 'attr-' + it.v : '');
+    buildChips('#dCostChips', COST_CHIPS, 'msCost');
+    buildChips('#dLevelChips', LEVEL_CHIPS, 'msLv');
+    buildChips('#dRarityChips', RARITY_CHIPS, 'msRarity');
 
-    $('#msQuery').oninput = e => {
-      state.msQuery = T.norm(e.target.value);
-      state.msLimit = 80;
-      renderMsList();
-    };
+    // 기체 선택 화면의 목록을 등록한다. 여기가 기본 동작(정보 칸 열기)을 가진다.
+    addMsListView({ box: '#msList', count: '#msCount' });
+
+    // 검색창도 둘이다. 어느 쪽에 쳐도 같은 필터를 움직이고, 반대쪽 칸의 글자도 맞춰 준다.
+    for (const sel of ['#msQuery', '#msDrawerQuery']) {
+      const inp = $(sel);
+      if (!inp) continue;
+      inp.oninput = e => {
+        state.msQuery = T.norm(e.target.value);
+        state.msLimit = 80;
+        for (const other of ['#msQuery', '#msDrawerQuery']) {
+          const o = $(other);
+          if (o && o !== e.target) o.value = e.target.value;
+        }
+        renderMsList();
+      };
+    }
     $('#partQuery').oninput = e => { state.partQuery = T.norm(e.target.value); renderPartList(); };
 
     const tabs = $('#tabs');
@@ -7933,6 +8034,9 @@
     $('#openAuto').onclick = () => openDrawer(true);
     $('#closeAuto').onclick = () => openDrawer(false);
     $('#drawerBack').onclick = () => openDrawer(false);
+    $('#msSwapBtn').onclick = () => openMsDrawer(true);
+    $('#msDrawerClose').onclick = () => openMsDrawer(false);
+    $('#msDrawerBack').onclick = () => openMsDrawer(false);
     $('#runAuto').onclick = runAuto;
     $('#clearTargets').onclick = () => {
       const n = clearTargets();
@@ -8176,6 +8280,7 @@
       if (!$('#ownedModal').hidden) { openOwnedModal(false); return; }
       if (!$('#savedModal').hidden) { openSavedModal(false); return; }
       if (!$('#autoResultPanel').hidden) { openResultModal(false); return; }
+      if ($('#msDrawer').classList.contains('open')) { openMsDrawer(false); return; }
       if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return; }
 
       // 입력 중이면 화면을 벗어나지 않는다 — 내용이 있으면 비우고, 없으면 포커스만 해제

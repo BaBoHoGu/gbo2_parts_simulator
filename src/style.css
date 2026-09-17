@@ -935,6 +935,25 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
 }
 
 .drawer.open { transform: none; }
+
+/* 왼쪽에서 나오는 서랍(기체 변경). 여는 버튼이 머리줄 왼쪽에 있어, 손이 가는 방향과
+   열리는 방향을 맞춘다 — 오른쪽에서 나오면 눌러 놓고 눈이 반대편으로 건너뛴다. */
+.drawer-left {
+  right: auto; left: 0;
+  border-left: none; border-right: 1px solid var(--line);
+  transform: translateX(-100%);
+  width: 520px;
+}
+.ms-drawer-filters {
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.ms-drawer-filters .filter-row { margin-bottom: 6px; }
+/* 폰에서 코스트 줄이 오른쪽으로 잘려 보이는 것은 고장이 아니다 — 필터 칩은 좁은 화면에서
+   줄바꿈 대신 **가로 스와이프**로 두기로 한 자리다(세로를 아끼려고). 여기도 그대로 따른다. */
+.ms-drawer-filters input[type=search] { width: 100%; }
+/* 서랍은 기체 선택 화면보다 좁다 — 칸 수를 줄여 이름이 뭉개지지 않게 한다. */
+.ms-grid-drawer { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 .drawer > h2 { margin: 0; padding: 12px 14px; font-size: var(--fs-lg); border-bottom: 1px solid var(--line); background: var(--panel-2); display: flex; align-items: center; }
 .drawer > h2 .right { margin-left: auto; }
 .drawer .drawer-body { padding: 12px 14px; overflow-y: auto; flex: 1; }
