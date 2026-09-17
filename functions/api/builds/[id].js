@@ -11,7 +11,7 @@
 //
 // 관리자는 ①만 탄다. 토큰이 맞으면 비밀번호 검사에 아예 들어가지 않으므로,
 // 관리자 동작은 이 기능이 생기기 전과 똑같다.
-import { json, bad, CORS, isAdmin, whoOf, pwHashOf, sameSecret, PW_RE } from '../../lib/util.js';
+import { json, bad, CORS, isAdmin, whoOf, pwHashOf, sameSecret, PW_RE, ConfigMissing, configBad } from '../../lib/util.js';
 import { ensureSchema } from '../../lib/schema.js';
 
 export const onRequestOptions = () => new Response(null, { status: 204, headers: CORS });
@@ -30,6 +30,9 @@ export async function onRequestDelete({ request, env, params }) {
   if (await isAdmin(request, env)) {
     await env.DB.batch([
       env.DB.prepare('DELETE FROM builds WHERE id = ?').bind(id),
+      // 본인 삭제와 같이 표도 지운다. blocked 덕에 같은 지문이 다시 올라오지는 못하니
+      // 표를 물려받을 일은 없지만, 안 지우면 주인 없는 행이 계속 쌓인다.
+      env.DB.prepare("DELETE FROM votes WHERE kind = 'build' AND target = ?").bind(id),
       // 지운 뒤 같은 구성이 다시 올라오는 것을 막는다 (Firebase 의 blocked 노드와 같은 역할)
       env.DB.prepare('INSERT INTO blocked (id, at) VALUES (?,?) ON CONFLICT(id) DO NOTHING').bind(id, Date.now())
     ]);
@@ -57,7 +60,11 @@ export async function onRequestDelete({ request, env, params }) {
     return bad('nopw', '비밀번호가 없는 옛 구성입니다 — 관리자에게 문의해 주세요', 403);
   }
 
-  if (!sameSecret(row.pw_hash, await pwHashOf(env, id, pw))) {
+  let given;
+  try { given = await pwHashOf(env, id, pw); }
+  catch (e) { if (e instanceof ConfigMissing) return configBad(e); throw e; }
+
+  if (!sameSecret(row.pw_hash, given)) {
     const n = fresh ? Number(t.n) + 1 : 1;
     await env.DB.prepare('INSERT INTO pwtry (who, n, at) VALUES (?,?,?) ON CONFLICT(who) DO UPDATE SET n = excluded.n, at = excluded.at')
       .bind(who, n, now).run();

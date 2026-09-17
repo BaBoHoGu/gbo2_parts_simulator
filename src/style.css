@@ -3034,7 +3034,13 @@ body.info-open .sel-info { display: flex; }
   .mi-cols > .mi-col:nth-child(1) > .panel { order: -1; }
   .mi-cols > .mi-col:nth-child(3) > .mi-fullst { order: 1; }
   .mi-builds { order: 2; }
-  .mi-card .mi-img { height: 190px; }
+  /* 3/4 칸에 height 를 덮으면 가로·세로가 **둘 다 확정**돼 aspect-ratio 가 무시된다.
+     그래서 전폭 1004×190 짜리 띠가 됐고, 일러스트는 cover 라 세로의 82% 가 잘려
+     머리와 어깨만 남았다(390px 에서도 52%). 높이가 아니라 **폭**을 묶어 비율을 돌려준다. */
+  .mi-card .mi-img { height: auto; width: min(240px, 62%); margin: 0 auto; border-radius: 3px; }
+  /* 넓은 화면은 칸이 세로로 길어 cover 로 채워도 3% 만 잘린다. 좁은 화면에서는 칸 모양이
+     달라져 20% 가 잘렸다 — 팔·무기가 날아간다. 여기서는 채우기보다 **다 보이는 것**이 낫다. */
+  .mi-card .mi-img.illust img { object-fit: contain; }
   .mi-card h2 { font-size: var(--fs-2xl); }
 }
 

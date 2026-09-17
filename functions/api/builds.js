@@ -5,7 +5,7 @@
 import { json, bad, CORS, whoOf, ipHeadOf } from '../lib/util.js';
 import { MS, PARTS, EXP, PAID } from '../lib/dict.js';
 import { ensureSchema } from '../lib/schema.js';
-import { TITLE_RE, AUTHOR_RE, DESC_RE, PW_RE, pwHashOf } from '../lib/util.js';
+import { TITLE_RE, AUTHOR_RE, DESC_RE, PW_RE, pwHashOf, ConfigMissing, configBad } from '../lib/util.js';
 
 const LIMIT = 300;          // 목록에서 돌려줄 최근 구성 수 (Firebase 의 CFG.limit 과 같다)
 const THROTTLE_MS = 60_000; // 1분에 한 건 (rules.json throttle)
@@ -89,11 +89,15 @@ export async function onRequestPost({ request, env }) {
   const gone = await env.DB.prepare('SELECT id FROM blocked WHERE id = ?').bind(id).first();
   if (gone) return bad('blocked', '관리자가 내린 구성입니다 — 다시 올릴 수 없습니다', 403);
 
+  let pwHash;
+  try { pwHash = await pwHashOf(env, id, pw); }
+  catch (e) { if (e instanceof ConfigMissing) return configBad(e); throw e; }
+
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO builds (id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, who, ip_head, pw_hash, at)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .bind(id, ms, stage, exp, expLv, JSON.stringify(parts), title, author, desc || null, free, ver, who, ipHead,
-            await pwHashOf(env, id, pw), now),
+            pwHash, now),
     env.DB.prepare('INSERT INTO throttle (who, at) VALUES (?,?) ON CONFLICT(who) DO UPDATE SET at = excluded.at')
       .bind(who, now)
   ]);

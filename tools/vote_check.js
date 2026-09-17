@@ -25,7 +25,19 @@ const ok = (label, cond, extra) => {
   else { fail++; console.log('  FAIL ' + label + (extra ? '  ' + JSON.stringify(extra) : '')); }
 };
 
+/* 이 점검은 로컬 서버(wrangler pages dev)가 떠 있어야 돈다. 없을 때 그냥 두면
+   처리 안 된 fetch 예외로 **죽어 버려서**, 한꺼번에 돌릴 때 진짜 실패와 구분이 안 됐다.
+   token_check 처럼 조용히 건너뛴다 — 없는 것은 실패가 아니다. */
+async function serverUp() {
+  try { await fetch(API + '/builds', { method: 'GET' }); return true; }
+  catch { return false; }
+}
+
 (async () => {
+  if (!await serverUp()) {
+    console.log('SKIP  로컬 서버가 없습니다 (npx wrangler pages dev --port 8788 --local)');
+    process.exit(0);
+  }
   // 실제 구성 id 를 가져온다
   const bl = await fetch(API + '/builds').then(r => r.json());
   const ids = (bl.builds || []).map(b => b.id);

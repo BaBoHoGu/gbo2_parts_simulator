@@ -1221,8 +1221,8 @@
       // 어디로 돌아가는지 버튼에 그대로 적는다 — 문구와 동작이 다르면 안 누른다
       const back = $('#backToSelect');
       if (back) {
-        back.textContent = fromGallery ? '‹ 갤러리로' : '‹ 기체 변경';
-        back.title = fromGallery ? '공유 갤러리로 돌아가기 (검색·필터 유지)' : '다른 기체 선택';
+        back.textContent = fromGallery ? '‹ 갤러리로' : '‹ 기체 리스트로';
+        back.title = fromGallery ? '공유 갤러리로 돌아가기 (검색·필터 유지)' : '기체 목록으로 돌아가기';
       }
     }
   }
@@ -1537,6 +1537,24 @@
   };
   function msWeapons() { return state.ms ? weaponsOfMs(state.ms) : []; }
 
+  /**
+   * 이 기체에서 「주무장」 자리를 지는 구분.
+   *
+   * 보통은 `主兵装` 이다. 그런데 **무장 선택형** 기체는 위키가 고를 수 있는 무장을 통째로
+   * `その他` 아래 두어, 주무장이 하나도 없는 기체가 생긴다 — 겔구그G 가 그렇다(592 그룹 중
+   * 이 하나뿐이고, `その他` 5건도 전부 이 기체 것이다). 그대로 두면 이 기체에서만 주무장 LV
+   * 칸이 아무 일도 안 하고, 무장 구분도 「기타」로 뜬다.
+   *
+   * 데이터를 고쳐 `主兵装` 으로 바꾸지는 않는다 — 딸린 그레네이드까지 주무장이 되어
+   * 원본에 없는 판정을 지어내는 셈이 된다. **주무장이 아예 없을 때만** 대신 세운다.
+   */
+  function mainSectionOf(ms) {
+    const ws = ms ? weaponsOfMs(ms) : [];
+    if (ws.some(w => w.section === '主兵装')) return '主兵装';
+    if (ws.some(w => w.section === 'その他')) return 'その他';
+    return null;
+  }
+
   /** 고른 **주무장** LV — 고른 값이 있으면 그것, 없으면 기체 LV. */
   function wantWeaponLv() {
     const msLv = state.ms ? msLevel(state.ms) : 1;
@@ -1558,7 +1576,7 @@
     const lvs = Object.keys(w.levels).map(Number).sort((a, b) => a - b);
     if (!lvs.length) return null;
     const msLv = state.ms ? msLevel(state.ms) : lvs[0];
-    const want = w.section === '主兵装' ? wantWeaponLv() : msLv;
+    const want = w.section === mainSectionOf(state.ms) ? wantWeaponLv() : msLv;
     const fit = lvs.filter(l => l <= want);
     return String(fit.length ? fit[fit.length - 1] : lvs[0]);
   }
@@ -1569,7 +1587,9 @@
     if (!box) return;
     const msLv = state.ms ? msLevel(state.ms) : 1;
     box.innerHTML = '';
-    if (!state.ms || msLv < 2) { box.hidden = true; return; }
+    // 주무장이랄 것이 없는 기체에서는 칸을 내밀지 않는다 — 눌러도 아무것도 안 바뀌는
+    // 손잡이는 없느니만 못하다.
+    if (!state.ms || msLv < 2 || !mainSectionOf(state.ms)) { box.hidden = true; return; }
     box.hidden = false;
     const cur = state.weaponLv;
     const mk = (v, label, title) => {
@@ -2273,9 +2293,10 @@
       row.dataset.name = w.name;
 
       // ① 구분
-      row.append(el('span', 'w-sec' + (w.section === '主兵装' ? ' main' : ''),
+      const mainSec = mainSectionOf(state.ms);
+      row.append(el('span', 'w-sec' + (w.section === mainSec ? ' main' : ''),
         w.type === 'shield' ? '실드'
-          : w.section === '主兵装' ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
+          : w.section === mainSec ? '주무장' : w.section === '副兵装' ? '부무장' : '기타'));
 
       // ② 이름 (격투/사격 점으로 구분)
       const mult = fireMult(w);              // 조사·산탄·동시발사 배수 (모드별)
@@ -4508,7 +4529,11 @@
     const name = (prompt('구성 이름을 지정하세요', T.msName(state.ms.MS名) + ' 구성') || '').trim();
     if (!name) return;
     const list = loadBuilds();
-    list.unshift({ id: uid(), name, ...serialize(), ts: Date.now() });
+    // 주무장 LV 는 **내 저장 목록에만** 싣는다. serialize() 는 공유·갤러리도 함께 쓰는데,
+    // 남이 올린 구성을 내가 보던 LV 로 그리면 위력도 레벨링크 보너스도 그 구성의 값이
+    // 아니게 된다(deserialize 가 그래서 null 로 되돌린다). 반대로 **내가 맞춰 저장한 것**은
+    // 그대로 돌아와야 한다 — 저장한 구성이 불러오면 달라지는 것도 조용한 어긋남이다.
+    list.unshift({ id: uid(), name, ...serialize(), weaponLv: state.weaponLv, ts: Date.now() });
     if (!writeBuilds(list)) { toast('저장에 실패했습니다 (브라우저 저장 공간 제한)'); return; }
     toast('「' + name + '」 저장했습니다');
   }
@@ -6767,9 +6792,11 @@
     state.openWeapons = [];
     state.skillPicks.clear();
     state.staggerOn.clear();    // 불러온 구성도 방어 스킬 체크는 새로 시작한다(이전 기체 것이 남지 않게)
-    // 주무장 LV 도 마찬가지다. 안 되돌리면 남이 올린 구성을 **내가 보던 LV** 로 그려
-    // 위력도 레벨링크 보너스도 그 구성의 값이 아니게 된다.
-    state.weaponLv = null;
+    // 주무장 LV 는 **구성이 들고 있을 때만** 물려받는다. 공유·갤러리 구성에는 이 값이
+    // 아예 없어서(serialize 가 안 싣는다) null 로 떨어진다 — 안 그러면 남이 올린 구성을
+    // **내가 보던 LV** 로 그려 위력도 레벨링크 보너스도 그 구성의 값이 아니게 된다.
+    // 내 저장 목록에서 온 것은 저장할 때의 LV 를 그대로 되살린다.
+    state.weaponLv = Number.isInteger(obj.weaponLv) && obj.weaponLv >= 1 ? obj.weaponLv : null;
     state.thrusterOn.clear();
     clearAutoResults();         // 이전 기체의 자동 구성 후보가 남아 잘못 적용되지 않게 지운다
     clearTargets();             // 목표도 마찬가지 — 이전 기체 기준 절댓값이라 그대로 두면 못 맞춘다
@@ -6982,6 +7009,14 @@
   let infoSkMode = 'all';
   // 스킬 분류 필터 — 'all' 또는 원문 분류 키(足回り·攻撃…).
   let infoSkCat = 'all';
+
+  /** 기체 정보 칸을 닫는다. 고른 기체는 그대로 둔다 — 닫았다고 선택까지 풀면
+   *  다시 열었을 때 빈 칸이 나와 당황스럽다. */
+  function closeInfo() {
+    document.body.classList.remove('info-open');
+    infoMs = null;
+    renderMsList();          // 카드 테두리도 같이 푼다
+  }
 
   function openInfo(m) {
     if (!m) return;
@@ -7878,7 +7913,14 @@
 
     // 갤러리에서 들어왔으면 갤러리로 돌려보낸다. 검색어·필터는 그대로 남아 있다
     // (모두 화면 상태로 들고 있어 다시 그리기만 하면 된다).
-    $('#backToSelect').onclick = () => { if (fromGallery) openGallery(true, true); else setView('select'); };
+    // 기체 목록으로 **돌아간다.** setView('select') 만 하면 body 의 info-open 이 그대로 남아
+    // 기체 정보 칸이 목록을 덮은 채로 열린다 — 버튼에 「기체 리스트로」라고 적고 정보 칸을
+    // 내미는 꼴이라, 닫기와 같은 정리를 여기서도 한다.
+    $('#backToSelect').onclick = () => {
+      if (fromGallery) { openGallery(true, true); return; }
+      closeInfo();
+      setView('select');
+    };
 
     // 스텝퍼: 1단계는 언제든 클릭해 기체 목록으로, 2단계는 기체가 있을 때만
     $('#stepper').querySelectorAll('li[data-step]').forEach(li => {
@@ -7927,13 +7969,7 @@
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
 
     // ── 기체 정보 칸 ──
-    // 좁은 화면에서만 보이는 닫기. 고른 기체는 그대로 둔다 — 닫았다고
-    // 선택까지 풀면 다시 열었을 때 빈 칸이 나와 당황스럽다.
-    $('#infoClose').onclick = () => {
-      document.body.classList.remove('info-open');
-      infoMs = null;
-      renderMsList();        // 카드 테두리도 같이 푼다
-    };
+    $('#infoClose').onclick = closeInfo;   // 좁은 화면에서만 보이는 닫기
     $('#infoGo').onclick = infoGoBuild;
 
     // 표가 들어오거나 바뀌면 지금 보고 있는 화면만 다시 그린다.
@@ -8392,6 +8428,9 @@
     msData: () => msData,
     msLevel,
     thrusterSkillsOf,
-    thrusterSkillFx
+    thrusterSkillFx,
+    // 주무장 LV 왕복 점검용 — 읽기만 한다
+    weaponLv: () => state.weaponLv,
+    encodeShare: () => encodeShare()
   };
 })();

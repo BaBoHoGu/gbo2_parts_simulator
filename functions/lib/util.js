@@ -28,6 +28,8 @@ export const bad = (code, msg, status = 400) => json({ ok: false, code, msg }, s
  * 익명 uid 보다 오히려 낫다 — uid 는 지우고 새로 받으면 제한을 우회할 수 있었다. */
 export async function whoOf(request, env) {
   const ip = request.headers.get('CF-Connecting-IP') || '0.0.0.0';
+  // 여기서는 기본 소금을 허용한다 — 이 값은 속도 제한을 세는 데만 쓰고, 알아내도
+  // 남의 것을 지우거나 볼 수 없다. 비밀번호 해시(pwHashOf)는 그렇지 않아 거부한다.
   return (await sha256Hex(ip + '|' + (env.WHO_SALT || 'gbo2'))).slice(0, 24);
 }
 
@@ -124,9 +126,22 @@ export async function isAdmin(request, env) {
  * 지키는 대상이 「남의 글을 못 지우게」이지 계정이 아니라서 이 정도가 맞다. */
 export const PW_RE = /^\S{4,20}$/;
 
-export async function pwHashOf(env, id, pw) {
-  return (await sha256Hex(pw + '|pw|' + id + '|' + (env.WHO_SALT || 'gbo2'))).slice(0, 32);
+/** 시크릿이 없으면 **조용히 약한 값으로 내려앉지 않는다.**
+ *  위 주석의 약속("밖에서는 미리 계산할 수 없다")은 소금이 시크릿일 때만 참이다.
+ *  기본값으로 넘어가면 소금이 이 공개 저장소에 적힌 글자가 되어, 4자짜리 비밀번호는
+ *  표가 새는 순간 전부 풀린다. isAdmin 이 SIGN_KEY 없으면 관리자를 거부하는 것과 같은 규칙이다. */
+export class ConfigMissing extends Error {
+  constructor(name) { super('서버 설정이 빠졌습니다: ' + name); this.name = 'ConfigMissing'; this.key = name; }
 }
+
+export async function pwHashOf(env, id, pw) {
+  if (!env.WHO_SALT) throw new ConfigMissing('WHO_SALT');
+  return (await sha256Hex(pw + '|pw|' + id + '|' + env.WHO_SALT)).slice(0, 32);
+}
+
+/** 설정이 빠졌을 때 500 대신 **무엇이 빠졌는지** 답한다. 조용히 도는 것보다 낫다. */
+export const configBad = e =>
+  bad('cfg', '서버 설정이 끝나지 않았습니다 (' + (e.key || '?') + ') — 관리자에게 알려 주세요', 503);
 
 /** 길이가 같을 때만 상수 시간으로 비교한다(관리자 토큰과 같은 방식). */
 export function sameSecret(a, b) {

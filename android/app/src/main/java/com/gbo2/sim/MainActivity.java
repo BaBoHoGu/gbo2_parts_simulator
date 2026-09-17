@@ -81,8 +81,9 @@ public class MainActivity extends Activity {
         new java.util.concurrent.atomic.AtomicBoolean(false);
     /** 시작 화면을 붙들어 둘 최대 시간 — 이걸 넘기면 갱신을 못 마쳤어도 앱을 연다. */
     private static final long SPLASH_MAX_MS = 20000;
-    private byte[] pendingImg;      // pre-Q 저장 권한 대기 중인 이미지
+    private byte[] pendingImg;      // pre-Q 저장 권한 대기 중인 파일
     private String pendingName;
+    private String pendingMime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,6 +186,21 @@ public class MainActivity extends Activity {
             @JavascriptInterface
             public void checkUpdate() {
                 new Thread(() -> manualUpdate()).start();
+            }
+
+            /**
+             * 글 파일(토큰 계산기 백업 JSON 등)을 Download 폴더에. 웹 쪽의 `a.download` 는
+             * WebView 에서 **아무 일도 하지 않는다** — 눌러도 조용히 끝나서, 저장 경고문이
+             * 안내하는 그 버튼이 앱에서만 먹통이었다. 이미지와 같은 길로 내보낸다.
+             */
+            @JavascriptInterface
+            public void saveText(String text, String filename, String mime) {
+                try {
+                    String name = (filename == null || filename.isEmpty()) ? "gbo2.txt" : filename;
+                    name = name.replaceAll("[\\/:*?\"<>|]", "_");
+                    writeToDownloads(text.getBytes("UTF-8"), name,
+                        (mime == null || mime.isEmpty()) ? "text/plain" : mime);
+                } catch (Exception e) { toastUi("저장에 실패했습니다"); }
             }
 
             @JavascriptInterface
@@ -513,32 +529,38 @@ public class MainActivity extends Activity {
     private void writeImageToDownloads(byte[] bytes, String filename) {
         if (filename == null || filename.isEmpty()) filename = "gbo2.png";
         if (!filename.toLowerCase().endsWith(".png")) filename += ".png";
+        writeToDownloads(bytes, filename, "image/png");
+    }
+
+    /** 바이트를 기기 Download 폴더에 저장한다(Q+ 는 MediaStore, 그 이하는 권한 후 직접 쓰기).
+     *  PNG 전용이던 것을 종류를 받도록 넓혔다 — 토큰 계산기의 백업(JSON)도 이 길로 나간다. */
+    private void writeToDownloads(byte[] bytes, String filename, String mime) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
                 ContentValues cv = new ContentValues();
                 cv.put(MediaStore.Downloads.DISPLAY_NAME, filename);
-                cv.put(MediaStore.Downloads.MIME_TYPE, "image/png");
+                cv.put(MediaStore.Downloads.MIME_TYPE, mime);
                 cv.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
                 cv.put(MediaStore.Downloads.IS_PENDING, 1);
                 Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
-                if (uri == null) { toastUi("이미지 저장에 실패했습니다"); return; }
+                if (uri == null) { toastUi("저장에 실패했습니다"); return; }
                 OutputStream os = getContentResolver().openOutputStream(uri);
                 os.write(bytes); os.close();
                 cv.clear(); cv.put(MediaStore.Downloads.IS_PENDING, 0);
                 getContentResolver().update(uri, cv, null, null);
                 toastUi("Download 폴더에 저장했습니다: " + filename);
-            } catch (Exception e) { toastUi("이미지 저장에 실패했습니다"); }
+            } catch (Exception e) { toastUi("저장에 실패했습니다"); }
         } else {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                pendingImg = bytes; pendingName = filename;
+                pendingImg = bytes; pendingName = filename; pendingMime = mime;
                 runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_WRITE));
                 return;
             }
-            writeLegacyDownload(bytes, filename);
+            writeLegacyDownload(bytes, filename, mime);
         }
     }
 
-    private void writeLegacyDownload(byte[] bytes, String filename) {
+    private void writeLegacyDownload(byte[] bytes, String filename, String mime) {
         try {
             File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             if (!dir.exists()) dir.mkdirs();
@@ -546,20 +568,20 @@ public class MainActivity extends Activity {
             FileOutputStream fos = new FileOutputStream(out);
             fos.write(bytes); fos.close();
             android.media.MediaScannerConnection.scanFile(this,
-                new String[]{out.getAbsolutePath()}, new String[]{"image/png"}, null);
+                new String[]{out.getAbsolutePath()}, new String[]{mime}, null);
             toastUi("Download 폴더에 저장했습니다: " + filename);
-        } catch (Exception e) { toastUi("이미지 저장에 실패했습니다"); }
+        } catch (Exception e) { toastUi("저장에 실패했습니다"); }
     }
 
     @Override
     public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
         if (req == REQ_WRITE) {
             if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED && pendingImg != null) {
-                writeLegacyDownload(pendingImg, pendingName);
+                writeLegacyDownload(pendingImg, pendingName, pendingMime == null ? "image/png" : pendingMime);
             } else {
                 toastUi("저장 권한이 필요합니다");
             }
-            pendingImg = null; pendingName = null;
+            pendingImg = null; pendingName = null; pendingMime = null;
         }
     }
 

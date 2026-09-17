@@ -621,11 +621,22 @@
   /* ---------- 데이터 백업/복원 ---------- */
   $('exportBtn').addEventListener('click', () => {
     const data = { version: 1, exportedAt: new Date().toISOString(), goals, logs, platinum, memo: $('memo').value };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const text = JSON.stringify(data, null, 2);
+    const name = 'token_backup_' + todayStr() + '.json';
+    // 안드로이드 앱(WebView)은 blob 다운로드를 못 한다 — 눌러도 조용히 아무 일도 없었다.
+    // 하필 위의 저장 경고문이 바로 이 버튼을 쓰라고 안내하는 자리라 더 나빴다.
+    if (window.AndroidBridge && typeof window.AndroidBridge.saveText === 'function') {
+      try { window.AndroidBridge.saveText(text, name, 'application/json'); }
+      catch (e) { alert('저장에 실패했습니다'); }
+      return;
+    }
+    const blob = new Blob([text], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'token_backup_' + todayStr() + '.json';
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    // 바로 거두면 저장이 시작되기 전에 주소가 사라지는 브라우저가 있다(파츠 쪽도 같은 이유로 늦춘다).
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
   $('tkImportBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', e => {

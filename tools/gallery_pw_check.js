@@ -47,7 +47,19 @@ const del = (id, pw, token) => jf('/builds/' + id, {
 
 let MS_NAME = '', EXP_NAME = '';
 
+/* 이 점검은 로컬 서버(wrangler pages dev)가 떠 있어야 돈다. 없을 때 그냥 두면
+   처리 안 된 fetch 예외로 **죽어 버려서**, 한꺼번에 돌릴 때 진짜 실패와 구분이 안 됐다.
+   token_check 처럼 조용히 건너뛴다 — 없는 것은 실패가 아니다. */
+async function serverUp() {
+  try { await fetch(API + '/builds', { method: 'GET' }); return true; }
+  catch { return false; }
+}
+
 (async () => {
+  if (!await serverUp()) {
+    console.log('SKIP  로컬 서버가 없습니다 (npx wrangler pages dev --port 8788 --local)');
+    process.exit(0);
+  }
   // 서버 사전에 있는 기체 이름 하나가 필요하다 — 이미 올라온 구성에서 빌려 온다.
   const bl = await jf('/builds');
   const list = (bl.json && bl.json.builds) || [];

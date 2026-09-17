@@ -85,3 +85,17 @@ const prev = fs.existsSync(OUT)
 fs.writeFileSync(OUT, next, 'utf8');
 console.log('  픽업 ' + data.pickups.length + '건(' + data.pickupsUpdated + ') · 스팀 ' +
   data.steamNews.length + '건(' + data.steamUpdated + ')' + (next === prev ? ' — 변화 없음' : ' — 갱신'));
+
+// 갱신기는 **남의 저장소**(토큰)의 파일을 고친다. 그대로 두면 배포할 때마다 그쪽에
+// 커밋 안 된 변경이 쌓이고, 본인은 파츠만 보고 있어 눈치채지 못한다. 알려만 준다.
+// jp/·en/ 은 각자 갱신기가 따로라 여기서 건드리지 않는다 — check_sync 는 로직만 보고
+// 데이터 차이는 안 잡으므로, 세 벌을 맞추려면 그쪽 run.bat 을 따로 돌려야 한다.
+try {
+  const dirty = execFileSync('git', ['-C', REPO, 'status', '--porcelain'],
+    { encoding: 'utf8', timeout: 20000 }).trim();
+  if (dirty) {
+    console.log('  ⚠ 토큰 저장소에 커밋되지 않은 변경이 있습니다:');
+    for (const l of dirty.split(String.fromCharCode(10)).slice(0, 4)) console.log('      ' + l.trim());
+    console.log('      (jp·en 은 각자 run.bat 을 돌려야 같은 일정이 됩니다)');
+  }
+} catch { /* git 이 없거나 저장소가 아니면 넘어간다 */ }

@@ -54,7 +54,8 @@
   #screenToken input[type=text], #screenToken .memo-area, #screenToken select {
     background: var(--panel-2); color: var(--text);
   }
-  #screenToken input[type=date], #screenToken input[type=number] {
+  #screenToken input[type=date], #screenToken input[type=number],
+  #screenToken input[type=text] {
     width: 100%; padding: 9px; border: 1px solid var(--line);
     border-radius: 6px; font-size: 14px; margin-bottom: 1rem;
   }
@@ -70,10 +71,14 @@
   #screenToken .quest-row label { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; white-space: nowrap; }
   #screenToken input.questCount { width: 56px; flex: 0 0 56px; padding: 5px; margin-bottom: 0; border: 1px solid var(--line); border-radius: 4px; text-align: center; font-size: 13px; }
 
+  /* `.stepper` 는 파츠의 단계 표시(상단 「① 기체 선택 › ② 파츠 적용」)와 이름이 겹친다.
+     그쪽이 `margin: 0 0 0 14px` 을 쓰는데 여기는 margin-top 만 적어, **왼쪽 14px 만
+     파츠 규칙이 이겨** 금상자 칸이 형제들보다 안으로 밀려 있었다(좌 148 대 134).
+     네 방향을 다 적어 통째로 덮는다. */
   #screenToken .stepper {
     display: flex; align-items: center; justify-content: space-between;
     padding: 9px; background: rgba(255, 201, 60, .10); border: 1px solid var(--accent);
-    border-radius: 6px; margin-top: 0.6rem; font-size: 14px;
+    border-radius: 6px; margin: 0.6rem 0 0; font-size: 14px; list-style: none;
   }
   #screenToken .stepper-ctrl { display: flex; align-items: center; gap: 12px; }
   #screenToken .step-btn {
@@ -137,6 +142,16 @@
   #screenToken .badge-ok { color: var(--ok); font-weight: bold; }
   #screenToken .badge-no { color: var(--bad); font-weight: bold; }
   #screenToken .memo-area { width: 100%; min-height: 90px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; }
+
+  /* 손가락으로 쓰는 화면에서는 누를 것을 넓힌다. 줄 간격을 늘리면 표가 늘어지므로
+     파츠 쪽과 같이 보이지 않는 ::before 로 눌리는 넓이만 키운다. */
+  @media (pointer: coarse) {
+    #screenToken a, #screenToken .btn { position: relative; }
+    #screenToken a::before, #screenToken .btn::before {
+      content: ''; position: absolute; left: 0; right: 0;
+      top: 50%; height: 44px; transform: translateY(-50%);
+    }
+  }
 
   /* 정보 사이트 링크 목록 */
   #screenToken .link-list { list-style: none; margin: 0; padding: 0; font-size: 14px; }
