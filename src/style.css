@@ -546,6 +546,16 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
   font-size: var(--fs-lg); cursor: pointer; border-radius: 6px;
 }
 .ms-info:hover { color: var(--accent); background: rgba(255, 201, 60, .12); }
+/* 손가락으로는 24px 을 못 맞힌다. 폰 기본(넓게 보기)에서는 화면상 12px 까지 줄어들어,
+   중심에서 **화면 5px** 만 빗나가도 카드가 눌려 곧바로 파츠로 넘어갔다 — 실제로 그 신고를 받았다.
+   보이는 크기는 그대로 두고 눌리는 넓이만 키운다. 세로 40px 이면 위의 ★(바닥 26px)과 안 겹친다. */
+@media (pointer: coarse) {
+  .ms-info::before {
+    content: ''; position: absolute;
+    left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 48px; height: 40px;
+  }
+}
 
 .ms-card:hover { background: var(--panel-2); border-color: var(--line); }
 .ms-card.sel { background: #2a2617; border-color: var(--accent); }

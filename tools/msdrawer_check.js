@@ -75,6 +75,10 @@ const ok = (label, cond, extra) => {
   ok('서랍이 왼쪽에서 열린다', opened.open && opened.left <= 1, '좌 ' + opened.left);
   ok('서랍에 기체 목록이 있다', opened.cards > 1, opened.cards + '개 · ' + opened.count);
   ok('서랍에 필터가 있다', opened.chips >= 10, '칩 ' + opened.chips + '개');
+  // 서랍 카드에는 ⓘ 를 달지 않는다. 서랍은 파츠 화면 위에 열려 기체 정보 칸이 보일 자리가
+  // 없어서, 달아 두면 눌러도 아무 일이 없는 죽은 손잡이가 된다(실측으로 확인했다).
+  ok('서랍 카드에는 ⓘ 가 없다',
+    await pg.evaluate(() => !document.querySelector('#msDrawerList .ms-card .ms-info')));
 
   // ── 필터: 서랍에서 만지면 양쪽이 같이 움직여야 한다 ──
   await pg.evaluate(() => {

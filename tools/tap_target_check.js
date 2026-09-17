@@ -86,6 +86,51 @@ const STEAL = sel => {
   let st = await pg.evaluate(STEAL, '.chip');
   check('칩끼리 자리를 뺏지 않는다 (' + st.n + '개)', st.bad === 0, '가려진 것 ' + st.bad);
 
+  /* ── 기체 카드의 ⓘ ──
+     카드를 누르면 곧바로 파츠로 가고, 정보는 ⓘ 로만 연다. 그래서 ⓘ 가 작으면
+     **빗나간 탭이 그대로 파츠로 넘어간다** — 실제로 그 신고를 받았다.
+     보이는 크기(24px)는 그대로 두고 눌리는 넓이만 넓혔으므로, 보이는 크기가 아니라
+     **빗나가도 잡히는지**를 잰다. 대각선으로 빗나가는 쪽이 더 가혹해서 그쪽으로 본다. */
+  const iInfo = await pg.evaluate(() => {
+    const card = document.querySelector('#msList .ms-card');
+    if (!card) return null;
+    card.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const b = card.querySelector('.ms-info');
+    const f = card.querySelector('.ms-fav');
+    if (!b) return { missing: true };
+    const box = b.getBoundingClientRect();
+    const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+    const reach = (dx, dy) => {
+      for (let d = 0; d <= 60; d++) {
+        const e = document.elementFromPoint(cx + dx * d, cy + dy * d);
+        if (!e || !e.closest('.ms-info')) return d - 1;
+      }
+      return 60;
+    };
+    const favBox = f ? (() => {
+      const q = f.getBoundingClientRect();
+      const fx = q.left + q.width / 2, fy = q.top + q.height / 2;
+      const fr = (dx, dy) => { for (let d = 0; d <= 60; d++) {
+        const e = document.elementFromPoint(fx + dx * d, fy + dy * d);
+        if (!e || !e.closest('.ms-fav')) return d - 1; } return 60; };
+      return fr(1, 0) + fr(-1, 0);
+    })() : 0;
+    return { w: reach(1, 0) + reach(-1, 0), h: reach(0, 1) + reach(0, -1),
+      diag: reach(0.7, 0.7), favW: favBox };
+  });
+  if (!iInfo) console.log('  건너뜀 기체 카드 ⓘ — 목록이 없음');
+  else if (iInfo.missing) check('기체 카드에 ⓘ 가 있다', false);
+  else {
+    check('ⓘ 판정이 ' + MIN + 'px 이상', iInfo.w >= MIN && iInfo.h >= MIN - 2,
+      '판정 ' + iInfo.w + '×' + iInfo.h);
+    // ★ 는 오래 써 온 기준이다. 새로 넣은 ⓘ 가 그보다 작으면 새로 나빠진 것이다.
+    check('ⓘ 가 ★ 보다 누르기 쉽다', iInfo.w >= iInfo.favW,
+      'ⓘ ' + iInfo.w + ' · ★ ' + iInfo.favW);
+    // 12px 로 뒀더니 넓히기 **전**에도 통과했다 — 24px 짜리 네모만으로 대각 17px 이 나온다.
+    // 넓힌 뒤에는 28px 이므로, 그 사이인 22 로 둬야 없어졌을 때 잡힌다.
+    check('대각선으로 빗나가도 22px 까지는 ⓘ 가 잡힌다', iInfo.diag >= 22, '여유 ' + iInfo.diag + 'px');
+  }
+
   // 기체를 골라 파츠 화면으로
   await pg.evaluate(() => {
     const i = document.querySelector('#msQuery'); i.value = '건담 Ez8';

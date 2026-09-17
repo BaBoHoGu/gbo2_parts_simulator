@@ -1195,11 +1195,16 @@
       // (예전에는 카드를 누르면 늘 정보가 먼저 떠서, 아는 기체를 고를 때마다 한 번 더 눌러야 했다.)
       // **등급 줄 안에** 넣는다 — 절대 위치로 바닥에서 띄우면 카드 높이가 달라지는 화면에서
       // 줄과 어긋난다. 여기 두면 세로는 구조가 맞춰 주고, 가로만 ★ 에 맞추면 된다.
-      const ib = el('button', 'ms-info', 'ⓘ');
-      ib.title = T.msName(m.MS名) + ' 정보 보기';
-      ib.setAttribute('aria-label', '기체 정보');
-      ib.onclick = ev => { ev.stopPropagation(); openInfo(m); };
-      meta.append(ib);
+      //
+      // 「기체 변경」 서랍에는 달지 않는다. 서랍은 파츠 화면 위에 열려서 기체 정보 칸이
+      // 보일 자리가 없다 — 눌러도 아무 일이 안 일어나는 죽은 손잡이가 된다(실측 확인).
+      if (view.showInfo !== false) {
+        const ib = el('button', 'ms-info', 'ⓘ');
+        ib.title = T.msName(m.MS名) + ' 정보 보기';
+        ib.setAttribute('aria-label', '기체 정보');
+        ib.onclick = ev => { ev.stopPropagation(); openInfo(m); };
+        meta.append(ib);
+      }
 
       info.append(meta);
 
@@ -4537,7 +4542,7 @@
     if (!dr) return;
     if (open && !msDrawerView) {
       msDrawerView = addMsListView({
-        box: '#msDrawerList', count: '#msDrawerCount',
+        box: '#msDrawerList', count: '#msDrawerCount', showInfo: false,
         // 서랍에서는 지금 쓰고 있는 기체에 테두리를 준다 (기체 선택 화면은 정보 칸 기준이다)
         isSel: m => !!(state.ms && state.ms.MS名 === m.MS名),
         // 누르면 곧바로 바꾼다. selectMs 가 하는 일을 그대로 쓴다 — 목록에서 고르는 것과
