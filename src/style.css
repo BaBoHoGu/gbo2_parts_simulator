@@ -2299,6 +2299,15 @@ body.drawer-open .m-actionbar { display: none !important; }
 .screen-gallery { display: flex; flex-direction: column; }
 .screen-gallery .select-title { align-items: center; }
 .screen-gallery .select-title .right { display: flex; gap: 6px; margin-left: auto; }
+/* 갤러리 머리줄은 들어갈 것이 많다 — 돌아가기·제목·탭·안내·올리기·새로고침·관리자.
+   `.select-title` 은 감싸지 않는 flex 라 폰에서 전부 눌려 글자가 세로로 쌓였다
+   (「기체 티어」가 37×80 이 됐다. 새로고침·관리자도 원래 그랬다). 좁으면 줄을 바꾼다. */
+.gal-tab button { white-space: nowrap; }
+@media (max-width: 860px) {
+  .screen-gallery .select-title { flex-wrap: wrap; row-gap: 7px; }
+  .screen-gallery .select-title .right { margin-left: 0; flex-wrap: wrap; }
+  .gal-tab { margin-left: 0; flex: 0 0 auto; }
+}
 .gallery-grid {
   flex: 1;
   overflow-y: auto;

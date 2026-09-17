@@ -119,8 +119,30 @@ const TOTALS = {
   ok('속성 필터가 티어에도 걸린다', filtered.length > 0 && filtered.length < rows.length,
     filtered.length + '기');
 
-  ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].slice(0, 2).join(' | '));
+  /* 폰에서도 탭이 제 모양이어야 한다. 갤러리 머리줄은 감싸지 않는 flex 라
+     좁은 화면에서 전부 눌려 「기체 티어」가 37×80 이 됐다(글자가 세로로 쌓였다). */
   await br.close();
+  const br2 = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const pg2 = await br2.newPage();
+  await pg2.emulate({ viewport: { width: 390, height: 860, isMobile: true, hasTouch: true },
+    userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126 Mobile Safari/537.36' });
+  await pg2.evaluateOnNewDocument(() => { try { localStorage.setItem('gbo2.viewMode', 'large'); } catch (e) { } });
+  await pg2.goto(URL, { waitUntil: 'load', timeout: 180000 });
+  await sleep(3500);
+  await pg2.evaluate(() => document.querySelector('#galleryBtn').click());
+  await sleep(1400);
+  const phone = await pg2.evaluate(() => {
+    const b = document.querySelector('#galleryTab button[data-t="ms"]');
+    if (!b) return null;
+    const r = b.getBoundingClientRect();
+    return { w: Math.round(r.width), h: Math.round(r.height), right: Math.round(r.right), iw: window.innerWidth };
+  });
+  await br2.close();
+  ok('폰에서 티어 탭이 눌리지 않는다',
+    !!phone && phone.w >= 50 && phone.h <= 40 && phone.right <= phone.iw,
+    JSON.stringify(phone));
+
+  ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].slice(0, 2).join(' | '));
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
 })();
