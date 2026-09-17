@@ -5,7 +5,7 @@
 // 서버 없이 돌린다 — 투표 응답을 가로채 아는 값을 넣고, 순위가 그 값대로 나오는지 본다.
 // 실제 서버를 쓰면 표가 바뀔 때마다 결과가 달라져 점검이 못 된다.
 //
-// 이 화면은 갤러리와 **같은 필터를 나눠 쓴다.** 그래서 「티어에서만 숨어야 할 것」이
+// 이 화면은 기체 선택 화면과 **같은 필터를 나눠 쓴다.** 그래서 「티어에서만 숨어야 할 것」이
 // 실제로 숨는지가 핵심이다 — 실제로 한 번 안 숨었다(.gallery-grid 의 display:grid 가
 // [hidden] 을 이겼다. 이 저장소가 같은 함정을 아홉 번 개별 규칙으로 막아 온 그것이다).
 const fs = require('fs');
@@ -60,12 +60,19 @@ const TOTALS = {
   await pg.goto(URL, { waitUntil: 'load', timeout: 180000 });
   await sleep(3500);
 
-  ok('갤러리에 티어 탭이 있다',
-    await pg.evaluate(() => !!document.querySelector('#galleryTab button[data-t="ms"]')));
+  /* 티어는 기체 선택 화면의 보기 전환이다 — 검색창 오른쪽. 갤러리가 아니다.
+     기체에 대한 표이므로 기체가 있는 곳에 둔다(필터·검색이 이미 거기 있다). */
+  ok('기체 선택 화면 검색 옆에 티어 전환이 있다', await pg.evaluate(() => {
+    const seg = document.querySelector('#msViewSeg');
+    const q = document.querySelector('#msQuery');
+    if (!seg || !q) return false;
+    const a = seg.getBoundingClientRect(), b = q.getBoundingClientRect();
+    return a.width > 0 && a.left >= b.right - 2;     // 검색창 오른쪽에 있다
+  }));
+  ok('갤러리에는 티어 탭이 없다',
+    await pg.evaluate(() => !document.querySelector('#galleryTab')));
 
-  await pg.evaluate(() => document.querySelector('#galleryBtn').click());
-  await sleep(1400);
-  await pg.evaluate(() => document.querySelector('#galleryTab button[data-t="ms"]').click());
+  await pg.evaluate(() => document.querySelector('#msViewSeg button[data-t="tier"]').click());
   await sleep(1600);
 
   const read = () => pg.evaluate(() =>
@@ -94,13 +101,11 @@ const TOTALS = {
     const h = sel => { const e = document.querySelector(sel);
       return !e || e.getBoundingClientRect().height === 0; };
     return {
-      gallery: h('#galleryResults'), lv: h('#galleryLvGroup'),
-      upload: h('#galleryUpload'), tierShown: !h('#tierResults')
+      list: h('#msList'), lv: h('#msLvGroup'), tierShown: !h('#tierResults')
     };
   });
-  ok('티어 보기에서 갤러리 카드가 숨는다', hid.gallery);
+  ok('티어 보기에서 기체 목록이 숨는다', hid.list);
   ok('티어 보기에서 레벨 필터가 숨는다', hid.lv);        // 표는 LV 을 안 가른다
-  ok('티어 보기에서 올리기 버튼이 숨는다', hid.upload);
   ok('티어 목록이 보인다', hid.tierShown);
 
   // 추천률 정렬 — 1표짜리 100% 가 위로 올라오면 안 된다
@@ -113,14 +118,27 @@ const TOTALS = {
 
   // 필터가 티어에도 걸린다
   await pg.evaluate(() =>
-    [...document.querySelectorAll('#galleryAttrChips .chip')].find(c => /강습/.test(c.textContent)).click());
+    [...document.querySelectorAll('#attrChips .chip')].find(c => /강습/.test(c.textContent)).click());
   await sleep(800);
   const filtered = await read();
   ok('속성 필터가 티어에도 걸린다', filtered.length > 0 && filtered.length < rows.length,
     filtered.length + '기');
 
-  /* 폰에서도 탭이 제 모양이어야 한다. 갤러리 머리줄은 감싸지 않는 flex 라
-     좁은 화면에서 전부 눌려 「기체 티어」가 37×80 이 됐다(글자가 세로로 쌓였다). */
+  /* 누르면 오른쪽 정보 칸이 열려야 한다 — 화면을 옮기지 않는다. 목록의 ⓘ 와 같은 동작이다. */
+  await pg.evaluate(() => {
+    const r = document.querySelector('#tierResults .tier-row');
+    if (r) r.click();
+  });
+  await sleep(1200);
+  const opened = await pg.evaluate(() => ({
+    cls: document.body.className,
+    info: (() => { const b = document.querySelector('#infoBody'); return !!b && !b.hidden; })()
+  }));
+  ok('티어 줄을 누르면 기체 정보가 열린다',
+    /info-open/.test(opened.cls) && !/view-build/.test(opened.cls) && opened.info,
+    JSON.stringify(opened));
+
+  /* 폰에서도 전환이 제 모양이어야 한다. 좁은 화면에서 눌리면 글자가 세로로 쌓인다. */
   await br.close();
   const br2 = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg2 = await br2.newPage();
@@ -129,16 +147,15 @@ const TOTALS = {
   await pg2.evaluateOnNewDocument(() => { try { localStorage.setItem('gbo2.viewMode', 'large'); } catch (e) { } });
   await pg2.goto(URL, { waitUntil: 'load', timeout: 180000 });
   await sleep(3500);
-  await pg2.evaluate(() => document.querySelector('#galleryBtn').click());
-  await sleep(1400);
+
   const phone = await pg2.evaluate(() => {
-    const b = document.querySelector('#galleryTab button[data-t="ms"]');
+    const b = document.querySelector('#msViewSeg button[data-t="tier"]');
     if (!b) return null;
     const r = b.getBoundingClientRect();
     return { w: Math.round(r.width), h: Math.round(r.height), right: Math.round(r.right), iw: window.innerWidth };
   });
   await br2.close();
-  ok('폰에서 티어 탭이 눌리지 않는다',
+  ok('폰에서 티어 전환이 눌리지 않는다',
     !!phone && phone.w >= 50 && phone.h <= 40 && phone.right <= phone.iw,
     JSON.stringify(phone));
 

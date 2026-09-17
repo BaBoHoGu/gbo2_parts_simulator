@@ -940,18 +940,21 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
 .stg-unmod .stg-tag { background: transparent; border: 1px dashed var(--line); color: var(--dim); }
 .stg-unmod .stg-cond { color: var(--dim); }
 
+/* 검색 + 보기 전환(목록 / 티어)을 한 줄에. 티어도 「기체를 고르는 또 다른 길」이다. */
+.ms-search-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ms-search-row input[type="search"] { flex: 1 1 260px; min-width: 0; }
+.ms-view-seg { display: inline-flex; flex: 0 0 auto; }
+.ms-view-seg button {
+  padding: 6px 13px; font-size: var(--fs-sm); border: 1px solid var(--line);
+  background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap;
+}
+.ms-view-seg button:first-child { border-radius: 6px 0 0 6px; }
+.ms-view-seg button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+.ms-view-seg button.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); font-weight: 700; }
+
 /* ---- 기체 티어 ----
    갤러리와 같은 화면의 다른 보기다. 카드가 아니라 **순위 줄**로 둔다 —
    등수를 견주는 것이 요점이라 세로로 죽 이어져야 눈이 따라간다. */
-.gal-tab { margin-left: 10px; display: inline-flex; }
-.gal-tab button {
-  padding: 3px 12px; font-size: var(--fs-sm); border: 1px solid var(--line);
-  background: transparent; color: var(--muted); cursor: pointer;
-}
-.gal-tab button:first-child { border-radius: 5px 0 0 5px; }
-.gal-tab button:last-child { border-radius: 0 5px 5px 0; border-left: none; }
-.gal-tab button.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); font-weight: 700; }
-
 .tier-list { display: flex; flex-direction: column; gap: 5px; padding: 4px 0 20px; }
 .tier-row {
   display: flex; align-items: center; gap: 11px; padding: 7px 11px;
@@ -2302,11 +2305,9 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* 갤러리 머리줄은 들어갈 것이 많다 — 돌아가기·제목·탭·안내·올리기·새로고침·관리자.
    `.select-title` 은 감싸지 않는 flex 라 폰에서 전부 눌려 글자가 세로로 쌓였다
    (「기체 티어」가 37×80 이 됐다. 새로고침·관리자도 원래 그랬다). 좁으면 줄을 바꾼다. */
-.gal-tab button { white-space: nowrap; }
 @media (max-width: 860px) {
   .screen-gallery .select-title { flex-wrap: wrap; row-gap: 7px; }
   .screen-gallery .select-title .right { margin-left: 0; flex-wrap: wrap; }
-  .gal-tab { margin-left: 0; flex: 0 0 auto; }
 }
 .gallery-grid {
   flex: 1;
