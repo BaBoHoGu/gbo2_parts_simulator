@@ -6968,7 +6968,7 @@
  "ガンダムEz8［HMC］": [
   {
    "name": "スラスターバインダー制御装置",
-   "nameKo": "스러스터 바인더 제어장치",
+   "nameKo": "슬러스터 바인더 제어장치",
    "forever": false,
    "secs": 40,
    "hp": null,
@@ -7423,7 +7423,7 @@
   },
   {
    "name": "シールド・ブースター制御機構",
-   "nameKo": "실드 부스터 제어 메커니즘",
+   "nameKo": "실드 부스터 제어 기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -8742,7 +8742,7 @@
  "ウイングガンダムゼロ": [
   {
    "name": "ＺＥＲＯシステム",
-   "nameKo": "ＺＥＲＯシステム",
+   "nameKo": "ZERO 시스템",
    "forever": false,
    "secs": 25,
    "hp": null,
@@ -9130,7 +9130,7 @@
  "ガブスレイβ": [
   {
    "name": "マルチ・シールド制御機構",
-   "nameKo": "멀티 실드 제어 메커니즘",
+   "nameKo": "멀티 실드 제어 기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -9448,7 +9448,7 @@
   },
   {
    "name": "フィン・ノズル制御機構?",
-   "nameKo": "핀 노즐 제어 메커니즘?",
+   "nameKo": "핀 노즐 제어 기구?",
    "forever": false,
    "secs": 25,
    "hp": null,
@@ -12035,7 +12035,7 @@
  "ヘイズル改": [
   {
    "name": "シールド・ブースター制御機構",
-   "nameKo": "실드 부스터 제어 메커니즘",
+   "nameKo": "실드 부스터 제어 기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12287,7 +12287,7 @@
  "ヘイズル改［高機動仕様］": [
   {
    "name": "シールド・ブースター制御機構改",
-   "nameKo": "실드 부스터 제어기구 개",
+   "nameKo": "실드 부스터 제어 기구 개량형",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12473,7 +12473,7 @@
  "アドバンスド・ヘイズル": [
   {
    "name": "シールド・ブースター制御機構改",
-   "nameKo": "실드 부스터 제어기구 개",
+   "nameKo": "실드 부스터 제어 기구 개량형",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12572,7 +12572,7 @@
  "アトラスガンダム【TB】": [
   {
    "name": "サブレッグ制御機構",
-   "nameKo": "서브 레그 제어 메커니즘",
+   "nameKo": "서브 레그 제어 기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12605,7 +12605,7 @@
  "ヘイズル・アウスラ": [
   {
    "name": "シールド・ブースター制御機構",
-   "nameKo": "실드 부스터 제어 메커니즘",
+   "nameKo": "실드 부스터 제어 기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12671,7 +12671,7 @@
  "ギャプランTR-5": [
   {
    "name": "シールド・ブースター制御機構改",
-   "nameKo": "실드 부스터 제어기구 개",
+   "nameKo": "실드 부스터 제어 기구 개량형",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12704,7 +12704,7 @@
  "アンクシャ": [
   {
    "name": "ムーバブル・シールド・バインダー",
-   "nameKo": "이동식 쉴드 바인더",
+   "nameKo": "이동식 실드 바인더",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12737,7 +12737,7 @@
  "エンゲージゼロ": [
   {
    "name": "補助スラスター制御装置",
-   "nameKo": "보조 스러스터 제어 장치",
+   "nameKo": "보조 슬러스터 제어 장치",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12770,7 +12770,7 @@
  "エンゲージゼロ［追加BST装備型］": [
   {
    "name": "補助スラスター制御装置",
-   "nameKo": "보조 스러스터 제어 장치",
+   "nameKo": "보조 슬러스터 제어 장치",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -12869,7 +12869,7 @@
  "ギャプラン（I0）": [
   {
    "name": "ムーバブル・シールド・バインダー",
-   "nameKo": "이동식 쉴드 바인더",
+   "nameKo": "이동식 실드 바인더",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13699,7 +13699,7 @@
  "フェイルノート": [
   {
    "name": "試作型フィン・ノズル制御機構",
-   "nameKo": "프로토 타입 핀 노즐 제어기구",
+   "nameKo": "프로토 타입 핀 노즐 제어 기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13732,7 +13732,7 @@
  "ベルガ・ギロス［B・V仕様］": [
   {
    "name": "シェルフ・ノズル制御機構",
-   "nameKo": "선반 노즐 제어 메커니즘",
+   "nameKo": "선반 노즐 제어 기구",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -13949,7 +13949,7 @@
  "ビギナ・ギナⅡ［木星決戦仕様］": [
   {
    "name": "フレキシブルウイングノズル制御機構?",
-   "nameKo": "유연한 날개 노즐 제어 메커니즘?",
+   "nameKo": "플렉시블 윙 노즐 제어 기구?",
    "forever": false,
    "secs": 75,
    "hp": null,
@@ -14015,7 +14015,7 @@
  "ガンブラスター": [
   {
    "name": "ツインテール制御機構",
-   "nameKo": "트윈 테일 제어 메커니즘",
+   "nameKo": "트윈테일제어 기구",
    "forever": false,
    "secs": 40,
    "hp": null,

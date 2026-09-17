@@ -33,8 +33,16 @@
   "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/7870.html"
  },
  "ゴールドスモー_LV1": {
-  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/7925.html",
-  "旋回_地上_通常時": 90,
-  "旋回_宇宙_通常時": 93
+  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/7925.html"
+ },
+ "カプル_LV1": {
+  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/7942.html",
+  "旋回_地上_通常時": 72,
+  "旋回_宇宙_通常時": 69
+ },
+ "カプル（ＣＮ）_LV1": {
+  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/7944.html",
+  "旋回_地上_通常時": 75,
+  "旋回_宇宙_通常時": 72
  }
 }
