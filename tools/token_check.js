@@ -184,6 +184,21 @@ const ok = (label, cond, extra) => {
   });
   ok('미래시 카드가 그려진다', !fut.missing && fut.bars > 3 && fut.weeks > 3,
     '막대 ' + fut.bars + ' · 주 ' + fut.weeks);
+
+  /* 달 단위로 나뉘어야 한다 — 두 달을 한 줄에 놓으니 복잡하다는 지적을 받아 나눴다.
+     한 덩이로 되돌아가면 눈에 잘 안 띄므로 덩이 수와 머리글을 같이 본다. */
+  const mb = await pg.evaluate(() =>
+    [...document.querySelectorAll('[data-ck="future"] .fw-month-block .fw-mhead')]
+      .map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+  ok('미래시가 달 단위로 나뉜다', mb.length >= 2 && mb.every(t => /\d+월/.test(t)),
+    mb.join(' | ') || '(덩이 없음)');
+
+  /* 「예상이 지났는데 스팀에 안 나온 기체」도 잡아야 한다. 갱신기가 지난 항목을 예보에서
+     지우기 때문에 스냅샷만으로는 못 본다 — data/pickups.history.json 이 그걸 기억한다.
+     실제 사례: 기라 줄루(CM) 은 8/29 예보에 09-10 로 있었는데 스팀에 안 나왔다. */
+  const hist = await pg.evaluate(() =>
+    !!(window.GBO2_PICKUPS && window.GBO2_PICKUPS.history && window.GBO2_PICKUPS.history.seen));
+  ok('픽업 이력이 실려 있다', hist);
   ok('미래시에 오늘 표시가 있다', !!fut.today);
   ok('이미지 저장 버튼이 있다', !!fut.png);
   /* 이름에 섞여 오는 위키 태그가 글자로 보이면 안 된다 — 실제로 「건담 <ruby>DX…」가 그랬다.

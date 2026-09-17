@@ -419,6 +419,44 @@
     return out;
   })();
 
+  /* 이력에서 「약속한 날이 지났는데 스팀에 안 나온 기체」를 찾는다.
+   *
+   * 왜 이력이 필요한가 — 갱신기는 지난 항목을 예보에서 지운다. 그래서 스냅샷만 보면
+   * 그런 기체는 **흔적도 없이 사라진다.** 기라 줄루(CM) 가 그랬다: 8/29 예보에 09-10 로
+   * 있었는데, 9/17 에는 예보에도 스팀에도 없다(그 주 스팀에는 다른 기체가 나왔다).
+   *
+   * 판정은 보수적으로 둔다 — 아직 예보에 남아 있으면 건드리지 않고, 스팀 목록은 최근
+   * 한 달치뿐이라 **그보다 오래된 것은 판단하지 않는다.** 모르는 것을 단정하지 않는다.
+   */
+  function missedFromHistory() {
+    const H = (window.GBO2_PICKUPS && window.GBO2_PICKUPS.history) || null;
+    if (!H || !H.seen) return [];
+    const today = pd(todayStr());
+    const live = new Set(PICKUPS.map(p => looseKey(p.name)));
+    // 스팀 목록이 덮는 가장 이른 날 — 이보다 전은 나왔는지 알 길이 없다
+    const steamFrom = STEAM_NEWS.length
+      ? STEAM_NEWS.map(s => s.start).filter(Boolean).sort()[0] : null;
+    if (!steamFrom) return [];
+    const out = [];
+    for (const name of Object.keys(H.seen)) {
+      const h = H.seen[name];
+      if (!h || !h.start) continue;
+      if (!isMech(name)) continue;                 // 되풀이되는 티켓·키트는 뺀다
+      const k = looseKey(name);
+      if (live.has(k)) continue;                   // 아직 예보에 있으면 지켜보는 중이다
+      const when = pd(h.start);
+      if (when >= today) continue;                 // 아직 안 지났다
+      if (h.start < steamFrom) continue;           // 스팀 목록이 안 닿는 옛날 — 모른다
+      if (STEAM_NEWS.some(s => {
+        const sk = looseKey(s.name);
+        return sk && (sk === k || sk.includes(k) || k.includes(sk));
+      })) continue;                                // 이름이 달라도 실제로 나왔다
+      out.push({ name: pickName(name), want: h.start,
+        days: Math.round((today - when) / MS_DAY) });
+    }
+    return out.sort((a, b) => b.days - a.days);
+  }
+
   /** 이 이름이 기체인가. 사전에 없으면 티켓·키트·이벤트 배너로 본다. */
   function isMech(name) {
     const k = looseKey(name);
@@ -441,6 +479,66 @@
     return null;
   }
 
+  /** 픽업을 달(YYYY-MM)별로 묶는다. 시작일이 낀 달에 넣는다 —
+   *  주가 달을 걸치는 경우가 많아 끝일로 나누면 같은 픽업이 두 달에 걸쳐 보인다. */
+  function byMonth(list) {
+    const m = new Map();
+    for (const p of list) {
+      const k = String(p.start || '').slice(0, 7);
+      if (!k) continue;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(p);
+    }
+    return [...m.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1);
+  }
+
+  /** 한 달치 타임라인 한 덩이. 주 눈금은 그 달 안에서만 센다. */
+  function monthBlock(key, list, today) {
+    const [Y, M] = key.split('-').map(Number);
+    const mStart = new Date(Y, M - 1, 1), mEnd = new Date(Y, M, 0);
+    const first = new Date(mStart);
+    while (first.getDay() !== 3) first.setDate(first.getDate() - 1);   // 픽업은 수요일에 갈린다
+    const weeks = Math.max(1, Math.ceil((mEnd - first) / (7 * MS_DAY)));
+    const col = d => (pd(d) - first) / (7 * MS_DAY);
+
+    let head = '';
+    for (let w = 0; w < weeks; w++) {
+      const d = new Date(+first + w * 7 * MS_DAY);
+      head += '<div class="fw-cell"><span>' + (d.getMonth() + 1) + '/' + d.getDate() + '</span></div>';
+    }
+
+    let rows = '';
+    for (const p of list) {
+      const a = col(p.start), b = col(p.end);
+      const left = Math.max(0, a) / weeks * 100;
+      const width = Math.max(100 / weeks, (b - Math.max(0, a)) / weeks * 100);
+      const past = pd(p.end) < today;
+      const mech = isMech(p.name);
+      rows += '<div class="fw-row">'
+        + '<div class="fw-label' + (past ? ' past' : '') + (mech ? ' mech' : '') + '" title="'
+        + esc(pickName(p.name)) + '">' + esc(pickName(p.name)) + '</div>'
+        + '<div class="fw-track"><div class="fw-bar' + (past ? ' past' : '')
+        + '" style="left:' + left.toFixed(3) + '%;width:' + Math.min(width, 100 - left).toFixed(3) + '%">'
+        + (p.tokens != null ? '<span class="fw-tok">' + p.tokens + '</span>' : '')
+        + '</div></div></div>';
+    }
+
+    const tl = (today - first) / (7 * MS_DAY) / weeks * 100;
+    const showToday = tl >= 0 && tl <= 100;
+    const mechN = list.filter(p => isMech(p.name)).length;
+    return '<div class="fw-month-block">'
+      + '<div class="fw-mhead">' + M + '월 <span>' + list.length + '건'
+      + (mechN ? ' · 기체 ' + mechN : '') + '</span></div>'
+      + '<div class="fw-row fw-headrow"><div class="fw-label"></div>'
+      + '<div class="fw-track fw-head">' + head + '</div>'
+      + (showToday ? '<div class="fw-todaylab" style="left:' + tl.toFixed(3) + '%">오늘</div>' : '')
+      + '</div>'
+      + '<div class="fw-rows">' + rows
+      + (showToday ? '<div class="fw-today" style="left:calc(var(--fw-lab) + (100% - var(--fw-lab)) * '
+        + (tl / 100).toFixed(4) + ')"></div>' : '')
+      + '</div></div>';
+  }
+
   function renderFuture() {
     setUpdated('futureUpdated', typeof PICKUPS_UPDATED === 'string' ? PICKUPS_UPDATED : '');
     const chart = $('futureChart'), offBox = $('futureOff');
@@ -451,78 +549,38 @@
       return;
     }
 
-    // ── 벗어난 것 ── 예보에 남아 있는데 스팀에는 이미 나온 것
-    const off = [];
-    const rows = [];
+    const today = pd(todayStr());
+    const off = [], rows = [];
     for (const p of PICKUPS) {
       const hit = alreadyOnSteam(p);
       if (hit && hit.start && p.start && hit.start !== p.start && isMech(p.name)) {
-        const d = Math.round((pd(p.start) - pd(hit.start)) / MS_DAY);
-        off.push({ name: pickName(p.name), want: p.start, real: hit.start, days: d, url: hit.url });
-      } else {
-        rows.push(p);
-      }
+        off.push({ name: pickName(p.name), want: p.start, real: hit.start,
+          days: Math.round((pd(p.start) - pd(hit.start)) / MS_DAY) });
+      } else if (p.start && p.end) rows.push(p);
     }
-    if (offBox) {
-      offBox.innerHTML = off.length
-        ? '<div class="future-off"><b>⚠ 미래시에서 벗어난 것 ' + off.length + '건</b>'
-          + off.map(o => '<div class="future-off-row"><span class="fo-nm">' + esc(o.name) + '</span>'
-            + '<span class="fo-d">예상 ' + esc(o.want) + ' → 실제 <b>' + esc(o.real) + '</b></span>'
-            + '<span class="fo-gap">' + (o.days > 0 ? o.days + '일 앞당겨짐' : (-o.days) + '일 밀림') + '</span></div>').join('')
-          + '</div>'
-        : '';
-    }
+    if (offBox) offBox.innerHTML = offHtml(off, missedFromHistory());
 
-    // ── 타임라인 ── 주 단위 칸. 오늘이 낀 주부터 마지막 픽업까지.
-    const today = pd(todayStr());
-    const all = rows.filter(p => p.start && p.end);
-    if (!all.length) { chart.innerHTML = '<div class="empty">그릴 일정이 없습니다</div>'; return; }
-    let min = Math.min(...all.map(p => +pd(p.start)), +today);
-    const max = Math.max(...all.map(p => +pd(p.end)));
-    // 주의 시작(수요일)에 맞춘다 — 이 게임의 픽업은 수요일에 갈린다
-    const first = new Date(min);
-    while (first.getDay() !== 3) first.setDate(first.getDate() - 1);
-    const weeks = Math.max(1, Math.ceil((max - first) / (7 * MS_DAY)));
+    if (!rows.length) { chart.innerHTML = '<div class="empty">그릴 일정이 없습니다</div>'; return; }
+    rows.sort((a, b) => pd(a.start) - pd(b.start));
+    chart.innerHTML = byMonth(rows).map(([k, v]) => monthBlock(k, v, today)).join('');
+  }
 
-    const col = d => (pd(d) - first) / (7 * MS_DAY);
-    // 이름은 **왼쪽 고정 칸**에 둔다. 막대 안에 넣어 봤더니 1주짜리 막대라 폭이 57px 뿐이라
-    // 「고트…」「양산…」처럼 전부 잘렸다 — 무엇이 언제인지가 이 카드의 전부인데 이름이
-    // 안 보이면 그릴 이유가 없다.
-    let head = '';
-    for (let w = 0; w < weeks; w++) {
-      const d = new Date(+first + w * 7 * MS_DAY);
-      const monthHead = w === 0 || d.getDate() <= 7;
-      head += '<div class="fw-cell' + (monthHead ? ' fw-month' : '') + '">'
-        + (monthHead ? '<b>' + (d.getMonth() + 1) + '월</b>' : '')
-        + '<span>' + d.getDate() + '</span></div>';
+  /** 벗어난 것 알림 — 「나왔는데 날짜가 다르다」와 「지났는데 안 나왔다」 둘 다 적는다. */
+  function offHtml(off, missed) {
+    if (!off.length && !missed.length) return '';
+    let h = '<div class="future-off"><b>⚠ 미래시에서 벗어난 기체 '
+      + (off.length + missed.length) + '건</b>';
+    for (const o of off) {
+      h += '<div class="future-off-row"><span class="fo-nm">' + esc(o.name) + '</span>'
+        + '<span class="fo-d">예상 ' + esc(o.want) + ' → 실제 <b>' + esc(o.real) + '</b></span>'
+        + '<span class="fo-gap">' + (o.days > 0 ? o.days + '일 앞당겨짐' : (-o.days) + '일 밀림') + '</span></div>';
     }
-
-    all.sort((a, b) => pd(a.start) - pd(b.start));
-    let rowsHtml = '';
-    for (const p of all) {
-      const a = col(p.start), b = col(p.end);
-      const left = a / weeks * 100, width = Math.max(100 / weeks, (b - a) / weeks * 100);
-      const past = pd(p.end) < today;
-      const mech = isMech(p.name);
-      rowsHtml += '<div class="fw-row">'
-        + '<div class="fw-label' + (past ? ' past' : '') + (mech ? ' mech' : '') + '" title="'
-        + esc(pickName(p.name)) + '">' + esc(pickName(p.name)) + '</div>'
-        + '<div class="fw-track"><div class="fw-bar' + (past ? ' past' : '')
-        + '" style="left:' + left.toFixed(3) + '%;width:' + width.toFixed(3) + '%">'
-        + (p.tokens != null ? '<span class="fw-tok">' + p.tokens + '</span>' : '')
-        + '</div></div></div>';
+    for (const m of missed) {
+      h += '<div class="future-off-row"><span class="fo-nm">' + esc(m.name) + '</span>'
+        + '<span class="fo-d">예상 ' + esc(m.want) + ' 이 지났는데 스팀에 안 나왔습니다</span>'
+        + '<span class="fo-gap">' + m.days + '일째 소식 없음</span></div>';
     }
-    const todayLeft = (today - first) / (7 * MS_DAY) / weeks * 100;
-    const showToday = todayLeft >= 0 && todayLeft <= 100;
-    const todayX = 'calc(var(--fw-lab) + (100% - var(--fw-lab)) * ' + (todayLeft / 100).toFixed(4) + ')';
-    chart.innerHTML =
-      '<div class="fw-row fw-headrow"><div class="fw-label"></div>'
-      + '<div class="fw-track fw-head">' + head + '</div>'
-      + (showToday ? '<div class="fw-todaylab" style="left:' + (todayLeft).toFixed(3) + '%">오늘</div>' : '')
-      + '</div>'
-      + '<div class="fw-rows">' + rowsHtml
-      + (showToday ? '<div class="fw-today" style="left:' + todayX + '"></div>' : '')
-      + '</div>';
+    return h + '</div>';
   }
 
   /* 미래시를 그림 한 장으로. 화면 DOM 을 옮겨 주는 라이브러리를 쓰지 않고 캔버스에 직접
@@ -539,22 +597,33 @@
           days: Math.round((pd(p.start) - pd(hit.start)) / MS_DAY) });
       } else if (p.start && p.end) rows.push(p);
     }
+    for (const m of missedFromHistory()) {
+      off.push({ name: m.name, want: m.want, real: null, days: m.days });
+    }
     if (!rows.length) { alert('그릴 일정이 없습니다'); return; }
     rows.sort((a, b) => pd(a.start) - pd(b.start));
 
-    const first = new Date(Math.min.apply(null, rows.map(p => +pd(p.start)).concat([+today])));
-    while (first.getDay() !== 3) first.setDate(first.getDate() - 1);
-    const last = Math.max.apply(null, rows.map(p => +pd(p.end)));
-    const weeks = Math.max(1, Math.ceil((last - first) / (7 * MS_DAY)));
+    const months = byMonth(rows);
 
-    const S = 2;                       // 2배로 그려 글자가 또렷하게
+    // 달마다 주 수가 다르다 — 가장 긴 달에 폭을 맞춰 칸 너비를 통일한다.
+    // 달마다 폭이 달라지면 같은 1주가 그림 안에서 서로 다른 길이로 보여 읽기가 어긋난다.
+    const monthMeta = months.map(([key, list]) => {
+      const [Y, M] = key.split('-').map(Number);
+      const mEnd = new Date(Y, M, 0);
+      const first = new Date(Y, M - 1, 1);
+      while (first.getDay() !== 3) first.setDate(first.getDate() - 1);
+      return { key, M, list, first, weeks: Math.max(1, Math.ceil((mEnd - first) / (7 * MS_DAY))) };
+    });
+    const maxWeeks = Math.max.apply(null, monthMeta.map(m => m.weeks));
+
+    const S = 2;
     const LAB = 190, CW = 74, PAD = 22;
     const offH = off.length ? 24 + off.length * 24 + 14 : 0;
-    // 머리줄에 「오늘」 한 줄을 더 둔다 — 월 이름과 같은 높이에 그렸더니 겹쳤다.
-    const headTop = PAD + 30 + 30 + offH + 14;
-    const rowH = 30, footH = 34;
-    const W = PAD * 2 + LAB + CW * weeks;
-    const H = headTop + 52 + rows.length * rowH + footH;
+    const rowH = 30, footH = 34, mHeadH = 26, gridH = 24, mGap = 18;
+    const W = PAD * 2 + LAB + CW * maxWeeks;
+    let H = PAD + 30 + 30 + offH + footH + 8;
+    for (const m of monthMeta) H += mHeadH + gridH + m.list.length * rowH + mGap;
+
     const cvs = document.createElement('canvas');
     cvs.width = W * S; cvs.height = H * S;
     const g = cvs.getContext('2d');
@@ -590,68 +659,75 @@
         g.fillStyle = C.text; g.font = '700 13px ' + F;
         g.fillText(o.name, PAD + 14, oy);
         g.fillStyle = C.muted; g.font = '12px ' + F;
-        g.fillText('예상 ' + o.want + ' → 실제 ' + o.real, PAD + 14 + 160, oy);
+        g.fillText(o.real ? ('예상 ' + o.want + ' → 실제 ' + o.real)
+          : ('예상 ' + o.want + ' 이 지났는데 스팀에 안 나왔습니다'), PAD + 14 + 160, oy);
         g.fillStyle = C.bad; g.font = '700 12px ' + F;
-        const t = o.days > 0 ? o.days + '일 앞당겨짐' : (-o.days) + '일 밀림';
+        const t = !o.real ? (o.days + '일째 소식 없음')
+          : (o.days > 0 ? o.days + '일 앞당겨짐' : (-o.days) + '일 밀림');
         g.fillText(t, W - PAD - 14 - g.measureText(t).width, oy);
         oy += 24;
       }
       y += bh + 14;
     }
 
-    // ── 주 눈금 ──
     const x0 = PAD + LAB;
-    const gridTop = y;
-    for (let w = 0; w < weeks; w++) {
-      const d = new Date(+first + w * 7 * MS_DAY);
-      const cx = x0 + w * CW + CW / 2;
-      const monthHead = w === 0 || d.getDate() <= 7;
-      if (monthHead) {
+    for (const m of monthMeta) {
+      // 달 머리
+      g.fillStyle = C.accent; g.font = '700 15px ' + F;
+      g.fillText(m.M + '월', PAD, y + 16);
+      const mechN = m.list.filter(p => isMech(p.name)).length;
+      g.fillStyle = C.dim; g.font = '12px ' + F;
+      g.fillText(m.list.length + '건' + (mechN ? ' · 기체 ' + mechN : ''), PAD + 44, y + 16);
+      y += mHeadH;
+
+      // 주 눈금
+      const gridTop = y;
+      for (let w = 0; w < m.weeks; w++) {
+        const d = new Date(+m.first + w * 7 * MS_DAY);
+        const cx = x0 + w * CW + CW / 2;
         g.strokeStyle = C.line; g.lineWidth = 1; g.beginPath();
-        g.moveTo(x0 + w * CW + .5, gridTop); g.lineTo(x0 + w * CW + .5, H - footH); g.stroke();
-        g.fillStyle = C.accent; g.font = '700 12px ' + F;
-        const m = (d.getMonth() + 1) + '월';
-        g.fillText(m, cx - g.measureText(m).width / 2, gridTop + 26);
+        g.moveTo(x0 + w * CW + .5, gridTop + 2);
+        g.lineTo(x0 + w * CW + .5, gridTop + gridH + m.list.length * rowH); g.stroke();
+        g.fillStyle = C.dim; g.font = '11px ' + F;
+        const lab = (d.getMonth() + 1) + '/' + d.getDate();
+        g.fillText(lab, cx - g.measureText(lab).width / 2, gridTop + 15);
       }
-      g.fillStyle = C.dim; g.font = '11px ' + F;
-      const dd = String(d.getDate());
-      g.fillText(dd, cx - g.measureText(dd).width / 2, gridTop + 41);
-    }
-    y = gridTop + 48;
-    g.strokeStyle = C.line; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(PAD, y + .5); g.lineTo(W - PAD, y + .5); g.stroke();
-    y += 6;
+      g.strokeStyle = C.line; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(PAD, gridTop + gridH - 3.5); g.lineTo(W - PAD, gridTop + gridH - 3.5); g.stroke();
+      y = gridTop + gridH;
 
-    // ── 오늘 선 ──
-    const todayX = x0 + (today - first) / (7 * MS_DAY) * CW;
-    if (todayX >= x0 && todayX <= x0 + weeks * CW) {
-      g.save(); g.strokeStyle = C.info; g.lineWidth = 2; g.setLineDash([5, 4]);
-      g.beginPath(); g.moveTo(todayX, gridTop + 4); g.lineTo(todayX, H - footH); g.stroke(); g.restore();
-      g.fillStyle = C.info; g.font = '700 11px ' + F;
-      g.fillText('오늘', todayX + 4, gridTop);
-    }
-
-    // ── 줄 ──
-    for (const p of rows) {
-      const a = (pd(p.start) - first) / (7 * MS_DAY), b = (pd(p.end) - first) / (7 * MS_DAY);
-      const bx = x0 + a * CW, bw = Math.max(CW, (b - a) * CW);
-      const past = pd(p.end) < today;
-      const mech = isMech(p.name);
-      g.fillStyle = past ? C.dim : C.text;
-      g.font = (mech && !past ? '700 ' : '') + '13px ' + F;
-      let nm = pickName(p.name);
-      while (g.measureText(nm).width > LAB - 12 && nm.length > 4) nm = nm.slice(0, -2) + '…';
-      g.fillText(nm, PAD, y + 15);
-      g.fillStyle = past ? C.panel2 : 'rgba(255,201,60,.18)';
-      g.fillRect(bx, y + 2, bw, 20);
-      g.strokeStyle = past ? C.line : C.accent; g.lineWidth = 1;
-      g.strokeRect(bx + .5, y + 2.5, bw - 1, 19);
-      if (p.tokens != null) {
-        g.fillStyle = past ? C.dim : C.accent; g.font = '700 11px ' + F;
-        const t = String(p.tokens);
-        g.fillText(t, bx + bw - 7 - g.measureText(t).width, y + 16);
+      // 오늘 선 (이 달에 오늘이 낀 경우만)
+      const tx = x0 + (today - m.first) / (7 * MS_DAY) * CW;
+      if (tx >= x0 && tx <= x0 + m.weeks * CW) {
+        g.save(); g.strokeStyle = C.info; g.lineWidth = 2; g.setLineDash([5, 4]);
+        g.beginPath(); g.moveTo(tx, gridTop + 2); g.lineTo(tx, y + m.list.length * rowH); g.stroke(); g.restore();
+        g.fillStyle = C.info; g.font = '700 11px ' + F;
+        g.fillText('오늘', tx + 4, gridTop - 2);
       }
-      y += rowH;
+
+      for (const p of m.list) {
+        const a = (pd(p.start) - m.first) / (7 * MS_DAY), b = (pd(p.end) - m.first) / (7 * MS_DAY);
+        const bx = x0 + Math.max(0, a) * CW;
+        const bw = Math.max(CW, (b - Math.max(0, a)) * CW);
+        const past = pd(p.end) < today;
+        const mech = isMech(p.name);
+        g.fillStyle = past ? C.dim : C.text;
+        g.font = (mech && !past ? '700 ' : '') + '13px ' + F;
+        let nm = pickName(p.name);
+        while (g.measureText(nm).width > LAB - 12 && nm.length > 4) nm = nm.slice(0, -2) + '…';
+        g.fillText(nm, PAD, y + 15);
+        g.fillStyle = past ? C.panel2 : 'rgba(255,201,60,.18)';
+        g.fillRect(bx, y + 2, bw, 20);
+        g.strokeStyle = past ? C.line : C.accent; g.lineWidth = 1;
+        g.strokeRect(bx + .5, y + 2.5, bw - 1, 19);
+        if (p.tokens != null) {
+          g.fillStyle = past ? C.dim : C.accent; g.font = '700 11px ' + F;
+          const t = String(p.tokens);
+          g.fillText(t, bx + bw - 7 - g.measureText(t).width, y + 16);
+        }
+        y += rowH;
+      }
+      y += mGap;
     }
 
     g.fillStyle = C.dim; g.font = '11px ' + F;

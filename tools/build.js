@@ -203,7 +203,11 @@ const html = read('src', 'index.html')
   .replace('/*__SKILLS__*/', () => inline('GBO2_SKILLS', skills))
   .replace('/*__I18N_DATA__*/', () => inline('GBO2_I18N', i18n))
   .replace('/*__PICKUPS__*/', () => inline('GBO2_PICKUPS',
-    JSON.parse(read('data', 'pickups.json'))))
+    Object.assign(JSON.parse(read('data', 'pickups.json')), {
+      // 「예상이 지났는데 안 나온 것」 판정용. 없으면 그 판정만 빠지고 나머지는 그대로 돈다.
+      history: fs.existsSync(path.join(ROOT, 'data', 'pickups.history.json'))
+        ? JSON.parse(read('data', 'pickups.history.json')) : null
+    })))
   .replace('/*__CORE__*/', () => read('src', 'core.js'))
   .replace('/*__I18N__*/', () => read('src', 'i18n.js'))
   .replace('/*__OPT__*/', () => read('src', 'optimizer.js'))

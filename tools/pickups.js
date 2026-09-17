@@ -78,6 +78,28 @@ const data = {
 if (!data.pickups.length && !data.steamNews.length)
   skip('뽑아낸 일정이 비어 있습니다 — 기존 저장본을 지키고 넘어갑니다');
 
+// ── 이력 ── 「예상 날짜가 지났는데 스팀에 안 나온 것」은 지금 스냅샷만으로는 못 본다.
+// 갱신기가 지난 항목을 예보에서 지우기 때문이다 — 기라 줄루(CM) 가 그렇게 사라졌다
+// (8/29 에는 09-10 예정으로 있었고, 9/17 에는 예보에도 스팀에도 없다).
+// 그래서 **본 적 있는 예보**를 여기 쌓아 둔다. 한 번 본 것은 날짜를 덮어쓰지 않는다 —
+// 나중 갱신에서 날짜가 밀리면 「처음 약속」이 무엇이었는지가 판단의 기준이라서다.
+const HIST = path.join(ROOT, 'data', 'pickups.history.json');
+const hist = fs.existsSync(HIST) ? JSON.parse(fs.readFileSync(HIST, 'utf8')) : { seen: {} };
+if (!hist.seen) hist.seen = {};
+let added = 0;
+for (const p of data.pickups) {
+  const key = String(p.name || '').trim();
+  if (!key || !p.start) continue;
+  if (!hist.seen[key]) {
+    hist.seen[key] = { firstSeen: data.pickupsUpdated, start: p.start, end: p.end,
+      consoleStart: p.consoleStart || '', tokens: p.tokens == null ? null : p.tokens };
+    added++;
+  }
+}
+hist.updated = data.pickupsUpdated;
+fs.writeFileSync(HIST, JSON.stringify(hist, null, 1), 'utf8');
+console.log('  이력 ' + Object.keys(hist.seen).length + '건' + (added ? ' (새로 ' + added + '건)' : ''));
+
 const next = JSON.stringify(data, null, 1);
 // 줄바꿈(CRLF/LF)까지 비교하면 git 이 체크아웃한 파일은 늘 「갱신」으로 뜬다. 내용만 본다.
 const prev = fs.existsSync(OUT)
