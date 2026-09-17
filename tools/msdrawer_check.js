@@ -177,6 +177,45 @@ const ok = (label, cond, extra) => {
     cls: document.body.className,
     shown: (() => { const b = document.querySelector('#infoBody'); return !!b && !b.hidden; })()
   }));
+  /* ⓘ 를 눌러 정보 칸이 열리면 왼쪽 목록이 좁아져 카드가 **통째로 재배치**된다 —
+     실측으로 첫 카드가 102px 튀었다. 손가락 밑에서 누른 것이 움직이는 셈이라
+     「엉뚱한 게 눌렸다」는 느낌을 준다. 누른 카드는 제자리에 남아야 한다. */
+  const anchored = await pg.evaluate(async () => {
+    /* 앞 시험들이 남긴 상태를 먼저 치운다 — 두 번 헛돌았다.
+       ① 필터·검색이 걸려 있으면 목록이 짧아 스크롤이 안 된다.
+       ② **정보 칸이 이미 열려 있으면** 다시 열어도 배치가 안 바뀌어 잴 것이 없다.
+       둘 다 「되돌려도 통과」로 나타나서, 진단을 찍어 보고서야 알았다. */
+    const close = document.querySelector('#infoClose');
+    if (close && document.body.classList.contains('info-open')) close.click();
+    await new Promise(r => setTimeout(r, 300));
+    const q = document.querySelector('#msQuery');
+    q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true }));
+    for (const box of ['#attrChips', '#costChips', '#levelChips', '#rarityChips', '#viewChips']) {
+      const first = document.querySelector(box + ' .chip');
+      if (first && !first.classList.contains('on')) first.click();
+    }
+    await new Promise(r => setTimeout(r, 400));
+    const grid = document.querySelector('#msList');
+    grid.scrollTop = 400;
+    await new Promise(r => setTimeout(r, 150));
+    if (grid.scrollTop < 100) return { skipped: true, scroll: grid.scrollTop };
+    const card = grid.querySelector('.ms-card');
+    const name = card.dataset.ms;
+    const before = card.getBoundingClientRect().top;
+    card.querySelector('.ms-info').click();
+    await new Promise(r => setTimeout(r, 400));
+    let after = null;
+    for (const c of document.querySelectorAll('#msList .ms-card')) {
+      if (c.dataset.ms === name) { after = c.getBoundingClientRect().top; break; }
+    }
+    return { before: Math.round(before), after: after == null ? null : Math.round(after),
+      cls: document.body.className, scroll: grid.scrollTop, cards: grid.querySelectorAll('.ms-card').length };
+  });
+  ok('ⓘ 를 눌러도 누른 카드가 제자리에 있다',
+    !anchored.skipped && anchored.after != null && Math.abs(anchored.after - anchored.before) <= 2,
+    anchored.skipped ? '목록이 짧아 스크롤이 안 됨 — 검사 못 함(스크롤 ' + anchored.scroll + ')'
+      : JSON.stringify(anchored));
+
   ok('ⓘ 를 누르면 기체 정보가 열린다',
     /info-open/.test(infoOpen.cls) && !/view-build/.test(infoOpen.cls) && infoOpen.shown,
     JSON.stringify(infoOpen));

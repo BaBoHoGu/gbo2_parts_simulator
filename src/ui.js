@@ -1168,6 +1168,7 @@
 
     for (const m of list.slice(0, state.msLimit)) {
       const card = el('div', 'ms-card' + (state.ms === m ? ' sel' : ''));
+      card.dataset.ms = m.MS名;          // 다시 그린 뒤 같은 카드를 다시 찾으려고
       card.append(img(msImg(m.MS名), 'ms', m.MS名));
 
       // 즐겨찾기 별 — 카드 선택과 별개로 토글한다
@@ -1877,7 +1878,13 @@
       const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
       if (!/スラスター/.test(blob)) continue;
       // 어느 쪽으로 움직이는지는 문구로 알 수 있다. 값만 없을 뿐이다.
-      const why = /消費\s*[＋+]\s*\d+\s*[%％]/.test(blob) ? '소비가 **늘어나는** 값이라 넣지 않습니다'
+      /* 「값이 없다」고만 적으면 거짓이 되는 경우가 있다 — 특수 긴급 회피 제어는
+         「3秒間スラスター＆OH復帰速度 2.5倍」처럼 **숫자가 분명히 있다**(사용자 지적).
+         다만 몇 초짜리 순간 효과라 지속 지표(완충 시간·OH 복귀)에 넣을 것이 아니다.
+         못 넣는 것과 없는 것은 다르므로 나눠 적는다. */
+      const why = /[\d.]+\s*倍/.test(blob) && /(回復|復帰|消費)/.test(blob)
+          ? '몇 초짜리 순간 효과(배수)라 지속 지표에는 넣지 않습니다'
+        : /消費\s*[＋+]\s*\d+\s*[%％]/.test(blob) ? '소비가 **늘어나는** 값이라 넣지 않습니다'
         : /[,，、]\s*[-－]?\s*\d+\s*[%％]/.test(blob) && /消費/.test(blob)
           ? 'LV 마다 값이 여럿 적혀 있어 어느 것인지 알 수 없습니다'
         : /増加/.test(blob) ? '소비가 늘어난다고만 적혀 있고 값이 없습니다'
@@ -7312,8 +7319,23 @@
     renderMsList();          // 카드 테두리도 같이 푼다
   }
 
+  /** 목록에서 이 기체 카드가 화면 어디에 있는지(세로). 없으면 null. */
+  function cardTopOf(name) {
+    const grid = $('#msList');
+    if (!grid) return null;
+    for (const c of grid.querySelectorAll('.ms-card')) {
+      if (c.dataset.ms === name) return c.getBoundingClientRect().top;
+    }
+    return null;
+  }
+
   function openInfo(m) {
     if (!m) return;
+    /* 정보 칸이 열리면 왼쪽 목록이 좁아져 카드가 **통째로 재배치**된다 — 실측으로
+       첫 카드가 102px 튀었다. 손가락 밑에서 누른 것이 움직이는 셈이라
+       「i 를 눌렀는데 엉뚱한 게 눌렸다」는 느낌을 준다(전에는 여기에 0.18초 애니메이션까지
+       얹혀 있었다). 누른 카드의 자리를 기억했다가 그린 뒤 스크롤로 되돌려 붙든다. */
+    const wasTop = cardTopOf(m.MS名);
     infoMs = m;
     // 화면을 옮기지 않는다 — 오른쪽 칸을 채울 뿐이다.
     // 좁은 화면에서는 그 칸이 목록 위를 덮는다(CSS 가 body.info-open 을 본다).
@@ -7322,6 +7344,12 @@
     renderInfo();
     // 고른 카드에 테두리를 준다. 목록을 다시 그려야 옛 선택이 풀린다.
     renderMsList();
+    // 재배치로 카드가 움직인 만큼 스크롤을 되돌린다 — 누른 것이 제자리에 남는다.
+    if (wasTop != null) {
+      const nowTop = cardTopOf(m.MS名);
+      const grid = $('#msList');
+      if (nowTop != null && grid) grid.scrollTop += (nowTop - wasTop);
+    }
     // 갤러리 구성은 칸을 여는 김에 받아 둔다(캐시가 있으면 그것부터 보인다)
     if (S && !galleryList.length) {
       galleryList = S.readCache();
