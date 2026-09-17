@@ -153,6 +153,20 @@
     }
   }
 
+  /* 보기 전환(표 / 미래시) — 카드 머리줄 오른쪽. */
+  #screenToken .pick-seg { margin-left: auto; display: inline-flex; flex: 0 0 auto; }
+  #screenToken .pick-seg button {
+    padding: 3px 11px; font-size: 12px; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); cursor: pointer;
+  }
+  #screenToken .pick-seg button:first-child { border-radius: 5px 0 0 5px; }
+  #screenToken .pick-seg button:last-child { border-radius: 0 5px 5px 0; border-left: none; }
+  #screenToken .pick-seg button.on { background: var(--accent); color: var(--panel); border-color: var(--accent); font-weight: 700; }
+  #screenToken h2 .btn { margin-left: 8px; font-size: 12px; padding: 4px 10px; flex: 0 0 auto; }
+  /* `.btn` 이 display: inline-block 을 들고 있어서 브라우저 기본 [hidden](display:none)을
+     이긴다 — hidden 을 걸어 뒀는데도 버튼이 그대로 보였다. 작성자 규칙으로 다시 눌러 준다. */
+  #screenToken [hidden] { display: none !important; }
+
   /* ---- 미래시 ----
      달력처럼 주 단위 칸에 막대를 얹는다. 좁은 화면에서는 가로로 밀어 본다 —
      주를 접어 버리면 「언제가 몰리는지」가 안 보여 그릴 이유가 없어진다. */

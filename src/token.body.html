@@ -156,23 +156,23 @@
       <div id="solveResult"></div>
     </div>
 
-    <!-- 미래시 — 콘솔 공지에서 온 스팀 예상 일정을 달력처럼 한눈에 본다.
-         표(아래 「픽업 스팀 출현 예상」)와 같은 데이터지만, 표는 줄을 읽어야 하고
-         이건 **언제가 비고 언제가 몰리는지**를 보는 용도다. -->
-    <div class="card collapsible" data-ck="future">
-      <h2>🔭 미래시 <button type="button" class="btn" id="futurePng" style="margin-left:auto;font-size:12px;padding:4px 10px;">🖼 이미지로 저장</button></h2>
-      <div class="subtitle" style="margin:-0.5rem 0 0.75rem;">콘솔 공지 <b>+9주(약 2개월)</b> 추정 · 갱신: <span id="futureUpdated">-</span></div>
-      <div id="futureOff"></div>
-      <div class="future-wrap"><div id="futureChart"></div></div>
-    </div>
-
     <div class="card collapsible" data-ck="pickup">
-      <h2>📅 픽업 스팀 출현 예상</h2>
+      <h2>📅 픽업 스팀 출현 예상
+        <span class="seg pick-seg" id="pickView">
+          <button type="button" data-v="table" class="on">표</button><button type="button" data-v="chart">미래시</button>
+        </span>
+        <button type="button" class="btn" id="futurePng" hidden>🖼 이미지로 저장</button>
+      </h2>
       <div class="subtitle" style="margin:-0.5rem 0 0.75rem;">콘솔 개최 <b>+9주(약 2개월) 추정</b> = 스팀 예상 출현일 (비기나 제라 기준 보정) · 실제는 아래 '스팀 실제 픽업'에서 확인 · 갱신: <span id="pickupUpdated">-</span></div>
-      <table class="data-table">
-        <thead><tr><th>픽업</th><th>스팀 예상 기간</th><th>확정</th><th></th></tr></thead>
-        <tbody id="pickupList"><tr><td class="empty" colspan="4">등록된 픽업이 없습니다</td></tr></tbody>
-      </table>
+      <!-- 벗어난 기체 경고는 보기와 상관없이 늘 보인다 — 보기 뒤에 숨길 것이 아니다 -->
+      <div id="futureOff"></div>
+      <div id="pickTable">
+        <table class="data-table">
+          <thead><tr><th>픽업</th><th>스팀 예상 기간</th><th>확정</th><th></th></tr></thead>
+          <tbody id="pickupList"><tr><td class="empty" colspan="4">등록된 픽업이 없습니다</td></tr></tbody>
+        </table>
+      </div>
+      <div class="future-wrap" id="pickChart" hidden><div id="futureChart"></div></div>
     </div>
 
     <div class="card collapsible" data-ck="steam">

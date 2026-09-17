@@ -547,55 +547,9 @@
       + '</div></div>';
   }
 
-  function renderFuture() {
-    setUpdated('futureUpdated', typeof PICKUPS_UPDATED === 'string' ? PICKUPS_UPDATED : '');
-    const chart = $('futureChart'), offBox = $('futureOff');
-    if (!chart) return;
-    if (!PICKUPS.length) {
-      chart.innerHTML = '<div class="empty">받아 둔 일정이 없습니다</div>';
-      if (offBox) offBox.innerHTML = '';
-      return;
-    }
-
-    const today = pd(todayStr());
-    const off = [], rows = [];
-    for (const p of PICKUPS) {
-      const hit = alreadyOnSteam(p);
-      if (hit && hit.start && p.start && hit.start !== p.start && isMech(p.name)) {
-        off.push({ name: pickName(p.name), want: p.start, real: hit.start,
-          days: Math.round((pd(p.start) - pd(hit.start)) / MS_DAY) });
-      } else if (p.start && p.end) rows.push(p);
-    }
-    if (offBox) offBox.innerHTML = offHtml(off, missedFromHistory());
-
-    if (!rows.length) { chart.innerHTML = '<div class="empty">그릴 일정이 없습니다</div>'; return; }
-    rows.sort((a, b) => pd(a.start) - pd(b.start));
-    chart.innerHTML = byMonth(rows).map(([k, v]) => monthBlock(k, v, today)).join('');
-  }
-
-  /** 벗어난 것 알림 — 「나왔는데 날짜가 다르다」와 「지났는데 안 나왔다」 둘 다 적는다. */
-  function offHtml(off, missed) {
-    if (!off.length && !missed.length) return '';
-    let h = '<div class="future-off"><b>⚠ 미래시에서 벗어난 기체 '
-      + (off.length + missed.length) + '건</b>';
-    for (const o of off) {
-      h += '<div class="future-off-row"><span class="fo-nm">' + esc(o.name) + '</span>'
-        + '<span class="fo-d">예상 ' + esc(o.want) + ' → 실제 <b>' + esc(o.real) + '</b></span>'
-        + '<span class="fo-gap">' + (o.days > 0 ? o.days + '일 앞당겨짐' : (-o.days) + '일 밀림') + '</span></div>';
-    }
-    for (const m of missed) {
-      h += '<div class="future-off-row"><span class="fo-nm">' + esc(m.name) + '</span>'
-        + '<span class="fo-d">예상 ' + esc(m.want) + ' 이 지났는데 스팀에 안 나왔습니다</span>'
-        + '<span class="fo-gap">' + m.days + '일째 소식 없음</span></div>';
-    }
-    return h + '</div>';
-  }
-
-  /* 미래시를 그림 한 장으로. 화면 DOM 을 옮겨 주는 라이브러리를 쓰지 않고 캔버스에 직접
-     그린다 — 이 앱이 성능 카드에서 쓰는 방식이고, 밖에서 받아 올 것이 없다.
-     배치는 화면과 같게 맞춘다(왼쪽 이름 칸 + 주 눈금 + 막대). */
-  function futurePng() {
-    if (!PICKUPS.length) { alert('받아 둔 일정이 없습니다'); return; }
+  /* 벗어난 것과 그릴 것을 한 번에 가른다 — 화면(표·타임라인)과 PNG 가 **같은 판정**을
+     쓰게 하려고 한 곳에 둔다. 두 곳에서 따로 세면 언젠가 서로 다른 말을 한다. */
+  function splitPickups() {
     const today = pd(todayStr());
     const off = [], rows = [];
     for (const p of PICKUPS) {
@@ -608,8 +562,48 @@
     for (const m of missedFromHistory()) {
       off.push({ name: m.name, want: m.want, real: null, days: m.days });
     }
-    if (!rows.length) { alert('그릴 일정이 없습니다'); return; }
     rows.sort((a, b) => pd(a.start) - pd(b.start));
+    return { off, rows, today };
+  }
+
+  /** 벗어난 기체 경고. **보기와 상관없이 늘 그린다** — 경고를 보기 뒤에 숨길 것이 아니다. */
+  function renderOff() {
+    const box = $('futureOff');
+    if (!box) return;
+    box.innerHTML = PICKUPS.length ? offHtml(splitPickups().off) : '';
+  }
+
+  function renderFuture() {
+    const chart = $('futureChart');
+    if (!chart) return;
+    if (!PICKUPS.length) { chart.innerHTML = '<div class="empty">받아 둔 일정이 없습니다</div>'; return; }
+    const { rows, today } = splitPickups();
+    if (!rows.length) { chart.innerHTML = '<div class="empty">그릴 일정이 없습니다</div>'; return; }
+    chart.innerHTML = byMonth(rows).map(([k, v]) => monthBlock(k, v, today)).join('');
+  }
+
+  /** 벗어난 것 알림 — 「나왔는데 날짜가 다르다」와 「지났는데 안 나왔다」 둘 다 적는다. */
+  function offHtml(off) {
+    if (!off.length) return '';
+    let h = '<div class="future-off"><b>⚠ 미래시에서 벗어난 기체 ' + off.length + '건</b>';
+    for (const o of off) {
+      h += '<div class="future-off-row"><span class="fo-nm">' + esc(o.name) + '</span>'
+        + '<span class="fo-d">' + (o.real
+          ? '예상 ' + esc(o.want) + ' → 실제 <b>' + esc(o.real) + '</b>'
+          : '예상 ' + esc(o.want) + ' 이 지났는데 스팀에 안 나왔습니다') + '</span>'
+        + '<span class="fo-gap">' + (!o.real ? o.days + '일째 소식 없음'
+          : o.days > 0 ? o.days + '일 앞당겨짐' : (-o.days) + '일 밀림') + '</span></div>';
+    }
+    return h + '</div>';
+  }
+
+  /* 미래시를 그림 한 장으로. 화면 DOM 을 옮겨 주는 라이브러리를 쓰지 않고 캔버스에 직접
+     그린다 — 이 앱이 성능 카드에서 쓰는 방식이고, 밖에서 받아 올 것이 없다.
+     배치는 화면과 같게 맞춘다(왼쪽 이름 칸 + 주 눈금 + 막대). */
+  function futurePng() {
+    if (!PICKUPS.length) { alert('받아 둔 일정이 없습니다'); return; }
+    const { off, rows, today } = splitPickups();
+    if (!rows.length) { alert('그릴 일정이 없습니다'); return; }
 
     const months = byMonth(rows);
 
@@ -1080,12 +1074,37 @@
     });
   });
 
+  /* 보기 전환 — 기본은 표. 고른 것은 기억한다(다음에 열 때 같은 보기로).
+     타임라인은 고를 때 비로소 그린다: 안 보는 동안 23줄짜리 달력을 계속 들고 있을 이유가 없다. */
+  let pickView = store.get('tc_pickview', 'table');
+  if (pickView !== 'chart') pickView = 'table';
+  function applyPickView() {
+    const t = $('pickTable'), c = $('pickChart'), png = $('futurePng');
+    if (!t || !c) return;
+    const chart = pickView === 'chart';
+    t.hidden = chart; c.hidden = !chart;
+    if (png) png.hidden = !chart;
+    const seg = $('pickView');
+    if (seg) [...seg.children].forEach(b => b.classList.toggle('on', b.dataset.v === pickView));
+    if (chart) renderFuture();
+  }
+  const pickSeg = $('pickView');
+  if (pickSeg) pickSeg.addEventListener('click', ev => {
+    const b = ev.target.closest('button[data-v]');
+    if (!b) return;
+    ev.stopPropagation();                 // 카드 머리줄은 접기 토글이다
+    pickView = b.dataset.v;
+    store.set('tc_pickview', pickView);
+    applyPickView();
+  });
+
   const fpng = $('futurePng');
   // 이 버튼은 카드 머리줄(h2) 안에 있다. h2 는 접기 토글이라, 막지 않으면 저장하면서 접힌다.
   if (fpng) fpng.addEventListener('click', ev => { ev.stopPropagation(); futurePng(); });
 
-  renderFuture();
   renderPickups();
+  renderOff();          // 벗어난 기체 경고는 보기와 상관없이 늘 그린다
+  applyPickView();
   renderSteamNews();
   renderLogs();  // 내부의 calc() → renderDeps()가 목표·백금장도 함께 렌더 (중복 렌더 제거)
 })();

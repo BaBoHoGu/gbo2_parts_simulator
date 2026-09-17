@@ -170,8 +170,43 @@ const ok = (label, cond, extra) => {
   ok('카드가 접히고 펴진다', fold.now !== fold.was && fold.back === fold.was, JSON.stringify(fold));
 
   // ── 미래시 ──
+  /* 이제 「픽업 스팀 출현 예상」 카드 안의 보기 전환이다. 기본은 **표**이므로
+     타임라인을 보려면 먼저 「미래시」를 눌러야 한다 — 안 누르고 재면 전부 0 이 나온다. */
+  const viewSeg = await pg.evaluate(() => {
+    const seg = document.querySelector('#pickView');
+    if (!seg) return null;
+    const btns = [...seg.querySelectorAll('button')].map(b => ({ v: b.dataset.v, on: b.classList.contains('on') }));
+    const tableShown = !document.querySelector('#pickTable').hidden;
+    const chartShown = !document.querySelector('#pickChart').hidden;
+    return { btns, tableShown, chartShown };
+  });
+  ok('보기 전환 버튼이 있다', !!viewSeg && viewSeg.btns.length === 2,
+    JSON.stringify(viewSeg));
+  ok('기본 보기는 표다', !!viewSeg && viewSeg.tableShown && !viewSeg.chartShown,
+    JSON.stringify(viewSeg));
+  /* 숨는 쪽도 봐야 한다. 「미래시일 때 보인다」만 보다가 **표 보기에서도 버튼이 그대로
+     보이는 것**을 놓쳤다 — .btn 의 display: inline-block 이 [hidden] 을 이기고 있었다. */
+  ok('표 보기에서는 이미지 저장 버튼이 숨는다',
+    await pg.evaluate(() => {
+      const b = document.querySelector('#futurePng');
+      return !!b && b.getBoundingClientRect().height === 0;
+    }));
+
+  await pg.evaluate(() => document.querySelector('#pickView button[data-v="chart"]').click());
+  await sleep(700);
+  const swapped = await pg.evaluate(() => ({
+    table: !document.querySelector('#pickTable').hidden,
+    chart: !document.querySelector('#pickChart').hidden,
+    png: !document.querySelector('#futurePng').hidden,
+    folded: document.querySelector('[data-ck="pickup"]').classList.contains('collapsed')
+  }));
+  ok('미래시로 바뀐다', swapped.chart && !swapped.table, JSON.stringify(swapped));
+  ok('이미지 저장 버튼은 미래시일 때만 보인다', swapped.png);
+  // 전환 버튼도 카드 머리줄 안에 있다 — 전파를 안 막으면 누를 때 카드가 접힌다
+  ok('보기 전환이 카드를 접지 않는다', !swapped.folded);
+
   const fut = await pg.evaluate(() => {
-    const c = document.querySelector('[data-ck="future"]');
+    const c = document.querySelector('[data-ck="pickup"]');
     if (!c) return { missing: true };
     return {
       bars: c.querySelectorAll('.fw-bar').length,
@@ -188,7 +223,7 @@ const ok = (label, cond, extra) => {
   /* 달 단위로 나뉘어야 한다 — 두 달을 한 줄에 놓으니 복잡하다는 지적을 받아 나눴다.
      한 덩이로 되돌아가면 눈에 잘 안 띄므로 덩이 수와 머리글을 같이 본다. */
   const mb = await pg.evaluate(() =>
-    [...document.querySelectorAll('[data-ck="future"] .fw-month-block .fw-mhead')]
+    [...document.querySelectorAll('[data-ck="pickup"] .fw-month-block .fw-mhead')]
       .map(e => e.textContent.replace(/\s+/g, ' ').trim()));
   ok('미래시가 달 단위로 나뉜다', mb.length >= 2 && mb.every(t => /\d+월/.test(t)),
     mb.join(' | ') || '(덩이 없음)');
@@ -220,7 +255,7 @@ const ok = (label, cond, extra) => {
 
   // 줄 끝에 날짜가 있어야 한다 — 막대만 보면 눈금에서 되짚어야 한다
   const dated = await pg.evaluate(() => {
-    const rows = [...document.querySelectorAll('[data-ck="future"] .fw-rows .fw-row')];
+    const rows = [...document.querySelectorAll('[data-ck="pickup"] .fw-rows .fw-row')];
     return { n: rows.length, blank: rows.filter(r => {
       const d = r.querySelector('.fw-date');
       return !d || !/\d+\/\d+/.test(d.textContent);
@@ -238,7 +273,7 @@ const ok = (label, cond, extra) => {
     tblOrder.length > 3 && tblOrder.every((d, i) => i === 0 || tblOrder[i - 1] <= d),
     tblOrder.slice(0, 4).join(' , '));
   ok('미래시에 오늘 표시가 있다', !!fut.today);
-  ok('이미지 저장 버튼이 있다', !!fut.png);
+
   /* 이름에 섞여 오는 위키 태그가 글자로 보이면 안 된다 — 실제로 「건담 <ruby>DX…」가 그랬다.
      **미래시 라벨만 보면 안 잡힌다** — 태그가 있는 건담 DX 는 「벗어남」으로 빠져서 거기
      안 나온다. 되돌려 보고 나서야 알았다. 토큰 화면 글자를 통째로 훑는다. */
@@ -259,6 +294,17 @@ const ok = (label, cond, extra) => {
     offNames.every(n => !/커스텀 파츠|티켓|키트|리퀘스트/.test(n)),
     offNames.join(' / ') || '(없음)');
 
+  /* 벗어난 기체 경고는 **표 보기에서도** 보여야 한다 — 경고를 보기 뒤에 숨길 것이 아니다. */
+  await pg.evaluate(() => document.querySelector('#pickView button[data-v="table"]').click());
+  await sleep(600);
+  const offInTable = await pg.evaluate(() => {
+    const b = document.querySelector('#futureOff');
+    return !!b && b.getBoundingClientRect().height > 0;
+  });
+  ok('벗어남 경고는 표 보기에서도 보인다', offInTable);
+  await pg.evaluate(() => document.querySelector('#pickView button[data-v="chart"]').click());
+  await sleep(600);
+
   // 이미지가 실제로 만들어지는가 — 버튼만 있고 안 그려지면 소용이 없다
   const pngSize = await pg.evaluate(() => new Promise(res => {
     const orig = HTMLCanvasElement.prototype.toBlob;
@@ -276,7 +322,7 @@ const ok = (label, cond, extra) => {
     JSON.stringify(pngSize));
   // 저장 버튼이 카드 머리줄 안에 있어서, 전파를 안 막으면 저장하면서 카드가 접힌다
   ok('이미지 저장이 카드를 접지 않는다',
-    await pg.evaluate(() => !document.querySelector('[data-ck="future"]').classList.contains('collapsed')));
+    await pg.evaluate(() => !document.querySelector('[data-ck="pickup"]').classList.contains('collapsed')));
 
   ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].slice(0, 3).join(' | '));
 
