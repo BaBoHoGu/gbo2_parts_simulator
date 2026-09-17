@@ -168,6 +168,12 @@
   #screenToken .fw-label.mech { font-weight: 700; }
   #screenToken .fw-label.past { color: var(--dim); font-weight: 400; }
   #screenToken .fw-track { position: relative; flex: 1 1 0; min-width: 0; height: 100%; }
+  /* 줄 끝 날짜 — 막대만 보면 「며칠부터인지」를 위 눈금에서 되짚어야 한다. */
+  #screenToken .fw-date {
+    flex: 0 0 84px; width: 84px; padding-left: 8px;
+    font-size: 11px; color: var(--muted); white-space: nowrap;
+  }
+  #screenToken .fw-date.past { color: var(--dim); }
   /* 「오늘」 이 들어갈 한 줄을 위에 둔다 — 월 이름과 같은 높이면 겹친다. */
   #screenToken .fw-headrow { height: 46px; padding-top: 16px; }
   #screenToken .fw-head { display: flex; border-bottom: 1px solid var(--line); height: 100%; align-items: flex-end; padding-bottom: 3px; }

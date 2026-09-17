@@ -65,11 +65,40 @@ function grab(startMark, endMark) {
 const dateOf = (block, name) =>
   (new RegExp("const " + name + " = '([^']*)'").exec(block) || ['', ''])[1];
 
+/* 픽업은 **목요일에 갈린다.** 받아 온 32건 중 31건이 목→목인데, 딱 하나가 일요일이었다.
+ * 원문을 보니 갱신기가 **공지 게시일**을 개최일로 읽은 것이었다 —
+ * 「2026.07.19 (게시) … 2026년 7월 23일(목) 14:00부터 실시」 인데 07-19 를 집었다.
+ * 그래서 추정 출현일이 09-20(일)이 되어 플린트(09-17목~09-24목) **한가운데서 시작**했다.
+ * 공지는 개최보다 먼저 나오므로 어긋난 날짜는 **다음 목요일로** 민다 — 07-23 → 09-24 가 되어
+ * 원문과 정확히 맞고 겹침도 사라진다. 이미 목요일인 31건은 그대로다.
+ * 원래 값은 startRaw 로 남긴다(고친 사실을 지우지 않는다). */
+const DAY = 86400000;
+function snapToThursday(list) {
+  let fixed = 0;
+  for (const p of list) {
+    if (!p.start) continue;
+    const [y, m, d] = p.start.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (dt.getDay() === 4) continue;                  // 이미 목요일
+    const span = p.end ? Math.round((new Date(...p.end.split('-').map((v, i) => i === 1 ? +v - 1 : +v)) - dt) / DAY) : 7;
+    const add = (4 - dt.getDay() + 7) % 7;            // 다음 목요일까지
+    const ns = new Date(+dt + add * DAY);
+    const ne = new Date(+ns + (span > 0 ? span : 7) * DAY);
+    const f = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0')
+      + '-' + String(x.getDate()).padStart(2, '0');
+    p.startRaw = p.start; p.endRaw = p.end;
+    p.start = f(ns); p.end = f(ne);
+    fixed++;
+  }
+  if (fixed) console.log('  시작 요일을 목요일로 맞춘 항목 ' + fixed + '건');
+  return list;
+}
+
 const pk = grab('// PICKUPS_START', '// PICKUPS_END');
 const sn = grab('// STEAMNEWS_START', '// STEAMNEWS_END');
 const data = {
   pickupsUpdated: dateOf(pk, 'PICKUPS_UPDATED'),
-  pickups: toJson(pk, 'PICKUPS'),
+  pickups: snapToThursday(toJson(pk, 'PICKUPS')),
   steamUpdated: dateOf(sn, 'STEAM_NEWS_UPDATED'),
   steamNews: toJson(sn, 'STEAM_NEWS')
 };

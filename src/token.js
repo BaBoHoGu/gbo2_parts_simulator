@@ -479,6 +479,12 @@
     return null;
   }
 
+  /** 「2026-09-17」 → 「9/17」. 줄 끝에 붙일 짧은 표기 — 연도는 카드 머리글에 이미 있다. */
+  function shortDate(d) {
+    const p = String(d || '').split('-');
+    return p.length === 3 ? (+p[1]) + '/' + (+p[2]) : String(d || '');
+  }
+
   /** 픽업을 달(YYYY-MM)별로 묶는다. 시작일이 낀 달에 넣는다 —
    *  주가 달을 걸치는 경우가 많아 끝일로 나누면 같은 픽업이 두 달에 걸쳐 보인다. */
   function byMonth(list) {
@@ -520,7 +526,9 @@
         + '<div class="fw-track"><div class="fw-bar' + (past ? ' past' : '')
         + '" style="left:' + left.toFixed(3) + '%;width:' + Math.min(width, 100 - left).toFixed(3) + '%">'
         + (p.tokens != null ? '<span class="fw-tok">' + p.tokens + '</span>' : '')
-        + '</div></div></div>';
+        + '</div></div>'
+        + '<div class="fw-date' + (past ? ' past' : '') + '">'
+        + esc(shortDate(p.start)) + '~' + esc(shortDate(p.end)) + '</div></div>';
     }
 
     const tl = (today - first) / (7 * MS_DAY) / weeks * 100;
@@ -530,7 +538,7 @@
       + '<div class="fw-mhead">' + M + '월 <span>' + list.length + '건'
       + (mechN ? ' · 기체 ' + mechN : '') + '</span></div>'
       + '<div class="fw-row fw-headrow"><div class="fw-label"></div>'
-      + '<div class="fw-track fw-head">' + head + '</div>'
+      + '<div class="fw-track fw-head">' + head + '</div><div class="fw-date"></div>'
       + (showToday ? '<div class="fw-todaylab" style="left:' + tl.toFixed(3) + '%">오늘</div>' : '')
       + '</div>'
       + '<div class="fw-rows">' + rows
@@ -620,7 +628,8 @@
     const LAB = 190, CW = 74, PAD = 22;
     const offH = off.length ? 24 + off.length * 24 + 14 : 0;
     const rowH = 30, footH = 34, mHeadH = 26, gridH = 24, mGap = 18;
-    const W = PAD * 2 + LAB + CW * maxWeeks;
+    const DATEW = 104;                 // 줄 끝 날짜 칸 (막대와 붙지 않게 여유를 둔다)
+    const W = PAD * 2 + LAB + CW * maxWeeks + DATEW;
     let H = PAD + 30 + 30 + offH + footH + 8;
     for (const m of monthMeta) H += mHeadH + gridH + m.list.length * rowH + mGap;
 
@@ -693,7 +702,8 @@
         g.fillText(lab, cx - g.measureText(lab).width / 2, gridTop + 15);
       }
       g.strokeStyle = C.line; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(PAD, gridTop + gridH - 3.5); g.lineTo(W - PAD, gridTop + gridH - 3.5); g.stroke();
+      g.beginPath(); g.moveTo(PAD, gridTop + gridH - 3.5);
+      g.lineTo(x0 + maxWeeks * CW, gridTop + gridH - 3.5); g.stroke();
       y = gridTop + gridH;
 
       // 오늘 선 (이 달에 오늘이 낀 경우만)
@@ -708,7 +718,9 @@
       for (const p of m.list) {
         const a = (pd(p.start) - m.first) / (7 * MS_DAY), b = (pd(p.end) - m.first) / (7 * MS_DAY);
         const bx = x0 + Math.max(0, a) * CW;
-        const bw = Math.max(CW, (b - Math.max(0, a)) * CW);
+        // 그 달 눈금 밖으로 나가지 않게 자른다 — 안 자르면 10/29~11/5 처럼 달을 넘는 기간이
+        // 오른쪽 날짜 칸을 침범해 글자와 붙어 버린다(화면 쪽은 이미 잘리고 있었다).
+        const bw = Math.min(Math.max(CW, (b - Math.max(0, a)) * CW), x0 + m.weeks * CW - bx);
         const past = pd(p.end) < today;
         const mech = isMech(p.name);
         g.fillStyle = past ? C.dim : C.text;
@@ -725,6 +737,9 @@
           const t = String(p.tokens);
           g.fillText(t, bx + bw - 7 - g.measureText(t).width, y + 16);
         }
+        // 줄 끝 날짜 — 막대만 보면 「몇 월 며칠부터인지」를 눈금에서 되짚어야 한다
+        g.fillStyle = past ? C.dim : C.muted; g.font = '11px ' + F;
+        g.fillText(shortDate(p.start) + '~' + shortDate(p.end), x0 + maxWeeks * CW + 16, y + 16);
         y += rowH;
       }
       y += mGap;
@@ -759,7 +774,11 @@
     setUpdated('pickupUpdated', typeof PICKUPS_UPDATED === 'string' ? PICKUPS_UPDATED : '');
     const body = $('pickupList');
     if (!PICKUPS.length) { body.innerHTML = '<tr><td class="empty" colspan="4">등록된 픽업이 없습니다</td></tr>'; return; }
-    body.innerHTML = PICKUPS.map((p, i) => {
+    // 빠른 순서로 — 받아 온 차례는 콘솔 공지 순(최근 것부터)이라 표에서는 거꾸로 보인다.
+    // 원본 배열은 건드리지 않는다(목표 추가가 인덱스로 찾아간다) — 보여 줄 때만 정렬한다.
+    const ordered = PICKUPS.map((p, i) => ({ p, i }))
+      .sort((a, b) => String(a.p.start || '') < String(b.p.start || '') ? -1 : 1);
+    body.innerHTML = ordered.map(({ p, i }) => {
       // url은 갱신된 저장본에만 있음 — 없으면 링크 없이 이름만 (구버전 데이터 호환)
       const safe = /^https?:\/\//.test(p.url || '') ? p.url : '';
       const nameCell = safe ? `<a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${esc(pickName(p.name))}</a>` : esc(pickName(p.name));

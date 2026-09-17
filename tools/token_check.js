@@ -199,6 +199,44 @@ const ok = (label, cond, extra) => {
   const hist = await pg.evaluate(() =>
     !!(window.GBO2_PICKUPS && window.GBO2_PICKUPS.history && window.GBO2_PICKUPS.history.seen));
   ok('픽업 이력이 실려 있다', hist);
+
+  /* 픽업은 목요일에 갈린다 — 시작·끝이 맞닿는 건 정상이지만 **한쪽 시작이 다른 쪽
+     한가운데로 들어오면** 안 된다. 실제로 하나 있었다: 갱신기가 공지 게시일(07-19 일)을
+     개최일(07-23 목)로 잘못 읽어 「72시간 한정」이 플린트 기간 중간에서 시작했다. */
+  const overlap = await pg.evaluate(() => {
+    const P = (window.GBO2_PICKUPS && window.GBO2_PICKUPS.pickups) || [];
+    const t = s => { const [y, m, d] = String(s).split('-').map(Number); return +new Date(y, m - 1, d); };
+    const out = [];
+    for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) {
+      const a = P[i], b = P[j];
+      if (!a.start || !a.end || !b.start || !b.end) continue;
+      const as = t(a.start), ae = t(a.end), bs = t(b.start), be = t(b.end);
+      if ((bs > as && bs < ae) || (as > bs && as < be))
+        out.push(a.name + '(' + a.start + ') × ' + b.name + '(' + b.start + ')');
+    }
+    return out;
+  });
+  ok('픽업 기간이 한가운데서 겹치지 않는다', overlap.length === 0, overlap.slice(0, 2).join(' / '));
+
+  // 줄 끝에 날짜가 있어야 한다 — 막대만 보면 눈금에서 되짚어야 한다
+  const dated = await pg.evaluate(() => {
+    const rows = [...document.querySelectorAll('[data-ck="future"] .fw-rows .fw-row')];
+    return { n: rows.length, blank: rows.filter(r => {
+      const d = r.querySelector('.fw-date');
+      return !d || !/\d+\/\d+/.test(d.textContent);
+    }).length };
+  });
+  ok('미래시 줄 끝에 날짜가 있다', dated.n > 3 && dated.blank === 0,
+    dated.n + '줄 중 빈 것 ' + dated.blank);
+
+  // 픽업 예상 표는 빠른 순서로 — 받아 온 차례는 공지 순(최근 것부터)이라 거꾸로 보인다
+  const tblOrder = await pg.evaluate(() =>
+    [...document.querySelectorAll('#pickupList tr')]
+      .map(tr => ((tr.children[1] || {}).textContent || '').match(/\d{4}-\d{2}-\d{2}/))
+      .filter(Boolean).map(m => m[0]));
+  ok('픽업 예상 표가 빠른 순서다',
+    tblOrder.length > 3 && tblOrder.every((d, i) => i === 0 || tblOrder[i - 1] <= d),
+    tblOrder.slice(0, 4).join(' , '));
   ok('미래시에 오늘 표시가 있다', !!fut.today);
   ok('이미지 저장 버튼이 있다', !!fut.png);
   /* 이름에 섞여 오는 위키 태그가 글자로 보이면 안 된다 — 실제로 「건담 <ruby>DX…」가 그랬다.

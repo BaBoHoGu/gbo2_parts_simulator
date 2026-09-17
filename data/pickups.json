@@ -194,10 +194,12 @@
    "name": "【8주년 대감사제】 72시간 한정",
    "consoleStart": "2026-07-19",
    "consoleEnd": "2026-07-26",
-   "start": "2026-09-20",
-   "end": "2026-09-27",
+   "start": "2026-09-24",
+   "end": "2026-10-01",
    "tokens": 75,
-   "url": "https://bo2.ggame.jp/kr/info/?p=191322"
+   "url": "https://bo2.ggame.jp/kr/info/?p=191322",
+   "startRaw": "2026-09-20",
+   "endRaw": "2026-09-27"
   },
   {
    "name": "플린트",
