@@ -153,7 +153,11 @@
   <div class="select-head">
     <div class="select-title">
       <button id="galleryBack" class="back-btn" title="돌아가기">‹ 돌아가기</button>
-      <h1>공유 갤러리</h1>
+      <h1 id="galleryTitle">공유 갤러리</h1>
+      <!-- 구성 순위와 기체 순위는 같은 투표 시스템의 양쪽이다. 화면을 나누지 않고 탭으로 둔다. -->
+      <span class="seg gal-tab" id="galleryTab">
+        <button type="button" data-t="build" class="on">구성</button><button type="button" data-t="ms">기체 티어</button>
+      </span>
       <span class="data-fresh" id="galleryNote"></span>
       <span class="right">
         <button id="galleryUpload" class="btn-primary small">↑ 내 구성 올리기</button>
@@ -167,8 +171,11 @@
       <div class="filter-group"><span class="filter-lb">코스트</span><div class="chips" id="galleryCostChips"></div></div>
     </div>
     <div class="filter-row">
-      <div class="filter-group"><span class="filter-lb">레벨</span><div class="chips" id="galleryLvChips"></div></div>
+      <!-- 기체 티어에서는 레벨을 안 쓴다 — 표는 LV 를 가르지 않고 기체 단위로 센다 -->
+      <div class="filter-group" id="galleryLvGroup"><span class="filter-lb">레벨</span><div class="chips" id="galleryLvChips"></div></div>
       <div class="filter-group"><span class="filter-lb">등급</span><div class="chips" id="galleryRarityChips"></div></div>
+      <div class="filter-group" id="tierSortGroup" hidden><span class="filter-lb">정렬</span><div class="chips" id="tierSortChips"></div></div>
+      <div class="filter-group" id="tierShowGroup" hidden><span class="filter-lb">보기</span><div class="chips" id="tierShowChips"></div></div>
     </div>
     <!-- 이 둘만 기체가 아니라 **구성 자체**의 성질이다 — 카드에 붙은 「무과금」 딱지와
          강화 단계를 그대로 거른다. 서버가 파츠 표로 정한 값이라 카드와 어긋나지 않는다. -->
@@ -180,6 +187,8 @@
 
   </div>
   <div class="gallery-grid" id="galleryResults"></div>
+  <!-- 기체 티어 — 투표(kind:'ms')로 매긴 순위. 갤러리와 같은 필터를 쓴다. -->
+  <div class="tier-list" id="tierResults" hidden></div>
 </section>
 
 <!-- ⑤ 토큰 계산기 — 따로 만들어 쓰던 도구를 화면 하나로 들여왔다.

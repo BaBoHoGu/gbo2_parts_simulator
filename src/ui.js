@@ -4692,6 +4692,157 @@
     return Math.floor(d / 1440) + '일 전';
   };
 
+  /* ===================== 기체 티어 =====================
+     갤러리의 남은 반쪽이다 — 서버 투표가 이미 'build'(구성)와 'ms'(기체) 둘로 나뉘어 있고,
+     기체 표는 **LV 을 가르지 않고 기체 단위**로 센다(그래야 표가 안 흩어진다).
+     여기서는 그 집계를 순위로 세운다. 필터는 갤러리 것을 그대로 나눠 쓴다.
+
+     등수를 매기는 값은 **순수 점수(👍−👎)** 를 기본으로 둔다.
+     비율(👍/전체)은 표가 적을 때 거짓말을 한다 — 한 표만 받아도 100% 가 된다.
+     그래서 비율 정렬은 따로 두되 **최소 표 수**를 걸고, 화면에 그 사실을 적는다. */
+  let tierSort = 'net';        // 'net' 순수 점수 | 'ratio' 추천률 | 'count' 표 많은 순
+  let tierShow = 'voted';      // 'voted' 표 있는 것만 | 'all' 전체
+  const TIER_MIN_VOTES = 5;    // 추천률 정렬에서 「믿을 만하다」고 볼 최소 표 수
+
+  /** 기체 base 이름 → 그 기체를 대표할 최고 LV 자료. 화면에 그림·코스트·등급을 적으려고 쓴다. */
+  const tierRepOf = base => {
+    const arr = msByBase.get(base) || [];
+    return arr[arr.length - 1] || null;
+  };
+
+  function tierRows() {
+    const st = voteState.ms;
+    const tq = T.norm((($('#galleryQuery') || {}).value || '').trim());
+    const out = [];
+    for (const [base, arr] of msByBase) {
+      const rep = arr[arr.length - 1];
+      if (!rep) continue;
+      const [up, down] = st.totals[base] || [0, 0];
+      const total = up + down;
+      if (tierShow === 'voted' && total === 0) continue;
+      // 갤러리와 같은 축으로 거른다 — 레벨만 뺀다(표가 LV 을 안 가른다)
+      if (galleryAttr && rep['属性'] !== galleryAttr) continue;
+      if (galleryCost !== 'all') {
+        const c = Number(rep['コスト']);
+        if (galleryCost === 'low') { if (c > 250) continue; }
+        else if (c !== Number(galleryCost)) continue;
+      }
+      if (galleryRarity !== 'all' && msRarity(rep) !== Number(galleryRarity)) continue;
+      if (tq && !T.norm(T.msName(rep.MS名)).includes(tq) && !T.norm(rep.MS名).includes(tq)) continue;
+      out.push({ base, rep, up, down, total, net: up - down,
+        ratio: total ? up / total : 0 });
+    }
+    const by = {
+      net: (a, b) => b.net - a.net || b.total - a.total,
+      count: (a, b) => b.total - a.total || b.net - a.net,
+      // 표가 적은 것은 뒤로 — 한 표짜리 100% 가 1위가 되면 표가 뜻을 잃는다
+      ratio: (a, b) => {
+        const qa = a.total >= TIER_MIN_VOTES, qb = b.total >= TIER_MIN_VOTES;
+        if (qa !== qb) return qa ? -1 : 1;
+        return b.ratio - a.ratio || b.total - a.total;
+      }
+    }[tierSort];
+    out.sort(by);
+    return out;
+  }
+
+  function renderTier() {
+    const box = $('#tierResults'), note = $('#galleryNote');
+    if (!box) return;
+    box.innerHTML = '';
+    if (!voteState.ms.loaded) {
+      box.append(el('div', 'detail-empty', '표를 받아 오는 중…'));
+      loadVotes('ms');
+      return;
+    }
+    const rows = tierRows();
+    if (note) {
+      note.textContent = rows.length + '기'
+        + (tierShow === 'voted' ? ' · 표를 받은 기체만' : ' · 전체')
+        + (tierSort === 'ratio' ? ' · 추천률은 ' + TIER_MIN_VOTES + '표 이상을 먼저 세웁니다' : '');
+    }
+    if (!rows.length) {
+      box.append(el('div', 'detail-empty',
+        tierShow === 'voted'
+          ? '아직 표를 받은 기체가 없습니다. 「보기: 전체」로 바꿔 마음에 드는 기체에 표를 놓아 주세요.'
+          : '조건에 맞는 기체가 없습니다.'));
+      return;
+    }
+
+    let rank = 0, prevKey = null;
+    for (const r of rows) {
+      // 같은 값이면 같은 등수 — 순위표에서 동점을 억지로 가르면 없는 차이를 만든다
+      const key = tierSort === 'ratio' ? r.ratio + '|' + (r.total >= TIER_MIN_VOTES)
+        : tierSort === 'count' ? r.total : r.net;
+      if (key !== prevKey) { rank = rows.indexOf(r) + 1; prevKey = key; }
+
+      const row = el('div', 'tier-row');
+      row.append(el('div', 'tier-rank' + (rank <= 3 ? ' top' : ''), String(rank)));
+      row.append(img(msImg(r.rep.MS名), 'ms', r.rep.MS名));
+
+      const info = el('div', 'tier-info');
+      const nm = el('div', 'tier-nm', T.msName(r.rep.MS名).replace(/\s*LV\d+$/i, ''));
+      nm.title = r.base;
+      info.append(nm);
+      const meta = el('div', 'tier-meta');
+      meta.append(el('span', 'dot ' + (r.rep['属性'] || '')));
+      meta.append(el('span', '', T.attrName(r.rep['属性']) || '-'));
+      meta.append(el('span', 'cost-badge', r.rep['コスト']));
+      const rr = msRarity(r.rep);
+      if (rr) meta.append(el('span', 'stars', '★'.repeat(rr)));
+      info.append(meta);
+      row.append(info);
+
+      const sc = el('div', 'tier-score');
+      if (r.total) {
+        sc.append(el('b', 'tier-net' + (r.net > 0 ? ' plus' : r.net < 0 ? ' minus' : ''),
+          (r.net > 0 ? '+' : '') + r.net));
+        sc.append(el('span', 'tier-sub', Math.round(r.ratio * 100) + '% · ' + r.total + '표'));
+      } else {
+        sc.append(el('span', 'tier-sub', '표 없음'));
+      }
+      row.append(sc);
+      row.append(voteBar('ms', r.base));
+
+      // 누르면 그 기체 정보로 — 티어표에서 바로 성능을 확인할 수 있어야 쓸모가 있다
+      row.onclick = ev => {
+        if (ev.target.closest('.vote-bar')) return;
+        openGallery(false);
+        openInfo(r.rep);
+      };
+      box.append(row);
+    }
+  }
+
+  /** 갤러리 화면의 보기(구성 / 기체 티어)를 바꾼다. */
+  let galleryTab = 'build';
+  function applyGalleryTab() {
+    const isTier = galleryTab === 'ms';
+    const set = (sel, on) => { const e = $(sel); if (e) e.hidden = !on; };
+    set('#galleryResults', !isTier);
+    set('#tierResults', isTier);
+    set('#tierSortGroup', isTier);
+    set('#tierShowGroup', isTier);
+    set('#galleryLvGroup', !isTier);          // 표는 LV 을 가르지 않는다
+    set('#gallerySortChips', !isTier);
+    const sortG = $('#gallerySortChips');
+    if (sortG && sortG.parentElement) sortG.parentElement.hidden = isTier;
+    for (const sel of ['#galleryFreeChips', '#galleryStageChips']) {
+      const g = $(sel);
+      if (g && g.parentElement) g.parentElement.hidden = isTier;   // 구성 전용 필터
+    }
+    const t = $('#galleryTitle');
+    if (t) t.textContent = isTier ? '기체 티어' : '공유 갤러리';
+    for (const b of $('#galleryTab').querySelectorAll('button')) {
+      b.classList.toggle('on', b.dataset.t === galleryTab);
+    }
+    // 올리기·관리자는 구성 쪽 손잡이다
+    for (const sel of ['#galleryUpload', '#galleryAdmin']) {
+      const b = $(sel); if (b) b.hidden = isTier;
+    }
+    if (isTier) renderTier(); else renderGallery();
+  }
+
   function renderGallery() {
     const box = $('#galleryResults'), note = $('#galleryNote');
     if (!box) return;
@@ -8166,7 +8317,7 @@
     cnt('#uploadDesc', '#uploadDescCount', 60);
     cnt('#uploadAuthor', '#uploadAuthorCount', 12);
     $('#updateBtn').onclick = checkUpdateNow;
-    $('#galleryQuery').oninput = () => renderGallery();
+    $('#galleryQuery').oninput = () => { if (galleryTab === 'ms') renderTier(); else renderGallery(); };
     // 정렬·속성은 기체 선택 화면과 같은 칩으로 (버튼 모양·조작을 통일한다)
     const galChips = (boxSel, items, get, set) => {
       const box = $(boxSel);
@@ -8176,7 +8327,8 @@
           set(it.v);
           [...box.children].forEach(c => c.classList.remove('on'));
           chip.classList.add('on');
-          renderGallery();
+          // 필터는 두 보기가 나눠 쓴다 — 지금 보고 있는 쪽을 다시 그린다
+          if (galleryTab === 'ms') renderTier(); else renderGallery();
         };
         box.append(chip);
       }
@@ -8194,6 +8346,22 @@
     galChips('#galleryCostChips', COST_CHIPS, () => galleryCost, v => { galleryCost = v; });
     galChips('#galleryLvChips', LEVEL_CHIPS, () => galleryLv, v => { galleryLv = v; });
     galChips('#galleryRarityChips', RARITY_CHIPS, () => galleryRarity, v => { galleryRarity = v; });
+    // 기체 티어 전용 칩
+    galChips('#tierSortChips',
+      [{ label: '추천순', v: 'net' }, { label: '추천률', v: 'ratio' }, { label: '표 많은 순', v: 'count' }],
+      () => tierSort, v => { tierSort = v; });
+    galChips('#tierShowChips',
+      [{ label: '표 있는 것만', v: 'voted' }, { label: '전체', v: 'all' }],
+      () => tierShow, v => { tierShow = v; });
+    $('#galleryTab').addEventListener('click', ev => {
+      const b = ev.target.closest('button[data-t]');
+      if (!b) return;
+      galleryTab = b.dataset.t;
+      applyGalleryTab();
+    });
+    // 표가 들어오면 티어표도 다시 그린다 — 갤러리 카드와 같은 훅을 쓴다
+    voteRedraw.ms.push(() => { if (galleryTab === 'ms') renderTier(); });
+
     galChips('#galleryFreeChips',
       [{ label: '전체', v: 'all' }, { label: '무과금', v: 'free' }],
       () => galleryFree, v => { galleryFree = v; });
