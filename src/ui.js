@@ -1747,17 +1747,41 @@
   function thrReadSeg(seg) {
     let m;
     if ((m = THR_ALWAYS_START.exec(seg))) return { key: 'cutInit', v: +m[1], always: true };
-    if ((m = /初期消費量[^\d]{0,12}(\d+)\s*[%％]\s*軽減/.exec(seg)) ||
-        (m = /初期消費量\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
-      return { key: 'cutInit', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
-    if ((m = /継続消費量[^\d]{0,12}(\d+)\s*[%％]\s*軽減/.exec(seg)) ||
-        (m = /継続消費量\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
-      return { key: 'cutRate', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+    /* 「量」이 붙기도 하고 안 붙기도 한다 — 전수로 세어 보니 **79 곳(33 종)** 이 量 없이
+       적혀 있었고 통째로 새고 있었다(V2 의 「スラスター継続消費 －70%」가 그 하나다).
+       「持続」도 같은 뜻으로 쓰인다(Hi-ν). 값이 여럿 붙은 줄(「－60%，－55%，－50%」)은
+       어느 LV 것인지 알 수 없어 **읽지 않는다** — 지어내느니 「계산 안 함」으로 남긴다.
+       ＋(늘어나는 쪽, 인터럽트 가드 등 8곳)도 읽지 않는다. 이 칸은 「경감」 축이라
+       음수로 넣으면 화면에 「초기소비 -25%」로 나와 **줄어드는 것처럼 읽힌다.**
+       방어 자세 중에 붙는 벌점이라 부스트 지속과 뜻이 겹치지도 않는다.
+       대신 「계산 안 함」 줄에 늘어나는 값이라고 적어 보이기는 한다. */
+    const MULTI = /[,，、]\s*[-－＋+]?\s*\d+\s*[%％]/;          // 값이 여럿인 줄
+    const PLUS = /消費\s*[＋+]\s*\d+\s*[%％]/;                  // 늘어나는 쪽
+    if (!MULTI.test(seg) && !PLUS.test(seg)) {
+      if ((m = /初期消費量?[^\d]{0,12}(\d+)\s*[%％]\s*軽減/.exec(seg)))
+        return { key: 'cutInit', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+      if ((m = /初期消費量?\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
+        return { key: 'cutInit', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+      if ((m = /(?:継続|持続)消費量?[^\d]{0,12}(\d+)\s*[%％]\s*軽減/.exec(seg)))
+        return { key: 'cutRate', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+      if ((m = /(?:継続|持続)消費量?\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
+        return { key: 'cutRate', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+      // 「スラ消費」 줄임말 — 高速移動開始時 에 붙으므로 초기소비다
+      if ((m = /高速移動開始時のスラ消費\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
+        return { key: 'cutInit', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
+    }
     if ((m = /回復速度[^\d]{0,12}(\d+)\s*[%％]\s*(?:上昇|増加)/.exec(seg)) ||
         (m = /回復速度\s*[+＋]\s*(\d+)\s*[%％]/.exec(seg)))
       return { key: 'recover', v: +m[1], always: false };
-    if ((m = /オーバーヒート[^]{0,20}?回復時間[^\d]{0,12}(\d+)\s*[%％]\s*短縮/.exec(seg)))
-      return { key: 'oh', v: +m[1], always: false };
+    /* OH 복귀는 「短縮」으로도 「－N%」로도 적는다. 다만 **兵装** 이 낀 줄은 무장의 OH 지
+       기체 스러스터의 OH 가 아니다 — 「対象兵装のリロード＆オーバーヒート復帰時間 －50%」를
+       스러스터로 읽을 뻔했다. */
+    if (!/兵装/.test(seg)) {
+      if ((m = /オーバーヒート[^]{0,20}?回復時間[^\d]{0,12}(\d+)\s*[%％]\s*短縮/.exec(seg)))
+        return { key: 'oh', v: +m[1], always: false };
+      if ((m = /オーバーヒート(?:から)?(?:の)?(?:復帰|回復)時間\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
+        return { key: 'oh', v: +m[1], always: false };
+    }
     /* 「…을 쓰기 시작할 때」 드는 몫은 초기소비다. 계속 소비(高速移動中)와 같은 축으로
        읽으면 한 스킬 안에서 55%+50% 처럼 더해져 100% 를 넘는다(空中制御プログラム LV4).
 
@@ -1853,7 +1877,10 @@
       const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
       if (!/スラスター/.test(blob)) continue;
       // 어느 쪽으로 움직이는지는 문구로 알 수 있다. 값만 없을 뿐이다.
-      const why = /増加/.test(blob) ? '소비가 늘어난다고만 적혀 있고 값이 없습니다'
+      const why = /消費\s*[＋+]\s*\d+\s*[%％]/.test(blob) ? '소비가 **늘어나는** 값이라 넣지 않습니다'
+        : /[,，、]\s*[-－]?\s*\d+\s*[%％]/.test(blob) && /消費/.test(blob)
+          ? 'LV 마다 값이 여럿 적혀 있어 어느 것인지 알 수 없습니다'
+        : /増加/.test(blob) ? '소비가 늘어난다고만 적혀 있고 값이 없습니다'
         : /回復速度|復帰速度/.test(blob) ? '회복·복귀가 빨라진다고만 적혀 있고 값이 없습니다'
         : /軽減|減少/.test(blob) ? '소비가 줄어든다고만 적혀 있고 값이 없습니다'
         : '수치가 적혀 있지 않습니다';

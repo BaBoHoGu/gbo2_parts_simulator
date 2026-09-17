@@ -65,6 +65,45 @@ const LIST = process.argv.includes('--list');
     return out;
   });
   if (!rows) { console.log('FAIL  앱이 thrusterSkillsOf 를 내보내지 않습니다 (GBO2UiTest)'); await br.close(); process.exit(1); }
+
+  /* ── 「量」이 없는 표기 ──
+     설명은 「継続消費量 －70%」로도 「継続消費 －70%」로도 적힌다. 파서가 量 을 요구해
+     **79 곳(33 종)** 이 통째로 새고 있었다 — 사용자가 V2 의 「スラスター継続消費 －70%」를
+     보고 「소비 감소 아니냐」고 짚어 드러났다.
+     값이 안 잡히면 경감을 못 읽어 부스트 지속이 **짧게** 나오고 아무도 모른다.
+     아는 기체를 값까지 박아 놓고 본다. 「持続」·OH 의 「－N%」 꼴도 같이 본다.
+     (재는 것은 브라우저가 살아 있을 때 해야 한다 — 판정은 아래 ok 가 생긴 뒤에.) */
+  const KNOWN = [
+    { ms: 'V2ガンダム', skill: 'M・ドライブ・ユニット制御機構', key: 'cutRate', v: 70 },
+    { ms: 'Hi-νガンダム', skill: 'サイコフレーム共振', key: 'cutRate', v: 50 },
+    { ms: 'ヴィクトリーガンダム', skill: 'ミノフスキー・フライト・システム', key: 'cutInit', v: 10 },
+    { ms: 'Ζガンダム3号機P2型', skill: 'サイコ・ニュートライザー', key: 'oh', v: 50 }
+  ];
+  const known = await pg.evaluate(list => {
+    const t = window.GBO2UiTest;
+    return list.map(w => {
+      const ms = t.msData().filter(m => m.MS名.replace(/_LV\d+$/, '') === w.ms).pop();
+      if (!ms) return Object.assign({}, w, { got: '(기체 없음)' });
+      for (const form of ['normal', '変形時']) {
+        const hit = (t.thrusterSkillsOf(ms, t.msLevel(ms), form) || [])
+          .find(x => x.name === w.skill && x.key === w.key);
+        if (hit) return Object.assign({}, w, { got: hit.v });
+      }
+      return Object.assign({}, w, { got: '(못 읽음)' });
+    });
+  }, KNOWN);
+
+  /* 늘어나는 값(＋)은 읽지 않는다 — 이 칸은 「경감」 축이라 음수로 넣으면 화면에
+     「초기소비 -25%」로 나와 줄어드는 것처럼 읽힌다. 「계산 안 함」으로 남긴다. */
+  const plusRead = await pg.evaluate(() => {
+    const t = window.GBO2UiTest;
+    const ms = t.msData().filter(m => /^FAガンダムMk-Ⅱ_LV/.test(m.MS名)).pop();
+    if (!ms) return '(기체 없음)';
+    const hit = (t.thrusterSkillsOf(ms, t.msLevel(ms), 'normal') || [])
+      .find(x => x.name === 'インターラプトガード');
+    return hit ? ('읽어 버림 ' + hit.key + ' ' + hit.v) : null;
+  });
+
   await br.close();
 
   // 이름+LV+효과 단위로 접는다
@@ -155,6 +194,12 @@ const LIST = process.argv.includes('--list');
       console.log('  ' + (x.ko || x.name).padEnd(24) + String(x.n).padStart(4) + '기  '
         + (x.cond || '상시').padEnd(7) + x.key + ' ' + x.v + '%\n        「' + x.seg + '」');
   }
+
+  for (const k of known) {
+    ok('「量」 없는 표기를 읽는다 — ' + k.ms + ' / ' + k.key,
+      k.got === k.v, '기대 ' + k.v + ' · 실제 ' + k.got);
+  }
+  ok('늘어나는 값(＋)은 읽지 않는다', plusRead === null, String(plusRead));
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
