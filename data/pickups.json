@@ -2,6 +2,15 @@
  "pickupsUpdated": "2026-09-17",
  "pickups": [
   {
+   "name": "카풀(CN) & 카풀",
+   "consoleStart": "2026-09-17",
+   "consoleEnd": "2026-09-24",
+   "start": "2026-11-19",
+   "end": "2026-11-26",
+   "tokens": null,
+   "url": "https://bo2.ggame.jp/kr/info/?p=197168"
+  },
+  {
    "name": "정비사 증원 티켓[★★★]",
    "consoleStart": "2026-09-17",
    "consoleEnd": "2026-09-24",
@@ -200,19 +209,31 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=191322",
    "startRaw": "2026-09-20",
    "endRaw": "2026-09-27"
-  },
-  {
-   "name": "플린트",
-   "consoleStart": "2026-07-16",
-   "consoleEnd": "2026-07-23",
-   "start": "2026-09-17",
-   "end": "2026-09-24",
-   "tokens": 120,
-   "url": "https://bo2.ggame.jp/kr/info/?p=191177"
   }
  ],
  "steamUpdated": "2026-09-17",
  "steamNews": [
+  {
+   "name": "플린트",
+   "start": "2026-09-17",
+   "end": "2026-09-24",
+   "tokens": 120,
+   "url": "https://store.steampowered.com/news/app/1367080/view/690894858003415053?l=koreana"
+  },
+  {
+   "name": "건담 발바토스 루프스 LV1 & LV2",
+   "start": "2026-09-17",
+   "end": "2026-09-24",
+   "tokens": null,
+   "url": "https://store.steampowered.com/news/app/1367080/view/690894858003415053?l=koreana"
+  },
+  {
+   "name": "건담 발바토스 루프스 LV2",
+   "start": "2026-09-17",
+   "end": "2026-09-24",
+   "tokens": 180,
+   "url": "https://store.steampowered.com/news/app/1367080/view/690894858003415053?l=koreana"
+  },
   {
    "name": "리그 콘티오",
    "start": "2026-09-10",
