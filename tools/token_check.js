@@ -153,6 +153,22 @@ const ok = (label, cond, extra) => {
   });
   ok('입력칸이 어두운 테마를 따른다', pale.length === 0, pale.slice(0, 4).join(' / '));
 
+  // ── 카드 접기 ── 눌러서 실제로 접히는지 본다.
+  // 「UI 만 있고 안 먹는」 상태가 실제로 있었다 — 계산기 스크립트가 두 벌 실려
+  // 리스너가 둘이라 한 번 누르면 두 번 토글돼 제자리로 돌아왔다.
+  const fold = await pg.evaluate(async () => {
+    const c = document.querySelector('#screenToken .card.collapsible');
+    const h = c.querySelector('h2');
+    const was = c.classList.contains('collapsed');
+    h.click();
+    await new Promise(r => setTimeout(r, 120));
+    const now = c.classList.contains('collapsed');
+    h.click();                                    // 원래대로 돌려 놓는다
+    await new Promise(r => setTimeout(r, 120));
+    return { was, now, back: c.classList.contains('collapsed') };
+  });
+  ok('카드가 접히고 펴진다', fold.now !== fold.was && fold.back === fold.was, JSON.stringify(fold));
+
   ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].slice(0, 3).join(' | '));
 
   await br.close();

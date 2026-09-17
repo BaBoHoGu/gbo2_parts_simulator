@@ -1150,10 +1150,7 @@
     const countBox = view.count ? $(view.count) : null;
     // 고른 것으로 볼 기준과 눌렀을 때 할 일은 자리마다 다르다.
     const isSel = view.isSel || (m => !!(infoMs && infoMs.MS名 === m.MS名));
-    const onPick = view.onPick || (m => {
-      if (infoMs && infoMs.MS名 === m.MS名) { infoGoBuild(); return; }
-      openInfo(m);
-    });
+    const onPick = view.onPick || (m => { selectMs(m); });
     box.innerHTML = '';
     const list = filteredMs();
 
@@ -1193,13 +1190,24 @@
       meta.append(el('span', 'cost-badge', m.コスト));
       const r = msRarity(m);
       if (r) meta.append(el('span', 'stars', '★'.repeat(r)));
+
+      // ⓘ — 기체 정보를 본다. 카드 본체는 곧바로 파츠로 가므로, 훑어보고 싶을 때만 누른다.
+      // (예전에는 카드를 누르면 늘 정보가 먼저 떠서, 아는 기체를 고를 때마다 한 번 더 눌러야 했다.)
+      // **등급 줄 안에** 넣는다 — 절대 위치로 바닥에서 띄우면 카드 높이가 달라지는 화면에서
+      // 줄과 어긋난다. 여기 두면 세로는 구조가 맞춰 주고, 가로만 ★ 에 맞추면 된다.
+      const ib = el('button', 'ms-info', 'ⓘ');
+      ib.title = T.msName(m.MS名) + ' 정보 보기';
+      ib.setAttribute('aria-label', '기체 정보');
+      ib.onclick = ev => { ev.stopPropagation(); openInfo(m); };
+      meta.append(ib);
+
       info.append(meta);
 
       card.append(info);
 
-      // 기체 선택 화면에서는 오른쪽 칸에 정보가 나오고, 파츠로는 거기서 넘어간다.
-      // 이미 고른 카드를 또 누르면 곧바로 파츠로 간다 — 아는 기체를 고를 때
-      // 두 번 누르는 게 번거로우니 지름길을 둔다. 서랍에서는 곧바로 기체를 바꾼다.
+      // 카드 본체를 누르면 **곧바로 파츠 적용**으로 간다. 정보는 ⓘ 로 따로 연다 —
+      // 기체를 아는 사람이 대부분이라, 매번 정보를 거치게 하면 한 번씩 더 누르게 된다.
+      // 서랍에서는 그 자리에서 기체를 바꾼다.
       card.classList.toggle('sel', isSel(m));
       card.onclick = () => onPick(m);
       box.append(card);
@@ -1806,6 +1814,42 @@
         out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '',
           key: r.key, v: r.v, cond: c, env, seg });
       }
+    }
+    return out;
+  }
+
+  /**
+   * 스러스터를 건드린다고 **말은 하는데** 계산에 넣을 수치가 없는 스킬들.
+   *
+   * 왜 따로 내미는가 — V2 건담은 スラスター 가 들어간 스킬이 넷인데 칸에는 하나만 떴다.
+   * 나머지 셋(플랩 부스터·특수 긴급 회피 제어·M 드라이브)은 「軽減される」「増加する」처럼
+   * **몇 %인지 안 적혀 있어** 조용히 버려지고 있었다. 버리는 것 자체는 맞다 —
+   * 없는 숫자를 지어내면 부스트 지속이 거짓이 된다. 틀린 것은 **말없이** 버린 쪽이다.
+   * 그러면 쓰는 사람은 앱이 그 스킬을 아는지 모르는지 알 길이 없다.
+   * 파츠 쪽 UNMODELLED_FX 와 같은 방식으로, 이름과 이유만 적어 둔다.
+   */
+  function thrusterUnmodelled(ms, lv, form) {
+    if (!ms) return [];
+    const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || [], form);
+    const groups = new Map();
+    for (const mode of modes) for (const sk of (mode.skills || [])) {
+      if (!groups.has(sk.name)) groups.set(sk.name, []);
+      groups.get(sk.name).push(sk);
+    }
+    // 수치를 읽어 낸 스킬은 이미 칸에 있다 — 그것들은 뺀다.
+    const modelled = new Set(thrusterSkillsOf(ms, lv, form).map(x => x.name));
+    const out = [];
+    for (const cands of groups.values()) {
+      const sk = pickByMsLv(cands, lv);
+      if (!sk || modelled.has(sk.name)) continue;
+      const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
+      if (!/スラスター/.test(blob)) continue;
+      // 어느 쪽으로 움직이는지는 문구로 알 수 있다. 값만 없을 뿐이다.
+      const why = /増加/.test(blob) ? '소비가 늘어난다고만 적혀 있고 값이 없습니다'
+        : /回復速度|復帰速度/.test(blob) ? '회복·복귀가 빨라진다고만 적혀 있고 값이 없습니다'
+        : /軽減|減少/.test(blob) ? '소비가 줄어든다고만 적혀 있고 값이 없습니다'
+        : '수치가 적혀 있지 않습니다';
+      out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '', why, seg: blob.slice(0, 160) });
     }
     return out;
   }
@@ -3050,7 +3094,8 @@
       const all = thrusterSkillsOf(state.ms, lv, state.form);
       const conds = all.filter(x => x.cond);
       const always = all.filter(x => !x.cond);
-      if (conds.length || always.length) {
+      const unmod = thrusterUnmodelled(state.ms, lv, state.form);
+      if (conds.length || always.length || unmod.length) {
         const condKeys = [...new Set(conds.map(thrKeyOf))];
         const onCount = condKeys.filter(k => state.thrusterOn.has(k)).length;
         const head = el('button', 'dura-row stg-head' + (thrSkillOpen ? ' open' : ''));
@@ -3097,6 +3142,15 @@
           lab.append(box, el('span', 'stg-nm', g.ko),
             el('span', 'stg-tag', g.fx.map(f => THR_KEY_KO[f.key] + ' ' + f.v + '%').join(' · ')),
             el('span', 'stg-cond', g.cond + (g.env ? '·' + (g.env === 'space' ? '우주' : '지상') : '')));
+          wrap.append(lab);
+        }
+        // 수치가 없어 못 넣는 것들 — 체크할 수 없다. 있다는 것만 알린다.
+        for (const u of unmod) {
+          const lab = el('div', 'stg-chk stg-unmod');
+          lab.title = u.seg;
+          lab.append(el('span', 'stg-nm', u.ko + (u.lv ? ' ' + u.lv : '')),
+            el('span', 'stg-tag', '계산 안 함'),
+            el('span', 'stg-cond', u.why));
           wrap.append(lab);
         }
         body.append(wrap);

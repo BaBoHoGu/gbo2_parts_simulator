@@ -171,10 +171,17 @@ async function runView(view) {
     await pg.addStyleTag({ content: INSET_CSS });     // ③ 검사를 위해 상단 인셋 강제
     await step(pg, view, '선택화면');
 
-    // ── 기체 정보 칸 (기체 카드를 누르면 오른쪽에 열린다) ──
+    // ── 기체 정보 칸 (카드의 ⓘ 를 누르면 오른쪽에 열린다) ──
     // 스크롤되는 세로 flex 상자라 자식이 찌그러지기 쉽다 — 폰 폭에서 기체 띠가
     // 306px → 2px 로 눌려 그림·이름이 통째로 사라진 적이 있다. 높이를 직접 잰다.
-    await pg.evaluate(() => { const c = document.querySelector('.ms-card'); if (c) c.click(); });
+    //
+    // **카드 본체가 아니라 ⓘ 다.** 카드를 누르면 이제 곧바로 파츠 적용으로 넘어간다 —
+    // 예전 동선(카드 → 정보)을 그대로 두었더니 이 점검이 빈 값을 읽고 실패했다.
+    await pg.evaluate(() => {
+      const b = document.querySelector('.ms-card .ms-info');
+      if (b) b.click();
+      else { const c = document.querySelector('.ms-card'); if (c) c.click(); }   // 옛 배치도 받아 준다
+    });
     await sleep(1400);
     const mi = await pg.evaluate(() => {
       const card = document.querySelector('.mi-card');

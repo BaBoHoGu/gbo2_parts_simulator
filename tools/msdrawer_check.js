@@ -136,6 +136,47 @@ const ok = (label, cond, extra) => {
   const after2 = await pg.evaluate(() => document.querySelectorAll('#msDrawerList .ms-card').length);
   ok('닫힌 서랍은 다시 그리지 않는다', after2 === stale.n0, '전 ' + stale.n0 + ' → 후 ' + after2);
 
+  // ── 기체 카드: 본체는 바로 파츠로, ⓘ 로만 정보를 연다 ──
+  // 자리는 사용자가 정했다 — 가로는 즐겨찾기 ★, 세로는 등급(★★★) 줄.
+  // 바닥에서 띄워 잡으면 카드 높이가 달라질 때 어긋나고, 등급 줄 안에 그냥 넣으면
+  // 줄이 접혀 카드가 커진다. 둘 다 실제로 밟았으므로 **자리까지** 잰다.
+  await pg.evaluate(() => document.querySelector('#backToSelect').click());
+  await sleep(900);
+  const card = await pg.evaluate(() => {
+    const c = document.querySelector('#msList .ms-card');
+    const cb = c.getBoundingClientRect();
+    const g = sel => { const e = c.querySelector(sel); if (!e) return null;
+      const b = e.getBoundingClientRect();
+      return { right: b.right - cb.right, midY: b.top + b.height / 2 - cb.top }; };
+    return { fav: g('.ms-fav'), info: g('.ms-info'), stars: g('.stars'), h: cb.height };
+  });
+  ok('카드에 ⓘ 가 있다', !!card.info);
+  if (card.info && card.fav) {
+    ok('ⓘ 가 ★ 와 같은 가로에 있다', Math.abs(card.info.right - card.fav.right) <= 2,
+      '차 ' + Math.round(Math.abs(card.info.right - card.fav.right)) + 'px');
+  }
+  if (card.info && card.stars) {
+    ok('ⓘ 가 등급 줄과 같은 세로에 있다', Math.abs(card.info.midY - card.stars.midY) <= 3,
+      '차 ' + Math.round(Math.abs(card.info.midY - card.stars.midY)) + 'px');
+  }
+  ok('카드가 한 줄 높이를 지킨다', card.h <= 84, '높이 ' + Math.round(card.h) + 'px');
+
+  await pg.evaluate(() => document.querySelector('#msList .ms-card').click());
+  await sleep(1100);
+  ok('카드를 누르면 곧바로 파츠로 간다',
+    await pg.evaluate(() => /view-build/.test(document.body.className)));
+  await pg.evaluate(() => document.querySelector('#backToSelect').click());
+  await sleep(900);
+  await pg.evaluate(() => document.querySelector('#msList .ms-card .ms-info').click());
+  await sleep(1000);
+  const infoOpen = await pg.evaluate(() => ({
+    cls: document.body.className,
+    shown: (() => { const b = document.querySelector('#infoBody'); return !!b && !b.hidden; })()
+  }));
+  ok('ⓘ 를 누르면 기체 정보가 열린다',
+    /info-open/.test(infoOpen.cls) && !/view-build/.test(infoOpen.cls) && infoOpen.shown,
+    JSON.stringify(infoOpen));
+
   ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].slice(0, 2).join(' | '));
   await br.close();
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

@@ -214,6 +214,15 @@ const html = read('src', 'index.html')
   .replace('/*__TOKEN__*/', () => read('src', 'token.js'))
   .replace('/*__TOKEN_BODY__*/', () => read('src', 'token.body.html'));
 
+// 토큰 계산기 본문에 <script> 가 들어 있으면 계산기가 **두 벌** 돌아간다 —
+// 원본 문서는 <body> 안에 스크립트를 갖고 있어서, 본문을 다시 떠 오면 딸려 온다.
+// 두 벌이 돌면 클릭 리스너가 둘이라 카드 접기가 두 번 토글돼 제자리로 돌아온다
+// (UI 만 있고 안 먹는 것처럼 보인다). 조용히 지나가면 못 찾는 부류라 빌드에서 막는다.
+// 주석에 적힌 글자에 걸리면 안 된다 — 이 함정을 적어 둔 주석이 바로 그 자리에 있다.
+if (/<script[\s>]/i.test(read('src', 'token.body.html').replace(/<!--[\s\S]*?-->/g, ''))) {
+  throw new Error('src/token.body.html 에 <script> 가 있습니다 — 계산기가 두 벌 실립니다. 스크립트는 src/token.js 에만 두세요.');
+}
+
 for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__SHARE__', '__UI__',
   '__TOKEN_CSS__', '__TOKEN__', '__TOKEN_BODY__', '__PICKUPS__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
