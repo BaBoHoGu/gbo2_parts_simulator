@@ -1445,6 +1445,13 @@ input[type="search"], input[type="text"] { width: 100%; }
   .part-list { max-height: 56vh; }
 }
 
+/* 노트북 폭(1400px 아래) — 버튼을 7개로 줄이고도 한 줄에 못 섰다.
+   재 보니 버튼이 아닌 것이 462px 이었다(브랜드 288 · 단계 174). 장식인 부제부터 접는다.
+   1280px 에서 1,309px → 한 줄에 들어온다. */
+@media (max-width: 1400px) {
+  .topbar .brand span { display: none; }
+}
+
 /* 좁은 화면(모바일) */
 @media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .topbar { padding: 8px 10px; }
@@ -2056,7 +2063,13 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 /* ── 모바일 상단바: 보조 버튼을 「⋯」 메뉴로 ──
    9개를 가로 스크롤 스트립에 밀어 넣어 놓아, 폰에서 저장·비교·공유 따위가
    옆으로 밀려 보이지도 닿지도 않았다. */
-.topbar-more { display: none; font-size: var(--fs-2xl); line-height: 1; padding: 4px 12px; }
+/* 메뉴 항목의 원본으로만 쓰는 버튼 — 상단바에는 절대 안 보인다.
+   (메뉴가 이 버튼의 글자·설명을 읽어 만들고, 누르면 이것을 click 한다) */
+.topbar .in-menu { display: none !important; }
+/* 「이 구성에 하는 일」과 「다녀오는 곳」 사이 칸막이 */
+.tb-sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; flex: 0 0 auto; }
+
+.topbar-more { display: inline-flex; align-items: center; font-size: var(--fs-2xl); line-height: 1; padding: 4px 12px; }
 @media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .topbar-more { display: inline-flex; align-items: center; }
   .topbar .in-more { display: none !important; }
@@ -2927,7 +2940,9 @@ body.drawer-open .m-actionbar { display: none !important; }
 .sel-2col {
   flex: 1; min-height: 0;
   display: grid; grid-template-columns: 1fr;
-  transition: grid-template-columns .18s ease;
+  /* 전에는 .18s 로 칸이 스르르 열렸다. 그런데 **여는 동안 왼쪽 칸이 줄어들어** 손가락 밑에서
+     카드가 움직인다 — ⓘ 를 눌렀는데 카드가 눌려 파츠로 넘어가는 원인이었다(사용자 확인).
+     보기 좋자고 누른 것이 딴 데로 가면 안 된다. 즉시 바꾼다. */
 }
 body.info-open .sel-2col { grid-template-columns: 4fr 6fr; }
 /* 왼쪽 칸 = 머리줄(제목·필터·검색) + 목록. 머리줄이 위를 가로지르지 않으므로

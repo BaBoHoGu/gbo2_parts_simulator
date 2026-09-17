@@ -8581,42 +8581,83 @@
     toast(viewMode === 'wide' ? '넓게 보기 — 두 손가락으로 키울 수 있습니다' : '크게 보기');
   }
 
-  const TOPBAR_MORE = ['#viewModeBtn', '#save', '#load', '#codexBtn', '#galleryBtn', '#uploadBtn', '#compareBtn', '#share', '#pngBtn', '#importBtn', '#ownedBtn', '#updateBtn'];
+  /* 상단바를 뜻으로 나눈다.
+       왼쪽 = 이 구성에 하는 일 · 오른쪽 = 다녀오는 곳.
+     버튼 14개(폭 1,282px)가 1500·1280px 에서 두 줄로 접히던 것을 7개로 줄인다.
+
+     `in-menu` 는 **상단바에 절대 안 보이고** 메뉴 항목의 원본으로만 쓴다.
+     `in-more` 는 좁은 화면에서만 접힌다(기존 규칙 그대로).
+     어느 쪽이든 메뉴 항목이 원본을 click() 하므로 동작·비활성 상태가 한 벌이다. */
+  const EXPORT_MENU = ['#save', '#share', '#pngBtn', '#uploadBtn'];
+  const MORE_MENU = ['#load', '#importBtn', '#ownedBtn', '#updateBtn', '#viewModeBtn'];
+  // 좁은 화면에서는 이것들도 「⋯」로 접는다 — 폰 상단바에 여덟 개는 못 선다
+  const MOBILE_FOLD = ['#compareBtn', '#galleryBtn', '#codexBtn', '#tokenBtn'];
+
+  /** 원본 버튼들을 항목으로 하는 메뉴를 연다. 이미 열려 있으면 닫는다. */
+  function openTopbarMenu(anchor, selectors) {
+    const old = document.querySelector('.more-menu');
+    const wasMine = old && old.dataset.for === anchor.id;
+    if (old) old.remove();
+    if (wasMine) return;
+    const menu = el('div', 'png-menu more-menu');
+    menu.dataset.for = anchor.id;
+    const onSelect = document.body.classList.contains('view-select');
+    let n = 0;
+    for (const sel of selectors) {
+      const src = $(sel);
+      if (!src) continue;
+      if (onSelect && src.classList.contains('step-only')) continue;   // 기체 선택 화면에선 뜻이 없다
+      if (src.dataset.phoneOnly && !isPhoneWidth()) continue;          // 태블릿·PC 에선 의미 없는 항목
+      const it = el('button', 'png-menu-item');
+      it.append(el('span', 'pm-t', src.textContent.trim()));
+      if (src.title) it.append(el('span', 'pm-s', src.title));
+      it.onclick = () => { menu.remove(); src.click(); };
+      menu.append(it);
+      n++;
+    }
+    if (!n) return;
+    document.body.append(menu);
+    const rc = anchor.getBoundingClientRect();
+    menu.style.top = (rc.bottom + 4) + 'px';
+    menu.style.left = Math.max(6, Math.min(rc.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+    setTimeout(() => document.addEventListener('click', function h(e) {
+      if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); }
+    }), 0);
+  }
+
   function setupTopbarOverflow() {
-    const bar = document.querySelector('.topbar'); if (!bar) return;
-    for (const sel of TOPBAR_MORE) { const b = $(sel); if (b) b.classList.add('in-more'); }
+    const bar = document.querySelector('.topbar');
+    if (!bar) return;
+    for (const sel of MORE_MENU.concat(EXPORT_MENU)) {
+      const b = $(sel);
+      if (b && sel !== '#viewModeBtn') b.classList.add('in-menu');
+    }
     const vm = $('#viewModeBtn');
-    if (vm) vm.onclick = toggleViewMode;
+    if (vm) { vm.onclick = toggleViewMode; vm.classList.add('in-menu'); }
     applyViewMode();
+    for (const sel of MOBILE_FOLD) { const b = $(sel); if (b) b.classList.add('in-more'); }
+
+    const ex = $('#exportMenuBtn');
+    if (ex) ex.onclick = ev => { ev.stopPropagation(); openTopbarMenu(ex, EXPORT_MENU); };
+
     const btn = el('button', 'btn-ghost topbar-more');
     btn.id = 'topbarMore'; btn.textContent = '⋯';
-    btn.title = '저장 · 저장 목록 · 비교 · 공유 · 이미지 · 가져오기 · 기본 파츠 설정';
+    btn.title = '저장 목록 · 가져오기 · 기본 파츠 설정 · 업데이트 확인';
     btn.setAttribute('aria-label', '더보기');
     bar.append(btn);
     btn.onclick = ev => {
       ev.stopPropagation();
-      const old = document.querySelector('.more-menu'); if (old) { old.remove(); return; }
-      const menu = el('div', 'png-menu more-menu');
-      const onSelect = document.body.classList.contains('view-select');
-      for (const sel of TOPBAR_MORE) {
-        const src = $(sel);
-        if (!src || (onSelect && src.classList.contains('step-only'))) continue;   // 기체 선택 화면에선 숨는 것들
-        if (src.dataset.phoneOnly && !isPhoneWidth()) continue;                    // 태블릿·PC 에선 의미 없는 항목
-        const it = el('button', 'png-menu-item');
-        it.append(el('span', 'pm-t', src.textContent.trim()));
-        if (src.title) it.append(el('span', 'pm-s', src.title));
-        it.onclick = () => { menu.remove(); src.click(); };
-        menu.append(it);
-      }
-      document.body.append(menu);
-      const rc = btn.getBoundingClientRect();
-      menu.style.top = (rc.bottom + 4) + 'px';
-      menu.style.left = Math.max(6, Math.min(rc.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
-      setTimeout(() => document.addEventListener('click', function h(e) {
-        if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', h); }
-      }), 0);
+      // 좁은 화면에서는 접어 둔 것들을 앞에 붙인다 — 상단바에서 사라진 것이 여기 있어야 한다
+      const list = isMobileFold() ? MOBILE_FOLD.concat(MORE_MENU) : MORE_MENU;
+      openTopbarMenu(btn, list);
     };
   }
+
+  /** 좁은 화면이라 상단바 보조 버튼을 접었는가 — CSS 의 `.in-more` 규칙과 같은 조건. */
+  const isMobileFold = () => {
+    const b = $('#galleryBtn');
+    return !!b && b.getBoundingClientRect().width === 0;
+  };
 
   function setupMobileSheets() {
     // 파츠 상세는 인라인(장착↔파츠 사이)로 두고, 성능·무장만 슬라이드 시트로.
