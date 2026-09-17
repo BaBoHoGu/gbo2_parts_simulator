@@ -31,6 +31,29 @@ if (fs.existsSync(overridePath)) {
 // 왜 파일이 따로인가: extract_ms_wiki.js 는 「위키 스탯표와 일치하면 교정 해제」를 한다.
 // 그런데 여기서 고치는 값들은 바로 그 스탯표가 낡은 경우라, override 에 넣으면
 // 다음 갱신에서 조용히 지워진다. 이 파일은 그 도구가 건드리지 않는다.
+/* 등급(レアリティ)이 빈 칸을 **같은 기체의 다른 LV** 에서 채운다.
+   gbo2 도 위키도 「교환 불가」 항목(必要DP 없음)은 레어도 칸을 비워 둔다 — 등급은 기체의
+   성질인데 출처는 상점 기준으로 적기 때문이다. 그래서 최고 LV 만 빈 기체가 생긴다
+   (ネロ_LV3 · ギラ・ズール（EH）_LV3·4). 같은 기체의 값을 쓰는 것이라 지어내는 것이 아니다.
+   형제가 하나도 없으면 손대지 않는다 — 그건 msData.manual.json 이 맡는다. */
+{
+  const byBase = new Map();
+  for (const m of msData) {
+    const b = String(m.MS名 || '').replace(/_LV\d+$/, '');
+    if (!byBase.has(b)) byBase.set(b, []);
+    byBase.get(b).push(m);
+  }
+  let filled = 0;
+  for (const [, arr] of byBase) {
+    const known = arr.find(m => m['レアリティ']);
+    if (!known) continue;
+    for (const m of arr) {
+      if (!m['レアリティ']) { m['レアリティ'] = known['レアリティ']; filled++; }
+    }
+  }
+  if (filled) console.log(`등급 빈 칸을 형제 LV 에서 채움: ${filled}칸`);
+}
+
 const manualPath = path.join(ROOT, 'data', 'msData.manual.json');
 if (fs.existsSync(manualPath)) {
   const fix = (JSON.parse(fs.readFileSync(manualPath, 'utf8')) || {}).fix || {};

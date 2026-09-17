@@ -149,6 +149,16 @@ setTimeout(async () => {
   check('파츠 이미지 존재', partMiss.length === 0, partMiss.slice(0, 5).join(', ') || '전부 존재');
   check('기본 이미지 존재', has('ms', '_default') && has('parts', '_default'));
 
+  /* 등급이 빈 기체가 없어야 한다.
+     gbo2 도 위키도 **교환 불가** 항목(必要DP 없음)은 레어도 칸을 비운다 — 등급은 기체의
+     성질인데 출처는 상점 기준으로 적기 때문이다. 그래서 액트 하이잭·네로 LV3 같은 것이
+     빈 채로 있었고, 티어표의 등급 필터에서 걸러져 보이지 않았다.
+     빌드가 형제 LV 에서 채우고(build.js), 형제가 없으면 msData.manual.json 이 맡는다.
+     새 기체가 그렇게 들어오면 여기서 잡힌다 — 그때 manual 에 손으로 넣으면 된다. */
+  const noRarity = D.msData.filter(m => !m['レアリティ']).map(m => m.MS名);
+  check('등급이 빈 기체 없음', noRarity.length === 0,
+    noRarity.slice(0, 5).join(', ') || '전부 있음');
+
   check('최종 스크립트 오류 없음', errors.length === 0, errors.join('; '));
 
   console.log(`\n${pass} PASS / ${fail} FAIL`);
