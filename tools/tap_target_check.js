@@ -131,6 +131,47 @@ const STEAL = sel => {
     check('대각선으로 빗나가도 22px 까지는 ⓘ 가 잡힌다', iInfo.diag >= 22, '여유 ' + iInfo.diag + 'px');
   }
 
+  /* ── 누르고 **있는 동안** 제자리에 있는가 ──
+     여태 「누른 뒤」만 쟀다. 그런데 도망가는 것은 누른 **순간**이었다:
+     눌림 피드백이 `button:active { transform: scale(.97) }` 인데, ⓘ 는 세로 중앙을
+     `transform: translateY(-50%)` 로 잡고 있어서 **그 transform 이 통째로 덮어써졌다.**
+     누르자마자 ⓘ 가 제 높이의 절반인 12px 아래로 떨어지고(실측 y 285 → 297),
+     손가락은 이미 버튼 밖이라 밑의 카드가 눌려 파츠 화면으로 넘어갔다.
+     클릭 이벤트만 쏘는 검사로는 절대 안 잡힌다 — **진짜로 눌러 놓고** 잰다.
+     transform 으로 자리를 잡는 버튼이 또 생기면 여기서 걸린다. */
+  const held = async (sel, ko) => {
+    const spot = await pg.evaluate(q => {
+      const el = document.querySelector(q);
+      if (!el) return null;
+      el.scrollIntoView({ block: 'center', behavior: 'instant' });
+      const r = el.getBoundingClientRect();
+      if (!r.width || r.top < 0 || r.bottom > innerHeight) return null;
+      el.setAttribute('data-held-probe', '1');
+      return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+    }, sel);
+    if (!spot) { console.log('  건너뜀 ' + ko + ' — 화면에 없음'); return; }
+    await pg.mouse.move(spot.cx, spot.cy);
+    await pg.mouse.down();
+    await sleep(260);                       // .10s 전환이 끝나기를 기다린다
+    const now = await pg.evaluate(() => {
+      const el = document.querySelector('[data-held-probe]');
+      const r = el.getBoundingClientRect();
+      return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+    });
+    await pg.mouse.up();
+    await sleep(200);
+    await pg.evaluate(() => {
+      const el = document.querySelector('[data-held-probe]');
+      if (el) el.removeAttribute('data-held-probe');
+    });
+    const dx = Math.abs(now.cx - spot.cx), dy = Math.abs(now.cy - spot.cy);
+    check(ko + ' — 누르고 있는 동안 한가운데가 안 움직인다',
+      dx <= 2 && dy <= 2, '가로 ' + dx.toFixed(1) + 'px · 세로 ' + dy.toFixed(1) + 'px');
+  };
+  await held('#msList .ms-card .ms-info', '기체 카드 ⓘ');
+  await held('#msList .ms-card .ms-fav', '기체 카드 ★');
+  await held('#attrChips .chip', '속성 칩');
+
   // 기체를 골라 파츠 화면으로
   await pg.evaluate(() => {
     const i = document.querySelector('#msQuery'); i.value = '건담 Ez8';

@@ -547,13 +547,23 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
 /* 오른쪽 여백은 주지 않는다 — 26px 를 줬더니 등급 줄이 두 줄로 접혀 기준 자체가 흔들렸다.
    ⓘ 는 .meta 의 오른쪽 **바깥**(-7px)에 앉아 카드 안쪽 여백 자리를 쓰므로 글자를 가리지 않는다. */
 .ms-card .meta { position: relative; }
+/* 세로 중앙은 **transform 으로 잡지 않는다.** 눌림 피드백이
+   `button:active { transform: scale(.97) }` 라 transform 을 통째로 덮어쓴다 —
+   누르는 순간 translateY(-50%) 가 사라져 ⓘ 가 제 높이의 절반인 **12px 아래로 떨어졌다**
+   (실측: matrix(1,0,0,1,0,-12) → matrix(.97,0,0,.97,0,0), y 285 → 297).
+   손가락은 이미 버튼 밖이고, 밑에 있는 카드가 눌려 파츠 화면으로 넘어간다.
+   여태 「ⓘ 를 눌렀는데 파츠로 간다」의 진짜 원인이었다. margin 으로 잡으면 덮어쓸 것이 없다. */
 .ms-info {
-  position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+  position: absolute; right: -7px; top: 50%; margin-top: -12px;   /* 높이 24px 의 절반 */
   width: 24px; height: 24px; padding: 0; line-height: 1;
   border: none; background: transparent; color: var(--dim);
   font-size: var(--fs-lg); cursor: pointer; border-radius: 6px;
 }
 .ms-info:hover { color: var(--accent); background: rgba(255, 201, 60, .12); }
+/* ⓘ 를 누르면 :active 가 **부모 카드까지** 올라가 카드가 같이 0.97 로 줄고, 오른쪽 끝에 앉은
+   ⓘ 가 카드 중심 쪽으로 3px 끌려간다. 누른 것은 카드가 아니라 ⓘ 다 — 카드는 가만히 둔다.
+   (:has 를 모르는 브라우저에서는 이 규칙만 통째로 버려지고 예전처럼 동작한다 — 따로 쓴 이유다) */
+.ms-card:has(.ms-info:active) { transform: none; }
 /* 손가락으로는 24px 을 못 맞힌다. 폰 기본(넓게 보기)에서는 화면상 12px 까지 줄어들어,
    중심에서 **화면 5px** 만 빗나가도 카드가 눌려 곧바로 파츠로 넘어갔다 — 실제로 그 신고를 받았다.
    보이는 크기는 그대로 두고 눌리는 넓이만 키운다. 세로 40px 이면 위의 ★(바닥 26px)과 안 겹친다. */
