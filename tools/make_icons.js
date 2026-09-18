@@ -63,8 +63,13 @@ const MIPMAP = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
   }
 
   // 좌측 상단 대표 이미지 — 화면에는 30px 로 보이지만 고해상도 화면을 위해 3배로 만든다
-  const brand = write(path.join(ROOT, 'assets', 'brand.webp'), await resize(dataUri, 90, 'image/webp', 0.9));
-  console.log('  assets/brand.webp      90px  ' + (brand / 1024).toFixed(1) + ' KB');
+  // 앱은 이 파일을 `imgUrl('ui/brand.webp')` 로 부른다 — 곧 assets/images/ui/ 아래다.
+  // 예전에는 assets/brand.webp 에 썼는데 **아무도 안 읽는 자리**라, 아이콘을 다시 만들어도
+  // 좌측 상단 그림만 옛것으로 남았다(원본 갱신이 조용히 반영되지 않았다).
+  const brandOut = path.join(ROOT, 'assets', 'images', 'ui', 'brand.webp');
+  fs.mkdirSync(path.dirname(brandOut), { recursive: true });
+  const brand = write(brandOut, await resize(dataUri, 90, 'image/webp', 0.9));
+  console.log('  assets/images/ui/brand.webp  90px  ' + (brand / 1024).toFixed(1) + ' KB');
 
   // 탭 아이콘 — HTML 에 인라인되므로 작게 유지한다
   const fav = write(path.join(ROOT, 'assets', 'favicon.png'), await resize(dataUri, 64, 'image/png'));
