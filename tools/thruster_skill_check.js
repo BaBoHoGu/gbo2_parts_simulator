@@ -192,6 +192,43 @@ const LIST = process.argv.includes('--list');
     }));
   });
 
+  /* ── 한 번 드는 비용을 이동 축으로 읽지 않는가 ──
+     태클·점프의 スラスター消費 는 그 동작에 한 번 드는 값이지 고속이동 중 초당 소비가 아니다.
+     소비속도로 읽고 있었고(일곱 곳), 「태클」·「공중」을 체크하면 부스트 지속이
+     최대 1.67배(강화 태클 LV9)로 부풀었다. 읽지 않는 것과 **왜 안 읽는지 적는 것**을 함께 잰다 —
+     말없이 버리면 쓰는 사람은 앱이 그 스킬을 아는지조차 알 수 없다. */
+  const action = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const want = ['強化タックル', '瞬間噴射精密制御', 'クイックブースト', 'アサルトブースター'];
+    const read = [], said = new Map();
+    for (const ms of T.msData()) {
+      const lv = T.msLevel(ms);
+      for (const r of (T.thrusterSkillsOf(ms, lv, 'normal') || []))
+        if (want.includes(r.name)) read.push(r.name + ' ' + r.lv + ' ' + r.key + ' ' + r.v);
+      for (const u of (T.thrusterUnmodelled(ms, lv, 'normal') || []))
+        if (want.includes(u.name)) said.set(u.name + '|' + u.lv, u.why);
+    }
+    return { read: [...new Set(read)], said: [...said] };
+  });
+
+  /* ── 값이 여럿인 줄에서 가장 좋은 것을 집지 않는가 ──
+     실드 부스터 제어 기구 개량형은 「※シールド枚数により効果が変動」이라
+     「－35%，－30%，－25%」로 적힌다. 예전에는 **35%** 를 집었다.
+     같은 스킬의 초기소비 줄은 규칙대로 안 읽고 있었으니, 한 스킬 안에서 규칙이 갈렸다. */
+  const shield = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const ms = T.msData().filter(m => /^ヘイズル改［高機動仕様］_LV/.test(m.MS名)).pop();
+    if (!ms) return '(기체 없음)';
+    const lv = T.msLevel(ms);
+    return {
+      read: (T.thrusterSkillsOf(ms, lv, 'normal') || [])
+        .filter(x => x.name === 'シールド・ブースター制御機構改')
+        .map(x => x.key + ':' + x.v),
+      why: (T.thrusterUnmodelled(ms, lv, 'normal') || [])
+        .filter(x => x.name === 'シールド・ブースター制御機構改').map(x => x.why)
+    };
+  });
+
   await br.close();
 
   // 이름+LV+효과 단위로 접는다
@@ -337,6 +374,21 @@ const LIST = process.argv.includes('--list');
     // 상대가 없는 계산이라는 것까지 적어야 한다 — 안 적으면 반영된 줄 안다
     ok('수치에 안 들어간다고 적는다', row && row.foe && /안 들어갑니다/.test(row.foe),
       JSON.stringify(row));
+  }
+
+  {
+    ok('태클·점프 한 번 값을 이동 축으로 읽지 않는다',
+      action && action.read.length === 0, action && action.read);
+    // 버리기만 하고 말을 안 하면 안 된다 — 일곱 LV 이 모두 이유와 함께 나와야 한다
+    ok('그 일곱을 「계산 안 함」에 이유와 함께 적는다',
+      action && action.said.length === 7 && action.said.every(x => /한 번/.test(x[1])),
+      action && action.said);
+  }
+  {
+    ok('실드 매수로 변하는 값에서 가장 좋은 것을 집지 않는다',
+      shield && Array.isArray(shield.read) && shield.read.length === 0, shield);
+    ok('그 이유를 실드 매수라고 적는다',
+      shield && shield.why && shield.why.length === 1 && /매수/.test(shield.why[0]), shield);
   }
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

@@ -162,6 +162,72 @@
    ]
   }
  ],
+ "高機動型ザク": [
+  {
+   "name": "オーバーブースト",
+   "nameKo": "오버 부스트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "アクト・ザク［指揮官仕様］": [
+  {
+   "name": "オーバーブースト",
+   "nameKo": "오버 부스트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ザクⅠ・スナイパータイプ": [
   {
    "name": "高精度砲撃",
@@ -188,6 +254,81 @@
      "armorMelee": 0,
      "speed": 0,
      "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ヅダ": [
+  {
+   "name": "土星エンジン最大出力?",
+   "nameKo": "토성 엔진 최대 출력?",
+   "forever": false,
+   "secs": 60,
+   "hp": 30,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 30,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 35,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 40,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -777,6 +918,39 @@
    ]
   }
  ],
+ "グフ飛行試験型": [
+  {
+   "name": "フライトシステム",
+   "nameKo": "비행 시스템",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 5,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "フルアーマーガンダム［タイプB］": [
   {
    "name": "高精度砲撃",
@@ -1259,37 +1433,6 @@
      "hpUp": 0
     }
    ]
-  },
-  {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
   }
  ],
  "ガンタンクⅡ": [
@@ -1445,6 +1588,60 @@
    ]
   }
  ],
+ "零式": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 6,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 15,
+     "hpUp": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ハンブラビ": [
   {
    "name": "追撃格闘補助プログラム",
@@ -1494,37 +1691,6 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -1909,6 +2075,112 @@
    ]
   }
  ],
+ "リゲルグ": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "キュベレイMk-Ⅱ": [
   {
    "name": "サイコミュシステム共振（E）",
@@ -2178,6 +2450,39 @@
    ]
   }
  ],
+ "Ex-Sガンダム": [
+  {
+   "name": "能力UP「ALICE」",
+   "nameKo": "능력 UP 「ALICE」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 15,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 15,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "トーリス・リッター": [
   {
    "name": "能力UP「HADES」",
@@ -2289,6 +2594,72 @@
      "armorMelee": 0,
      "speed": 0,
      "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ガンダムMk-Ⅴ": [
+  {
+   "name": "シールド・ブースター適正化",
+   "nameKo": "실드 부스터 적정화",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "バイアラン": [
+  {
+   "name": "フライトシステム",
+   "nameKo": "비행 시스템",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 5,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -2447,6 +2818,39 @@
    ]
   }
  ],
+ "レッドライダー": [
+  {
+   "name": "能力UP「AREUS」",
+   "nameKo": "능력 UP 「AREUS」",
+   "forever": false,
+   "secs": 50,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 40,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "高機動型ガルバルディα": [
   {
    "name": "追撃格闘補助プログラム",
@@ -2473,6 +2877,39 @@
      "armorMelee": 0,
      "speed": 0,
      "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "零式弐型（AR）": [
+  {
+   "name": "フライトシステム",
+   "nameKo": "비행 시스템",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 5,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -2817,6 +3254,60 @@
    ]
   }
  ],
+ "サザビー": [
+  {
+   "name": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
+   "forever": true,
+   "secs": null,
+   "hp": 30,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "フルアーマー・スレイヴ・レイス": [
   {
    "name": "追撃射撃補助プログラム",
@@ -3034,6 +3525,39 @@
    ]
   }
  ],
+ "バイアラン・カスタム": [
+  {
+   "name": "フライトシステム",
+   "nameKo": "비행 시스템",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ザク・ハーフキャノン（MB）": [
   {
    "name": "追撃射撃補助プログラム",
@@ -3183,6 +3707,91 @@
    ]
   }
  ],
+ "ジム・スナイパーカスタム": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": 3,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ガンダムEz8": [
   {
    "name": "追撃格闘補助プログラム",
@@ -3211,6 +3820,39 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ティターニア": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 6,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 15,
      "hpUp": 0
     }
    ]
@@ -3367,6 +4009,39 @@
    ]
   }
  ],
+ "ヘイズル改": [
+  {
+   "name": "シールド・ブースター制御機構",
+   "nameKo": "실드 부스터 제어 기구",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ブラックライダー": [
   {
    "name": "能力UP「THEMIS」",
@@ -3506,6 +4181,126 @@
    ]
   }
  ],
+ "百式改": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 6,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 15,
+     "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ヘイズル2号機": [
+  {
+   "name": "オーバーブースト",
+   "nameKo": "오버 부스트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "スタークジェガン": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 6,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 15,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "強化型ΖΖガンダム": [
   {
    "name": "能力UP「バイオセンサー」",
@@ -3534,6 +4329,39 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 15,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ゼー・ズール": [
+  {
+   "name": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 5,
      "hpUp": 0
     }
    ]
@@ -3605,6 +4433,39 @@
    ]
   }
  ],
+ "リック・ディジェ改": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 15,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "リバウ": [
   {
    "name": "追撃格闘補助プログラム",
@@ -3660,6 +4521,39 @@
   }
  ],
  "ギラ・ズール（アンジェロ機）": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "デルタプラス": [
   {
    "name": "追撃阻止攻勢プログラム",
    "nameKo": "추격 저지 공세 프로그램",
@@ -3836,6 +4730,39 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 5,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "シナンジュ": [
+  {
+   "name": "サイコフレーム共振（F）",
+   "nameKo": "사이코 프레임 공진(F)",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 25,
      "hpUp": 0
     }
    ]
@@ -4056,6 +4983,39 @@
    ]
   }
  ],
+ "ヘイズル改［高機動仕様］": [
+  {
+   "name": "シールド・ブースター制御機構改",
+   "nameKo": "실드 부스터 제어 기구 개량형",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 25,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ゲルググ・V・クサントス": [
   {
    "name": "高精度スナイプ",
@@ -4148,6 +5108,39 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ガンダムデルタカイ": [
+  {
+   "name": "能力UP「n_i_t_r_o」",
+   "nameKo": "능력 UP 'n_i_t_r_o'",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -4316,6 +5309,39 @@
    ]
   }
  ],
+ "ハイブースト・ジム": [
+  {
+   "name": "オーバーブースト",
+   "nameKo": "오버 부스트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "グスタフ・カール": [
   {
    "name": "補助動力",
@@ -4408,6 +5434,126 @@
      "armorMelee": 0,
      "speed": 10,
      "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ジェスタ［シェザール隊仕様A］": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 15,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "フェネクス【NT】": [
+  {
+   "name": "サイコフレームアタック",
+   "nameKo": "사이코 프레임 공격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "アドバンスド・ヘイズル": [
+  {
+   "name": "シールド・ブースター制御機構改",
+   "nameKo": "실드 부스터 제어 기구 개량형",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 25,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -4535,6 +5681,39 @@
    ]
   }
  ],
+ "Sガンダム": [
+  {
+   "name": "能力UP「ALICE」",
+   "nameKo": "능력 UP 「ALICE」",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 15,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 15,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ジム改陸戦型［CB装備］【TB】": [
   {
    "name": "SFS制御機構",
@@ -4563,6 +5742,72 @@
      "hispeed": 25,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "グフ［Fユニット装備］【TB】": [
+  {
+   "name": "フライトシステム",
+   "nameKo": "비행 시스템",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 5,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "アトラスガンダム【TB】": [
+  {
+   "name": "サブレッグ制御機構",
+   "nameKo": "서브 레그 제어 기구",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": 2,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -4776,6 +6021,39 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ヘイズル・アウスラ": [
+  {
+   "name": "シールド・ブースター制御機構",
+   "nameKo": "실드 부스터 제어 기구",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 0,
      "hpUp": 0
     }
    ]
@@ -5174,6 +6452,39 @@
    ]
   }
  ],
+ "サイコ・ドーガ": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 15,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ジム・ドミナンス［水中用装備］": [
   {
    "name": "追撃格闘補助プログラム",
@@ -5299,6 +6610,39 @@
      "armorMelee": 0,
      "speed": 0,
      "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ギャプランTR-5": [
+  {
+   "name": "シールド・ブースター制御機構改",
+   "nameKo": "실드 부스터 제어 기구 개량형",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 20,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -5620,6 +6964,72 @@
      "hispeed": 30,
      "thruster": 0,
      "turn": 50,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ローゼン・ズール": [
+  {
+   "name": "サイコ・ジャマー制御装置",
+   "nameKo": "사이코 재머 제어 장치",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": -5,
+     "hispeed": -5,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "アンクシャ": [
+  {
+   "name": "ムーバブル・シールド・バインダー",
+   "nameKo": "이동식 실드 바인더",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 5,
+     "thruster": 0,
+     "turn": 0,
      "hpUp": 0
     }
    ]
@@ -6000,6 +7410,138 @@
    ]
   }
  ],
+ "エンゲージゼロ": [
+  {
+   "name": "補助スラスター制御装置",
+   "nameKo": "보조 슬러스터 제어 장치",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "エンゲージゼロ［追加BST装備型］": [
+  {
+   "name": "補助スラスター制御装置",
+   "nameKo": "보조 슬러스터 제어 장치",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "高機動型ケンプファー": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 15,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "フリーダムガンダム": [
+  {
+   "name": "ハイマットモード",
+   "nameKo": "하이 매트 모드",
+   "forever": false,
+   "secs": 50,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ムーシカ": [
   {
    "name": "補助動力",
@@ -6223,10 +7765,12 @@
      "hpUp": 0
     }
    ]
-  },
+  }
+ ],
+ "ギャプラン（I0）": [
   {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
+   "name": "ムーバブル・シールド・バインダー",
+   "nameKo": "이동식 실드 바인더",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -6248,9 +7792,42 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 0,
+     "hispeed": 5,
      "thruster": 0,
-     "turn": 10,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "量産型νガンダム": [
+  {
+   "name": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
+   "forever": true,
+   "secs": null,
+   "hp": 30,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 25,
      "hpUp": 0
     }
    ]
@@ -6486,7 +8063,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": -5,
+     "hispeed": 0,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -6605,6 +8182,39 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ロズウェル・ジェガン": [
+  {
+   "name": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
+   "forever": true,
+   "secs": null,
+   "hp": 30,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 25,
      "hpUp": 0
     }
    ]
@@ -6766,6 +8376,39 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "サザビー初期試験型": [
+  {
+   "name": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
+   "forever": true,
+   "secs": null,
+   "hp": 30,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 25,
      "hpUp": 0
     }
    ]
@@ -7093,6 +8736,39 @@
    ]
   }
  ],
+ "マ・クベ専用グフ": [
+  {
+   "name": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 5,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "スライフレイル": [
   {
    "name": "追撃格闘補助プログラム",
@@ -7247,6 +8923,39 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "量産型νガンダム［F・F装備］": [
+  {
+   "name": "サイコフレーム共振",
+   "nameKo": "사이코 프레임 공진",
+   "forever": true,
+   "secs": null,
+   "hp": 30,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 25,
      "hpUp": 0
     }
    ]
@@ -7478,7 +9187,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": -5,
+     "hispeed": 0,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -7543,6 +9252,39 @@
      "armorMelee": 0,
      "speed": 0,
      "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ディマーテル": [
+  {
+   "name": "グリモア（赤）",
+   "nameKo": "그리모어(빨강)",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 15,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -7647,6 +9389,39 @@
    ]
   }
  ],
+ "ガンダムEX": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 6,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 15,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ゴッドガンダム": [
   {
    "name": "ハイパーモード",
@@ -7696,6 +9471,39 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ガンダムデルタカイ［陸戦仕様］": [
+  {
+   "name": "能力UP「n_i_t_r_o（G）」",
+   "nameKo": "능력 UP 'n_i_t_r_o(G)'",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 10,
      "hpUp": 0
     }
    ]
@@ -7847,6 +9655,70 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 40,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "バイアラン・カスタム2号機": [
+  {
+   "name": "フライトシステム",
+   "nameKo": "비행 시스템",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "エアロ・アーマー",
+   "nameKo": "에어로 아머",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 0,
      "hpUp": 0
     }
    ]
@@ -8094,7 +9966,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 10,
+     "turn": 0,
      "hpUp": 0
     }
    ]
@@ -8514,12 +10386,14 @@
      "hpUp": 0
     }
    ]
-  },
+  }
+ ],
+ "ガンダムデルタアンス": [
   {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
+   "name": "シューティングブースト",
+   "nameKo": "슈팅 부스트",
    "forever": false,
-   "secs": null,
+   "secs": 30,
    "hp": null,
    "manual": false,
    "levels": [
@@ -8539,9 +10413,9 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 0,
+     "hispeed": 20,
      "thruster": 0,
-     "turn": 10,
+     "turn": 0,
      "hpUp": 0
     }
    ]
@@ -8667,7 +10541,40 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": -5,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "F90": [
+  {
+   "name": "OS「TYPE A.R.」",
+   "nameKo": "OS「TYPE A.R.」",
+   "forever": false,
+   "secs": 80,
+   "hp": 80,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 5,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -8805,6 +10712,39 @@
    ]
   }
  ],
+ "ゲルググL": [
+  {
+   "name": "突撃体勢",
+   "nameKo": "돌격 자세",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 20,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "RFゲルググ": [
   {
    "name": "対空射撃補助プログラム",
@@ -8931,6 +10871,39 @@
    ]
   }
  ],
+ "赤いガンダム": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 15,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "プロトタイプ・サイコ・ガンダム": [
   {
    "name": "サイコミュシステム暴走",
@@ -8959,6 +10932,93 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "F90［MZ仕様］": [
+  {
+   "name": "OS「TYPE C.A-Ⅲ」?",
+   "nameKo": "OS 「TYPE C.A-Ⅲ」?",
+   "forever": false,
+   "secs": 80,
+   "hp": 80,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ロゼット［強化陸戦形態］": [
+  {
+   "name": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 5,
      "hpUp": 0
     }
    ]
@@ -9063,6 +11123,169 @@
    ]
   }
  ],
+ "F90Ⅱ［Iタイプ］": [
+  {
+   "name": "フライト・シールド・アタック",
+   "nameKo": "비행 실드 공격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ガーベラ・テトラ改": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 15,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "S・Bリミッター解除システム",
+   "nameKo": "S·B 리미터 해제 시스템",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "白いガンダム": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 6,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 15,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ガンダム（CD）": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 15,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "高機動型ゲルググ（JR）": [
   {
    "name": "急速旋回",
@@ -9120,6 +11343,39 @@
      "armorMelee": 0,
      "speed": 0,
      "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "フェイルノート": [
+  {
+   "name": "試作型フィン・ノズル制御機構",
+   "nameKo": "프로토 타입 핀 노즐 제어 기구",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 20,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -9414,6 +11670,60 @@
    ]
   }
  ],
+ "ベルガ・ギロス［B・V仕様］": [
+  {
+   "name": "シェルフ・ノズル制御機構",
+   "nameKo": "선반 노즐 제어 기구",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ビギナ・ギナ": [
   {
    "name": "追撃阻止攻勢プログラム",
@@ -9575,6 +11885,103 @@
    ]
   }
  ],
+ "高機動型ザク後期型": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 6,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 15,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "高機動型ザクⅡ［06R-3S］": [
+  {
+   "name": "オーバーブースト",
+   "nameKo": "오버 부스트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 5,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ネオガンダム": [
   {
    "name": "試作ネオ・サイコミュシステム",
@@ -9672,6 +12079,39 @@
    ]
   }
  ],
+ "キハールⅡ": [
+  {
+   "name": "オーバーブースト",
+   "nameKo": "오버 부스트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "アマクサ": [
   {
    "name": "バイオ脳制御機構",
@@ -9729,6 +12169,39 @@
      "armorMelee": 0,
      "speed": 0,
      "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ウーンドウォート・ラーⅡ": [
+  {
+   "name": "シューティングブースト",
+   "nameKo": "슈팅 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 20,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -9925,6 +12398,72 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 10,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ビギナ・ギナⅡ［木星決戦仕様］": [
+  {
+   "name": "フレキシブルウイングノズル制御機構?",
+   "nameKo": "플렉시블 윙 노즐 제어 기구?",
+   "forever": false,
+   "secs": 75,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "F90Iタイプ［木星決戦仕様］": [
+  {
+   "name": "フライト・シールド・アタック",
+   "nameKo": "비행 실드 공격",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 0,
      "hpUp": 0
     }
    ]
@@ -10213,7 +12752,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 10,
+     "turn": 0,
      "hpUp": 0
     },
     {
@@ -10234,7 +12773,7 @@
      "speed": 0,
      "hispeed": 0,
      "thruster": 0,
-     "turn": 10,
+     "turn": 0,
      "hpUp": 0
     }
    ]
@@ -10353,6 +12892,39 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ガンブラスター": [
+  {
+   "name": "ツインテール制御機構",
+   "nameKo": "트윈테일제어 기구",
+   "forever": false,
+   "secs": 40,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 30,
      "hpUp": 0
     }
    ]
@@ -11009,37 +13581,6 @@
      "hpUp": 0
     }
    ]
-  },
-  {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
   }
  ],
  "ユニコーンガンダム［HML装備］": [
@@ -11290,6 +13831,39 @@
    ]
   }
  ],
+ "ゴトラタン": [
+  {
+   "name": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 5,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ジェガン［高機動仕様］": [
   {
    "name": "急速旋回",
@@ -11309,6 +13883,167 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ユニコーンガンダムPF": [
+  {
+   "name": "レイズ・カウンター",
+   "nameKo": "레이즈 카운터",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "能力UP「NT-D：共鳴」?",
+   "nameKo": "능력 UP 「NT-D：공명」?",
+   "forever": false,
+   "secs": 60,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ゲルググR": [
+  {
+   "name": "カウンターブースト",
+   "nameKo": "카운터 부스트",
+   "forever": false,
+   "secs": 30,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ガンダムDX": [
+  {
+   "name": "シールドタックル改?",
+   "nameKo": "실드 태클 改",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 50,
      "dmgShoot": 0,
      "dmgMelee": 0,
      "armorRange": 0,
@@ -11422,2662 +14157,6 @@
    ]
   }
  ],
- "ユニコーンガンダムPF": [
-  {
-   "name": "レイズ・カウンター",
-   "nameKo": "레이즈 카운터",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 20,
-     "dmgMelee": 20,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
-   "name": "能力UP「NT-D：共鳴」?",
-   "nameKo": "능력 UP 「NT-D：공명」?",
-   "forever": false,
-   "secs": 60,
-   "hp": 50,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 20,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "高機動型ザク": [
-  {
-   "name": "オーバーブースト",
-   "nameKo": "오버 부스트",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 3,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "アクト・ザク［指揮官仕様］": [
-  {
-   "name": "オーバーブースト",
-   "nameKo": "오버 부스트",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ヅダ": [
-  {
-   "name": "土星エンジン最大出力?",
-   "nameKo": "토성 엔진 최대 출력?",
-   "forever": false,
-   "secs": 60,
-   "hp": 30,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": 2,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 30,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 3,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 35,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 4,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 40,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "グフ飛行試験型": [
-  {
-   "name": "フライトシステム",
-   "nameKo": "비행 시스템",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ギャプラン": [
-  {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "零式": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 6,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": 2,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    },
-    {
-     "from": 3,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "Ex-Sガンダム": [
-  {
-   "name": "能力UP「ALICE」",
-   "nameKo": "능력 UP 「ALICE」",
-   "forever": true,
-   "secs": null,
-   "hp": 50,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 15,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガンダムMk-Ⅴ": [
-  {
-   "name": "シールド・ブースター適正化",
-   "nameKo": "실드 부스터 적정화",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "バイアラン": [
-  {
-   "name": "フライトシステム",
-   "nameKo": "비행 시스템",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "レッドライダー": [
-  {
-   "name": "能力UP「AREUS」",
-   "nameKo": "능력 UP 「AREUS」",
-   "forever": false,
-   "secs": 50,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 40,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "零式弐型（AR）": [
-  {
-   "name": "フライトシステム",
-   "nameKo": "비행 시스템",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "サザビー": [
-  {
-   "name": "サイコフレーム共振",
-   "nameKo": "사이코 프레임 공진",
-   "forever": true,
-   "secs": null,
-   "hp": 30,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    },
-    {
-     "from": 2,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "バイアラン・カスタム": [
-  {
-   "name": "フライトシステム",
-   "nameKo": "비행 시스템",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ティターニア": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 6,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ヘイズル改": [
-  {
-   "name": "シールド・ブースター制御機構",
-   "nameKo": "실드 부스터 제어 기구",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "百式改": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 6,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    },
-    {
-     "from": 2,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ヘイズル2号機": [
-  {
-   "name": "オーバーブースト",
-   "nameKo": "오버 부스트",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 4,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "スタークジェガン": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 6,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ゼー・ズール": [
-  {
-   "name": "白兵戦プログラム",
-   "nameKo": "백병전 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 5,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "リック・ディジェ改": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 15,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "シナンジュ": [
-  {
-   "name": "サイコフレーム共振（F）",
-   "nameKo": "사이코 프레임 공진(F)",
-   "forever": true,
-   "secs": null,
-   "hp": 50,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ヘイズル改［高機動仕様］": [
-  {
-   "name": "シールド・ブースター制御機構改",
-   "nameKo": "실드 부스터 제어 기구 개량형",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 25,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガンダムデルタカイ": [
-  {
-   "name": "能力UP「n_i_t_r_o」",
-   "nameKo": "능력 UP 'n_i_t_r_o'",
-   "forever": true,
-   "secs": null,
-   "hp": 50,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ハイブースト・ジム": [
-  {
-   "name": "オーバーブースト",
-   "nameKo": "오버 부스트",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ジェスタ［シェザール隊仕様A］": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 15,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": 2,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    },
-    {
-     "from": 3,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "フェネクス【NT】": [
-  {
-   "name": "サイコフレームアタック",
-   "nameKo": "사이코 프레임 공격",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "アドバンスド・ヘイズル": [
-  {
-   "name": "シールド・ブースター制御機構改",
-   "nameKo": "실드 부스터 제어 기구 개량형",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 25,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "Sガンダム": [
-  {
-   "name": "能力UP「ALICE」",
-   "nameKo": "능력 UP 「ALICE」",
-   "forever": true,
-   "secs": null,
-   "hp": 50,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 15,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "グフ［Fユニット装備］【TB】": [
-  {
-   "name": "フライトシステム",
-   "nameKo": "비행 시스템",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "アトラスガンダム【TB】": [
-  {
-   "name": "サブレッグ制御機構",
-   "nameKo": "서브 레그 제어 기구",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": 2,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ヘイズル・アウスラ": [
-  {
-   "name": "シールド・ブースター制御機構",
-   "nameKo": "실드 부스터 제어 기구",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "サイコ・ドーガ": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 15,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ギャプランTR-5": [
-  {
-   "name": "シールド・ブースター制御機構改",
-   "nameKo": "실드 부스터 제어 기구 개량형",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 20,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "アンクシャ": [
-  {
-   "name": "ムーバブル・シールド・バインダー",
-   "nameKo": "이동식 실드 바인더",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "エンゲージゼロ": [
-  {
-   "name": "補助スラスター制御装置",
-   "nameKo": "보조 슬러스터 제어 장치",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "エンゲージゼロ［追加BST装備型］": [
-  {
-   "name": "補助スラスター制御装置",
-   "nameKo": "보조 슬러스터 제어 장치",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "高機動型ケンプファー": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 15,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "フリーダムガンダム": [
-  {
-   "name": "ハイマットモード",
-   "nameKo": "하이 매트 모드",
-   "forever": false,
-   "secs": 50,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ギャプラン（I0）": [
-  {
-   "name": "ムーバブル・シールド・バインダー",
-   "nameKo": "이동식 실드 바인더",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "量産型νガンダム": [
-  {
-   "name": "サイコフレーム共振",
-   "nameKo": "사이코 프레임 공진",
-   "forever": true,
-   "secs": null,
-   "hp": 30,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ロズウェル・ジェガン": [
-  {
-   "name": "サイコフレーム共振",
-   "nameKo": "사이코 프레임 공진",
-   "forever": true,
-   "secs": null,
-   "hp": 30,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "サザビー初期試験型": [
-  {
-   "name": "サイコフレーム共振",
-   "nameKo": "사이코 프레임 공진",
-   "forever": true,
-   "secs": null,
-   "hp": 30,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "マ・クベ専用グフ": [
-  {
-   "name": "白兵戦プログラム",
-   "nameKo": "백병전 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 5,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "フライルー・ラーⅡ": [
-  {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "量産型νガンダム［F・F装備］": [
-  {
-   "name": "サイコフレーム共振",
-   "nameKo": "사이코 프레임 공진",
-   "forever": true,
-   "secs": null,
-   "hp": 30,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ディマーテル": [
-  {
-   "name": "グリモア（赤）",
-   "nameKo": "그리모어(빨강)",
-   "forever": false,
-   "secs": 60,
-   "hp": 50,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 2,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": -5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガンダムEX": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 6,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガンダムデルタカイ［陸戦仕様］": [
-  {
-   "name": "能力UP「n_i_t_r_o（G）」",
-   "nameKo": "능력 UP 'n_i_t_r_o(G)'",
-   "forever": true,
-   "secs": null,
-   "hp": 50,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ΖプラスA2型": [
-  {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "バイアラン・カスタム2号機": [
-  {
-   "name": "フライトシステム",
-   "nameKo": "비행 시스템",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 10,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
-   "name": "エアロ・アーマー",
-   "nameKo": "에어로 아머",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガンダムデルタアンス": [
-  {
-   "name": "シューティングブースト",
-   "nameKo": "슈팅 부스트",
-   "forever": false,
-   "secs": 30,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 20,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "F90": [
-  {
-   "name": "OS「TYPE A.R.」",
-   "nameKo": "OS「TYPE A.R.」",
-   "forever": false,
-   "secs": 80,
-   "hp": 80,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ゲルググL": [
-  {
-   "name": "突撃体勢",
-   "nameKo": "돌격 자세",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 20,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "赤いガンダム": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 15,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "F90［MZ仕様］": [
-  {
-   "name": "OS「TYPE C.A-Ⅲ」?",
-   "nameKo": "OS 「TYPE C.A-Ⅲ」?",
-   "forever": false,
-   "secs": 80,
-   "hp": 80,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 2,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ロゼット［強化陸戦形態］": [
-  {
-   "name": "白兵戦プログラム",
-   "nameKo": "백병전 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 5,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "F90Ⅱ［Iタイプ］": [
-  {
-   "name": "フライト・シールド・アタック",
-   "nameKo": "비행 실드 공격",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガーベラ・テトラ改": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 15,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
-   "name": "S・Bリミッター解除システム",
-   "nameKo": "S·B 리미터 해제 시스템",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "白いガンダム": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 6,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガンダム（CD）": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 15,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "フェイルノート": [
-  {
-   "name": "試作型フィン・ノズル制御機構",
-   "nameKo": "프로토 타입 핀 노즐 제어 기구",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 20,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ベルガ・ギロス［B・V仕様］": [
-  {
-   "name": "シェルフ・ノズル制御機構",
-   "nameKo": "선반 노즐 제어 기구",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 2,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "高機動型ザク後期型": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 6,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "高機動型ザクⅡ［06R-3S］": [
-  {
-   "name": "オーバーブースト",
-   "nameKo": "오버 부스트",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
-   "name": "白兵戦プログラム",
-   "nameKo": "백병전 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 5,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "キハールⅡ": [
-  {
-   "name": "オーバーブースト",
-   "nameKo": "오버 부스트",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 25,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ウーンドウォート・ラーⅡ": [
-  {
-   "name": "シューティングブースト",
-   "nameKo": "슈팅 부스트",
-   "forever": false,
-   "secs": 30,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 20,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ビギナ・ギナⅡ［木星決戦仕様］": [
-  {
-   "name": "フレキシブルウイングノズル制御機構?",
-   "nameKo": "플렉시블 윙 노즐 제어 기구?",
-   "forever": false,
-   "secs": 75,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "F90Iタイプ［木星決戦仕様］": [
-  {
-   "name": "フライト・シールド・アタック",
-   "nameKo": "비행 실드 공격",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガンブラスター": [
-  {
-   "name": "ツインテール制御機構",
-   "nameKo": "트윈테일제어 기구",
-   "forever": false,
-   "secs": 40,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 30,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "アビゴル": [
-  {
-   "name": "変形解除最適化制御",
-   "nameKo": "변형 해제 최적화 제어",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 10,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
  "ケンプファー": [
   {
    "name": "EXブースト",
@@ -14127,393 +14206,6 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ローゼン・ズール": [
-  {
-   "name": "サイコ・ジャマー制御装置",
-   "nameKo": "사이코 재머 제어 장치",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": -5,
-     "hispeed": -5,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ゴトラタン": [
-  {
-   "name": "白兵戦プログラム",
-   "nameKo": "백병전 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 5,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ゲルググR": [
-  {
-   "name": "カウンターブースト",
-   "nameKo": "카운터 부스트",
-   "forever": false,
-   "secs": 30,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 20,
-     "dmgMelee": 20,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 5,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
-   "name": "追撃阻止攻勢プログラム",
-   "nameKo": "추격 저지 공세 프로그램",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 30,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガンダムDX": [
-  {
-   "name": "シールドタックル改?",
-   "nameKo": "실드 태클 改",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 50,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "リゲルグ": [
-  {
-   "name": "追撃格闘補助プログラム",
-   "nameKo": "추격 격투 보조 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 3,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 15,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 4,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 20,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
-   "name": "追撃射撃補助プログラム",
-   "nameKo": "추격 사격 보조 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": 2,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 15,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 3,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 15,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ジム・スナイパーカスタム": [
-  {
-   "name": "追撃阻止攻勢プログラム",
-   "nameKo": "추격 저지 공세 프로그램",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 30,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  },
-  {
-   "name": "追撃射撃補助プログラム",
-   "nameKo": "추격 사격 보조 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": 3,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 15,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 4,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 15,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "デルタプラス": [
-  {
-   "name": "追撃阻止攻勢プログラム",
-   "nameKo": "추격 저지 공세 프로그램",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 30,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
      "hpUp": 0
     }
    ]

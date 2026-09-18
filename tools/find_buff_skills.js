@@ -76,8 +76,8 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         });
       }
       const flat = (v, re) => { const m = line.match(re); return m ? Number(m[1]) : 0; };
-      const shoot = flat(0, /射撃補正\s*[＋+]\s*(\d+)(?!\s*%)/);
-      const melee = flat(0, /格闘補正\s*[＋+]\s*(\d+)(?!\s*%)/);
+      const shoot = flat(0, /射撃補正\s*[＋+]\s*(\d+)(?!\d)(?!\s*%)/);
+      const melee = flat(0, /格闘補正\s*[＋+]\s*(\d+)(?!\d)(?!\s*%)/);
       // 「しゃがみ状態や静止時には射撃補正時に＋5%」= 고정밀 포격. 자세 조건이 붙은
       // 사격 % 라 일반 사격보정 % (ZERO 시스템 등)와 나눠 crouchPct 로 담는다.
       const crouch = line.match(/(?:しゃがみ|静止)[^。]{0,40}射撃補正[^。]{0,8}[＋+]\s*(\d+)\s*[%％]/);
@@ -115,16 +115,20 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       // ＋ 를 요구해 조건 표기(「機体HPが N%以下」·AMBAC 「旋回性能が N増加」)는 걸러진다.
       // ＋ 뿐 아니라 － 도 잡는다 — HADES(各耐性－5)·액티브퍼지(高速移動－10) 같은 트레이드오프 반영.
       // % 가 붙은 것(「スラスター消費 －50%」)은 소비율이라 제외.
-      const sgn = re => { const m = line.match(re); return m ? (/[－-]/.test(m[1]) ? -1 : 1) * Number(m[2]) : 0; };
-      const armorAll = sgn(/各耐性\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
-      const armorRange = armorAll + sgn(/耐実弾補正\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
-      const armorBeam = armorAll + sgn(/耐ビーム補正\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
-      const armorMelee = armorAll + sgn(/耐格闘補正\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
-      const speed = sgn(/スピード\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
-      const hispeed = sgn(/高速移動\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
-      const thruster = sgn(/スラスター\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);   // 消費 는 スラスター 뒤에 － 가 아니라 消費 가 와서 안 걸림
-      const turn = sgn(/旋回(?:性能)?\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
-      const hpUp = sgn(/(?:機体HP|最大HP)\s*([＋+－-])\s*(\d+)(?!\s*[%％])/);
+      /* 숫자 뒤에 「(?!\s*%)」만 붙이면 정규식이 **되돌아가며 자릿수를 줄여** 조건을 맞춘다.
+     「旋回 ＋100%」가 「旋回 ＋10」으로, 「高速移動 －50%」가 「－5」로 읽혔다(실측).
+     Ζ 계열 9기에 없는 선회 +10 이 붙었고, 그리모어는 **적에게 거는** 디버프를
+     내 고속이동 −5 로 옮겨 놓았다. 그래서 「숫자가 더 없을 것」을 함께 요구한다. */
+  const sgn = re => { const m = line.match(re); return m ? (/[－-]/.test(m[1]) ? -1 : 1) * Number(m[2]) : 0; };
+      const armorAll = sgn(/各耐性\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
+      const armorRange = armorAll + sgn(/耐実弾補正\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
+      const armorBeam = armorAll + sgn(/耐ビーム補正\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
+      const armorMelee = armorAll + sgn(/耐格闘補正\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
+      const speed = sgn(/スピード\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
+      const hispeed = sgn(/高速移動\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
+      const thruster = sgn(/スラスター\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);   // 消費 는 スラスター 뒤에 － 가 아니라 消費 가 와서 안 걸림
+      const turn = sgn(/旋回(?:性能)?\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
+      const hpUp = sgn(/(?:機体HP|最大HP)\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
       const hasMob = armorRange || armorBeam || armorMelee || speed || hispeed || thruster || turn || hpUp;
       if (!shoot && !melee && !shootPct && !meleePct && !crouchPct && !dmgPct && !powerPct && !hasMob) continue;
 
