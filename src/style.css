@@ -448,6 +448,9 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
    상세 상자가 들쭉날쭉해지고, 그러면 아래 파츠 목록이 밀린다. 목록이 밀리면 커서 밑의
    파츠가 바뀌어 다시 상자가 바뀌는 고리가 된다 — 파츠 사이에 마우스를 두면 화면이 떨렸다. */
 .d-eff-tx { font-size: var(--fs-sm); color: var(--text); line-height: 19px; white-space: pre-wrap; }
+/* 위키 메모 — 게임 안 설명이 아니라 우리가 조사해 적어 둔 배경이라 색을 낮춰 구분한다 */
+.d-wiki { margin-top: 6px; background: none; border-style: dashed; }
+.d-wiki .d-eff-tx { color: var(--dim); }
 /* 특성 안의 수치만 키워 눈에 띄게 한다. 줄 높이(19px)는 위에서 물려받아 그대로라
    글자만 커지고 줄은 그대로다. */
 .d-eff-tx .num { font-size: var(--fs-lg); font-weight: 700; color: var(--accent); }

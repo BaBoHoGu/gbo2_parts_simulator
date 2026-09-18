@@ -1490,13 +1490,29 @@
     }
     box.append(slotRow);
 
-    if (desc) {
+    /* 번역문 끝에 「※ 위키: …」 로 덧붙여 둔 메모가 16칸 있다. 게임 안 설명이 아니라
+       **우리가 조사해 적어 둔 배경**이다(상한이 50→70 이 된다, 경감량은 위키에도 없다 …).
+       한 덩어리로 보여 주면 게임이 그렇게 적어 둔 것처럼 읽힌다 — 갈라서 따로 적는다.
+       검색·툴팁은 통짜 그대로 둔다(메모에 든 말로도 찾을 수 있어야 한다). */
+    const wikiCut = desc.search(/※\s*위키/);
+    const descMain = wikiCut < 0 ? desc : desc.slice(0, wikiCut).trim();
+    const descNote = wikiCut < 0 ? '' : desc.slice(wikiCut).replace(/^※\s*위키\s*[—:：-]?\s*/, '').trim();
+
+    if (descMain) {
       const eff = el('div', 'd-eff');
       eff.append(el('div', 'd-eff-lb', '특성'));
       const tx = el('div', 'd-eff-tx');
-      tx.append(withNumbers(desc));
+      tx.append(withNumbers(descMain));
       eff.append(tx);
       box.append(eff);
+    }
+    if (descNote) {
+      const w = el('div', 'd-eff d-wiki');
+      w.append(el('div', 'd-eff-lb', '위키 메모'));
+      const tx = el('div', 'd-eff-tx');
+      tx.append(withNumbers(descNote));
+      w.append(tx);
+      box.append(w);
     }
 
     // 계산에 안 들어가는 효과가 있으면 밝힌다. 설명만 보고 슬롯을 쓰는 일이 없게.

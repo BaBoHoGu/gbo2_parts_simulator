@@ -90,6 +90,27 @@ const CONDITIONAL = new Set([
     if (!moved && !marked && !CONDITIONAL.has(p.name)) bad1.push(koOf(p.name));
     if (moved && marked) bad2.push(koOf(p.name));
   }
+  /* ── 「※ 위키」 메모는 게임 안 설명이 아니다 ──
+     번역문 끝에 「※ 위키: 상한이 50 → 70 이 된다」처럼 **우리가 조사해 적어 둔 배경**이
+     16칸 붙어 있다. 한 덩어리로 보여 주면 게임이 그렇게 적어 둔 것처럼 읽힌다.
+     갈라 놓았는지, 그리고 **메모가 없는 파츠에는 빈 칸이 안 생기는지**를 함께 본다. */
+  const memo = await pg.evaluate(async () => {
+    const open = async (q) => {
+      const i = document.querySelector('#partQuery');
+      i.value = q; i.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 500));
+      const t = document.querySelector('#partList > *');
+      if (!t) return null;
+      t.click();
+      await new Promise(r => setTimeout(r, 400));
+      return [...document.querySelectorAll('#detailBody .d-eff')].map(x => ({
+        lb: x.querySelector('.d-eff-lb').textContent,
+        wiki: x.classList.contains('d-wiki'),
+        tx: x.querySelector('.d-eff-tx').textContent
+      }));
+    };
+    return { withMemo: await open('신형 내실탄 장갑'), without: await open('격투 강화') };
+  });
   await br.close();
 
   const check = (label, cond, extra) => {
@@ -103,6 +124,19 @@ const CONDITIONAL = new Set([
     bad1.length ? bad1.join(', ') + '\n      → UNMODELLED_FX 에 넣거나, 효과를 구현하세요.' : '');
   check('고지를 달았는데 수치가 바뀌는 파츠가 없다', bad2.length === 0,
     bad2.length ? bad2.join(', ') + '\n      → 구현됐으면 UNMODELLED_FX 에서 그 줄을 지우세요.' : '');
+  {
+    const a = memo && memo.withMemo, b = memo && memo.without;
+    check('메모가 있는 파츠는 칸이 둘로 갈린다',
+      !!a && a.length === 2 && a[0].lb === '특성' && a[1].lb === '위키 메모' && a[1].wiki,
+      JSON.stringify(a));
+    // 갈라 놓기만 하고 원문에 「※ 위키」가 남아 있으면 갈린 것이 아니다
+    check('게임 설명 쪽에 「※ 위키」가 남지 않는다',
+      !!a && a.length === 2 && !/※\s*위키/.test(a[0].tx) && !/※\s*위키/.test(a[1].tx),
+      JSON.stringify(a));
+    // 메모가 없는 파츠에 빈 칸이 생기면 안 된다 — 늘 두 칸을 그리는 실수를 막는다
+    check('메모가 없는 파츠는 칸이 하나뿐이다',
+      !!b && b.length === 1 && b[0].lb === '특성', JSON.stringify(b));
+  }
   check('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].join(' / '));
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
