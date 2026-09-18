@@ -568,6 +568,12 @@
   /** 스러스터 효과 축 → 화면에 적을 말. */
   const THR_KEY_KO = { cutInit: '초기소비', cutRate: '소비속도', recover: '회복속도', oh: 'OH복귀' };
 
+  /** 경감 축의 한 칸을 적는다. 이 축은 **줄어드는 쪽이 양수**라, 늘어나는 값을 그대로
+   *  적으면 「소비속도 -100%」가 되어 줄어드는 것처럼 읽힌다. 말을 바꿔 적는다. */
+  const thrFxLabel = f => (f.v < 0
+    ? THR_KEY_KO[f.key] + ' +' + (-f.v) + '% 증가'
+    : THR_KEY_KO[f.key] + ' ' + f.v + '%');
+
   /* 누적치 내성 펼침 — 접으면 「통상」 한 줄, 펴면 다섯 상황을 모두 보여 준다.
      기체 정보 화면과 같은 값이라 같은 계산(staggerByCategory)을 쓴다.
      방어 스킬 체크와는 무관하다 — 저 체크는 「지금 이 구성」의 실효값이고,
@@ -1825,6 +1831,23 @@
     return out;
   }
 
+  /* 게임 안 설명에는 값이 없는데 **위키 해설에는 있는** 스러스터 스킬.
+     플랩 부스터가 그랬다 — 원문은 「スラスター消費量が増加する」(LV2 는 やや増加する)뿐이라
+     읽을 숫자가 없어 「계산 안 함」에 남아 있었다. 위키 스킬 해설이 값을 적고 있다:
+       LV1 「通常より消費が100%増加する。…8×200%＝毎秒16消費」
+       LV2 「通常より消費が50%増加する。…8×150%＝毎秒12消費」
+     지어낸 값이 아니라 출처가 있는 값이라 넣는다. 다만 **지상 고속이동 중에
+     「점프/상승」을 누르고 있는 동안만** 걸리므로 상시로 두지 않는다 —
+     체크식·지상 한정이다. 경감 축에 음수로 넣는다: 소비속도 ×(1 − v/100) 이라
+     −100 이면 정확히 2배, −50 이면 1.5배가 되어 위키의 16/12 와 맞는다.
+     다른 경감과는 곱으로 겹친다(stackCut) — 위키도 「他スキルの影響がない場合」이라 단서를 단다. */
+  const THR_SKILL_WIKI = {
+    'フラップ・ブースター': {
+      LV1: { key: 'cutRate', v: -100, cond: '상승중', env: 'ground' },
+      LV2: { key: 'cutRate', v: -50, cond: '상승중', env: 'ground' }
+    }
+  };
+
   /** 설명을 조각으로 나눈다. 불릿(・…)은 **직전 머리줄의 조건**을 물려받는다 —
    *  「発動中は」 다음 줄에 「・スラスター消費 －25%」가 오는 꼴이 아주 많다. */
   function thrSegments(blob) {
@@ -1863,6 +1886,12 @@
       if (!sk) continue;
       const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
       if (!/スラスター/.test(blob)) continue;
+      const wiki = (THR_SKILL_WIKI[sk.name] || {})[sk.lv];
+      if (wiki) {
+        out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '',
+          key: wiki.key, v: wiki.v, cond: wiki.cond, env: wiki.env, seg: blob, burst: null });
+        continue;                       // 원문에는 값이 없다 — 더 읽을 것이 없다
+      }
       const seen = new Set();
       for (const { seg, cond, env } of thrSegments(blob)) {
         const solo = thrReadSeg(seg);
@@ -3152,7 +3181,7 @@
           + '· OH 복귀 = ' + m.base.oh + '초 × (1 − 단축 파츠)'
           + (m.fx.skill && m.fx.skill.used.length
               ? '\n· 스킬 반영: ' + m.fx.skill.used.map(x => skTr(x.name)
-                  + ' ' + THR_KEY_KO[x.key] + ' ' + x.v + '%' + (x.cond ? '(' + x.cond + ')' : '')).join(' · ')
+                  + ' ' + thrFxLabel(x) + (x.cond ? '(' + x.cond + ')' : '')).join(' · ')
               : '')
           + (m.fx.skill && m.fx.skill.capped && m.fx.skill.capped.length
               ? '\n※ ' + m.fx.skill.capped.map(k => THR_KEY_KO[k]).join('·') + ' 합이 너무 커 '
@@ -3195,7 +3224,7 @@
           lab.title = '조건 없이 늘 걸립니다';
           const box = el('input'); box.type = 'checkbox'; box.checked = true; box.disabled = true;
           lab.append(box, el('span', 'stg-nm', x.ko),
-            el('span', 'stg-tag', THR_KEY_KO[x.key] + ' ' + x.v + '%'),
+            el('span', 'stg-tag', thrFxLabel(x)),
             el('span', 'stg-cond', x.env ? (x.env === 'space' ? '우주' : '지상') : '상시'));
           wrap.append(lab);
         }
@@ -3217,7 +3246,7 @@
             renderAll();
           };
           lab.append(box, el('span', 'stg-nm', g.ko),
-            el('span', 'stg-tag', g.fx.map(f => THR_KEY_KO[f.key] + ' ' + f.v + '%'
+            el('span', 'stg-tag', g.fx.map(f => thrFxLabel(f)
               + (f.burst ? ' (' + f.burst + '초)' : '')).join(' · ')),
             el('span', 'stg-cond', g.cond + (g.env ? '·' + (g.env === 'space' ? '우주' : '지상') : '')));
           wrap.append(lab);
@@ -7964,6 +7993,36 @@
   const skillDur = s => (s.forever ? '무제한' : s.secs ? s.secs + '초' : '시간 제한');
 
   /** 스킬 한 줄에 붙일 요약 — 「사격 +10 · 격투 +35 · 무제한 · HP 50% 이하」 */
+  /* 스킬이 깎는 것이 **상대 기체의 내성**인 경우 — 「対象の耐実弾補正を 15%減 でダメージ計算」.
+     내 스탯이 아니라 맞는 쪽 값을 건드리는 줄이라 스킬 표(skills.json)의 어느 축에도 안 담겼고,
+     그래서 롱 레인지 어댑터는 칸에 「선회 +20」만 떴다 — 본체인 내실탄·내빔 15%減 둘이
+     통째로 없는 것처럼 보였다(사용자 지적).
+     수치로 반영하지 **못하는** 이유는 따로 있다: 이 앱의 피해 계산에는 상대가 없다
+     (damage.js 머리말 — Def = 1, ETCb = 0 고정). 깎을 대상이 없으니 피해는 달라지지 않는다.
+     없는 상대를 지어내 반영하느니, 그 효과가 있다는 것과 왜 수치에 안 들어가는지를 적는다.
+     읽는 곳은 원문(ms_skills.json)이다 — skills.json 은 생성물이라 축이 없으면 담기지 않는다. */
+  const FOE_ARMOR_KO = { '実弾': '내실탄', 'ビーム': '내빔', '格闘': '내격투' };
+  const FOE_ARMOR_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を\s*(\d+)\s*[%％]\s*減/g;
+
+  function foeArmorOf(name) {
+    if (!state.ms) return null;
+    const modes = skillModesFor(msSkillsData[baseName(state.ms.MS名)] || [], state.form);
+    const cands = [];
+    for (const mo of modes) for (const k of (mo.skills || [])) if (k.name === name) cands.push(k);
+    const sk = pickByMsLv(cands, msLevel(state.ms));
+    if (!sk) return null;
+    const blob = ((sk.desc || '') + ' / ' + (sk.eff || '')).replace(/\s+/g, ' ');
+    const hit = new Map();
+    for (const m of blob.matchAll(FOE_ARMOR_RE)) hit.set(FOE_ARMOR_KO[m[1]], Number(m[2]));
+    if (!hit.size) return null;
+    const vals = [...new Set(hit.values())];
+    const txt = vals.length === 1
+      ? [...hit.keys()].join('·') + ' −' + vals[0] + '%'
+      : [...hit].map(([k, v]) => k + ' −' + v + '%').join(' · ');
+    return '적 ' + txt + ' — 상대 내성을 깎는 효과라 '
+      + '상대가 없는 이 계산에는 안 들어갑니다';
+  }
+
   function skillSummary(sk) {
     const e = skillLevel(sk) || {};
     const num = [];
@@ -7989,7 +8048,7 @@
     if (e.hpUp) num.push('HP ' + sg(e.hpUp));
     const how = [skillDur(sk), sk.hp ? 'HP ' + sk.hp + '% 이하' : null, sk.manual ? '수동' : null]
       .filter(Boolean).join(' · ');
-    return { num: num.join(' · ') || '—', how };
+    return { num: num.join(' · ') || '—', how, foe: foeArmorOf(sk.name) };
   }
 
   // 보정값은 damage.js 의 ETC_ATTACK 에서 그대로 가져온다 — 손으로 적어 두었더니
@@ -8111,6 +8170,7 @@
       v.append(el('b', '', s.num));
       v.append(document.createTextNode('  ·  ' + s.how));
       tx.append(v);
+      if (s.foe) tx.append(el('span', 'foe', s.foe));
       item.append(tx);
       menu.append(item);
     }

@@ -375,6 +375,8 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
 .skill-item .k { color: var(--text); font-size: var(--fs-sm); }
 .skill-item .v { display: block; color: var(--dim); font-size: var(--fs-2xs); margin-top: 1px; }
 .skill-item .v b { color: var(--skill); font-weight: 700; }
+/* 상대 내성을 깎는 몫 — 수치에 안 들어가는 값이라 스킬 수치(.v)와 색을 달리한다 */
+.skill-item .foe { display: block; color: var(--mid); font-size: var(--fs-2xs); margin-top: 1px; }
 .skill-menu .none { padding: 6px 8px; color: var(--dim); font-size: var(--fs-xs); }
 
 /* PNG 배출 — 요약/상세 선택 메뉴 */

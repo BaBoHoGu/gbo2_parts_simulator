@@ -145,6 +145,53 @@ const LIST = process.argv.includes('--list');
     return { partOnly: only && only.fx.cutRate, withSkill: both && both.fx.cutRate };
   });
 
+  /* ── 소비가 **늘어나는** 스킬 ──
+     플랩 부스터는 게임 안 설명에 「消費量が増加する」뿐이라 값이 없어 「계산 안 함」에
+     남아 있었다. 위키 해설이 값을 적고 있다 — LV1 +100%(8→16/초), LV2 +50%(8→12/초).
+     경감 축에 음수로 넣었으니, 켜면 부스트 지속이 **정확히 반**(LV1)·2/3(LV2)이 되어야 한다.
+     지속이 짧아지는 쪽이라 부호가 뒤집히면 도리어 길어진다 — 그래서 값이 아니라
+     **지속 시간**으로 잰다. 지상 한정이므로 우주에서는 안 걸리는 것도 함께 본다. */
+  const flap = await pg.evaluate(() => {
+    const t = window.GBO2UiTest;
+    const get = re => t.msData().filter(m => re.test(m.MS名)).pop();
+    const one = (ms, lv) => {
+      if (!ms) return '(기체 없음)';
+      const key = 'フラップ・ブースター|상승중';
+      const mk = (env, on) => t.thrusterMetrics(ms, 60, [], env, { lv: t.msLevel(ms), on, form: 'normal' });
+      const g0 = mk('ground', new Set()), g1 = mk('ground', new Set([key]));
+      const s1 = mk('space', new Set([key]));
+      const row = (t.thrusterSkillsOf(ms, t.msLevel(ms), 'normal') || [])
+        .find(x => /フラップ/.test(x.name));
+      return { lv: row && row.lv, v: row && row.v, cond: row && row.cond, env: row && row.env,
+        groundOff: g0 && +g0.boost.toFixed(3), groundOn: g1 && +g1.boost.toFixed(3),
+        spaceOn: s1 && +s1.boost.toFixed(3),
+        spaceOff: mk('space', new Set()) && +mk('space', new Set()).boost.toFixed(3) };
+    };
+    return { lv1: one(get(/^ガンダム試作2号機［BB仕様］_LV/)), lv2: one(get(/^Hi-νガンダム_LV/)) };
+  });
+
+  /* ── 상대 내성을 깎는 몫을 적어 보이는가 ──
+     롱 레인지 어댑터는 스킬 칸에 「선회 +20」만 떴다 — 본체인 내실탄·내빔 15%減 둘이
+     통째로 없는 것처럼 보였다(사용자 지적). 수치로 반영하지는 못한다(피해 계산에 상대가 없다).
+     그래도 **있다는 것은** 적어야 한다. 원문에서 값 둘을 다 읽는지까지 본다. */
+  const foe = await pg.evaluate(async () => {
+    const q = document.querySelector('#msQuery');
+    q.value = 'V2 건담'; q.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 900));
+    const card = document.querySelector('#msList .ms-card');
+    if (!card) return '(기체 없음)';
+    card.click();
+    await new Promise(r => setTimeout(r, 1500));
+    const b = document.querySelector('#skillBtn');
+    if (!b) return '(스킬 버튼 없음)';
+    b.click();
+    await new Promise(r => setTimeout(r, 300));
+    return [...document.querySelectorAll('#skillMenu .skill-item')].map(x => ({
+      nm: x.querySelector('.k') && x.querySelector('.k').textContent,
+      foe: x.querySelector('.foe') && x.querySelector('.foe').textContent
+    }));
+  });
+
   await br.close();
 
   // 이름+LV+효과 단위로 접는다
@@ -213,7 +260,17 @@ const LIST = process.argv.includes('--list');
     overOne.slice(0, 4).map(function (e) { return e[0] + ' = ' + e[1] + '%'; }).join(' / '));
 
   console.log('\n== 값이 제정신인가 ==');
-  ok('경감·상승은 1~100% 안', all.every(x => x.v > 0 && x.v <= 150), all.filter(x => !(x.v > 0 && x.v <= 150)));
+  // 값은 줄어드는 쪽이 양수다. 늘어나는 쪽(음수)도 이제 하나 있다(플랩 부스터) —
+  // 그래서 부호를 막는 대신 **크기**를 막고, 늘어나는 쪽은 누구인지를 따로 못 박는다.
+  ok('값의 크기가 제정신인가 (0 이 아니고 150 이내)',
+    all.every(x => x.v !== 0 && Math.abs(x.v) <= 150), all.filter(x => !(x.v !== 0 && Math.abs(x.v) <= 150)));
+  {
+    // 소비가 늘어나는 값은 손으로 넣은 것뿐이어야 한다. 파서가 경감을 음수로 잘못 읽으면
+    // 부스트 지속이 아무도 모르게 **길어진다** — 여기서 걸린다.
+    const minus = [...new Set(all.filter(x => x.v < 0).map(x => x.name))];
+    ok('늘어나는 쪽은 플랩 부스터뿐',
+      minus.length === 1 && minus[0] === 'フラップ・ブースター', minus);
+  }
   ok('축은 넷뿐', all.every(x => ['cutInit', 'cutRate', 'recover', 'oh'].includes(x.key)));
   // 조건 없는 불릿을 상시로 올리지 않았는가 (보수적으로 발동중이어야 한다)
   ok('조건 없는 불릿이 상시로 안 샜다', !always.some(x => /^[・･]/.test(String(x.seg).trim())),
@@ -254,6 +311,33 @@ const LIST = process.argv.includes('--list');
   ok('파츠 경감만 있을 때 10%', stack && stack.partOnly === 10, JSON.stringify(stack));
   ok('파츠는 스킬 뒤에 곱한다 (70%+10% → 80 이 아니라 73)',
     stack && stack.withSkill === 73, JSON.stringify(stack));
+
+  {
+    const a = flap && flap.lv1, b = flap && flap.lv2;
+    ok('플랩 부스터 LV1 을 소비 +100% 로 읽는다',
+      a && a.v === -100 && a.lv === 'LV1', JSON.stringify(a));
+    ok('플랩 부스터 LV2 를 소비 +50% 로 읽는다',
+      b && b.v === -50 && b.lv === 'LV2', JSON.stringify(b));
+    // 값이 아니라 결과로 잰다 — 부호가 뒤집히면 지속이 **길어진다**
+    ok('LV1 을 켜면 부스트 지속이 정확히 반이 된다',
+      a && Math.abs(a.groundOn - a.groundOff / 2) < 0.01, JSON.stringify(a));
+    ok('LV2 를 켜면 부스트 지속이 2/3 이 된다',
+      b && Math.abs(b.groundOn - b.groundOff * 2 / 3) < 0.01, JSON.stringify(b));
+    // 지상 스킬이다 — 우주에서 켜도 아무 일이 없어야 한다
+    ok('우주에서는 걸리지 않는다',
+      a && a.spaceOn === a.spaceOff, JSON.stringify(a));
+    ok('상시가 아니라 체크식이다', a && a.cond === '상승중' && a.env === 'ground', JSON.stringify(a));
+  }
+  {
+    const row = Array.isArray(foe) && foe.find(x => x.nm === '롱 레인지 어댑터');
+    ok('롱 레인지 어댑터가 스킬 칸에 있다', !!row, JSON.stringify(foe));
+    ok('적 내실탄·내빔 감소를 적어 보인다',
+      row && row.foe && /내실탄/.test(row.foe) && /내빔/.test(row.foe) && /15%/.test(row.foe),
+      JSON.stringify(row));
+    // 상대가 없는 계산이라는 것까지 적어야 한다 — 안 적으면 반영된 줄 안다
+    ok('수치에 안 들어간다고 적는다', row && row.foe && /안 들어갑니다/.test(row.foe),
+      JSON.stringify(row));
+  }
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
