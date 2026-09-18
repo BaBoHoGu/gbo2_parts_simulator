@@ -1796,8 +1796,13 @@
         return { key: 'cutRate', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
       if ((m = /(?:継続|持続)消費量?\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
         return { key: 'cutRate', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
-      // 「スラ消費」 줄임말 — 高速移動開始時 에 붙으므로 초기소비다
-      if ((m = /高速移動開始時のスラ消費\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
+      /* 「高速移動開始時の…消費 －N%」 — 開始時 이므로 **초기소비**다.
+         줄임말(スラ消費)만 잡고 있어서 정식 표기(スラスター消費)가 통째로 샜다.
+         새면 아래 일반 폴백이 같은 줄을 **소비속도**로 읽고, 바로 다음 줄의
+         「高速移動中のスラスター消費 －50%」와 값·조건이 같아 중복으로 접혀 사라진다 —
+         ZERO 시스템은 두 줄이 다 적혀 있는데 화면에는 소비속도 하나만 떴다.
+         ＺＥＲＯシステム(윙 제로·윙 제로【EW】)·ビーム・ローター（飛行） 셋이 그랬다. */
+      if ((m = /高速移動開始時の(?:スラスター|スラ)消費(?:量)?\s*[-－]\s*(\d+)\s*[%％]/.exec(seg)))
         return { key: 'cutInit', v: +m[1], always: THR_ALWAYS_USE.test(seg) };
     }
     if ((m = /回復速度[^\d]{0,12}(\d+)\s*[%％]\s*(?:上昇|増加)/.exec(seg)) ||
@@ -1940,6 +1945,27 @@
     return out;
   }
 
+  /** 데이터 전체에서 「스러스터에 영향 준다」고 읽히는 스킬 이름 모음.
+   *  부여(付与)로 붙는 것이 무엇인지 알아보려고 한 번만 만들어 둔다. */
+  let thrNameSet = null;
+  function thrusterSkillNames() {
+    if (thrNameSet) return thrNameSet;
+    thrNameSet = new Set();
+    for (const forms of Object.values(msSkillsData || {}))
+      for (const mo of (forms || []))
+        for (const sk of (mo.skills || [])) {
+          if (thrNameSet.has(sk.name)) continue;
+          const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
+          if (!/スラスター/.test(blob)) continue;
+          const readable = THR_SKILL_WIKI[sk.name]
+            || thrSegments(blob).some(x => thrReadSeg(x.seg) || thrReadMult(x.seg).length);
+          if (readable) thrNameSet.add(sk.name);
+        }
+    return thrNameSet;
+  }
+
+  const reEsc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
   /**
    * 스러스터를 건드린다고 **말은 하는데** 계산에 넣을 수치가 없는 스킬들.
    *
@@ -1987,6 +2013,33 @@
         : /軽減|減少/.test(blob) ? '소비가 줄어든다고만 적혀 있고 값이 없습니다'
         : '수치가 적혀 있지 않습니다';
       out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '', why, seg: blob.slice(0, 160) });
+    }
+
+    /* 「스킬 X LVn 이 付与」 — 다른 스킬이 발동하면 **그때 붙는** 스킬이다.
+       그 기체의 스킬 목록에는 없으니 위 훑기로는 존재조차 모른다.
+       윙 건담 제로는 ZERO 시스템이 발동하면 플랩 부스터 LV2 가 붙어 **소비가 늘어나는데**
+       화면에는 아무 말도 없었다(사용자 지적). 수치로는 못 넣는다 — 조건이 겹쳐 있어
+       (ZERO 발동 중 **그리고** 상승 중) 체크 하나로 표현되지 않기 때문이다.
+       대신 무엇이 언제 붙는지를 적는다. 이미 제 스킬로 가진 것(윙 제로【EW】의 플랩
+       부스터)은 modelled 에 들어 있어 여기 두 번 나오지 않는다. */
+    const said = new Set(out.map(x => x.name));
+    for (const cands of groups.values()) {
+      const host = pickByMsLv(cands, lv);
+      if (!host) continue;
+      const hostBlob = ((host.eff || '') + ' / ' + (host.desc || '')).replace(/\s+/g, ' ');
+      if (!/付与/.test(hostBlob)) continue;
+      for (const name of thrusterSkillNames()) {
+        if (name === host.name || modelled.has(name) || said.has(name)) continue;
+        const m = new RegExp(reEsc(name) + '\\s*(LV|Lv)\\s*(\\d+)[^。]{0,8}付与').exec(hostBlob);
+        if (!m) continue;
+        said.add(name);
+        out.push({
+          name, ko: skTr(name), lv: 'LV' + m[2],
+          why: skTr(host.name) + (host.lv ? ' ' + host.lv : '') + ' 발동 중에만 붙습니다'
+            + ' — 조건이 겹쳐 수치로는 넣지 않습니다',
+          seg: m[0]
+        });
+      }
     }
     return out;
   }

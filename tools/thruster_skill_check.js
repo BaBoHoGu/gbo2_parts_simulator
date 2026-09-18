@@ -258,6 +258,47 @@ const LIST = process.argv.includes('--list');
     };
   });
 
+  /* ── 「高速移動開始時の…消費 －N%」는 **초기소비**다 ──
+     줄임말(スラ消費)만 잡고 있어서 정식 표기(スラスター消費)가 샜다. 새면 일반 폴백이
+     같은 줄을 소비속도로 읽고, 바로 다음 줄의 「高速移動中の…－50%」와 값·조건이 같아
+     **중복으로 접혀 사라진다** — 원문에 두 줄이 적힌 ZERO 시스템이 화면에는 하나만 떴다.
+     그래서 「초기소비가 있다」가 아니라 **두 축이 다 있다**를 잰다. */
+  const startCut = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const one = re => {
+      const ms = T.msData().filter(m => re.test(m.MS名)).pop();
+      if (!ms) return '(기체 없음)';
+      return (T.thrusterSkillsOf(ms, T.msLevel(ms), 'normal') || [])
+        .filter(x => /ＺＥＲＯ/.test(x.name))
+        .map(x => x.key + ':' + x.v + ':' + (x.cond || '상시')).sort();
+    };
+    return { zero: one(/^ウイングガンダムゼロ_LV/), ew: one(/^ウイングガンダムゼロ【EW】_LV/) };
+  });
+
+  /* ── 부여(付与)로 붙는 스러스터 스킬을 알리는가 ──
+     윙 건담 제로는 ZERO 시스템이 발동하면 플랩 부스터 LV2 가 붙어 **소비가 늘어나는데**
+     그 기체의 스킬 목록에 없어 화면이 존재조차 몰랐다(사용자 지적). 전수로 53기다.
+     수치로는 못 넣는다(ZERO 발동 중 **그리고** 상승 중 — 체크 하나로 표현이 안 된다).
+     그래도 **붙는다는 사실은** 적어야 한다. 그리고 제 스킬로 이미 가진 기체
+     (윙 제로【EW】)에서 두 번 나오면 안 된다 — 거기서는 수치에 들어가 있다. */
+  const grant = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const pick = re => T.msData().filter(m => re.test(m.MS名)).pop();
+    const un = ms => ms ? (T.thrusterUnmodelled(ms, T.msLevel(ms), 'normal') || []) : [];
+    const read = ms => ms ? (T.thrusterSkillsOf(ms, T.msLevel(ms), 'normal') || []) : [];
+    const zero = pick(/^ウイングガンダムゼロ_LV/), ew = pick(/^ウイングガンダムゼロ【EW】_LV/);
+    let mechs = 0;
+    for (const ms of T.msData())
+      if (un(ms).some(x => /붙습니다/.test(x.why))) mechs++;
+    return {
+      zeroSaid: un(zero).filter(x => /フラップ|플랩/.test(x.name + x.ko)).map(x => x.ko + ' ' + x.lv + ' | ' + x.why),
+      zeroRead: read(zero).filter(x => /フラップ/.test(x.name)).length,
+      ewSaid: un(ew).filter(x => /フラップ|플랩/.test(x.name + x.ko)).length,
+      ewRead: read(ew).filter(x => /フラップ/.test(x.name)).map(x => x.key + ':' + x.v),
+      mechs
+    };
+  });
+
   await br.close();
 
   // 이름+LV+효과 단위로 접는다
@@ -429,6 +470,29 @@ const LIST = process.argv.includes('--list');
     // 여기가 더하기와 곱하기가 갈리는 자리다 — 더하면 이 관계가 깨진다
     ok('다른 경감과 함께 켜도 그 결과의 반이 된다 (더하지 않는다)',
       m && near(m.both, m.onlyOther / 2), m);
+  }
+
+  {
+    const z = startCut && startCut.zero, e = startCut && startCut.ew;
+    // 두 줄이 다 적힌 스킬이라 두 축이 다 나와야 한다 — 하나만 나오면 접혀 사라진 것이다
+    ok('ZERO 시스템의 초기소비·소비속도가 둘 다 잡힌다 (윙 제로)',
+      Array.isArray(z) && z.join() === 'cutInit:50:발동중,cutRate:50:발동중', JSON.stringify(z));
+    ok('ZERO 시스템의 초기소비·소비속도가 둘 다 잡힌다 (윙 제로 EW)',
+      Array.isArray(e) && e.join() === 'cutInit:50:발동중,cutRate:50:발동중', JSON.stringify(e));
+  }
+  {
+    const g = grant;
+    ok('부여로 붙는 스러스터 스킬을 알린다 — 윙 제로의 플랩 부스터',
+      g && g.zeroSaid.length === 1 && /ZERO/.test(g.zeroSaid[0]) && /LV2/.test(g.zeroSaid[0]),
+      JSON.stringify(g && g.zeroSaid));
+    // 부여분은 수치에 들어가면 안 된다 — 조건이 겹쳐 체크 하나로 표현되지 않는다
+    ok('부여분을 수치에는 넣지 않는다', g && g.zeroRead === 0, JSON.stringify(g));
+    // 제 스킬로 가진 기체에서는 수치에 들어가고, 「계산 안 함」에 두 번 나오지 않는다
+    ok('제 스킬로 가진 기체(EW)는 수치에 들어간다',
+      g && g.ewRead.join() === 'cutRate:-50', JSON.stringify(g && g.ewRead));
+    ok('그 기체의 「계산 안 함」에 두 번 나오지 않는다', g && g.ewSaid === 0, JSON.stringify(g));
+    // 한 기체만 맞고 나머지가 잠들어 있지 않은지 — 개수까지 본다
+    ok('부여를 알리는 기체가 충분히 있다 (전수 53기)', g && g.mechs >= 40, g && g.mechs);
   }
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
