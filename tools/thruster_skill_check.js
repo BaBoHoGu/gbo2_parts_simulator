@@ -229,6 +229,35 @@ const LIST = process.argv.includes('--list');
     };
   });
 
+  /* ── 늘어나는 값은 경감과 **더해지지 않는다** ──
+     플랩 부스터의 「통상보다 100% 증가」는 지금 값의 2배라는 뜻이다. 경감 합에 −100 으로
+     넣으면 다른 경감 스킬과 더해져 버린다 — 50% 경감과 함께 켜면 −50 이 되어 초당 12 가
+     나오는데, 배수로 보면 8 × 0.5 × 2 = 초당 8 이다(실측으로 65기에서 겹칠 수 있다).
+     값이 아니라 **관계**로 잰다: 플랩을 켜면 다른 스킬을 켠 결과가 그대로 반이 되어야 한다.
+     더하기로 되돌리면 이 관계가 깨진다. */
+  const mul = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const ms = T.msData().filter(m => /^Sガンダム_LV/.test(m.MS名)).pop();
+    if (!ms) return '(기체 없음)';
+    const lv = T.msLevel(ms);
+    const all = T.thrusterSkillsOf(ms, lv, 'normal');
+    const flap = all.find(x => /フラップ/.test(x.name));
+    const other = all.find(x => x.key === 'cutRate' && x.v > 0 && (!x.env || x.env === 'ground'));
+    if (!flap || !other) return '(겹칠 스킬이 없음)';
+    const key = x => x.name + '|' + (x.cond || '');
+    const boost = on => {
+      const m = T.thrusterMetrics(ms, 60, [], 'ground', { lv, on, form: 'normal' });
+      return m && m.boost;
+    };
+    return {
+      other: other.ko + ' ' + other.v + '%',
+      none: boost(new Set()),
+      onlyOther: boost(new Set([key(other)])),
+      onlyFlap: boost(new Set([key(flap)])),
+      both: boost(new Set([key(other), key(flap)]))
+    };
+  });
+
   await br.close();
 
   // 이름+LV+효과 단위로 접는다
@@ -389,6 +418,17 @@ const LIST = process.argv.includes('--list');
       shield && Array.isArray(shield.read) && shield.read.length === 0, shield);
     ok('그 이유를 실드 매수라고 적는다',
       shield && shield.why && shield.why.length === 1 && /매수/.test(shield.why[0]), shield);
+  }
+
+  {
+    const m = mul;
+    const near = (a, b) => Math.abs(a - b) < 0.01;
+    ok('겹칠 스킬을 가진 기체를 실제로 찾았다', m && typeof m === 'object' && m.other, m);
+    ok('플랩을 켜면 아무것도 없을 때의 지속이 반이 된다',
+      m && near(m.onlyFlap, m.none / 2), m);
+    // 여기가 더하기와 곱하기가 갈리는 자리다 — 더하면 이 관계가 깨진다
+    ok('다른 경감과 함께 켜도 그 결과의 반이 된다 (더하지 않는다)',
+      m && near(m.both, m.onlyOther / 2), m);
   }
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

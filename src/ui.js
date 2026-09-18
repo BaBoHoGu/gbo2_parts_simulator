@@ -1990,11 +1990,21 @@
 
   /** 켜 둔(또는 상시인) 스러스터 스킬만 모아 파츠와 같은 모양으로 낸다. */
   function thrusterSkillFx(ms, lv, env, on, form) {
-    const fx = { cutInit: 0, cutRate: 0, recover: 0, oh: 0, used: [], capped: [] };
+    const fx = { cutInit: 0, cutRate: 0, recover: 0, oh: 0, mulInit: 1, mulRate: 1, used: [], capped: [] };
     for (const s of thrusterSkillsOf(ms, lv, form)) {
       if (s.env && s.env !== env) continue;                  // 환경이 다르면 안 걸린다
       if (s.cond && !(on && on.has(thrKeyOf(s)))) continue;   // 조건부는 그 상황을 체크해야 걸린다
-      fx[s.key] += s.v;
+      /* 소비가 **늘어나는** 값(플랩 부스터)은 「통상보다 100% 증가」= 지금 값의 2배라는 뜻이다.
+         경감 합에 −100 으로 넣으면 다른 경감과 **더해져** 버린다 —
+         S건담에서 능력 UP「ALICE」(50%)와 함께 켜면 −100+50 = −50 → 초당 12 가 되는데,
+         배수로 보면 8 × 0.5 × 2 = 초당 8 이다. 실측으로 65기에서 겹칠 수 있었다.
+         원문은 겹침 규칙을 적지 않지만 「통상보다」라는 말은 남은 값에 거는 배수를 가리킨다.
+         그래서 경감은 경감끼리 더하고, 배수는 맨 마지막에 곱한다(파츠를 스킬 뒤에 곱하는 것과 같다). */
+      if (s.v < 0 && (s.key === 'cutInit' || s.key === 'cutRate')) {
+        fx[s.key === 'cutInit' ? 'mulInit' : 'mulRate'] *= 1 - s.v / 100;
+      } else {
+        fx[s.key] += s.v;
+      }
       fx.used.push(s);
     }
     for (const k of ['cutInit', 'cutRate']) {
@@ -2038,7 +2048,7 @@
     // 스킬분 — 상시인 것과 사용자가 체크한 것만. 파츠와 같은 축이라 그대로 더한다.
     const sfx = skillOpt
       ? thrusterSkillFx(ms, skillOpt.lv, env, skillOpt.on, skillOpt.form)
-      : { cutInit: 0, cutRate: 0, recover: 0, oh: 0, used: [] };
+      : { cutInit: 0, cutRate: 0, recover: 0, oh: 0, mulInit: 1, mulRate: 1, used: [] };
     /* 소비 경감은 파츠와 스킬이 **겹쳐 더해지지 않는다** — 스킬로 줄인 뒤 남은 값에서
        파츠가 또 줄인다(사용자 지적, 위키 코멘트도 같은 계산: 廃熱1 + 연소효율 = 0.9×0.9 = 0.81).
        더해 버리면 10%+10% = 20% 로 4%p 부풀고, **스킬로 이미 많이 줄인 기체일수록** 더 틀린다
@@ -2048,10 +2058,12 @@
     const fx = {
       cutInit: stackCut(sfx.cutInit, pfx.cutInit), cutRate: stackCut(sfx.cutRate, pfx.cutRate),
       recover: pfx.recover + sfx.recover, oh: pfx.oh + sfx.oh,
+      // 늘어나는 쪽은 경감을 다 매긴 **뒤에** 곱한다 (thrusterSkillFx 주석 참고)
+      mulInit: sfx.mulInit || 1, mulRate: sfx.mulRate || 1,
       part: pfx, skill: sfx
     };
-    const init = t.init[col] * (1 - fx.cutInit / 100);
-    const rate = t.rate[col] * (1 - fx.cutRate / 100);
+    const init = t.init[col] * (1 - fx.cutInit / 100) * fx.mulInit;
+    const rate = t.rate[col] * (1 - fx.cutRate / 100) * fx.mulRate;
     const boost = (!isTankMs(ms) && thrusterVal > init && rate > 0)
       ? (thrusterVal - init) / rate : null;
     const full = thrusterVal / (THR_RECOVER * (1 + fx.recover / 100));
