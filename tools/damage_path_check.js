@@ -322,7 +322,65 @@ const check = (label, cond, extra) => {
     }));
   });
 
+  /* ── 누적치의 배수 ──
+     「20% x2発 x3射」처럼 배수가 **둘** 붙는 표기가 있다(153 무장). 첫 것만 읽고 있어서
+     실제보다 낮게 나왔고, 더 나쁜 것은 **같은 무장을 피해 쪽과 다르게 셌다**는 점이다 —
+     같은 備考의 「二発同時発射 x3回攻撃」을 피해는 2×3 = 6 으로 세는데 누적치는 2 로 셌다.
+     괄호는 집속값이라 세면 안 된다: 「5% x10（7% x10）」의 뒤쪽 x10 은 집속 때의 배수다. */
+  const stagRead = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const p = t => { const r = T.parseStagger({ mods: { stagger: t } }); return r.pct + ':' + r.pellets; };
+    return [
+      p('20% x2発 x3射'),     // 2×3 = 6
+      p('6% x6発 x3射'),      // 6×3 = 18
+      p('12% x 3発 x2腕'),    // 3×2 = 6  (사이 공백)
+      p('20% x6'),            // 하나면 그대로
+      p('5% x10（7% x10）'),  // 괄호는 집속값 — 세지 않는다
+      p('7%（15HIT）'),       // 괄호는 경직까지 필요한 히트 수 — 배수가 아니다
+      p('80%')                // 배수 없음
+    ].join(' / ');
+  });
+
+  /* 그리고 **두 방향이 같은 수를 쓰는지**를 화면에서 본다. 파라스 아테네의 견부 빔포는
+     「よろけ値：50% x2発 x5射」이고 발사는 「二発同時発射 … 最大5ヒット」다 —
+     격파 줄의 「× N발 × M히트」와 경직 줄의 「1발=K히트」에서 N×M === K 여야 한다. */
+  const stagUi = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    document.querySelector('#pietanBtn').click(); await wait(600);
+    const back = document.querySelector('.pietan-back');
+    if (back) { back.click(); await wait(400); }
+    const pq = document.querySelector('#pietanQuery');
+    pq.value = '파라스'; pq.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(800);
+    const first = [...document.querySelectorAll('#pietanList > *')]
+      .find(x => !/다른 기체|검색 결과/.test(x.textContent));
+    if (!first) return '(적 없음)';
+    first.click(); await wait(1100);
+    const wrow = [...document.querySelectorAll('#pietanList > *')]
+      .find(x => /견부 빔포/.test(x.textContent));
+    if (!wrow) return '(무장 없음)';
+    wrow.click(); await wait(900);
+    const m = {};
+    for (const x of document.querySelectorAll('#pietanResult .pietan-metric')) {
+      m[(x.querySelector('.pietan-mlb') || {}).textContent] = (x.querySelector('.pietan-mnote') || {}).textContent;
+    }
+    return m;
+  });
+
   await br.close();
+
+  {
+    check('누적치 배수를 다 곱한다 (괄호는 집속값이라 뺀다)',
+      stagRead === '20:6 / 6:18 / 12:6 / 20:6 / 5:10 / 7:1 / 80:1', String(stagRead));
+    /* 여기가 진짜다 — 단위 판정은 「쓰이는지」를 안 본다.
+       화면의 두 줄에서 배수를 꺼내 맞춰 본다(공식을 베끼지 않는다). */
+    const kill = (stagUi && stagUi['격파까지']) || '';
+    const stag = (stagUi && stagUi['경직까지']) || '';
+    const km = kill.match(/×\s*(\d+)\s*발\s*×\s*(\d+)\s*히트/);
+    const sm = stag.match(/1발\s*=\s*(\d+)\s*히트/);
+    const same = km && sm && Number(km[1]) * Number(km[2]) === Number(sm[1]);
+    check('피해와 누적치가 같은 배수를 쓴다', !!same, JSON.stringify(stagUi));
+  }
 
   {
     // 마지막 둘은 **아니어야** 한다 — 막는 문구와 아무 표기 없는 것
