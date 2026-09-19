@@ -125,7 +125,117 @@ const check = (label, cond, extra) => {
     check(name + ' — 상성 배율이 무장마다 같다',
       mults.length <= 1, '나온 배율: ' + mults.join(', '));
   }
+  /* ── 무장이 적 내성을 깎는다 ──
+     「対象の耐ビーム補正を30%減でダメージ計算」이 계산 어디에도 안 들어가고 있었다.
+     뜻은 위키 해설이 못 박아 둔다 — 「30%減算した状態(対象耐ビーム補正70%の状態)」.
+     **보정값의 70%** 이지 −30 이 아니다. 그래서 빼는 것이 아니라 곱하는지를 잰다. */
+  const foe = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const w = t => ({ info: { '備考': t } });
+    const tot = { hp: 20000, armorRange: 50, armorBeam: 50, armorMelee: 50 };
+    return {
+      읽기: [
+        T.weaponFoeArmorCut(w('対象の耐ビーム補正を40%減でダメージ計算')),
+        T.weaponFoeArmorCut(w('攻撃対象の耐格闘補正を30%減でダメージ計算')),
+        T.weaponFoeArmorCut(w('移動射撃可 / よろけ有')),          // 없는 것은 0
+        T.weaponFoeArmorCut(w('対象のシールドHPを無視'))            // 실드 무시는 내성이 아니다
+      ],
+      // 보정 50 을 40% 깎으면 30 이다(−40 이 되어 10 이 아니다). 내구는 HP/(1−보정/100).
+      깎기전: T.durabilityOf(tot, 'armorBeam'),
+      깎은뒤: T.durabilityOf({ ...tot, armorBeam: 50 * (1 - 40 / 100) }, 'armorBeam'),
+      뺄경우: T.durabilityOf({ ...tot, armorBeam: 50 - 40 }, 'armorBeam')
+    };
+  });
+
+  /* ── 화면 끝까지 ── 건담 DX 로 자쿠Ⅰ 을 때린다.
+     트윈 새틀라이트 캐논은 **집속 필수라 비집속 위력이 없어**(power = null) 여태 이 목록에서
+     통째로 빠져 있었다 — 103 종이 그랬다. 그 줄이 뜨는 것과, 두 꼬리표가 **잘리지 않고**
+     다 보이는 것을 함께 본다(한 칸에 몰아넣었더니 「집속…」으로 잘렸다). */
+  const ui = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const c = document.querySelector('#infoClose');
+    if (c && document.body.classList.contains('info-open')) c.click();
+    const q = document.querySelector('#msQuery');
+    q.value = '건담 DX'; q.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(900);
+    const card = document.querySelector('#msList .ms-card');
+    if (!card) return '(기체 없음)';
+    card.click(); await wait(1500);
+    document.querySelector('#pietanBtn').click(); await wait(700);
+    // 앞 단계에서 이미 상대를 골라 둔 상태라, 목록 자리에는 「‹ 다른 기체」가 있다.
+    // 그걸 안 눌러 두면 그 버튼을 눌러 버려 **앞 상대가 그대로 남는다**(실측으로 밟았다).
+    const back = document.querySelector('.pietan-back');
+    if (back) { back.click(); await wait(500); }
+    const pq = document.querySelector('#pietanQuery');
+    // 상대는 **내성이 높은** 기체라야 한다. 자쿠Ⅰ 로는 20% 를 깎아도 발수가 그대로여서
+    // (ceil 이 삼킨다) 되돌려도 게이트가 안 물렸다 — 실측으로 확인하고 바꾼 자리다.
+    pq.value = '사이코 건담'; pq.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(900);
+    // 「‹ 다른 기체」가 남아 있으면 그것을 고르지 않는다
+    const first = [...document.querySelectorAll('#pietanList > *')]
+      .find(x => !/다른 기체|검색 결과/.test(x.textContent));
+    if (!first) return '(적 없음)';
+    first.click(); await wait(1200);
+    const foeName = (document.querySelector('.pietan-out-lb') || {}).textContent || '(모름)';
+    const rows = [...document.querySelectorAll('.pietan-out-row')].map(r => {
+      const pierce = r.querySelector('.pietan-pierce');
+      const charge = r.querySelector('.pietan-charge');
+      const box = el => el ? el.getBoundingClientRect() : null;
+      const nb = box(r.querySelector('.pietan-out-nm'));
+      return {
+        nm: (r.querySelector('.pietan-out-tx') || {}).textContent || '',
+        pierce: pierce ? pierce.textContent : null,
+        charge: charge ? charge.textContent : null,
+        // 꼬리표가 이름 칸 밖으로 잘려 나가지 않았는가
+        fits: !pierce || (box(pierce).right <= nb.right + 1 && box(pierce).width > 20),
+        hits: Number(((r.querySelector('.pietan-out-hits') || {}).textContent || '').replace(/[^\d]/g, '')),
+        per: Number(((r.querySelector('.pietan-out-dmg') || {}).textContent || '').replace(/,/g, '').match(/\d+/) || [0])
+      };
+    });
+    return { foe: foeName, rows };
+  });
+
   await br.close();
+
+  {
+    const f = foe;
+    check('무장 備考에서 내성 감소를 읽는다 (없으면 0)',
+      f && f.읽기.join() === '40,30,0,0', JSON.stringify(f && f.읽기));
+    // 여기가 상대값과 절대값이 갈리는 자리다 — 빼면 10 이 되어 내구가 22222 가 된다
+    check('「N%減」을 보정값에 곱한다 (빼지 않는다)',
+      f && f.깎은뒤 === 28571 && f.깎기전 === 40000 && f.뺄경우 !== f.깎은뒤,
+      JSON.stringify(f));
+  }
+  {
+    const rows = (ui && Array.isArray(ui.rows)) ? ui.rows : [];
+    console.log('  (상대: ' + (ui && ui.foe) + ')');
+    const sat = rows.find(r => /새틀라이트 캐논$/.test(r.nm.trim()));
+    check('집속 필수 무장이 격파 목록에 든다 (트윈 새틀라이트 캐논)', !!sat,
+      JSON.stringify(rows.map(r => r.nm)));
+    check('그 줄에 집속·내성 감소가 둘 다 붙는다',
+      !!sat && sat.charge === '집속' && sat.pierce === '내빔 −40%', JSON.stringify(sat));
+    check('꼬리표가 이름 칸에서 잘리지 않는다',
+      rows.every(r => r.fits), JSON.stringify(rows.filter(r => !r.fits)));
+    check('내성을 깎는 다른 무장도 표시된다 (빔 재블린)',
+      rows.some(r => r.pierce === '내격투 −20%'), JSON.stringify(rows.map(r => r.pierce)));
+
+    /* ── 깎은 값이 **실제로 쓰이는가** ──
+       위 단위 검사(durabilityOf)는 적용 자리를 안 본다 — 계산에서 빼 버려도 통과했다.
+       공식을 베끼지 않고 재는 법: **같은 속성**의 두 무장을 견준다.
+       발수 × 1발 ≒ 적 내구다. 내성 감소가 없으면 두 무장이 같은 내구를 가리켜야 하고,
+       감소가 걸리면 깎인 쪽만 작아진다. 실측(프로토타입 사이코 건담):
+         하이퍼 빔 소드(감소 없음) 5,051 × 10발 = 50,510
+         빔 재블린(내격투 −20%)   4,529 ×  9발 = 40,761   → 비 0.807
+         빔 재블린을 되돌리면      4,529 × 11발 = 49,819   → 비 0.986
+       0.90 을 경계로 두면 둘이 깨끗이 갈린다. */
+    const jav = rows.find(r => r.pierce === '내격투 −20%');
+    const swd = rows.find(r => !r.pierce && /빔 소드/.test(r.nm));
+    const ratio = jav && swd && swd.hits * swd.per
+      ? (jav.hits * jav.per) / (swd.hits * swd.per) : null;
+    check('깎은 내성이 격파 발수에 실제로 반영된다',
+      ratio != null && ratio < 0.90,
+      JSON.stringify({ jav, swd, ratio: ratio && +ratio.toFixed(3) }));
+  }
 
   check('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].join(' / '));
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

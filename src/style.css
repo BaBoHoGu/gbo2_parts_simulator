@@ -1303,8 +1303,23 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
 /* 내 무장 → 상대 격파 (TTK 역방향) */
 .pietan-out-lb { font-size: var(--fs-sm); font-weight: 700; color: var(--muted); margin: 10px 0 4px; padding-top: 8px; border-top: 1px solid var(--line); display: block; }
 .pietan-out-row { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; padding: 3px 0; }
-.pietan-out-nm { font-size: var(--fs-sm); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pietan-out-nm { font-size: var(--fs-sm); color: var(--text); display: flex; align-items: center; min-width: 0; }
+/* 이름만 줄이고 꼬리표(집속·내성 감소)는 줄이지 않는다 */
+.pietan-out-tx { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pietan-pierce, .pietan-charge { flex: 0 0 auto; white-space: nowrap; }
 .pietan-out-dmg { font-size: var(--fs-xs); color: var(--dim); font-variant-numeric: tabular-nums; text-align: right; }
+/* 무장이 상대 내성을 깎는다는 표시 — 왜 이 무장만 발수가 적은지 밝힌다 */
+.pietan-pierce {
+  margin-left: 6px; padding: 1px 5px; border-radius: 4px;
+  font-size: var(--fs-2xs); font-style: normal; font-weight: 700;
+  color: var(--bg); background: var(--accent); vertical-align: 1px;
+}
+/* 집속 위력으로 센 줄 — 비집속 줄과 같은 눈금으로 읽히면 안 된다 */
+.pietan-charge {
+  margin-left: 6px; padding: 1px 5px; border-radius: 4px;
+  font-size: var(--fs-2xs); font-style: normal; font-weight: 700;
+  color: var(--mid); border: 1px solid var(--line); vertical-align: 1px;
+}
 .pietan-out-hits { font-size: var(--fs-md); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; min-width: 40px; }
 .pietan-more { padding: 8px; text-align: center; color: var(--muted); font-size: var(--fs-xs); }
 @media (max-width: 620px) { .pietan-cols { grid-template-columns: 1fr; } }

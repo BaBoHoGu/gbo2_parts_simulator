@@ -6815,6 +6815,26 @@
   }
 
   /** 내 무장 → 상대 격파까지 발수 (TTK 역방향). 상대의 파츠·체크한 방어 스킬로 피해가 깎인다. */
+  /* 무장 **자체**가 상대 내성을 깎는다 — 「対象の耐ビーム補正を30%減でダメージ計算」.
+     전수로 35 무장(33 기체)이고, 여태 계산 어디에도 안 들어갔다(사용자 지적).
+
+     뜻은 위키 해설이 못 박아 둔다 — GP02[BB] 「射撃出力リミッター解除」 항:
+       「命中時に対象の耐ビーム補正を30%減算した状態(対象耐ビーム補正70%の状態)で
+         ダメージ計算を行う」
+     **보정값의 70%** 이지 −30 이 아니다. 그래서 빼지 않고 곱한다.
+
+     스킬 쪽(롱 레인지 어댑터 등)과 달리 **조건이 없다.** 원문이 「…でダメージ計算」이라
+     그 무장으로 때리면 늘 걸린다 — 체크로 둘 이유가 없다.
+     깎는 내성은 언제나 **그 무장의 속성**이다(35건 전수 확인, 어긋나는 건 0). */
+  const FOE_ARMOR_W_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を?\s*(\d+)\s*[%％]\s*減/;
+
+  /** 이 무장이 적 내성을 몇 % 깎는가. 없으면 0. */
+  function weaponFoeArmorCut(w) {
+    const note = (w && w.info && w.info['備考']) || '';
+    const m = FOE_ARMOR_W_RE.exec(String(note));
+    return m ? Number(m[2]) : 0;
+  }
+
   function renderPietanOutgoing(box) {
     const enemyTot = enemyStatsTotal();
     const outAttr = pietanMatchup(state.ms.属性, pietanMs.属性);   // 내→적 상성 (자동)
@@ -6831,9 +6851,22 @@
     for (const w of msWeapons()) {
       if (w.type === 'shield') continue;
       const lv = weaponLevel(w), d = lv ? w.levels[lv] : null;
-      if (!d || !d.power) continue;
+      if (!d) continue;
+      /* 집속 **필수** 무장은 비집속 위력이 아예 없다(power = null). `!d.power` 로 걸러 내니
+         103 종이 이 목록에서 통째로 빠져 있었다 — GP02[BB]의 「射撃出力リミッター解除」(4500)
+         처럼 그 기체의 주력기가 격파 목록에 없었다. 비집속이 없는 것은 집속 위력으로 센다.
+         비집속과 집속을 **둘 다** 가진 무장은 예전처럼 비집속만 보여 준다(여기서는 늘리지 않는다). */
+      const chargeOnly = !d.power && d.powerCharged != null;
+      const basePower = d.power || (chargeOnly ? d.powerCharged : 0);
+      if (!basePower) continue;
       const attr = weaponAttr(w);
-      const enemyEff = durabilityOf(enemyTot, ARMOR_KEY[attr] || 'armorRange');
+      const aKey = ARMOR_KEY[attr] || 'armorRange';
+      // 무장이 적 내성을 깎으면 **그 무장에 한해** 깎인 내성으로 내구를 낸다.
+      const foeCut = weaponFoeArmorCut(w);
+      const eTot = foeCut
+        ? { ...enemyTot, [aKey]: (enemyTot[aKey] || 0) * (1 - foeCut / 100) }
+        : enemyTot;
+      const enemyEff = durabilityOf(eTot, aKey);
       // 조건부 파츠 경감(관통·폭풍)은 무장의 備考 를 보므로 피탄 쪽과 같은 모양으로 맞춰 넘긴다.
       const wc = { name: w.name, attr, type: w.type, psycommu: !!w.psycommu, note: (w.info && w.info['備考']) || '' };
       const eFactor = staggerDmgFactor([...eCuts, ...conditionalPartCuts(eEq, wc)], attr);
@@ -6842,11 +6875,13 @@
       // 카테고리 특공 프로그램은 상성 우위 배율 자체를 130%→140% 로 올린다
       const aBonus = attrBonusOf(state.equipped, outAttr);
       const raw = w.type === 'melee'
-        ? D.meleeDamage(d.power, a, { attr: outAttr, attrBonus: aBonus })
-        : D.shootingDamage(d.power, a, { attr: outAttr, attrBonus: aBonus });
+        ? D.meleeDamage(basePower, a, { attr: outAttr, attrBonus: aBonus })
+        : D.shootingDamage(basePower, a, { attr: outAttr, attrBonus: aBonus });
       const dmg = Math.floor(D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]) * eFactor);
       const mult = fireMult(w);
-      const n = (mult.nc && mult.nc.n) || 1;
+      // 집속으로 세는 무장은 동시발사 배수도 집속 쪽을 써야 한다
+      const nMult = chargeOnly ? mult.ch : mult.nc;
+      const n = (nMult && nMult.n) || 1;
       let per = dmg * n;                            // 전탄(동시발사) 1트리거 피해
       // 소이 등 고정 피해는 위력과 **별개로** 더 들어간다. 이걸 빼면 격파수가 실제보다
       // 많게 나온다. 히트 수가 범위인 경우는 적은 쪽을 써서 과대평가하지 않는다.
@@ -6856,12 +6891,12 @@
       let shHits = undefined, shNote = '';
       if (pietanShield && eShield) {
         const sm = D.shieldMultOf(w);
-        const sHit = shieldHit(dmg, sm, false, D.shieldDmgPctOf(state.equipped, attr));
+        const sHit = shieldHit(dmg, sm, chargeOnly, D.shieldDmgPctOf(state.equipped, attr));
         // 같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다.
         if (sHit == null) { shHits = null; shNote = sm && sm.unknown ? '보정 불명' : '표기 없음'; }
         else shHits = Math.ceil(eShield.hp / (sHit * n));
       }
-      rows.push({ name: T.weaponName(w.name), attr, per, n, shHits, shNote,
+      rows.push({ name: T.weaponName(w.name), attr, per, n, shHits, shNote, foeCut, chargeOnly,
         hits: per > 0 ? Math.ceil(enemyEff / per) : null });
     }
     if (!rows.length) return;
@@ -6873,7 +6908,25 @@
     for (const w of rows) {
       const row = el('div', 'pietan-out-row');
       row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
-      row.append(el('span', 'pietan-out-nm', w.name));
+      /* 이름은 길면 줄이되 **꼬리표는 안 줄인다.** 한 칸에 몰아넣었더니 꼬리표가 둘 붙는
+         무장(트윈 새틀라이트 캐논: 집속 + 내빔 −40%)에서 꼬리표가 잘려 「집속…」이 됐다. */
+      const nm = el('span', 'pietan-out-nm');
+      nm.append(el('span', 'pietan-out-tx', w.name));
+      // 집속 위력으로 센 줄은 그렇다고 밝힌다 — 비집속 줄과 같은 눈금으로 읽히면 안 된다
+      if (w.chargeOnly) {
+        const c = el('i', 'pietan-charge', '집속');
+        c.title = '비집속 위력이 없는 무장이라 집속 위력으로 셉니다';
+        nm.append(c);
+      }
+      // 왜 이 무장만 발수가 적은지 밝힌다. 칸(그리드 열)을 늘리지 않으려고 이름 안에 붙인다.
+      if (w.foeCut) {
+        const tag = el('i', 'pietan-pierce', '내' + ATTR_LABEL[w.attr] + ' −' + w.foeCut + '%');
+        tag.title = '이 무장은 상대 내' + ATTR_LABEL[w.attr] + ' 보정을 '
+          + w.foeCut + '% 깎은 값으로 계산합니다 (보정값의 '
+          + (100 - w.foeCut) + '% 상태)';
+        nm.append(tag);
+      }
+      row.append(nm);
       row.append(el('span', 'pietan-out-dmg', w.per.toLocaleString() + (w.n > 1 ? ' (×' + w.n + ')' : '')));
       if (w.shHits !== undefined) {
         row.append(el('span', 'pietan-out-sh', w.shHits != null ? '실드 ' + w.shHits + '발' : w.shNote));
@@ -9057,6 +9110,8 @@
   window.GBO2UiTest = {
     msData: () => msData,
     msLevel,
+    weaponFoeArmorCut,      // 무장이 적 내성을 깎는 몫 — 게이트에서 재려고
+    durabilityOf,
     thrusterSkillsOf,
     thrusterUnmodelled,     // 「계산 안 함」에 든 것과 그 이유를 게이트에서 재려고
     thrusterSkillFx,
