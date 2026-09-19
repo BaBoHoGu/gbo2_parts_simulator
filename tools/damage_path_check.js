@@ -195,8 +195,102 @@ const check = (label, cond, extra) => {
     return { foe: foeName, rows };
   });
 
+  /* ── 스킬의 적 내성 감소 ①: **어느 무장에 걸리는가** ──
+     여기가 위험한 자리다. 「対象の耐格闘補正を N%減」이 같은 말로 적혀 있어도
+     블레이드 태클은 **태클**, 고성능 카운터는 **카운터**, 바이오센서(PΖΖ)는 **헤비어택**
+     전용이다. 「格闘」이 들어갔다고 격투 무장 전부에 걸면 70% 가 사벨에 붙어
+     피해가 통째로 거짓이 된다(실제로 처음에 그렇게 잡혔다).
+     그래서 원문이 범위를 **적었을 때만** 인정한다 — 이 표가 그 판정을 못 박는다. */
+  const scope = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const CASES = [
+      ['ラムズゴック', 'ブレードタックル', null],
+      ['リバウ', '追撃格闘補助プログラム', null],
+      ['ゴッドガンダム', '明鏡止水', 'melee'],
+      ['クシャトリヤ・リペアード', '高性能カウンタープログラム', null],
+      ['プロトタイプΖΖガンダム', '能力UP「バイオセンサー（PΖΖ）」', null],
+      ['F90［MZ仕様］', 'OS「TYPE C.A-Ⅲ」?', 'melee'],
+      ['V2ガンダム', 'ロングレンジ・アダプター', 'solid,beam'],
+      ['V2アサルトバスターガンダム', 'ロングレンジ・アダプター', 'solid,beam']
+    ];
+    const out = [];
+    for (const [msName, skName, want] of CASES) {
+      const ms = T.msData().filter(m => m.MS名.replace(/_LV\d+$/, '') === msName).pop();
+      if (!ms) { out.push({ msName, skName, got: '(기체 없음)', want }); continue; }
+      T.setMs(ms);
+      const f = T.foeArmorOf(skName);
+      out.push({ msName, skName, want,
+        got: f ? (f.scope ? f.scope.join(',') : null) : '(못 읽음)',
+        val: f ? f.list.map(x => x.ax + ':' + x.pct).join(' ') : null });
+    }
+    return out;
+  });
+
+  /* ── 스킬의 적 내성 감소 ②: **정말 반영되는가** ──
+     V2AB 의 롱 레인지 어댑터는 내실탄·내빔을 40% 깎는다. 스킬을 켜면 사격 무장은
+     발수가 줄고 **격투 무장은 그대로**여야 한다 — 범위를 지키는지까지 한 번에 잰다.
+     실측: 스프레이 빔 포드 7→6 · M·B 라이플 10→8 · B 사벨 12→12. */
+  const skillOn = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const pick = async () => {
+      const b = document.querySelector('#pietanBtn'); b.click(); await wait(600);
+      const back = document.querySelector('.pietan-back');
+      if (back) { back.click(); await wait(400); }
+      const q = document.querySelector('#pietanQuery');
+      q.value = '사이코 건담'; q.dispatchEvent(new Event('input', { bubbles: true }));
+      await wait(800);
+      const first = [...document.querySelectorAll('#pietanList > *')]
+        .find(x => !/다른 기체|검색 결과/.test(x.textContent));
+      if (!first) return null;
+      first.click(); await wait(1100);
+      const rows = {};
+      for (const r of document.querySelectorAll('.pietan-out-row')) {
+        const nm = (r.querySelector('.pietan-out-tx') || {}).textContent || '';
+        rows[nm] = Number(((r.querySelector('.pietan-out-hits') || {}).textContent || '').replace(/[^\d]/g, ''));
+      }
+      document.querySelector('#pietanClose').click(); await wait(300);
+      return rows;
+    };
+    const c = document.querySelector('#infoClose');
+    if (c && document.body.classList.contains('info-open')) c.click();
+    const q = document.querySelector('#msQuery');
+    q.value = 'V2 어설트 버스터'; q.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(900);
+    const card = document.querySelector('#msList .ms-card');
+    if (!card) return '(기체 없음)';
+    card.click(); await wait(1500);
+    const off = await pick();
+    document.querySelector('#skillBtn').click(); await wait(300);
+    const item = [...document.querySelectorAll('#skillMenu .skill-item')]
+      .find(x => /롱 레인지/.test(x.textContent));
+    if (!item) return '(스킬 없음)';
+    item.querySelector('input').click(); await wait(600);
+    const on = await pick();
+    return { off, on };
+  });
+
   await br.close();
 
+  {
+    const bad = (scope || []).filter(x => x.got !== x.want);
+    check('스킬의 내성 감소가 어느 무장에 걸리는지 원문대로 가린다 (8건)',
+      bad.length === 0, JSON.stringify(bad, null, 1));
+    // 전부 null 이면 「아무것도 안 넣는다」로도 통과해 버린다 — 넣는 쪽이 있는지 함께 본다
+    check('그중 반영하는 것이 실제로 있다',
+      (scope || []).filter(x => x.got).length === 4, JSON.stringify((scope || []).map(x => x.got)));
+  }
+  {
+    const r = skillOn;
+    const ok2 = r && r.off && r.on;
+    const shoot = ok2 && Object.keys(r.off).filter(k => /라이플|포드/.test(k));
+    check('스킬을 켜면 사격 무장의 격파 발수가 준다',
+      ok2 && shoot.length >= 2 && shoot.every(k => r.on[k] < r.off[k]),
+      JSON.stringify(r));
+    // 범위를 안 지키면 격투 무장도 같이 줄어든다 — 여기가 진짜 검사다
+    check('격투 무장은 그대로다 (범위를 지킨다)',
+      ok2 && Object.keys(r.off).filter(k => /사벨/.test(k)).every(k => r.on[k] === r.off[k]),
+      JSON.stringify(r));
+  }
   {
     const f = foe;
     check('무장 備考에서 내성 감소를 읽는다 (없으면 0)',

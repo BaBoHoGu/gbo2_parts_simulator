@@ -299,6 +299,29 @@ const LIST = process.argv.includes('--list');
     };
   });
 
+  /* 반영되지 **않는** 쪽도 본다. 리바우의 추격 격투 보조 프로그램은 값(10%)은 분명한데
+     **어느 무장에 걸리는지**를 그 조각이 안 적는다 — 그런 것은 넣지 않는다.
+     (프로토타입 ΖΖ 의 바이오센서 70% 가 더 센 예지만 그 기체는 스킬 드롭다운 자체가 없다 —
+      스킬 표에 읽히는 값이 없어 등재가 안 됐다. 그래서 드롭다운이 있는 쪽으로 잰다.) */
+  const foe2 = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const c = document.querySelector('#infoClose');
+    if (c && document.body.classList.contains('info-open')) c.click();
+    const q = document.querySelector('#msQuery');
+    q.value = '리바우'; q.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(900);
+    const card = document.querySelector('#msList .ms-card');
+    if (!card) return '(기체 없음)';
+    card.click(); await wait(1500);
+    const b = document.querySelector('#skillBtn');
+    if (!b || b.closest('#skillBox').hidden) return '(스킬 없음)';
+    b.click(); await wait(300);
+    return [...document.querySelectorAll('#skillMenu .skill-item')].map(x => ({
+      nm: (x.querySelector('.k') || {}).textContent,
+      foe: x.querySelector('.foe') ? x.querySelector('.foe').textContent : null
+    }));
+  });
+
   await br.close();
 
   // 이름+LV+효과 단위로 접는다
@@ -441,9 +464,16 @@ const LIST = process.argv.includes('--list');
     ok('적 내실탄·내빔 감소를 적어 보인다',
       row && row.foe && /내실탄/.test(row.foe) && /내빔/.test(row.foe) && /15%/.test(row.foe),
       JSON.stringify(row));
-    // 상대가 없는 계산이라는 것까지 적어야 한다 — 안 적으면 반영된 줄 안다
-    ok('수치에 안 들어간다고 적는다', row && row.foe && /안 들어갑니다/.test(row.foe),
-      JSON.stringify(row));
+    /* 예전에는 「수치에 안 들어갑니다」라고 적었다 — 그때는 정말 안 들어갔다.
+       지금은 **피탄 시뮬의 격파 발수에 들어간다**(스킬을 켜면 걸린다). 그래서 문구가 바뀌었고,
+       옛 주장을 붙잡고 있던 이 검사가 그 변화를 제대로 잡아냈다.
+       고치되 더 세게 만든다 — **반영되는 것과 안 되는 것을 둘 다** 본다.
+       바이오센서(PΖΖ)는 헤비어택 전용이라 넣으면 안 되는 쪽이다. */
+    ok('반영되는 스킬은 반영된다고 적는다',
+      row && row.foe && /반영됩니다/.test(row.foe), JSON.stringify(row));
+    const noScope = Array.isArray(foe2) && foe2.find(x => /추격 격투/.test(x.nm));
+    ok('동작 한정 스킬은 안 들어간다고 적는다',
+      noScope && noScope.foe && /안 들어갑니다/.test(noScope.foe), JSON.stringify(foe2));
   }
 
   {

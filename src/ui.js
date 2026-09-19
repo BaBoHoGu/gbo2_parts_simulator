@@ -6862,9 +6862,15 @@
       const attr = weaponAttr(w);
       const aKey = ARMOR_KEY[attr] || 'armorRange';
       // 무장이 적 내성을 깎으면 **그 무장에 한해** 깎인 내성으로 내구를 낸다.
-      const foeCut = weaponFoeArmorCut(w);
+      /* 무장 몫과 스킬 몫이 겹치면 **곱한다.** 원문에 겹침 규칙이 없어 둘 중 하나를 골라야
+         하는데, 둘 다 「보정값의 N% 상태」라는 말이라 비율끼리 곱하는 쪽이 글에 맞는다.
+         더하는 쪽보다 적이 더 단단해지므로(0.6×0.85 = 0.51 > 1−0.55) 부풀지도 않는다. */
+      const wCut = weaponFoeArmorCut(w);
+      const sCut = skillFoeArmorCut(attr);
+      const keep = (1 - wCut / 100) * (1 - sCut / 100);
+      const foeCut = Math.round((1 - keep) * 1000) / 10;
       const eTot = foeCut
-        ? { ...enemyTot, [aKey]: (enemyTot[aKey] || 0) * (1 - foeCut / 100) }
+        ? { ...enemyTot, [aKey]: (enemyTot[aKey] || 0) * keep }
         : enemyTot;
       const enemyEff = durabilityOf(eTot, aKey);
       // 조건부 파츠 경감(관통·폭풍)은 무장의 備考 를 보므로 피탄 쪽과 같은 모양으로 맞춰 넘긴다.
@@ -8159,6 +8165,30 @@
   const FOE_ARMOR_KO = { '実弾': '내실탄', 'ビーム': '내빔', '格闘': '내격투' };
   const FOE_ARMOR_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を\s*(\d+)\s*[%％]\s*減/g;
 
+  const FOE_ARMOR_AX = { '実弾': 'solid', 'ビーム': 'beam', '格闘': 'melee' };
+
+  /* **어느 무장에 걸리는가** — 이것을 못 정하면 넣으면 안 된다.
+     같은 「対象の耐格闘補正を N%減」이라도 걸리는 범위가 완전히 다르다:
+       「格闘属性兵装による攻撃時」「格闘攻撃時」 → 격투 속성 무장 전부      (넣을 수 있다)
+       「スナイプモード時」                      → 사격 속성 무장 전부      (넣을 수 있다)
+       「ヘビーアタック時」「タックル」「カウンター」 → **무장 목록에 없는 동작** (넣으면 안 된다)
+     마지막 것을 격투 무장 전부에 걸면 바이오센서(PΖΖ)의 70% 가 사벨에 붙어
+     피해가 통째로 거짓이 된다. 못 정하는 것은 예전처럼 「적어만 두기」로 남긴다. */
+  /* 범위는 **원문이 그렇게 적었을 때만** 인정한다(화이트리스트).
+     「格闘」이 들어갔다고 격투 무장 전부로 읽으면 안 된다 — 「耐格闘補正」 자체에도 들어 있어
+     블레이드 태클(태클 전용)·고성능 카운터(카운터 전용)가 격투 무장 전부로 잡혔다(실측).
+     그 둘에 30%·50% 가 사벨에 붙으면 피해가 통째로 거짓이 된다. */
+  const FOE_SCOPE_MARK = [
+    [/ヘビーアタック|タックル|カウンター/, 'action'],                 // 무장 목록에 없는 동작
+    [/スナイプモード/, ['solid', 'beam']],
+    [/格闘属性兵装による攻撃時|格闘攻撃時|格闘兵装による攻撃/, ['melee']]
+  ];
+  const foeArmorScopeOf = seg => {
+    for (const [re, v] of FOE_SCOPE_MARK) if (re.test(seg)) return v;
+    return null;
+  };
+
+  /** 그 스킬이 깎는 적 내성. {list:[{ax,pct}], scope:[속성]|null, txt} · 없으면 null. */
   function foeArmorOf(name) {
     if (!state.ms) return null;
     const modes = skillModesFor(msSkillsData[baseName(state.ms.MS名)] || [], state.form);
@@ -8168,14 +8198,48 @@
     if (!sk) return null;
     const blob = ((sk.desc || '') + ' / ' + (sk.eff || '')).replace(/\s+/g, ' ');
     const hit = new Map();
-    for (const m of blob.matchAll(FOE_ARMOR_RE)) hit.set(FOE_ARMOR_KO[m[1]], Number(m[2]));
+    let scope = null, decided = false;
+    /* 불릿은 **앞 머리줄의 범위를 물려받는다** — 롱 레인지 어댑터가 그 꼴이다:
+         「スナイプモード時、以下の効果を発動」   ← 머리줄이 범위를 정하고
+         「・対象の耐実弾補正を 15%減」           ← 불릿에는 범위 표시가 없다
+       스러스터 파서에서 이미 겪은 글투다. 불릿 자신이 범위를 적었으면 그쪽이 이긴다. */
+    let carried = null;
+    for (const part of blob.split(/\s*\/\s*/)) {
+      const bullet = /^[・･]/.test(part);
+      const own = foeArmorScopeOf(part);
+      if (!bullet) carried = own;                  // 머리줄이 범위를 새로 정한다
+      const found = [...part.matchAll(FOE_ARMOR_RE)];
+      if (!found.length) continue;
+      for (const m of found) hit.set(m[1], Number(m[2]));
+      if (decided) continue;
+      decided = true;
+      const v = own || carried;
+      scope = (v && v !== 'action') ? v : null;    // 못 정했거나 동작 한정이면 안 넣는다
+    }
     if (!hit.size) return null;
     const vals = [...new Set(hit.values())];
+    const ko = [...hit.keys()].map(k => FOE_ARMOR_KO[k]);
     const txt = vals.length === 1
-      ? [...hit.keys()].join('·') + ' −' + vals[0] + '%'
-      : [...hit].map(([k, v]) => k + ' −' + v + '%').join(' · ');
-    return '적 ' + txt + ' — 상대 내성을 깎는 효과라 '
-      + '상대가 없는 이 계산에는 안 들어갑니다';
+      ? ko.join('·') + ' −' + vals[0] + '%'
+      : [...hit].map(([k, v]) => FOE_ARMOR_KO[k] + ' −' + v + '%').join(' · ');
+    return {
+      list: [...hit].map(([k, v]) => ({ ax: FOE_ARMOR_AX[k], pct: v })),
+      scope,
+      txt: '적 ' + txt + (scope
+        ? ' — 스킬을 발동하면 피탄 시뮬의 격파 발수에 반영됩니다'
+        : ' — 어느 무장에 걸리는지 원문으로 못 정해 수치에는 안 들어갑니다')
+    };
+  }
+
+  /** 발동시킨 스킬들이 이 무장 속성의 적 내성을 몇 % 깎는가. 없으면 0. */
+  function skillFoeArmorCut(attr) {
+    let keep = 1;                     // 남는 비율 — 여럿이면 곱한다
+    for (const sk of activeSkills()) {
+      const f = foeArmorOf(sk.name);
+      if (!f || !f.scope || !f.scope.includes(attr)) continue;
+      for (const x of f.list) if (x.ax === attr) keep *= 1 - x.pct / 100;
+    }
+    return Math.round((1 - keep) * 1000) / 10;
   }
 
   function skillSummary(sk) {
@@ -8203,7 +8267,8 @@
     if (e.hpUp) num.push('HP ' + sg(e.hpUp));
     const how = [skillDur(sk), sk.hp ? 'HP ' + sk.hp + '% 이하' : null, sk.manual ? '수동' : null]
       .filter(Boolean).join(' · ');
-    return { num: num.join(' · ') || '—', how, foe: foeArmorOf(sk.name) };
+    const f = foeArmorOf(sk.name);
+    return { num: num.join(' · ') || '—', how, foe: f && f.txt };
   }
 
   // 보정값은 damage.js 의 ETC_ATTACK 에서 그대로 가져온다 — 손으로 적어 두었더니
@@ -9110,7 +9175,11 @@
   window.GBO2UiTest = {
     msData: () => msData,
     msLevel,
+    // foeArmorOf 는 지금 고른 기체를 본다 — 게이트가 기체를 바꿔 가며 훑으려고 연다.
+    setMs: m => { state.ms = m; },
     weaponFoeArmorCut,      // 무장이 적 내성을 깎는 몫 — 게이트에서 재려고
+    skillFoeArmorCut,       // 발동시킨 스킬이 깎는 몫
+    foeArmorOf,
     durabilityOf,
     thrusterSkillsOf,
     thrusterUnmodelled,     // 「계산 안 함」에 든 것과 그 이유를 게이트에서 재려고
