@@ -102,14 +102,54 @@ const CONDITIONAL = new Set([
       const t = document.querySelector('#partList > *');
       if (!t) return null;
       t.click();
-      await new Promise(r => setTimeout(r, 400));
-      return [...document.querySelectorAll('#detailBody .d-eff')].map(x => ({
-        lb: x.querySelector('.d-eff-lb').textContent,
-        wiki: x.classList.contains('d-wiki'),
-        tx: x.querySelector('.d-eff-tx').textContent
-      }));
+      await new Promise(r => setTimeout(r, 450));
+      const tx = document.querySelector('#detailBody .d-eff-tx');
+      const wiki = document.querySelector('#detailBody .d-wiki');
+      return {
+        boxes: document.querySelectorAll('#detailBody .d-eff').length,
+        lb: (document.querySelector('#detailBody .d-eff-lb') || {}).textContent,
+        main: tx && tx.firstChild ? tx.firstChild.textContent : '',
+        memoLb: (document.querySelector('.d-wiki-lb') || {}).textContent || null,
+        memo: (document.querySelector('.d-wiki-tx') || {}).textContent || null,
+        inside: !!(wiki && tx && tx.contains(wiki)),
+        // 떨림의 원인은 **칸 높이가 파츠마다 달라지는 것**이었다 — 그것을 직접 잰다
+        panelH: Math.round(document.querySelector('#detailPanel').getBoundingClientRect().height),
+        listTop: Math.round(document.querySelector('#partList').getBoundingClientRect().top)
+      };
     };
     return { withMemo: await open('신형 내실탄 장갑'), without: await open('격투 강화') };
+  });
+
+  /* ── 떨림은 표본 둘로는 못 잡는다 ──
+     메모를 상자 안으로 넣어 16 파츠는 잡았는데, 「계산 안 함」이 붙는 14 파츠에서
+     칸이 461 → 478 → 524 로 뛰고 목록이 63px 밀리는 것이 그대로 남아 있었다.
+     표본 둘만 보면 둘 다 461 이라 통과해 버린다 — **163종을 전부** 훑어
+     칸 높이와 목록 자리가 **한 가지뿐인지** 본다. 가려지는 내용은 굴려서 닿는지도 함께. */
+  const sweep = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const s = document.querySelector('#partQuery');
+    s.value = ''; s.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(600);
+    const H = new Set(), T = new Set();
+    let n = 0, cut = 0, reach = 0;
+    for (const t of [...document.querySelectorAll('#partList > *')]) {
+      t.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await wait(25);
+      n++;
+      H.add(Math.round(document.querySelector('#detailPanel').getBoundingClientRect().height));
+      T.add(Math.round(document.querySelector('#partList').getBoundingClientRect().top));
+      const body = document.querySelector('#detailBody');
+      if (body.scrollHeight > body.clientHeight + 1) {
+        cut++;
+        body.scrollTop = body.scrollHeight;
+        await wait(15);
+        // 끝까지 굴렸을 때 마지막 내용이 칸 안에 들어오면 닿는 것이다
+        const last = body.lastElementChild;
+        if (last && last.getBoundingClientRect().bottom <= body.getBoundingClientRect().bottom + 2) reach++;
+        body.scrollTop = 0;
+      }
+    }
+    return { n, 높이: [...H], 목록자리: [...T], 잘린파츠: cut, 굴려서닿음: reach };
   });
   await br.close();
 
@@ -126,16 +166,36 @@ const CONDITIONAL = new Set([
     bad2.length ? bad2.join(', ') + '\n      → 구현됐으면 UNMODELLED_FX 에서 그 줄을 지우세요.' : '');
   {
     const a = memo && memo.withMemo, b = memo && memo.without;
-    check('메모가 있는 파츠는 칸이 둘로 갈린다',
-      !!a && a.length === 2 && a[0].lb === '특성' && a[1].lb === '위키 메모' && a[1].wiki,
-      JSON.stringify(a));
-    // 갈라 놓기만 하고 원문에 「※ 위키」가 남아 있으면 갈린 것이 아니다
+    check('위키 메모를 「위키 메모」로 갈라 적는다',
+      !!a && a.memoLb === '위키 메모' && !!a.memo, JSON.stringify(a));
+    // 갈라 놓기만 하고 게임 설명 쪽에 「※ 위키」가 남아 있으면 갈린 것이 아니다
     check('게임 설명 쪽에 「※ 위키」가 남지 않는다',
-      !!a && a.length === 2 && !/※\s*위키/.test(a[0].tx) && !/※\s*위키/.test(a[1].tx),
-      JSON.stringify(a));
-    // 메모가 없는 파츠에 빈 칸이 생기면 안 된다 — 늘 두 칸을 그리는 실수를 막는다
-    check('메모가 없는 파츠는 칸이 하나뿐이다',
-      !!b && b.length === 1 && b[0].lb === '특성', JSON.stringify(b));
+      !!a && !/※\s*위키/.test(a.main) && !/※\s*위키/.test(a.memo || ''), JSON.stringify(a));
+    check('메모가 없는 파츠에는 메모 칸이 없다',
+      !!b && b.memo === null, JSON.stringify(b));
+
+    /* ── 여기가 진짜 검사다 ──
+       메모를 **상자 밖에** 따로 두었더니 메모가 있는 16 파츠에서만 상세 칸이 97px 길어졌고
+       (실측 581 ↔ 484), 그만큼 아래 파츠 목록이 밀렸다(697 ↔ 600). 목록이 밀리면 커서 밑의
+       파츠가 바뀌어 상자가 또 바뀐다 — 예전에 잡았던 떨림이 그대로 되살아났다(사용자 지적).
+       DOM 모양만 보면 이걸 못 잡는다. **칸 높이와 목록 자리**로 잰다. */
+    check('메모가 있어도 상세 칸 높이가 그대로다 (떨림 방지)',
+      !!a && !!b && a.panelH === b.panelH, JSON.stringify({ 메모있음: a, 메모없음: b }));
+    check('메모가 있어도 파츠 목록이 안 밀린다',
+      !!a && !!b && a.listTop === b.listTop, JSON.stringify({ a, b }));
+
+    // 전수 — 여기가 떨림을 진짜로 막는 자리다
+    const sw = sweep;
+    check('163종을 훑어도 상세 칸 높이가 한 가지뿐이다',
+      sw && sw.n > 150 && sw.높이.length === 1, JSON.stringify(sw));
+    check('163종을 훑어도 파츠 목록이 한 자리에 있다',
+      sw && sw.목록자리.length === 1, JSON.stringify(sw));
+    // 막기만 하고 내용이 닿지 않으면 고친 것이 아니다
+    check('칸에 안 들어가는 내용은 굴려서 닿는다',
+      sw && sw.잘린파츠 > 0 && sw.굴려서닿음 === sw.잘린파츠, JSON.stringify(sw));
+    // 상자가 하나뿐이어야 위 두 가지가 성립한다 — 원인 쪽도 못 박는다
+    check('메모는 특성 상자 안에 들어간다',
+      !!a && a.inside && a.boxes === 1 && !!b && b.boxes === 1, JSON.stringify({ a, b }));
   }
   check('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].join(' / '));
 

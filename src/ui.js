@@ -1498,21 +1498,28 @@
     const descMain = wikiCut < 0 ? desc : desc.slice(0, wikiCut).trim();
     const descNote = wikiCut < 0 ? '' : desc.slice(wikiCut).replace(/^※\s*위키\s*[—:：-]?\s*/, '').trim();
 
+    /* 메모를 **상자 밖에 따로** 두면 안 된다. 특성 상자는 높이를 못 박아 두었는데
+       (.d-eff-tx height:114px — 아래 CSS 주석 참고), 메모 상자는 16 파츠에만 생기므로
+       상세 칸이 97px 씩 늘었다 줄었다 한다. 그러면 아래 파츠 목록이 그만큼 밀리고,
+       밀린 목록 때문에 커서 밑의 파츠가 바뀌어 또 바뀐다 — 예전에 잡았던 떨림이
+       그대로 되살아났다(사용자 지적, 실측 581 ↔ 484 · 목록 697 ↔ 600).
+       그래서 **같은 상자 안**에 넣는다. 상자 수와 높이가 늘 같아 고리가 생기지 않고,
+       길면 예전처럼 상자 안에서 굴러간다. */
     if (descMain) {
       const eff = el('div', 'd-eff');
       eff.append(el('div', 'd-eff-lb', '특성'));
       const tx = el('div', 'd-eff-tx');
       tx.append(withNumbers(descMain));
+      if (descNote) {
+        const note = el('div', 'd-wiki');
+        note.append(el('div', 'd-wiki-lb', '위키 메모'));
+        const nt = el('div', 'd-wiki-tx');
+        nt.append(withNumbers(descNote));
+        note.append(nt);
+        tx.append(note);
+      }
       eff.append(tx);
       box.append(eff);
-    }
-    if (descNote) {
-      const w = el('div', 'd-eff d-wiki');
-      w.append(el('div', 'd-eff-lb', '위키 메모'));
-      const tx = el('div', 'd-eff-tx');
-      tx.append(withNumbers(descNote));
-      w.append(tx);
-      box.append(w);
     }
 
     // 계산에 안 들어가는 효과가 있으면 밝힌다. 설명만 보고 슬롯을 쓰는 일이 없게.
@@ -6140,13 +6147,26 @@
     syncPietanAttrSeg();
   }
 
-  /** 무장의 누적치(よろけ値) — 히트당 %와 1트리거 다발수(x7 등)를 읽는다. */
+  /** 무장의 누적치(よろけ値) — 히트당 %와 1트리거 다발수(x7 등)를 읽는다.
+   *
+   *  배수가 **둘 붙는** 표기가 있다: 「20% x2発 x3射」 = 2발 동시 × 3사 = 6.
+   *  첫 배수만 읽고 있어서 153 무장이 실제보다 낮게 나왔다. 더 나쁜 것은
+   *  **같은 무장을 피해 쪽과 다르게 세고 있었다**는 점이다 — 같은 備考의
+   *  「二発同時発射 x3回攻撃」을 피해는 2×3 = 6 으로 세는데 누적치는 2 로 셌다.
+   *  (backlog 09-03 「같은 값을 양방향에서 다르게 세지 말 것」에 그대로 걸린다.)
+   *
+   *  괄호 안은 **집속값**이라 배수로 세면 안 된다 — 「5% x10（7% x10）」의 뒤쪽 x10 은
+   *  집속 때의 배수지 비집속에 곱할 값이 아니다. 그래서 괄호를 먼저 지우고 센다.
+   *  「7%（15HIT）」의 괄호도 같은 이유로 빠진다(그쪽은 경직까지 필요한 히트 수다). */
   function parseStagger(w) {
     let s = (w.mods && w.mods.stagger) || '';
     if (!s) { const note = (w.info && w.info['備考']) || ''; s = (note.match(/よろけ値[：:]\s*([^/]+)/) || [])[1] || ''; }
-    const pm = String(s).match(/(\d+(?:\.\d+)?)\s*%/);
-    const xm = String(s).match(/[x×]\s*(\d+)/);
-    return { pct: pm ? Number(pm[1]) : 0, pellets: xm ? Number(xm[1]) : 1 };
+    const txt = String(s);
+    const pm = txt.match(/(\d+(?:\.\d+)?)\s*%/);
+    const bare = txt.replace(/[（(][^）)]*[）)]/g, '');        // 집속값(괄호)은 빼고 센다
+    let pellets = 1;
+    for (const m of bare.matchAll(/[x×]\s*(\d+)/g)) pellets *= Number(m[1]);
+    return { pct: pm ? Number(pm[1]) : 0, pellets: pellets || 1 };
   }
 
   const pietanPageId = ms => (String(ms && ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
@@ -9210,6 +9230,7 @@
     skillFoeArmorCut,       // 발동시킨 스킬이 깎는 몫
     foeArmorOf,
     durabilityOf,
+    parseStagger,           // 누적치 배수 — 게이트에서 재려고
     thrusterSkillsOf,
     thrusterUnmodelled,     // 「계산 안 함」에 든 것과 그 이유를 게이트에서 재려고
     thrusterSkillFx,
