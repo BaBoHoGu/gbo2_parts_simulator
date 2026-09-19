@@ -6828,6 +6828,28 @@
      깎는 내성은 언제나 **그 무장의 속성**이다(35건 전수 확인, 어긋나는 건 0). */
   const FOE_ARMOR_W_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を?\s*(\d+)\s*[%％]\s*減/;
 
+  /* 적 **실드를 무시**하는 무장 — 「攻撃対象のシールドHP無視」「…シールド無視」
+     「…シールド貫通効果有」 세 가지로 적힌다. 전수로 24종이고 여태 반영되지 않았다.
+     실드로 막는 상대라도 이 무장은 실드를 깨지 않고 바로 기체를 때린다.
+
+     조건이 붙는 것이 있다 — F91 의 「集束時、攻撃対象のシールド無視」는 **집속했을 때만**이다.
+     조각 단위로 보고 그 모드일 때만 인정한다.
+     (FA엔게이지 [C플랜]의 「展開部に当たったシールドHP無視を無効化」처럼 **막는** 쪽도
+      하나 있는데, 전개형 부무장이라 실드 계산이 보는 무장이 아니다 — 넣지 않는다.) */
+  const SHIELD_IGNORE_RE = /(?:攻撃)?対象の?シールド(?:HP)?を?(?:無視|貫通効果有)/;
+
+  /** 이 무장이 적 실드를 무시하는가. charged 는 지금 집속 위력으로 세는 중인지. */
+  function weaponIgnoresShield(w, charged) {
+    const note = (w && w.info && w.info['備考']) || '';
+    for (const seg of String(note).split(/\s*\/\s*/)) {
+      if (!SHIELD_IGNORE_RE.test(seg)) continue;
+      if (/無効化/.test(seg)) continue;              // 막는다는 말이지 무시한다는 말이 아니다
+      if (/集束時/.test(seg) && !charged) continue;   // 집속했을 때만 무시한다
+      return true;
+    }
+    return false;
+  }
+
   /** 이 무장이 적 내성을 몇 % 깎는가. 없으면 0. */
   function weaponFoeArmorCut(w) {
     const note = (w && w.info && w.info['備考']) || '';
@@ -6895,7 +6917,10 @@
       if (fxHit) per += fxHit.total;
       // 실드로 막는 상대라면 실드부터 깨야 한다 — 같은 무장이라도 실드 보정이 5배까지 갈린다.
       let shHits = undefined, shNote = '';
-      if (pietanShield && eShield) {
+      if (pietanShield && eShield && weaponIgnoresShield(w, chargeOnly)) {
+        // 실드를 안 깨고 바로 기체를 때린다 — 발수를 세는 것이 뜻이 없다
+        shHits = null; shNote = '실드 무시';
+      } else if (pietanShield && eShield) {
         const sm = D.shieldMultOf(w);
         const sHit = shieldHit(dmg, sm, chargeOnly, D.shieldDmgPctOf(state.equipped, attr));
         // 같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다.
@@ -6935,7 +6960,10 @@
       row.append(nm);
       row.append(el('span', 'pietan-out-dmg', w.per.toLocaleString() + (w.n > 1 ? ' (×' + w.n + ')' : '')));
       if (w.shHits !== undefined) {
-        row.append(el('span', 'pietan-out-sh', w.shHits != null ? '실드 ' + w.shHits + '발' : w.shNote));
+        const sh = el('span', 'pietan-out-sh' + (w.shNote === '실드 무시' ? ' ign' : ''),
+          w.shHits != null ? '실드 ' + w.shHits + '발' : w.shNote);
+        if (w.shNote === '실드 무시') sh.title = '이 무장은 상대 실드를 무시하고 기체를 바로 때립니다';
+        row.append(sh);
       }
       row.append(el('span', 'pietan-out-hits', w.hits != null ? w.hits + '발' : '—'));
       tbl.append(row);
@@ -9177,6 +9205,7 @@
     msLevel,
     // foeArmorOf 는 지금 고른 기체를 본다 — 게이트가 기체를 바꿔 가며 훑으려고 연다.
     setMs: m => { state.ms = m; },
+    weaponIgnoresShield,    // 실드를 무시하는 무장인가
     weaponFoeArmorCut,      // 무장이 적 내성을 깎는 몫 — 게이트에서 재려고
     skillFoeArmorCut,       // 발동시킨 스킬이 깎는 몫
     foeArmorOf,

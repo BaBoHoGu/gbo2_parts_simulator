@@ -2293,6 +2293,8 @@ body.drawer-open .m-actionbar { display: none !important; }
 
 /* 피탄 시뮬 — 실드로 막았을 때 깨는 데 걸리는 발수 */
 .pietan-out.has-shield .pietan-out-row { grid-template-columns: auto 1fr auto auto auto; }
+/* 실드를 무시하는 무장 — 「표기 없음」과 눈으로 갈리게 색을 달리한다 */
+.pietan-out-sh.ign { color: var(--accent); }
 .pietan-out-sh {
   font-size: var(--fs-xs); font-weight: 700; color: var(--info);
   font-variant-numeric: tabular-nums; text-align: right; min-width: 52px;

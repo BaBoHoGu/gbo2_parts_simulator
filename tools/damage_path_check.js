@@ -269,7 +269,73 @@ const check = (label, cond, extra) => {
     return { off, on };
   });
 
+  /* ── 적 실드를 무시하는 무장 ──
+     「攻撃対象のシールドHP無視」「…シールド無視」「…シールド貫通効果有」 세 가지로 적히고
+     전수로 24종인데 반영되지 않았다. 실드로 막는 상대라도 이 무장은 실드를 안 깨고
+     기체를 바로 때린다. 조건이 붙는 것(F91 「集束時、…シールド無視」)은 그 모드일 때만이다. */
+  const shieldRead = await pg.evaluate(() => {
+    const T = window.GBO2UiTest;
+    const w = t => ({ info: { '備考': t } });
+    return [
+      T.weaponIgnoresShield(w('移動射撃可 / 攻撃対象のシールドHP無視'), false),
+      T.weaponIgnoresShield(w('攻撃対象のシールド無視'), false),
+      T.weaponIgnoresShield(w('攻撃対象のシールド貫通効果有'), false),
+      T.weaponIgnoresShield(w('集束可 / 集束時、攻撃対象のシールド無視'), false),  // 비집속이면 아니다
+      T.weaponIgnoresShield(w('集束可 / 集束時、攻撃対象のシールド無視'), true),
+      T.weaponIgnoresShield(w('展開部に当たったシールドHP無視を無効化'), false),   // 막는다는 말이다
+      T.weaponIgnoresShield(w('移動射撃可 / よろけ有'), false)
+    ].join(',');
+  });
+
+  const shieldUi = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    // 앞 단계가 V2AB 를 골라 둔 채다 — 실드를 무시하는 무장을 가진 기체로 갈아타야 한다.
+    // 안 갈아타면 「무시가 하나도 없다」로 실패한다(실측으로 밟았다).
+    const q = document.querySelector('#msQuery');
+    if (q) {
+      const list = document.querySelector('#msList');
+      if (!list || !list.offsetParent) {
+        const b = document.querySelector('#backToList') || document.querySelector('.step-back');
+        if (b) { b.click(); await wait(600); }
+      }
+      q.value = '건담 DX'; q.dispatchEvent(new Event('input', { bubbles: true }));
+      await wait(900);
+      const card = document.querySelector('#msList .ms-card');
+      if (card) { card.click(); await wait(1500); }
+    }
+    document.querySelector('#pietanBtn').click(); await wait(600);
+    const t = document.querySelector('#pietanShield');
+    if (t && !t.classList.contains('on')) { t.click(); await wait(300); }
+    const back = document.querySelector('.pietan-back');
+    if (back) { back.click(); await wait(400); }
+    const pq = document.querySelector('#pietanQuery');
+    pq.value = '짐'; pq.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(800);
+    const first = [...document.querySelectorAll('#pietanList > *')]
+      .find(x => !/다른 기체|검색 결과/.test(x.textContent));
+    if (!first) return '(적 없음)';
+    first.click(); await wait(1200);
+    return [...document.querySelectorAll('.pietan-out-row')].map(x => ({
+      w: (x.querySelector('.pietan-out-tx') || {}).textContent,
+      sh: ((x.querySelector('.pietan-out-sh') || {}).textContent) || null,
+      ign: !!x.querySelector('.pietan-out-sh.ign')
+    }));
+  });
+
   await br.close();
+
+  {
+    // 마지막 둘은 **아니어야** 한다 — 막는 문구와 아무 표기 없는 것
+    check('실드 무시 표기 세 가지를 읽고, 조건·무효화를 가린다',
+      shieldRead === 'true,true,true,false,true,false,false', String(shieldRead));
+    const rows = Array.isArray(shieldUi) ? shieldUi : [];
+    const ign = rows.filter(r => r.ign);
+    check('실드로 막는 상대에게 「실드 무시」가 뜬다', ign.length >= 1,
+      JSON.stringify(rows));
+    // 전부 무시로 칠해 버리면 뜻이 없다 — 안 뜨는 무장도 있어야 한다
+    check('무시하지 않는 무장은 그대로 발수·표기가 나온다',
+      rows.some(r => !r.ign && r.sh), JSON.stringify(rows.map(r => r.sh)));
+  }
 
   {
     const bad = (scope || []).filter(x => x.got !== x.want);
