@@ -151,6 +151,34 @@ const CONDITIONAL = new Set([
     }
     return { n, 높이: [...H], 목록자리: [...T], 잘린파츠: cut, 굴려서닿음: reach };
   });
+
+  /* ── 파츠를 끼울 때도 흔들리면 안 된다 ──
+     빈 칸 84 / 이름 한 줄 94 / 두 줄 107 이라, 한 칸만 채워도 그 줄이 커지고 아래가 밀렸다.
+     게다가 왼쪽 열만 커지고 상세 칸은 안 커져서 **그 차이만큼 빈자리**가 남았다(사용자 지적).
+     끼우기 전/한 개/여덟 개를 재어 장착칸·목록 자리·두 열의 높이가 다 같은지 본다. */
+  const equip = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const g = s => Math.round(document.querySelector(s).getBoundingClientRect().height);
+    const snap = () => ({ 장착칸: g('#equipped'), 좌측: g('.build-left'), 상세: g('#detailPanel'),
+      목록top: Math.round(document.querySelector('#partList').getBoundingClientRect().top) });
+    const clear = document.querySelector('#clearParts');
+    if (clear) { clear.click(); await wait(400); }
+    const q = document.querySelector('#partQuery');
+    q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(500);
+    const none = snap();
+    const tiles = [...document.querySelectorAll('#partList > *')];
+    tiles[0].click(); await wait(400);
+    const one = snap();
+    // 이름이 두 줄인 파츠까지 채워 본다 — 한 줄짜리만 끼우면 차이가 안 드러난다
+    const q2 = document.querySelector('#partQuery');
+    q2.value = '특수 강화 프레임'; q2.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(500);
+    const t2 = document.querySelector('#partList > *');
+    if (t2) { t2.click(); await wait(400); }
+    const two = snap();
+    return { none, one, two };
+  });
   await br.close();
 
   const check = (label, cond, extra) => {
@@ -193,6 +221,14 @@ const CONDITIONAL = new Set([
     // 막기만 하고 내용이 닿지 않으면 고친 것이 아니다
     check('칸에 안 들어가는 내용은 굴려서 닿는다',
       sw && sw.잘린파츠 > 0 && sw.굴려서닿음 === sw.잘린파츠, JSON.stringify(sw));
+
+    const e = equip;
+    const same = k => e && e.none[k] === e.one[k] && e.one[k] === e.two[k];
+    check('파츠를 끼워도 장착칸 높이가 그대로다', same('장착칸'), JSON.stringify(e));
+    check('파츠를 끼워도 파츠 목록이 안 밀린다', same('목록top'), JSON.stringify(e));
+    // 왼쪽 열과 상세 칸의 높이가 다르면 그 차이가 그대로 빈자리로 보인다
+    check('상세 칸이 왼쪽 열과 같은 높이다 (빈자리 없음)',
+      e && [e.none, e.one, e.two].every(x => x.좌측 === x.상세), JSON.stringify(e));
     // 상자가 하나뿐이어야 위 두 가지가 성립한다 — 원인 쪽도 못 박는다
     check('메모는 특성 상자 안에 들어간다',
       !!a && a.inside && a.boxes === 1 && !!b && b.boxes === 1, JSON.stringify({ a, b }));
