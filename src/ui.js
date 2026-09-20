@@ -1548,6 +1548,12 @@
     ['秒', '초'], ['発', '발'], ['射', '발'], ['分', '분'], ['時', '시'], ['回', '회'],
     ['腕', '팔'], ['基', '기'], ['門', '문'], ['丁', '정']
   ];
+  /** 누적치 칸 전용 — 「x2発 x3射」의 射 는 **발사 횟수**다.
+   *  글자 사전은 射 를 発 과 똑같이 「발」로 옮겨 「x2발 x3발」이 됐다 — 두 수가 뭐가 다른지
+   *  알 수 없었다(사용자 지적). 여기서만 「사격」으로 갈라 준다.
+   *  탄/히트 칸의 「2射OH」·「2連射OH」는 OH 까지의 **발수**라 「발」이 맞으므로 건드리지 않는다. */
+  const staggerKo = s => jaUnits(String(s).replace(/([x×]\s*\d+)\s*射/g, '$1사격'));
+
   // 전각 괄호·중점은 그대로 두면 표에서 일본어처럼 보여 반각으로 맞춘다.
   const jaUnits = s => JA_UNIT.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s))
     .replace(/（/g, '(').replace(/）/g, ')').replace(/・/g, '·').replace(/：/g, ':')
@@ -2732,7 +2738,7 @@
       row.append(ammoCell);
 
       // ⑥ 누적치 (よろけ値)
-      row.append(el('span', 'w-col', mods.stagger ? jaUnits(mods.stagger) : '—'));
+      row.append(el('span', 'w-col', mods.stagger ? staggerKo(mods.stagger) : '—'));
 
       // ⑦ 사거리
       row.append(el('span', 'w-col', f('射程') || '—'));
@@ -3468,7 +3474,7 @@
         nc: fin(d.power, mult.nc), ch: fin(d.powerCharged, mult.ch),
         cool: cool ? jaUnits(cool) : '—',
         ammo: ammoStr,
-        stagger: mods.stagger ? jaUnits(mods.stagger) : '—',
+        stagger: mods.stagger ? staggerKo(mods.stagger) : '—',
         range: f('射程') || '—',
         reload: reloadStr,
         // 고정 피해(소이)는 위력 칸과 별개로 들어가는 몫이라 카드에도 함께 실어야 오해가 없다
