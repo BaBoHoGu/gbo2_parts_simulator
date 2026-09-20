@@ -129,8 +129,16 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       const thruster = sgn(/スラスター\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);   // 消費 는 スラスター 뒤에 － 가 아니라 消費 가 와서 안 걸림
       const turn = sgn(/旋回(?:性能)?\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
       const hpUp = sgn(/(?:機体HP|最大HP)\s*([＋+－-])\s*(\d+)(?!\d)(?!\s*[%％])/);
+      /* 「対象の耐格闘補正を 10%減 でダメージ計算」 — **맞는 쪽** 값을 깎는 효과다.
+         내 스탯 축이 아니라 표에 담을 자리가 없었고, 그래서 다른 수치가 하나도 없는
+         스킬은 표에 아예 안 올랐다 — 갓 건담의 명경지수가 그랬다. 스킬 칸에 뜨지 않으니
+         **발동시킬 수가 없었다**(값은 있는데 고를 수가 없다).
+         값 자체는 앱이 원문에서 다시 읽으므로(ui.js foeArmorOf) 여기서는 **있다는 것만** 센다.
+         이 한 줄이 「표에 올릴 값어치가 있는 스킬인가」를 가르는 자리다. */
+      const foeArmor = /(?:対象|敵機?)の?耐(?:実弾|ビーム|格闘)補正を\s*\d+\s*[%％]\s*減/.test(line);
       const hasMob = armorRange || armorBeam || armorMelee || speed || hispeed || thruster || turn || hpUp;
-      if (!shoot && !melee && !shootPct && !meleePct && !crouchPct && !dmgPct && !powerPct && !hasMob) continue;
+      if (!shoot && !melee && !shootPct && !meleePct && !crouchPct && !dmgPct && !powerPct && !hasMob
+          && !foeArmor) continue;
 
       // 표는 [스킬명, 스킬LV, 필요 기체LV, 설명, 효과] 순이다.
       // 필요 기체LV 는 「LV1～」「Lv4～」「Lv1～3」 처럼 적혀 있다.
@@ -142,6 +150,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         // 스킬명 = LV 표기가 아닌 첫 칸
         skill: row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)',
         shoot, melee, shootPct, meleePct, crouchPct, limitUp, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
+        foeArmor,
         armorRange, armorBeam, armorMelee, speed, hispeed, thruster, turn, hpUp,
         forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
         // 「は」를 필수로 — 「効果時間5秒消費」(행동 시 감소 페널티)를 실제 지속시간으로 오인하지 않게.
@@ -253,7 +262,9 @@ if (process.argv.includes('--ui')) {
   // 태클·특정 무장의 위력만 올리는 스킬은 성능표·무장표에 얹을 자리가 없어 뺀다.
   const usable = found.filter(r =>
     r.shoot || r.melee || r.shootPct || r.meleePct || r.crouchPct || r.dmgPct
-    || r.armorRange || r.armorBeam || r.armorMelee || r.speed || r.hispeed || r.thruster || r.turn || r.hpUp);
+    || r.armorRange || r.armorBeam || r.armorMelee || r.speed || r.hispeed || r.thruster || r.turn || r.hpUp
+    // 상대 내성을 깎는 스킬 — 수치는 앱이 원문에서 읽는다. 여기서 빼면 고를 수가 없다.
+    || r.foeArmor);
   const byMs = new Map();
   for (const r of usable) {
     if (!byMs.has(r.ms)) byMs.set(r.ms, []);

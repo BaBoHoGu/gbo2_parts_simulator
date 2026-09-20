@@ -367,7 +367,62 @@ const check = (label, cond, extra) => {
     return m;
   });
 
+  /* ── 값이 있어도 **고를 수 없으면** 없는 것과 같다 ──
+     갓 건담의 명경지수는 적 내격투를 10% 깎는데, 다른 수치가 하나도 없어 스킬 표에
+     아예 안 올랐다 — 스킬 칸에 뜨지 않으니 발동시킬 방법이 없었다(사용자 지적).
+     표에 올랐는지(드롭다운에 뜨는지)와, 켰을 때 **격투만** 주는지를 함께 본다. */
+  const god = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const c = document.querySelector('#infoClose');
+    if (c && document.body.classList.contains('info-open')) c.click();
+    const q = document.querySelector('#msQuery');
+    q.value = '갓 건담'; q.dispatchEvent(new Event('input', { bubbles: true }));
+    await wait(900);
+    const card = document.querySelector('#msList .ms-card');
+    if (!card) return { err: '기체 없음' };
+    card.click(); await wait(1500);
+    const read = async () => {
+      document.querySelector('#pietanBtn').click(); await wait(600);
+      const back = document.querySelector('.pietan-back');
+      if (back) { back.click(); await wait(400); }
+      const pq = document.querySelector('#pietanQuery');
+      pq.value = '사이코 건담'; pq.dispatchEvent(new Event('input', { bubbles: true }));
+      await wait(800);
+      const f = [...document.querySelectorAll('#pietanList > *')]
+        .find(x => !/다른 기체|검색 결과/.test(x.textContent));
+      if (!f) return null;
+      f.click(); await wait(1100);
+      const o = {};
+      for (const x of document.querySelectorAll('.pietan-out-row'))
+        o[(x.querySelector('.pietan-out-tx') || {}).textContent] =
+          Number(((x.querySelector('.pietan-out-hits') || {}).textContent || '').replace(/[^0-9]/g, ''));
+      document.querySelector('#pietanClose').click(); await wait(300);
+      return o;
+    };
+    const off = await read();
+    document.querySelector('#skillBtn').click(); await wait(300);
+    const item = [...document.querySelectorAll('#skillMenu .skill-item')]
+      .find(x => /명경/.test(x.textContent));
+    if (!item) return { off, err: '드롭다운에 없음' };
+    const nm = (item.querySelector('.k') || {}).textContent;
+    item.querySelector('input').click(); await wait(600);
+    return { nm, off, on: await read() };
+  });
+
   await br.close();
+
+  {
+    check('명경지수가 스킬 칸에 뜬다 (고를 수 있다)',
+      god && !god.err && god.nm === '명경지수', JSON.stringify(god && (god.err || god.nm)));
+    const melee = ['석파천경권', '갓 슬래시', '갓 건담용 타격'];
+    check('켜면 격투 무장의 격파 발수가 준다',
+      god && god.on && melee.every(k => god.on[k] < god.off[k]), JSON.stringify(god));
+    // 범위를 안 지키면 실탄 무장도 같이 준다 — 여기가 진짜 검사다
+    check('실탄 무장은 그대로다 (범위를 지킨다)',
+      god && god.on && ['머신 캐논 x2', '두부 발칸 포 x4'].every(k => god.on[k] === god.off[k]),
+      JSON.stringify(god));
+  }
+
 
   {
     check('누적치 배수를 다 곱한다 (괄호는 집속값이라 뺀다)',

@@ -1543,7 +1543,10 @@
   const JA_UNIT = [
     ['発/分', '발/분'], ['フル', '풀'], ['ノン', '논'], ['即', '즉'],
     ['連続', '연속'], ['連', '연'], ['消費', '소비'], ['単発', '단발'],
-    ['秒', '초'], ['発', '발'], ['射', '발'], ['分', '분'], ['時', '시'], ['回', '회']
+    // 누적치 칸에 그대로 남아 있던 단위들 — 전수로 찾아 채웠다(腕 3 · 基 2 · 門 1 · 丁 1)
+    ['下記参照', '아래 참조'], ['合計', '합계'],
+    ['秒', '초'], ['発', '발'], ['射', '발'], ['分', '분'], ['時', '시'], ['回', '회'],
+    ['腕', '팔'], ['基', '기'], ['門', '문'], ['丁', '정']
   ];
   // 전각 괄호·중점은 그대로 두면 표에서 일본어처럼 보여 반각으로 맞춘다.
   const jaUnits = s => JA_UNIT.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s))
@@ -3479,6 +3482,9 @@
   /* ---------- PNG 이미지 배출 (현재 성능·구성 카드) ---------- */
   // 이미지는 data URI 로 인라인돼 있어(GBO2_IMAGES) file:// 에서도 캔버스 오염 없이 그릴 수 있다.
   // 좌: 기체 이미지 + 장착 파츠(썸네일) / 우: 성능표·내구·누적치·발동 스킬.
+  /** 마지막으로 그린 카드의 무장표가 칸을 넘었는지. 검사 도구가 읽는다. */
+  let cardFit = { over: 0, shrunk: 0, clipped: 0, widest: 0, worst: '' };
+
   async function exportPng(mode) {
     if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
     const m = state.ms, lv = msLevel(m);
@@ -3798,6 +3804,7 @@
     if (showW) {
       const dtext = (t, x, y, font, color, align) => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || 'left'; ctx.fillText(t, x, y); ctx.textAlign = 'left'; };
       const dclip = (t, maxW, font) => { ctx.font = font; if (ctx.measureText(t).width <= maxW) return t; let s = t; while (s && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1); return s + '…'; };
+      cardFit = { over: 0, shrunk: 0, clipped: 0, widest: 0, worst: '' };
       const wx0 = PAD + IP, wR = W - PAD - IP;
       // 컬럼 x (좌측정렬: 구분·이름·유형 / 우측정렬: 나머지)
       // 폭에 대한 비율로 잡는다. 예전엔 1200px 를 전제한 고정 좌표라
@@ -3805,8 +3812,37 @@
       const wW = wR - wx0, col = f => wx0 + wW * f;
       const cSec = wx0, dotX = col(.047), cName = col(.056), cType = col(.270);
       // 논차지·풀차지는 「기본 (+파츠) (+스킬)」 가 한 줄에 들어가야 해서 넓게 잡는다.
-      const cNC = col(.425), cCH = col(.549), cCool = col(.653), cAmmo = col(.754),
-        cStg = col(.824), cRange = col(.908), cRel = wR;
+      /* 칸 배분은 **실측**으로 정했다. 932행(143기 표본)의 글자 폭을 재 보니
+         쿨/발사는 118px 를 받고 최대 69px 만 쓰는데, 누적치는 80px 을 받고 최대 127px 이
+         필요했다 — 47px 이 왼쪽 칸을 덮어 글자가 겹쳤다(사용자가 메타스[중장비]에서 발견).
+           칸       지금  실제최대        고친 뒤
+           쿨/발사   118   69            72
+           탄/히트   115  116           118
+           누적치     80  127           130
+           사거리     95   72            76
+           리로드    104  111           117
+         남는 72px 을 모자란 55px 에 돌리면 표본은 전부 들어간다.
+         표본 밖의 긴 꼬리(최대 40자)는 아래 dfit 이 줄이고 잘라 막는다. */
+      const cNC = col(.425), cCH = col(.549), cCool = col(.6124), cAmmo = col(.7163),
+        cStg = col(.8307), cRange = col(.8976), cRel = wR;
+      /* 칸을 넘으면 **글자를 줄이고**, 그래도 넘으면 잘라 낸다.
+         자르기만 하면 긴 값이 통째로 사라지고, 줄이기만 하면 40자짜리가 못 들어간다. */
+      const dfit = (t, x, y, maxW, color, align) => {
+        let px = 12;
+        ctx.font = fnt(px);
+        const want = ctx.measureText(t).width;
+        while (px > 9 && ctx.measureText(t).width > maxW) { px -= 1; ctx.font = fnt(px); }
+        const cut = ctx.measureText(t).width > maxW;
+        const fit = cut ? dclip(t, maxW, fnt(px)) : t;
+        /* 캔버스에 그린 글자는 밖에서 읽을 수 없다 — 겹침을 검사하려면 그리는 쪽이 적어 둬야 한다.
+           over : 칸을 넘은 픽셀(0 이어야 한다) · shrunk/clipped : 줄이거나 자른 칸 수 */
+        ctx.font = fnt(px);
+        cardFit.over = Math.max(cardFit.over, Math.round(ctx.measureText(fit).width - maxW));
+        if (px < 12) cardFit.shrunk++;
+        if (cut) { cardFit.clipped++; cardFit.worst = cardFit.worst || t; }
+        cardFit.widest = Math.max(cardFit.widest, Math.round(want));
+        dtext(fit, x, y, fnt(px), color, align);
+      };
       let wy = wpTop + IP + 4;
       dtext('무장 내역', wx0, wy + 8, fnt(13, '700'), CO.text);
       dtext('(피해량은 파츠·스킬·자세 반영)', wx0 + 82, wy + 8, fnt(11), CO.dim);
@@ -3876,11 +3912,26 @@
         };
         dmgAt(wp.nc, cNC, true);
         dmgAt(wp.ch, cCH, false);
-        dtext(wp.cool, cCool, ry, vf, wp.cool === '—' ? CO.dim : CO.muted, 'right');
-        dtext(wp.ammo, cAmmo, ry, vf, wp.ammo === '—' ? CO.dim : CO.muted, 'right');
-        dtext(wp.stagger, cStg, ry, vf, wp.stagger === '—' ? CO.dim : CO.muted, 'right');
-        dtext(wp.range, cRange, ry, vf, wp.range === '—' ? CO.dim : CO.muted, 'right');
-        dtext(wp.reload, cRel, ry, vf, wp.reload === '—' ? CO.dim : CO.muted, 'right');
+        const dim = t => (t === '—' ? CO.dim : CO.muted);
+        /* 누적치·사거리는 「비집속 (집속)」 꼴이 많다 — 「15% x2발 x2발 (25% x2발 x4발)」.
+           한 줄에 안 들어가면 **괄호를 아랫줄로 내린다.** 아랫줄은 이 칸에서 비어 있고,
+           줄이거나 자르면 값이 사라지는데 내리면 그대로 다 보인다. */
+        const dpair = (t, x, maxW, color) => {
+          ctx.font = vf;
+          // 괄호는 세 꼴이다 — （집속） · (집속) · 【집속】. 셋 다 아랫줄로 내린다.
+          const m = /^(.*?)\s*([（(【].*[）)】])$/.exec(t);
+          if (m && ctx.measureText(t).width > maxW) {
+            dfit(m[1], x, ry, maxW, color, 'right');
+            dfit(m[2], x, ry + 12, maxW, CO.dim, 'right');
+          } else {
+            dfit(t, x, ry, maxW, color, 'right');
+          }
+        };
+        dpair(wp.cool, cCool, cCool - cCH - 6, dim(wp.cool));
+        dpair(wp.ammo, cAmmo, cAmmo - cCool - 6, dim(wp.ammo));
+        dpair(wp.stagger, cStg, cStg - cAmmo - 6, dim(wp.stagger));
+        dpair(wp.range, cRange, cRange - cStg - 6, dim(wp.range));
+        dpair(wp.reload, cRel, cRel - cRange - 6, dim(wp.reload));
       });
     }
 
@@ -9225,6 +9276,7 @@
     msLevel,
     // foeArmorOf 는 지금 고른 기체를 본다 — 게이트가 기체를 바꿔 가며 훑으려고 연다.
     setMs: m => { state.ms = m; },
+    cardFit: () => cardFit,  // 카드 무장표가 칸을 넘었는가 — 캔버스는 밖에서 못 읽는다
     weaponIgnoresShield,    // 실드를 무시하는 무장인가
     weaponFoeArmorCut,      // 무장이 적 내성을 깎는 몫 — 게이트에서 재려고
     skillFoeArmorCut,       // 발동시킨 스킬이 깎는 몫

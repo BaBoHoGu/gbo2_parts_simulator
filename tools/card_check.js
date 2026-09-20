@@ -78,7 +78,55 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const c = document.querySelector('#pngPreview canvas');
     return c ? c.width + 'x' + c.height : '(img)';
   });
+  /* ── 무장표가 칸을 넘지 않는가 ──
+     캔버스에 그린 글자는 밖에서 읽을 수 없다. 그래서 **그리는 쪽이** 넘친 픽셀을 적어 두고
+     (ui.js cardFit) 여기서 읽는다. 예전에는 누적치 칸이 80px 인데 글자가 172px 이라
+     47px 이 왼쪽 칸을 덮어 글자가 겹쳤다(사용자가 메타스[중장비]에서 발견).
+     글자가 긴 기체들로 카드를 그려 **넘침이 0** 인지 본다. */
+  const WIDE = ['메타스', '건담 델타 카이', '크로스본 건담 X1 풀클로스', '헤이즐 개'];
+  const fits = [];
+  for (const nm of WIDE) {
+    const r = await pg.evaluate(async (q) => {
+      const wait = ms => new Promise(r => setTimeout(r, ms));
+      const c = document.querySelector('#infoClose');
+      if (c && document.body.classList.contains('info-open')) c.click();
+      const list = document.querySelector('#msList');
+      if (list && !list.offsetParent) {
+        const b = document.querySelector('#backToList') || document.querySelector('.step-back');
+        if (b) { b.click(); await wait(500); }
+      }
+      const s = document.querySelector('#msQuery');
+      s.value = q; s.dispatchEvent(new Event('input', { bubbles: true }));
+      await wait(700);
+      const t = document.querySelector('#msList .ms-card');
+      if (!t) return { q, err: '기체 없음' };
+      t.click(); await wait(1400);
+      document.querySelector('#pngBtn').click(); await wait(350);
+      const items = [...document.querySelectorAll('.png-menu-item')];
+      (items.length > 1 ? items[1] : items[0]).click();
+      await wait(3000);
+      const f = window.GBO2UiTest.cardFit();
+      const close = document.querySelector('#pngClose') || document.querySelector('.png-close');
+      if (close) close.click();
+      await wait(300);
+      return { q, ...f };
+    }, nm);
+    fits.push(r);
+  }
   await br.close();
+
+  {
+    const bad = fits.filter(f => f.err || f.over > 0);
+    let ok = bad.length === 0;
+    console.log('\n무장표 칸 넘침 — ' + fits.map(f => f.q + ' ' + (f.err || ('넘침 ' + f.over + 'px'))).join(' · '));
+    console.log(ok ? '  PASS 어느 칸도 옆 칸을 덮지 않는다'
+      : '  FAIL 칸을 넘은 글자가 있다  ' + JSON.stringify(bad));
+    // 넘침이 0 이기만 하면 「다 잘라 버려서」도 통과한다 — 실제로 글자를 쟀는지 함께 본다
+    const measured = fits.some(f => (f.widest || 0) > 100);
+    console.log(measured ? '  PASS 긴 글자가 있는 기체를 실제로 쟀다'
+      : '  FAIL 잰 글자가 다 짧다 — 표본이 잘못됐다');
+    if (!ok || !measured) process.exit(1);
+  }
 
   console.log('\n장착 파츠: ' + part);
   console.log('카드 저장: ' + OUT + '  (' + size + ')');
