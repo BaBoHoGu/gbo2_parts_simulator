@@ -1,0 +1,100 @@
+// 「계산 안 함」 모아 보기 — 스킬 도감 안의 보기 전환이 제대로 도는지 본다.
+//
+//   node tools/unmodview_check.js
+//
+// 이 화면은 **앱이 알고는 있지만 숫자에 넣지 않은 것**을 모은다. 여태 기체·파츠를 하나씩
+// 열어야만 보여서 무엇이 비어 있는지 전체를 볼 수 없었다.
+// 검사할 것은 셋이다:
+//   ① 정말 모으는가 (종류·기체 수가 그럴듯한가) — 0 이면 훑기가 죽은 것이다
+//   ② **왜** 안 넣는지를 갈래로 나눠 보여 주는가
+//   ③ 일본어가 남지 않는가 — 원문을 그대로 실으면 이 앱의 원칙이 깨진다.
+//      번역 사전은 **문장 전체**가 열쇠라, 잘라 낸 조각을 넘기면 조용히 원문이 나온다.
+const path = require('path');
+const ROOT = path.join(__dirname, '..');
+const FILE = 'file:///' + path.join(ROOT, 'dist', 'gbo2-simulator.html').replace(/\\/g, '/').replace(/ /g, '%20');
+
+let puppeteer, findChrome;
+try {
+  puppeteer = require('puppeteer-core');
+  ({ findChrome } = require('./lib/wiki_fetch.js'));
+} catch { console.log('SKIP  puppeteer-core 없음'); process.exit(0); }
+const CHROME = findChrome();
+if (!CHROME) { console.log('SKIP  Chrome 없음'); process.exit(0); }
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let pass = 0, fail = 0;
+const ok = (label, cond, extra) => {
+  if (cond) { pass++; console.log('  PASS ' + label); }
+  else { fail++; console.log('  FAIL ' + label + (extra ? '  ' + JSON.stringify(extra, null, 1) : '')); }
+};
+
+(async () => {
+  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const pg = await br.newPage();
+  const errs = [];
+  pg.on('pageerror', e => errs.push(String(e.message).slice(0, 140)));
+  await pg.setViewport({ width: 1500, height: 1000 });
+  await pg.goto(FILE, { waitUntil: 'load', timeout: 180000 });
+  await sleep(4000);
+
+  const r = await pg.evaluate(async () => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const c = document.querySelector('#infoClose');
+    if (c && document.body.classList.contains('info-open')) c.click();
+    const btn = document.querySelector('#codexBtn');
+    if (!btn) return { err: '스킬 도감 버튼이 없음' };
+    btn.click(); await wait(700);
+    const seg = document.querySelector('#codexView .seg-btn[data-v="unmod"]');
+    if (!seg) return { err: '보기 전환이 없음' };
+    const t0 = performance.now();
+    seg.click();
+    const ms = Math.round(performance.now() - t0);
+    await wait(500);
+
+    const chips = [...document.querySelectorAll('#codexCatChips .chip')].map(x => x.textContent.trim());
+    const items = [...document.querySelectorAll('#codexList .codex-item')];
+    const note = document.querySelector('#codexNote').textContent;
+
+    /* 가나만 본다 — 한자는 한국어 표기에도 쓰여(「제간」 등) 잡으면 거짓 경보가 난다. */
+    const JA = /[ぁ-ゖァ-ヺ]/;
+    const bad = [];
+    let panes = 0;
+    for (const it of items) {
+      it.click(); await wait(25);
+      const t = document.querySelector('#codexPane').textContent;
+      if (t && t.length > 20) panes++;
+      const nm = it.textContent.replace(/\s+/g, ' ').trim().slice(0, 30);
+      if (JA.test(t) || JA.test(nm)) bad.push(nm);
+    }
+    // 스킬 보기로 돌아가도 멀쩡한가 — 전환이 한쪽으로만 되면 화면이 망가진다
+    document.querySelector('#codexView .seg-btn[data-v="skill"]').click();
+    await wait(400);
+    const backItems = document.querySelectorAll('#codexList .codex-item').length;
+
+    return { ms, note, chips, n: items.length, panes, bad, backItems };
+  });
+
+  await br.close();
+
+  if (r.err) { console.log('FAIL  ' + r.err); process.exit(1); }
+  console.log('「계산 안 함」 모아 보기 — ' + r.note + '  (훑기 ' + r.ms + 'ms)\n');
+
+  // ① 정말 모으는가 — 0 이면 훑기가 죽은 것이고, 너무 적으면 표본이 깨진 것이다
+  ok('모아 놓은 것이 있다 (50종 이상)', r.n >= 50, { 종류: r.n });
+  ok('기체 수를 함께 적는다', /기체 \d+기/.test(r.note), r.note);
+  // ② 왜 안 넣는지 갈래로 나눈다 — 한 갈래뿐이면 나눈 뜻이 없다
+  ok('이유를 갈래로 나눠 보여 준다 (3갈래 이상)', r.chips.length >= 4, r.chips);
+  ok('「값이 원문에 없음」 갈래가 있다', r.chips.some(c => /값이 원문에 없음/.test(c)), r.chips);
+  // ③ 고른 것마다 상세가 뜨는가 — 목록만 있고 상세가 비면 반쪽이다
+  ok('고르면 상세가 뜬다 (전부)', r.panes === r.n, { 항목: r.n, 상세: r.panes });
+  /* ④ 일본어가 남지 않는가.
+     번역 사전은 문장 전체가 열쇠라, 잘라 낸 조각을 넘기면 조용히 원문이 그대로 나온다 —
+     실제로 처음 만들 때 그렇게 나왔다. 전 항목을 눌러 가며 본다. */
+  ok('112종을 눌러 봐도 일본어가 안 남는다', r.bad.length === 0, r.bad.slice(0, 5));
+  // ⑤ 돌아오기 — 한쪽으로만 전환되면 스킬 도감이 망가진다
+  ok('스킬 보기로 돌아가도 목록이 산다', r.backItems > 0, { 돌아온뒤: r.backItems });
+  ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].join(' / '));
+
+  console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
+  process.exit(fail ? 1 : 0);
+})().catch(e => { console.error('실패:', e.message); process.exit(1); });

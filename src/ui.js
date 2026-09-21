@@ -2028,7 +2028,9 @@
         : /回復速度|復帰速度/.test(blob) ? '회복·복귀가 빨라진다고만 적혀 있고 값이 없습니다'
         : /軽減|減少/.test(blob) ? '소비가 줄어든다고만 적혀 있고 값이 없습니다'
         : '수치가 적혀 있지 않습니다';
-      out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '', why, seg: blob.slice(0, 160) });
+      out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '', why, seg: blob.slice(0, 160),
+        // 번역은 **문장 전체**가 열쇠라, 잘라 낸 조각으로는 사전을 못 찾는다 — 원문을 통째로 들고 온다
+        src: { desc: sk.desc || '', eff: sk.eff || '' } });
     }
 
     /* 「스킬 X LVn 이 付与」 — 다른 스킬이 발동하면 **그때 붙는** 스킬이다.
@@ -2053,7 +2055,8 @@
           name, ko: skTr(name), lv: 'LV' + m[2],
           why: skTr(host.name) + (host.lv ? ' ' + host.lv : '') + ' 발동 중에만 붙습니다'
             + ' — 조건이 겹쳐 수치로는 넣지 않습니다',
-          seg: m[0]
+          seg: m[0],
+          src: { desc: host.desc || '', eff: host.eff || '' }
         });
       }
     }
@@ -5236,6 +5239,7 @@
   // 데이터는 이미 앱에 있는 ms_skills 를 그대로 쓴다 — 용량이 늘지 않는다.
   // 좌: 스킬 목록 · 우: 고른 스킬의 LV 별 효과와 보유 기체.
   let codexIndex = null, codexCat = '전체', codexQ = '';
+  let codexView = 'skill';        // 'skill' | 'unmod' — 스킬 목록인가 「계산 안 함」 모아 보기인가
   let codexSel = null;                                   // 고른 스킬 이름(원문)
   let codexMsQ = '', codexMsAttr = 'all', codexMsCost = 'all', codexMsLv = 'all', codexMsLimit = 60;
 
@@ -5269,6 +5273,69 @@
     return codexIndex;
   }
 
+  /* ---------- 「계산 안 함」 모아 보기 ----------
+   * 앱이 **알고는 있는데 숫자에 넣지 않은** 것들을 한곳에 모은다.
+   * 여태 기체·파츠를 하나씩 열어야만 보여서, 무엇이 비어 있는지 전체를 볼 수 없었다.
+   * 쓰는 사람에게는 「이 앱이 뭘 모르는지」가 한눈에 보이고,
+   * 고치는 쪽에는 그대로 다음 할 일 목록이 된다. */
+  const UNMOD_GROUP = [
+    [/값이 없습니다|수치가 적혀 있지 않습니다/, '값이 원문에 없음'],
+    [/한 번\*\*에 드는 몫|고속이동 지속에는 넣지 않습니다/, '다른 축의 값'],
+    [/느려지는|늘어나는/, '방향이 반대'],
+    [/어느 것인지 알 수 없습니다|값이 달라져/, '값이 여럿'],
+    [/붙습니다|조건이 겹쳐|못 정해/, '조건을 못 가림'],
+    [/부위|상태이상/, '안 만드는 영역']
+  ];
+  const unmodGroupOf = why => {
+    for (const [re, g] of UNMOD_GROUP) if (re.test(why)) return g;
+    return '그 밖';
+  };
+
+  /** 원문을 한글로 — 사전은 문장 전체가 열쇠다. 못 찾으면 그 문장은 빼고 찾은 것만 보여 준다
+   *  (일본어를 그대로 내보이느니 적게 보여 주는 쪽이 낫다). */
+  const unmodSrcKo = src => {
+    if (!src) return '';
+    return [src.eff, src.desc].map(t => (t && skillText[t]) || '').filter(Boolean).join(' / ');
+  };
+
+  let unmodIndex = null;
+  /** 전 기체·전 파츠를 한 번 훑어 모은다. 무거우니 한 번만 만들고 들고 있는다. */
+  function buildUnmodIndex() {
+    if (unmodIndex) return unmodIndex;
+    const map = new Map();
+    const add = (kind, ko, lv, why, owner, seg) => {
+      const k = kind + '|' + ko + '|' + (lv || '') + '|' + why;
+      if (!map.has(k)) map.set(k, { kind, ko, lv: lv || '', why, seg: seg || '', owners: new Set(), group: unmodGroupOf(why) });
+      if (owner) map.get(k).owners.add(owner);
+    };
+    for (const ms of msData) {
+      const lv = msLevel(ms), nm = T.msName(baseName(ms.MS名));
+      for (const form of ['normal', 'transform'])
+        for (const u of thrusterUnmodelled(ms, lv, form))
+          add('스러스터', u.ko, u.lv, u.why, nm, unmodSrcKo(u.src) || u.seg);
+      // 적 내성을 깎는데 **어느 무장에 걸리는지** 못 정한 스킬도 같은 성격이다
+      for (const sk of (skillData[baseName(ms.MS名)] || [])) {
+        const f = foeArmorOf(sk.name, ms, 'normal');
+        if (f && !f.scope) add('스킬', sk.nameKo || skTr(sk.name), '', f.txt.replace(/^적 [^—]*— /, ''), nm, f.txt);
+      }
+    }
+    for (const p of allParts)
+      for (const u of unmodelledOf(p)) add('파츠', u.ko, '', u.why, T.partName(p.name), '');
+    unmodIndex = [...map.values()]
+      .map(x => ({ ...x, owners: [...x.owners].sort(), n: x.owners.size }))
+      .sort((a, b) => b.n - a.n);
+    return unmodIndex;
+  }
+
+  function unmodFiltered() {
+    const q = codexQ.trim().toLowerCase();
+    return buildUnmodIndex().filter(e => {
+      if (codexCat !== '전체' && e.group !== codexCat) return false;
+      if (!q) return true;
+      return (e.ko + ' ' + e.why + ' ' + e.kind + ' ' + e.owners.join(' ')).toLowerCase().includes(q);
+    });
+  }
+
   function codexFiltered() {
     const q = codexQ.trim().toLowerCase();
     return buildCodexIndex().filter(e => {
@@ -5280,6 +5347,7 @@
   }
 
   function renderCodexList() {
+    if (codexView === 'unmod') return renderUnmodList();
     const box = $('#codexList'); if (!box) return;
     const hit = codexFiltered();
     $('#codexNote').textContent = '스킬 ' + buildCodexIndex().length + '종 · 보이는 것 ' + hit.length;
@@ -5305,6 +5373,70 @@
         box.append(it);
       }
     }
+  }
+
+  function renderUnmodList() {
+    const box = $('#codexList'); if (!box) return;
+    const all = buildUnmodIndex(), hit = unmodFiltered();
+    const mechs = new Set();
+    for (const e of all) if (e.kind !== '파츠') for (const o of e.owners) mechs.add(o);
+    $('#codexNote').textContent = '계산에 안 넣는 효과 ' + all.length + '종 · 보이는 것 ' + hit.length
+      + ' · 하나 이상 걸린 기체 ' + mechs.size + '기';
+    box.innerHTML = '';
+    if (!hit.length) { box.append(el('div', 'codex-empty', '찾는 것이 없습니다.')); return; }
+    const groups = new Map();
+    for (const e of hit) { if (!groups.has(e.group)) groups.set(e.group, []); groups.get(e.group).push(e); }
+    const order = ['값이 원문에 없음', '조건을 못 가림', '다른 축의 값', '방향이 반대', '값이 여럿', '안 만드는 영역', '그 밖'];
+    for (const g of [...groups.keys()].sort((x, y) => order.indexOf(x) - order.indexOf(y))) {
+      if (codexCat === '전체') {
+        const h = el('div', 'codex-cat', g);
+        h.append(el('span', '', groups.get(g).length + '종'));
+        box.append(h);
+      }
+      for (const e of groups.get(g)) {
+        const key = e.kind + '|' + e.ko + '|' + e.lv + '|' + e.why;
+        const it = el('div', 'codex-item' + (codexSel === key ? ' on' : ''));
+        const nm = el('div', 'codex-nm', e.ko);
+        nm.append(el('span', 'unmod-kind', e.kind));
+        it.append(nm);
+        const lvs = el('div', 'codex-lvs');
+        if (e.lv) lvs.append(el('span', 'codex-lv', e.lv));
+        it.append(lvs);
+        it.append(el('div', 'codex-cnt', e.n + (e.kind === '파츠' ? '종' : '기')));
+        it.onclick = () => { codexSel = key; $('#codex2col').classList.add('sel'); renderCodexList(); renderCodexPane(); };
+        box.append(it);
+      }
+    }
+  }
+
+  function renderUnmodPane() {
+    const pane = $('#codexPane'); if (!pane) return;
+    pane.innerHTML = '';
+    const e = buildUnmodIndex().find(x => (x.kind + '|' + x.ko + '|' + x.lv + '|' + x.why) === codexSel);
+    if (!e) { pane.append(el('div', 'codex-empty', '왼쪽에서 하나를 고르세요.')); return; }
+    const back = el('button', 'btn-ghost small codex-paneback', '‹ 목록');
+    back.onclick = () => { codexSel = null; $('#codex2col').classList.remove('sel'); renderCodexList(); renderCodexPane(); };
+    pane.append(back);
+    const ttl = el('div', 'codex-ttl');
+    ttl.append(el('b', '', e.ko + (e.lv ? ' ' + e.lv : '')));
+    ttl.append(el('span', 'unmod-kind', e.kind));
+    pane.append(ttl);
+    // 왜 안 넣는지 — 이 줄이 이 화면의 본체다
+    const why = el('div', 'unmod-why');
+    why.append(el('b', '', '계산에 안 넣는 이유'));
+    why.append(el('div', '', e.why.replace(/\*\*/g, '')));
+    pane.append(why);
+    if (e.seg) {
+      const src = el('div', 'unmod-src');
+      src.append(el('b', '', '원문'));
+      src.append(el('div', '', e.seg.slice(0, 300)));
+      pane.append(src);
+    }
+    const lb = el('div', 'codex-sub', (e.kind === '파츠' ? '해당 파츠 ' : '가진 기체 ') + e.n);
+    pane.append(lb);
+    const wrap = el('div', 'unmod-owners');
+    for (const o of e.owners) wrap.append(el('span', 'unmod-owner', o));
+    pane.append(wrap);
   }
 
   function selectCodex(name) {
@@ -5340,6 +5472,7 @@
   }
 
   function renderCodexPane() {
+    if (codexView === 'unmod') return renderUnmodPane();
     const pane = $('#codexPane'); if (!pane) return;
     pane.innerHTML = '';
     const e = buildCodexIndex().find(x => x.name === codexSel);
@@ -5447,6 +5580,19 @@
   function renderCodexChips() {
     const wrap = $('#codexCatChips'); if (!wrap) return;
     wrap.innerHTML = '';
+    if (codexView === 'unmod') {
+      // 「계산 안 함」 쪽은 위키 분류가 아니라 **왜 안 넣는가**로 가른다
+      const all = buildUnmodIndex();
+      const cnt = { 전체: all.length };
+      for (const e of all) cnt[e.group] = (cnt[e.group] || 0) + 1;
+      for (const nm of ['전체', '값이 원문에 없음', '조건을 못 가림', '다른 축의 값', '방향이 반대', '값이 여럿', '안 만드는 영역', '그 밖']) {
+        if (!cnt[nm]) continue;
+        const b = el('button', 'chip' + (codexCat === nm ? ' on' : ''), nm + ' ' + cnt[nm]);
+        b.onclick = () => { codexCat = nm; renderCodexChips(); renderCodexList(); };
+        wrap.append(b);
+      }
+      return;
+    }
     const all = buildCodexIndex();
     const cnt = { 전체: all.length };
     for (const e of all) { const k = SKILL_CAT_KO[e.cat] || '기타'; cnt[k] = (cnt[k] || 0) + 1; }
@@ -8294,12 +8440,13 @@
   };
 
   /** 그 스킬이 깎는 적 내성. {list:[{ax,pct}], scope:[속성]|null, txt} · 없으면 null. */
-  function foeArmorOf(name) {
-    if (!state.ms) return null;
-    const modes = skillModesFor(msSkillsData[baseName(state.ms.MS名)] || [], state.form);
+  function foeArmorOf(name, ms, form) {
+    const on = ms || state.ms;
+    if (!on) return null;
+    const modes = skillModesFor(msSkillsData[baseName(on.MS名)] || [], form || state.form);
     const cands = [];
     for (const mo of modes) for (const k of (mo.skills || [])) if (k.name === name) cands.push(k);
-    const sk = pickByMsLv(cands, msLevel(state.ms));
+    const sk = pickByMsLv(cands, msLevel(on));
     if (!sk) return null;
     const blob = ((sk.desc || '') + ' / ' + (sk.eff || '')).replace(/\s+/g, ' ');
     const hit = new Map();
@@ -8775,6 +8922,19 @@
     $('#tokenBtn').onclick = () => setView('token');
     $('#tokenBack').onclick = () => setView(viewBefore || 'select');
     $('#codexSearch').oninput = ev => { codexQ = ev.target.value; renderCodexList(); };
+    // 보기 전환 — 고른 것·검색·분류는 보기마다 뜻이 달라 함께 비운다
+    for (const b of document.querySelectorAll('#codexView .seg-btn')) {
+      b.onclick = () => {
+        codexView = b.dataset.v;
+        codexCat = '전체'; codexQ = ''; codexSel = null;
+        $('#codexSearch').value = '';
+        $('#codexSearch').placeholder = codexView === 'unmod'
+          ? '효과·이유·기체 검색' : '스킬 이름·효과 검색';
+        $('#codex2col').classList.remove('sel');
+        for (const x of document.querySelectorAll('#codexView .seg-btn')) x.classList.toggle('on', x === b);
+        renderCodexChips(); renderCodexList(); renderCodexPane();
+      };
+    }
     $('#galleryBtn').onclick = () => openGallery(true);
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };

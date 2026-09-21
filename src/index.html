@@ -228,6 +228,11 @@
       <h1>스킬 도감</h1>
       <span class="data-fresh" id="codexNote"></span>
       <span class="right">
+        <!-- 보기 전환 — 스킬 목록 / 「계산 안 함」 모아 보기 -->
+        <span class="seg" id="codexView">
+          <button type="button" class="seg-btn on" data-v="skill">스킬</button>
+          <button type="button" class="seg-btn" data-v="unmod" title="앱이 알고는 있지만 계산에 넣지 않은 효과를 모아 봅니다">계산 안 함</button>
+        </span>
         <input id="codexSearch" class="codex-search" type="search" placeholder="스킬 이름·효과 검색" autocomplete="off">
       </span>
     </div>
