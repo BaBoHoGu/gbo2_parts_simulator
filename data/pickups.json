@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-09-20",
+ "pickupsUpdated": "2026-09-21",
  "pickups": [
   {
    "name": "카풀(CN) & 카풀",
@@ -211,7 +211,7 @@
    "endRaw": "2026-09-27"
   }
  ],
- "steamUpdated": "2026-09-20",
+ "steamUpdated": "2026-09-21",
  "steamNews": [
   {
    "name": "플린트",
@@ -282,27 +282,6 @@
    "end": "2026-09-03",
    "tokens": 75,
    "url": "https://store.steampowered.com/news/app/1367080/view/667249057895285021?l=koreana"
-  },
-  {
-   "name": "풀 아머 ENGAGE 건담[Ｃ 플랜]",
-   "start": "2026-08-20",
-   "end": "2026-08-27",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/681885122980479331?l=koreana"
-  },
-  {
-   "name": "데스티니 건담 LV1 & LV2",
-   "start": "2026-08-20",
-   "end": "2026-08-27",
-   "tokens": null,
-   "url": "https://store.steampowered.com/news/app/1367080/view/681885122980479331?l=koreana"
-  },
-  {
-   "name": "데스티니 건담 LV2",
-   "start": "2026-08-20",
-   "end": "2026-08-27",
-   "tokens": 180,
-   "url": "https://store.steampowered.com/news/app/1367080/view/681885122980479331?l=koreana"
   }
  ]
 }
