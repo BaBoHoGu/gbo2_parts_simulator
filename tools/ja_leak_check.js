@@ -60,6 +60,10 @@ function punctRule() {
   const res = await pg.evaluate(async () => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const KANA = /[ぁ-ゖァ-ヺ]/;
+    /* 가나만 보면 「・사격 보정 ＋25」를 놓친다 — 글자는 한국어인데 부호만 일본어인 꼴이다.
+       실제로 「계산 안 함」의 원문 칸이 사전을 직접 읽어 이 상태로 배포될 뻔했다.
+       「」 와 · 은 이 앱이 한국어 글에도 일부러 쓰므로 빼고, 전각만 잡는다. */
+    const PUNCT = /[・＋－％：（）]/;
     const click = (sel, ms) => { const e = document.querySelector(sel); if (e) e.click(); return wait(ms || 600); };
 
     /** 보이는 글자만 훑는다. 숨은 가지는 통째로 건너뛴다 —
@@ -83,7 +87,7 @@ function punctRule() {
           nodes++; chars += t.length;
           // 원문을 **일부러** 같이 보여 주는 칸은 봐 준다
           if (String(p.className || '').includes('codex-jp')) return;
-          if (KANA.test(t)) bad.push({ t: t.slice(0, 40), cls: String(p.className || p.tagName).slice(0, 26) });
+          if (KANA.test(t) || PUNCT.test(t)) bad.push({ t: t.slice(0, 40), cls: String(p.className || p.tagName).slice(0, 26) });
           return;
         }
         if (n.nodeType === 1 && n.tagName !== 'BODY' && !shown(n)) return;

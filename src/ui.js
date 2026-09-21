@@ -5292,11 +5292,43 @@
     return '그 밖';
   };
 
+  /** 「왜 안 넣는가」와 별개로 **고칠 수 있는가**를 가른다.
+   *  둘은 다른 축이다 — 「값이 원문에 없음」과 「방향이 반대」는 왜는 다르지만 둘 다 못 고치고,
+   *  「조건을 못 가림」 안에서도 스러스터 쪽은 고칠 수 있고 무장 쪽은 자료가 있어야 한다.
+   *  순서가 뜻을 가진다: 「소비가 늘어난다고만 적혀 있고 값이 없습니다」는 **값이 없어서**
+   *  못 넣는 것이지 방향 때문이 아니므로, 값 없음을 먼저 본다. */
+  const UNMOD_FIX = [
+    // 값은 원문에 있다. 앱이 「그 스킬이 지금 켜져 있나」를 가릴 수 있게 되면 그대로 들어간다.
+    [/발동 중에만 붙습니다|실드 매수에 따라/, '고칠 수 있음'],
+    // 원문이 「줄어든다」고만 적고 수를 안 적었다 — 2차 자료가 나오기 전에는 지어낼 수 없다.
+    [/값이 없습니다|수치가 적혀 있지 않습니다|어느 무장에 걸리는지/, '값이 나와야 함'],
+    // 넣으면 오히려 실제와 어긋난다 — 다른 축의 값·벌점·이 앱이 안 만드는 영역.
+    [/한 번에 드는 몫|고속이동 지속에는|벌점이라|늘어나는 값이라|부위|상태이상/, '일부러 안 넣음']
+  ];
+  /** 이유 글에는 **강조**가 박혀 있어 낱말이 끊긴다 — 「소비가 **늘어나는** 값이라」.
+   *  강조를 떼고 맞춘다. 처음엔 안 떼서 세 종(인터럽트 가드·슬러스터 바인더·활성 퍼지)이
+   *  말없이 「그 밖」으로 떨어졌고, 화면에는 갈래가 하나 더 붙어 보였다. */
+  const unmodFixOf = why => {
+    const t = String(why).replace(/\*\*/g, '');
+    for (const [re, g] of UNMOD_FIX) if (re.test(t)) return g;
+    return '그 밖';           // 새 문구가 들어오면 여기로 떨어져 눈에 띈다 (검사가 0을 지킨다)
+  };
+  const UNMOD_FIX_NOTE = {
+    '고칠 수 있음': '값은 원문에 있습니다. 앱이 조건을 가릴 수 있게 되면 그대로 들어갑니다.',
+    '값이 나와야 함': '원문이 「줄어든다」고만 적고 수치를 안 적었습니다. 지어내지 않습니다.',
+    '일부러 안 넣음': '넣으면 오히려 실제와 어긋납니다 — 다른 축의 값·벌점·안 만드는 영역.',
+    '그 밖': '아직 갈래를 못 정한 것입니다.'
+  };
+  const UNMOD_FIX_ORDER = ['고칠 수 있음', '값이 나와야 함', '일부러 안 넣음', '그 밖'];
+
   /** 원문을 한글로 — 사전은 문장 전체가 열쇠다. 못 찾으면 그 문장은 빼고 찾은 것만 보여 준다
    *  (일본어를 그대로 내보이느니 적게 보여 주는 쪽이 낫다). */
   const unmodSrcKo = src => {
     if (!src) return '';
-    return [src.eff, src.desc].map(t => (t && skillText[t]) || '').filter(Boolean).join(' / ');
+    /* 사전을 직접 읽으면 안 된다 — skTr 을 거쳐야 문장부호가 반각으로 맞는다.
+       직접 읽던 동안 이 칸만 「・고속 이동 ＋20」으로 나왔다(다른 칸은 「· 고속 이동 +20」).
+       없는 문장은 빼고 찾은 것만 보여 준다 — 일본어를 그대로 내보이느니 적게 보여 주는 쪽이 낫다. */
+    return [src.eff, src.desc].map(t => (t && skillText[t] ? skTr(t) : '')).filter(Boolean).join(' / ');
   };
 
   let unmodIndex = null;
@@ -5306,7 +5338,8 @@
     const map = new Map();
     const add = (kind, ko, lv, why, owner, seg) => {
       const k = kind + '|' + ko + '|' + (lv || '') + '|' + why;
-      if (!map.has(k)) map.set(k, { kind, ko, lv: lv || '', why, seg: seg || '', owners: new Set(), group: unmodGroupOf(why) });
+      if (!map.has(k)) map.set(k, { kind, ko, lv: lv || '', why, seg: seg || '', owners: new Set(),
+        group: unmodGroupOf(why), fix: unmodFixOf(why) });
       if (owner) map.get(k).owners.add(owner);
     };
     for (const ms of msData) {
@@ -5331,9 +5364,9 @@
   function unmodFiltered() {
     const q = codexQ.trim().toLowerCase();
     return buildUnmodIndex().filter(e => {
-      if (codexCat !== '전체' && e.group !== codexCat) return false;
+      if (codexCat !== '전체' && e.fix !== codexCat) return false;
       if (!q) return true;
-      return (e.ko + ' ' + e.why + ' ' + e.kind + ' ' + e.owners.join(' ')).toLowerCase().includes(q);
+      return (e.ko + ' ' + e.why + ' ' + e.kind + ' ' + e.group + ' ' + e.owners.join(' ')).toLowerCase().includes(q);
     });
   }
 
@@ -5381,28 +5414,37 @@
     const all = buildUnmodIndex(), hit = unmodFiltered();
     const mechs = new Set();
     for (const e of all) if (e.kind !== '파츠') for (const o of e.owners) mechs.add(o);
+    // 갈래별 수는 바로 아래 칩이 보여 준다 — 여기에 겹쳐 적으면 폰에서 머리줄이 찌그러진다
     $('#codexNote').textContent = '계산에 안 넣는 효과 ' + all.length + '종 · 보이는 것 ' + hit.length
       + ' · 하나 이상 걸린 기체 ' + mechs.size + '기';
     box.innerHTML = '';
     if (!hit.length) { box.append(el('div', 'codex-empty', '찾는 것이 없습니다.')); return; }
     const groups = new Map();
-    for (const e of hit) { if (!groups.has(e.group)) groups.set(e.group, []); groups.get(e.group).push(e); }
-    const order = ['값이 원문에 없음', '조건을 못 가림', '다른 축의 값', '방향이 반대', '값이 여럿', '안 만드는 영역', '그 밖'];
-    for (const g of [...groups.keys()].sort((x, y) => order.indexOf(x) - order.indexOf(y))) {
+    for (const e of hit) { if (!groups.has(e.fix)) groups.set(e.fix, []); groups.get(e.fix).push(e); }
+    for (const g of [...groups.keys()].sort((x, y) => UNMOD_FIX_ORDER.indexOf(x) - UNMOD_FIX_ORDER.indexOf(y))) {
       if (codexCat === '전체') {
         const h = el('div', 'codex-cat', g);
         h.append(el('span', '', groups.get(g).length + '종'));
         box.append(h);
+        box.append(el('div', 'unmod-fixnote', UNMOD_FIX_NOTE[g] || ''));
       }
       for (const e of groups.get(g)) {
         const key = e.kind + '|' + e.ko + '|' + e.lv + '|' + e.why;
-        const it = el('div', 'codex-item' + (codexSel === key ? ' on' : ''));
-        const nm = el('div', 'codex-nm', e.ko);
+        /* 스킬 목록과 달리 두 줄짜리다 — 이름만으로는 어느 줄이 어느 것인지 알 수 없어서다.
+           이름은 말줄임으로 두고 꼬리표는 안 줄인다(줄면 무슨 갈래인지 못 읽는다). */
+        const it = el('div', 'codex-item unmod-item' + (codexSel === key ? ' on' : ''));
+        const nm = el('div', 'codex-nm unmod-nm');
+        nm.append(el('span', 'unmod-name', e.ko));
         nm.append(el('span', 'unmod-kind', e.kind));
+        nm.append(el('span', 'unmod-grp', e.group));   // 「왜」는 꼬리표로 — 가르는 축은 위로 올렸다
         it.append(nm);
         const lvs = el('div', 'codex-lvs');
         if (e.lv) lvs.append(el('span', 'codex-lv', e.lv));
         it.append(lvs);
+        /* 같은 스킬이 조건만 달라 여러 줄로 나온다(플랩 부스터 LV1 이 열두 줄).
+           이름만 적으면 전부 같은 줄로 보이므로, 가르는 대목을 한 줄 붙인다. */
+        const short = e.why.replace(/\*\*/g, '').replace(/ — .*$/, '').replace(/합니다\.?$/, '');
+        it.append(el('div', 'unmod-line', short));
         it.append(el('div', 'codex-cnt', e.n + (e.kind === '파츠' ? '종' : '기')));
         it.onclick = () => { codexSel = key; $('#codex2col').classList.add('sel'); renderCodexList(); renderCodexPane(); };
         box.append(it);
@@ -5421,7 +5463,13 @@
     const ttl = el('div', 'codex-ttl');
     ttl.append(el('b', '', e.ko + (e.lv ? ' ' + e.lv : '')));
     ttl.append(el('span', 'unmod-kind', e.kind));
+    ttl.append(el('span', 'unmod-grp', e.group));
     pane.append(ttl);
+    // 고칠 수 있는가 — 먼저 알고 싶은 것이 이것이다
+    const fix = el('div', 'unmod-fix f-' + UNMOD_FIX_ORDER.indexOf(e.fix));
+    fix.append(el('b', '', e.fix));
+    fix.append(el('div', '', UNMOD_FIX_NOTE[e.fix] || ''));
+    pane.append(fix);
     // 왜 안 넣는지 — 이 줄이 이 화면의 본체다
     const why = el('div', 'unmod-why');
     why.append(el('b', '', '계산에 안 넣는 이유'));
@@ -5582,11 +5630,13 @@
     const wrap = $('#codexCatChips'); if (!wrap) return;
     wrap.innerHTML = '';
     if (codexView === 'unmod') {
-      // 「계산 안 함」 쪽은 위키 분류가 아니라 **왜 안 넣는가**로 가른다
+      /* 「계산 안 함」 쪽은 위키 분류가 아니라 **고칠 수 있는가**로 가른다.
+         왜 안 넣는지(값이 원문에 없음·방향이 반대…)는 항목마다 꼬리표로 단다 —
+         「왜」로 가르면 일곱 갈래가 되는데, 정작 알고 싶은 것은 「이 중 뭐가 고쳐지나」다. */
       const all = buildUnmodIndex();
       const cnt = { 전체: all.length };
-      for (const e of all) cnt[e.group] = (cnt[e.group] || 0) + 1;
-      for (const nm of ['전체', '값이 원문에 없음', '조건을 못 가림', '다른 축의 값', '방향이 반대', '값이 여럿', '안 만드는 영역', '그 밖']) {
+      for (const e of all) cnt[e.fix] = (cnt[e.fix] || 0) + 1;
+      for (const nm of ['전체', ...UNMOD_FIX_ORDER]) {
         if (!cnt[nm]) continue;
         const b = el('button', 'chip' + (codexCat === nm ? ' on' : ''), nm + ' ' + cnt[nm]);
         b.onclick = () => { codexCat = nm; renderCodexChips(); renderCodexList(); };

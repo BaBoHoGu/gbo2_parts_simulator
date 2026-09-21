@@ -3518,3 +3518,27 @@ body.info-open .sel-info { display: flex; }
   }
   .tool-btn::before { height: 37px; }
 }
+
+/* 「계산 안 함」 — 고칠 수 있나 축 */
+.unmod-fixnote { padding: 2px 10px 8px; font-size: 11px; color: var(--muted); line-height: 1.45; }
+.unmod-grp { margin-left: 6px; padding: 1px 5px; border-radius: 4px; font-size: 10px;
+  color: var(--muted); background: var(--chip-bg, rgba(127,127,127,.14)); white-space: nowrap; }
+.unmod-fix { margin: 8px 0; padding: 8px 10px; border-radius: 7px; line-height: 1.5;
+  background: rgba(127,127,127,.10); border-left: 3px solid var(--muted); }
+.unmod-fix b { display: block; margin-bottom: 2px; }
+.unmod-fix div { font-size: 12px; color: var(--muted); }
+.unmod-fix.f-0 { border-left-color: var(--good, #3a9); }
+.unmod-fix.f-1 { border-left-color: var(--warn, #c93); }
+/* .codex-item 은 한 줄짜리 flex 다. 이유 줄을 그냥 넣으면 칸을 뺏어 「스러스터」가
+   「스러스 / 터」로 쪼개진다 — 여기서만 둘째 줄로 내린다. */
+.unmod-item { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 3px 7px; align-items: center; }
+/* 줄을 못 박는다. 칸만 정하고 줄을 안 정하면, 아래 이유 줄이 온 칸을 차지하는 바람에
+   「3기」가 셋째 줄로 밀린다 — 한 항목이 석 줄이 되어 목록이 두 배로 길어졌다. */
+.unmod-item > .unmod-nm { grid-column: 1; grid-row: 1; }
+.unmod-item > .codex-lvs { grid-column: 2; grid-row: 1; }
+.unmod-item > .codex-cnt { grid-column: 3; grid-row: 1; margin-left: 0; }
+.unmod-nm { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; }
+.unmod-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.unmod-kind, .unmod-grp { flex: none; }
+.unmod-item > .unmod-line { grid-column: 1 / -1; grid-row: 2; margin-top: 3px; font-size: 11px; color: var(--muted);
+  line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

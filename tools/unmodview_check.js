@@ -54,6 +54,13 @@ const ok = (label, cond, extra) => {
     const chips = [...document.querySelectorAll('#codexCatChips .chip')].map(x => x.textContent.trim());
     const items = [...document.querySelectorAll('#codexList .codex-item')];
     const note = document.querySelector('#codexNote').textContent;
+    // 칩 글은 「고칠 수 있음 29」 꼴이다 — 뒤의 수를 떼어 합을 맞춰 본다
+    const num = c => Number((c.match(/(\d+)$/) || [])[1] || 0);
+    const total = num(chips.find(c => c.startsWith('전체')) || '');
+    let sum = 0;
+    for (const g of ['고칠 수 있음', '값이 나와야 함', '일부러 안 넣음'])
+      sum += num(chips.find(c => c.startsWith(g)) || '');
+    const tags = document.querySelectorAll('#codexList .unmod-grp').length;
 
     /* 가나만 본다 — 한자는 한국어 표기에도 쓰여(「제간」 등) 잡으면 거짓 경보가 난다. */
     const JA = /[ぁ-ゖァ-ヺ]/;
@@ -71,7 +78,7 @@ const ok = (label, cond, extra) => {
     await wait(400);
     const backItems = document.querySelectorAll('#codexList .codex-item').length;
 
-    return { ms, note, chips, n: items.length, panes, bad, backItems };
+    return { ms, note, chips, n: items.length, panes, bad, backItems, total, sum, tags };
   });
 
   await br.close();
@@ -82,9 +89,18 @@ const ok = (label, cond, extra) => {
   // ① 정말 모으는가 — 0 이면 훑기가 죽은 것이고, 너무 적으면 표본이 깨진 것이다
   ok('모아 놓은 것이 있다 (50종 이상)', r.n >= 50, { 종류: r.n });
   ok('기체 수를 함께 적는다', /기체 \d+기/.test(r.note), r.note);
-  // ② 왜 안 넣는지 갈래로 나눈다 — 한 갈래뿐이면 나눈 뜻이 없다
-  ok('이유를 갈래로 나눠 보여 준다 (3갈래 이상)', r.chips.length >= 4, r.chips);
-  ok('「값이 원문에 없음」 갈래가 있다', r.chips.some(c => /값이 원문에 없음/.test(c)), r.chips);
+  /* ② **고칠 수 있는가**로 가른다 — 이것이 이 화면을 여는 이유다.
+     「왜 안 넣는가」는 일곱 갈래인데, 정작 알고 싶은 것은 「이 중 뭐가 고쳐지나」였다.
+     「왜」는 항목마다 꼬리표로 남기므로 둘 다 살아 있어야 한다. */
+  ok('고칠 수 있는가로 가른다 (세 갈래 + 전체)', r.chips.length >= 4, r.chips);
+  for (const g of ['고칠 수 있음', '값이 나와야 함', '일부러 안 넣음'])
+    ok('「' + g + '」 갈래가 있다', r.chips.some(c => c.startsWith(g)), r.chips);
+  /* 「그 밖」은 **갈래를 못 정한 것**이다. 실제로 세 종이 말없이 여기 떨어져 있었다 —
+     이유 글의 **강조** 때문에 낱말이 끊겨서였다. 0 이 아니면 새 문구가 들어온 것이다. */
+  ok('갈래를 못 정한 것이 없다 (「그 밖」 0)', !r.chips.some(c => c.startsWith('그 밖')), r.chips);
+  // 세 갈래의 합이 전체와 맞는가 — 어긋나면 어느 하나가 두 갈래에 들어갔다는 뜻이다
+  ok('세 갈래의 합이 전체와 맞는다', r.sum === r.total, { 합: r.sum, 전체: r.total });
+  ok('왜 안 넣는지도 꼬리표로 남아 있다', r.tags >= 50, { 꼬리표: r.tags });
   // ③ 고른 것마다 상세가 뜨는가 — 목록만 있고 상세가 비면 반쪽이다
   ok('고르면 상세가 뜬다 (전부)', r.panes === r.n, { 항목: r.n, 상세: r.panes });
   /* ④ 일본어가 남지 않는가.
