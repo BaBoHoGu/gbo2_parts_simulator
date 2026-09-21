@@ -540,6 +540,22 @@ if (-not $Check) {
       Close-Window 1
     }
   }
+  # 일본어 잔존 점검 — smoke 는 **기체 선택·파츠 적용 두 화면만** 들른다.
+  # 나중에 붙인 화면(스킬 도감·계산 안 함·기체 스킬 패널·피탄 시뮬·갤러리·토큰)은
+  # 그 두 곳 밖이라, 번역이 빠져도 아무 검사에 안 걸리고 배포될 뻔했다. 전 화면을 열어 본다.
+  if (($Release -or $Publish) -and -not $NoSmoke) {
+    Write-Host "`n일본어 잔존 점검 중… (전 화면·모달)" -ForegroundColor Cyan
+    $prevEap4 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    & $node (Join-Path $PSScriptRoot 'tools\ja_leak_check.js')
+    $jaCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap4
+    if ($jaCode -ne 0) {
+      Write-Host "`n화면에 일본어가 남아 배포를 중단합니다. (위 FAIL 항목 확인)" -ForegroundColor Red
+      Write-Host '  번역 사전은 생성물입니다 — data/i18n/*.json 을 직접 고치지 말고 규칙·용어를 고치세요.' -ForegroundColor Yellow
+      Write-Host '  그래도 배포하려면 -NoSmoke 를 붙이세요.' -ForegroundColor Yellow
+      Close-Window 1
+    }
+  }
   if (($Release -or $Publish) -and -not $NoUiCheck) {
     Write-Host "`nUI 회귀 점검 중… (실제 Chrome, 4개 화면 크기)" -ForegroundColor Cyan
     $prevEap2 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
