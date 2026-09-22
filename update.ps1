@@ -125,6 +125,69 @@ function Resolve-Gh {
   return $gh
 }
 
+# 배포가 끝난 뒤 **생성물만** 커밋하고 푸시한다.
+#
+# 왜 생성물만인가 — src/·tools/ 가 더러우면 그건 **작업 중인 코드**다. 반쯤 고친 것을
+# 배포가 멋대로 커밋하면 되돌릴 자리를 잃는다. data/ 는 도구가 만든 것이라 언제든 다시
+# 만들 수 있고, 이것 때문에 매번 「커밋되지 않은 변경 N개」 경고가 떴다.
+# (dist/·raw/wiki/ 는 .gitignore 에 있어 애초에 안 잡힌다)
+function Publish-Commit([string]$Root = $PSScriptRoot, [switch]$DryRun) {
+  # -DryRun: 무엇을 할지만 말하고 **커밋도 푸시도 하지 않는다.** 푸시는 공개 저장소로 나가는
+  # 되돌리기 어려운 일이라, 시험할 때 실수로 밀리지 않게 길을 따로 둔다.
+  # 경로를 인자로 받는다 — $PSScriptRoot 를 함수 안에서 직접 읽으면 **따로 떼어 시험할 수가 없다**
+  # (시험 장치에서는 비어 있어 git -C "" 가 128 로 죽었다). 기본값은 그대로 스크립트 폴더다.
+  $prevEap = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    & git -C $Root rev-parse --is-inside-work-tree 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) { return }
+
+    $gen = @('data')
+    $dirty = @(& git -C $Root status --porcelain -- $gen 2>$null)
+    if (-not $dirty.Count) { Write-Host '데이터에 바뀐 것이 없어 커밋할 것이 없습니다.' -ForegroundColor DarkGray }
+    else {
+      & git -C $Root add -- $gen 2>$null | Out-Null
+      $files = @(& git -C $Root diff --cached --name-only 2>$null)
+      $stamp = if ($script:VerStamp) { $script:VerStamp } else { Get-Date -Format 'yyyy-MM-dd-HHmm' }
+      $body = "데이터 갱신 $stamp — 파일 $($files.Count)개`n`n" + (($files | Select-Object -First 30) -join "`n")
+      if ($DryRun) {
+        & git -C $Root reset -q -- $gen 2>&1 | Out-Null
+        Write-Host "[말만] 데이터 커밋했을 것 — 파일 $($files.Count)개" -ForegroundColor DarkCyan
+      } else {
+        & git -C $Root commit -q -m $body 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { Write-Host "데이터 커밋 완료 — 파일 $($files.Count)개" -ForegroundColor Green }
+        else { Write-Host '데이터 커밋에 실패했습니다 (위 로그 확인).' -ForegroundColor Yellow }
+      }
+    }
+
+    # 남은 더러운 것(= 코드)은 **알리기만** 한다. 배포가 대신 결정하지 않는다.
+    $rest = @(& git -C $Root status --porcelain 2>$null)
+    if ($rest.Count) {
+      Write-Host "  · 코드 쪽에 커밋 안 된 변경 $($rest.Count)개가 남아 있습니다 (배포는 건드리지 않습니다)" -ForegroundColor Yellow
+      $rest | Select-Object -First 5 | ForEach-Object { Write-Host "      $_" -ForegroundColor DarkGray }
+    }
+
+    # 푸시 — **원격에 이미 있는 브랜치**일 때만. 없는 브랜치를 배포가 새로 만들어
+    # 공개 저장소에 올리는 일은 하지 않는다(저장소가 공개라 되돌리기 어렵다).
+    # 업스트림 설정이 아니라 원격 브랜치의 존재로 판정한다 — 이 저장소는 origin 에
+    # feature/weapons 가 있는데도 로컬에 추적 설정이 없어 업스트림 기준으로는 늘 건너뛰었다.
+    $branch = (& git -C $Root rev-parse --abbrev-ref HEAD).Trim()
+    $remoteRef = @(& git -C $Root ls-remote --heads origin $branch)
+    if (-not $remoteRef.Count) {
+      Write-Host "  (원격에 없는 브랜치라 푸시는 건너뜁니다 — 처음 올릴 때는 직접 git push -u origin $branch)" -ForegroundColor DarkGray
+      return
+    }
+    $ahead = @(& git -C $Root rev-list "origin/$branch..HEAD" 2>$null)
+    if ($LASTEXITCODE -ne 0) { $ahead = @('?') }
+    if (-not $ahead.Count) { return }
+    if ($DryRun) { Write-Host "[말만] origin/$branch 로 커밋 $($ahead.Count)개를 밀었을 것" -ForegroundColor DarkCyan; return }
+    Write-Host "GitHub 푸시 중… (커밋 $($ahead.Count)개)" -ForegroundColor Cyan
+    & git -C $Root push origin HEAD 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { Write-Host '푸시 완료.' -ForegroundColor Green }
+    else { Write-Host '푸시에 실패했습니다 — 직접 `git push` 하세요.' -ForegroundColor Yellow }
+  } finally { $ErrorActionPreference = $prevEap }
+}
+
 function Publish-Ota {
   $html = Join-Path $PSScriptRoot 'dist\gbo2-simulator.html'
   if (-not (Test-Path $html)) { Write-Host 'dist\gbo2-simulator.html 이 없어 OTA 게시를 건너뜁니다.' -ForegroundColor Yellow; return }
@@ -413,14 +476,14 @@ if ($SetSiteKey) { Set-SiteKey; Close-Window 0 }
 #   ② 패치노트 — 경량판·완전판 ZIP 에 그대로 동봉되므로, 안 고치면 새 버전에
 #      낡은 안내문이 들어간다.
 # 빌드·업로드에 몇 분 쓰기 **전에** 알려 줘야 되돌릴 수 있어 여기 둔다.
-function Test-DeployReady {
+function Test-DeployReady([string]$Root = $PSScriptRoot) {
   $warn = @()
   $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
   try {
-    $dirty = @(& git -C $PSScriptRoot status --porcelain 2>$null)
+    $dirty = @(& git -C $Root status --porcelain 2>$null)
     if ($LASTEXITCODE -eq 0) {
       if ($dirty.Count) { $warn += "커밋되지 않은 변경이 $($dirty.Count)개 있습니다." }
-      $ahead = @(& git -C $PSScriptRoot rev-list '@{u}..HEAD' 2>$null)
+      $ahead = @(& git -C $Root rev-list '@{u}..HEAD' 2>$null)
       if ($LASTEXITCODE -eq 0 -and $ahead.Count) { $warn += "푸시되지 않은 커밋이 $($ahead.Count)개 있습니다." }
     }
   } catch { } finally { $ErrorActionPreference = $prevEap }
@@ -555,6 +618,15 @@ if (-not $Check) {
     Write-Host '  APK 없이 웹만 배포하려면 -NoApk 를 붙여 실행하세요.' -ForegroundColor Yellow
     Close-Window 1
   }
+  # 패치노트 초안 — 이번 실행에서 **실제로 바뀐 것**만 적어 넣는다(사람이 쓴 절이 있으면 안 건드린다).
+  # 여태 「오늘 항목이 없습니다」라고 경고만 하고 그대로 ZIP 에 넣어, 잊으면 새 배포본에
+  # 낡은 안내문이 들어갔다. ZIP 을 만들기 **전**에 넣어야 배포본에 들어간다.
+  if ($Release -or $Publish) {
+    $prevEap5 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    & $node (Join-Path $PSScriptRoot 'tools\patchnote_draft.js')
+    $ErrorActionPreference = $prevEap5
+  }
+
   # -Release: 배포 ZIP 을 완전판 + 경량판 두 가지로 생성 (모바일-앱.apk 동봉)
   if ($Release) {
     Write-Host "`n배포 패키지 생성 중… (완전판 + 경량판)" -ForegroundColor Cyan
@@ -566,6 +638,6 @@ if (-not $Check) {
   # -Publish: 폰 자동 갱신용 데이터(OTA) + PC 배포본 ZIP 을 GitHub 에 올린다
   # 사전을 먼저 올린다. 순서가 반대면, OTA 를 받은 사람이 새 기체로 구성을 만들었는데
   # 사전이 아직 낡아서 업로드가 거부되는 창이 잠깐 생긴다.
-  if ($Publish) { Publish-Ota; Publish-Pc; Publish-Site }
+  if ($Publish) { Publish-Ota; Publish-Pc; Publish-Site; Publish-Commit }
 }
 Close-Window 0

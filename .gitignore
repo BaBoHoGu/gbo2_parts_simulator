@@ -47,3 +47,6 @@ raw/history_flags.json
 
 # 감사 도구가 만드는 결과물 — 실행할 때마다 새로 생긴다
 translation_audit.json
+
+# 로컬 검사용 더미 시크릿 — 절대 커밋하지 않는다(저장소가 공개다)
+.dev.vars

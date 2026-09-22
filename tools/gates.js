@@ -14,7 +14,9 @@
 // 이 문제의 뿌리였다. tools/ 를 훑어 주워 담고, 뺄 것만 이유와 함께 아래에 적는다.
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
+const net = require('net');
+const os = require('os');
 
 const ROOT = path.join(__dirname, '..');
 const TOOLS = __dirname;
@@ -23,7 +25,14 @@ const TOOLS = __dirname;
 const EXCLUDE = {
   'font_scale_check.js': '검사가 아니라 손으로 전후를 비교하는 도구다 (이전 dist 를 인자로 받는다)',
   'gates.js': '이 파일',
+  // 투표 한도 시험은 갤러리에 **구성이 5개 이상** 있어야 도는데, 올리기가 1분에 한 건이라
+  // 배포마다 5분을 더 써야 한다. 값어치에 비해 너무 비싸 손으로 돌리는 도구로 둔다.
+  //   npx wrangler pages dev --port 8788 --local  후  node tools/vote_check.js
+  'vote_check.js': '구성 5개를 미리 올려야 하는데 업로드가 1분에 한 건이라 배포에 넣기엔 비싸다',
 };
+
+/** 로컬 서버(wrangler pages dev)가 있어야 도는 검사인가. */
+const needsServer = f => fs.readFileSync(path.join(TOOLS, f), 'utf8').includes('localhost:8788');
 
 /** 인자가 필요한 검사. ui_check 는 --shots 를 줘야 걸렸을 때 화면을 남긴다 —
  *  안 주면 「UI 점검에 걸렸다」는 말만 있고 무엇이 어긋났는지 볼 그림이 없다. */
@@ -43,9 +52,59 @@ const all = fs.readdirSync(TOOLS)
   .sort();
 const gates = FAST ? all.filter(isFast) : all;
 
+/* 로컬 서버를 **직접** 띄운다.
+   여태 gallery_pw_check 는 서버가 없어 매번 SKIP 이었다 — 공유 갤러리는 배포 때
+   한 번도 검사되지 않았다는 뜻이다. 상태는 매번 **새 폴더**에 둔다:
+   표·비밀번호 잠금이 쌓이면 같은 검사가 돌릴 때마다 다른 결과를 낸다(실제로 19/1 → 14/6).
+   시크릿은 .dev.vars(더미, .gitignore)에서 읽는다 — 진짜 값은 Cloudflare 에만 있다. */
+const PORT = 8788;
+const STATE = path.join(os.tmpdir(), 'gbo2-gates-' + process.pid);
+
+const portBusy = () => new Promise(resolve => {
+  const sock = net.connect({ port: PORT, host: '127.0.0.1' });
+  const done = v => { sock.destroy(); resolve(v); };
+  sock.on('connect', () => done(true));
+  sock.on('error', () => done(false));
+  setTimeout(() => done(false), 1500);
+});
+
+const ready = async () => {
+  for (let i = 0; i < 40; i++) {
+    try {
+      const r = await fetch('http://127.0.0.1:' + PORT + '/api/builds');
+      if (r.ok) return true;
+    } catch { /* 아직 */ }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  return false;
+};
+
+/* **동기로** 죽여야 한다. spawn 으로 띄우면 이 프로세스가 먼저 끝나 taskkill 이 안 돌고,
+   서버가 남는다 — 그러면 다음 실행이 포트를 못 잡는다(실제로 9개가 쌓여 있었다). */
+function killTree(pid) {
+  try { execFileSync('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore' }); }
+  catch { try { process.kill(pid); } catch { /* 이미 죽었으면 말고 */ } }
+}
+
+/* 서버와 검사가 **같은 SIGN_KEY** 를 봐야 관리자 토큰이 맞는다.
+   서버는 .dev.vars 에서 읽고, 검사는 process.env 에서 읽는다 — 여기서 이어 준다.
+   안 이어 주면 「관리자는 비밀번호 없이 지운다」 하나만 조용히 실패한다. */
+const devVars = (() => {
+  try {
+    const t = fs.readFileSync(path.join(ROOT, '.dev.vars'), 'utf8');
+    const o = {};
+    for (const line of t.split(/\r?\n/)) {
+      const m = /^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/.exec(line);
+      if (m) o[m[1]] = m[2];
+    }
+    return o;
+  } catch { return {}; }
+})();
+
 const run = f => new Promise(resolve => {
   const t0 = Date.now();
-  const p = spawn(process.execPath, [path.join(TOOLS, f), ...(ARGS[f] || [])], { cwd: ROOT });
+  const env = needsServer(f) ? { ...process.env, ...devVars } : process.env;
+  const p = spawn(process.execPath, [path.join(TOOLS, f), ...(ARGS[f] || [])], { cwd: ROOT, env });
   let out = '';
   p.stdout.on('data', d => { out += d; });
   p.stderr.on('data', d => { out += d; });
@@ -54,6 +113,42 @@ const run = f => new Promise(resolve => {
 
 (async () => {
   console.log(`검사 ${gates.length}개를 돌립니다 (동시 ${JOBS}개${FAST ? ' · Chrome 안 쓰는 것만' : ''})\n`);
+
+  let srv = null;
+  if (gates.some(needsServer)) {
+    if (await portBusy()) {
+      /* 이미 떠 있는 서버에 대고 검사하면 **남의 상태**를 보게 된다 —
+         실제로 그렇게 표가 쌓인 옛 서버에 대고 재다가 결과가 들쭉날쭉했다.
+         조용히 쓰지 말고 멈춘다. */
+      console.log(`  ✗ 포트 ${PORT} 가 이미 쓰이고 있습니다 — 그 서버에 대고 재면 남의 상태를 봅니다.`);
+      console.log('    먼저 그 서버를 내려 주세요 (wrangler 를 물고 있는 node 프로세스).');
+      process.exit(1);
+    }
+    fs.mkdirSync(STATE, { recursive: true });
+    /* wrangler 를 **node 로 직접** 부른다. npx 를 쓰면 윈도에서 npx.cmd 가 되는데,
+       최신 node 는 shell 없이 .cmd 를 못 띄우고(EINVAL), shell:true 로 하면 인자가
+       escape 되지 않는다는 경고가 뜬다 — 경로에 공백·한글이 있는 이 저장소에서는 실제로 위험하다. */
+    const wrangler = path.join(ROOT, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
+    if (!fs.existsSync(wrangler)) {
+      console.log('  · wrangler 가 없어 갤러리 검사는 건너뜁니다 (npm install).');
+    } else {
+      srv = spawn(process.execPath, [wrangler, 'pages', 'dev', '--port', String(PORT),
+        '--local', '--persist-to', STATE], { cwd: ROOT, stdio: 'ignore' });
+    }
+    if (srv && !(await ready())) {
+      console.log('  · 로컬 서버를 못 띄웠습니다 — 갤러리 검사는 건너뜁니다.');
+      killTree(srv.pid); srv = null;
+    } else if (srv) {
+      console.log('  · 갤러리 검사용 로컬 서버를 띄웠습니다 (상태는 매번 새로)\n');
+    }
+  }
+  const stopServer = () => {
+    if (!srv) return;
+    killTree(srv.pid);
+    try { fs.rmSync(STATE, { recursive: true, force: true }); } catch { /* 지워지면 좋고 */ }
+    srv = null;
+  };
+  process.on('exit', stopServer);
   const queue = gates.slice();
   const results = [];
   const worker = async () => {
@@ -70,6 +165,7 @@ const run = f => new Promise(resolve => {
     }
   };
   await Promise.all(Array.from({ length: JOBS }, worker));
+  stopServer();
 
   const bad = results.filter(r => r.code !== 0);
   if (bad.length) {
