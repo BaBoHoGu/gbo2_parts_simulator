@@ -38,8 +38,13 @@ const needsServer = f => fs.readFileSync(path.join(TOOLS, f), 'utf8').includes('
  *  안 주면 「UI 점검에 걸렸다」는 말만 있고 무엇이 어긋났는지 볼 그림이 없다. */
 const ARGS = { 'ui_check.js': ['--shots'] };
 
-/** Chrome 을 띄우지 않는 것 — --fast 로 이것만 돌릴 수 있다. */
-const isFast = f => !fs.readFileSync(path.join(TOOLS, f), 'utf8').includes('puppeteer');
+/** --fast 로 돌릴 것 — Chrome 도, 로컬 서버도 안 쓰는 것.
+ *  서버 쪽을 넣으면 안 된다: 갤러리 검사는 올리기가 1분에 한 건이라 혼자 122초를 쓴다.
+ *  그러면 「빠른 검사」가 2분짜리가 되어, 자주 도는 자리(배포본의 update.bat)에서 쓸 수 없다. */
+const isFast = f => {
+  const t = fs.readFileSync(path.join(TOOLS, f), 'utf8');
+  return !t.includes('puppeteer') && !t.includes('localhost:8788');
+};
 
 const ARG = process.argv.slice(2);
 const FAST = ARG.includes('--fast');

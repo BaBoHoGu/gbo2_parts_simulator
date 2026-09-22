@@ -167,6 +167,15 @@ if (fs.existsSync(ILLUST_SRC)) {
     if (!/\.webp$/i.test(f)) continue;
     illust[f.replace(/\.webp$/i, '').normalize('NFC')] = 1;
   }
+} else {
+  /* 배포본에는 그림 16MB 를 담지 않는다 — 여기서 쓰는 것은 **이름 목록뿐**이고
+     그림 자체는 사이트에서 URL 로 부르기 때문이다. 대신 목록 파일을 담아 그걸 읽는다.
+     이게 없으면 배포본 사용자가 스스로 재빌드했을 때 **일러스트가 통째로 사라진다**
+     (없는 기체로 취급되어 아예 안 부른다). */
+  try {
+    const idx = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets', 'illust-index.json'), 'utf8'));
+    for (const n of idx) illust[String(n).normalize('NFC')] = 1;
+  } catch { /* 목록도 없으면 일러스트 없음으로 간다 */ }
 }
 
 const IMG_SRC = path.join(ROOT, 'assets', 'images');

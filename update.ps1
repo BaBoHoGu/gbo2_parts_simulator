@@ -597,9 +597,12 @@ if (-not $Check) {
   # 목록을 손으로 적지 않는 이유도 같다: 적으면 새로 만든 검사가 또 빠진다.
   #   -NoUiCheck : Chrome 안 쓰는 것만 (몇 초)
   #   -NoSmoke   : 검사를 통째로 건너뜀
-  if (($Release -or $Publish) -and -not $NoSmoke) {
+  # 맨몸 실행(배포본의 update.bat)에서도 **빠른 검사**는 돈다.
+  # 여태 검사는 -Release/-Publish 에서만 돌았다 — 배포본 사용자가 스스로 데이터를 다시 받으면
+  # 검사가 하나도 안 도는 결과물을 쓰게 됐다는 뜻이다. --fast 는 Chrome 도 서버도 안 쓰고 14초다.
+  if (-not $NoSmoke) {
     $gateArgs = @()
-    if ($NoUiCheck) { $gateArgs += '--fast' }
+    if ($NoUiCheck -or -not ($Release -or $Publish)) { $gateArgs += '--fast' }
     Write-Host "`n검사 중…" -ForegroundColor Cyan
     $prevEap3 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     & $node (Join-Path $PSScriptRoot 'tools\gates.js') @gateArgs

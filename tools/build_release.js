@@ -81,6 +81,28 @@ copyFile(p('dist', 'gbo2-simulator.html'), path.join(STAGE, 'dist', 'gbo2-simula
 
 // 2) 재빌드용 이미지 원본 (build.js 가 assets/images → dist/images 로 복사)
 copyDir(p('assets', 'images'), path.join(STAGE, 'assets', 'images'));
+// 「배포처에 이미지가 아예 없는 기체」 목록. smoke 가 이걸로 **우리 잘못이 아닌 누락**을 가른다.
+// 안 담으면 배포본에서만 그 기체가 실패로 잡힌다 — 실제로 ペイルライダー［軽装備仕様］ 하나 때문에
+// 배포본의 검사가 늘 빨간불이었다(2026-09-23 확인).
+// favicon 은 build.js 가 HTML 에 박아 넣는다 — 없으면 **재빌드가 통째로 죽는다**(ENOENT).
+// 배포본의 자체 재빌드가 이것 하나 때문에 안 됐다(2026-09-23 확인).
+if (fs.existsSync(p('assets', 'favicon.png'))) {
+  copyFile(p('assets', 'favicon.png'), path.join(STAGE, 'assets', 'favicon.png'));
+}
+// 일러스트는 **이름 목록만** 담는다. 그림 16MB 는 사이트에서 URL 로 부르므로 필요 없지만,
+// 목록이 없으면 재빌드한 배포본에서 일러스트가 통째로 사라진다.
+if (fs.existsSync(p('assets', 'illust'))) {
+  const names = fs.readdirSync(p('assets', 'illust'))
+    .filter(f => /\.webp$/i.test(f))
+    .map(f => f.replace(/\.webp$/i, '').normalize('NFC'));
+  fs.mkdirSync(path.join(STAGE, 'assets'), { recursive: true });
+  fs.writeFileSync(path.join(STAGE, 'assets', 'illust-index.json'),
+    JSON.stringify(names, null, 0));
+  console.log(`  일러스트 목록 동봉: ${names.length}기 (그림은 사이트에서 URL 로 부른다)`);
+}
+if (fs.existsSync(p('assets', 'missing.txt'))) {
+  copyFile(p('assets', 'missing.txt'), path.join(STAGE, 'assets', 'missing.txt'));
+}
 
 // 3) 업데이트 파이프라인 (검증 전용 스크립트 _*.js 는 뺀다)
 copyFile(p('update.ps1'), path.join(STAGE, 'update.ps1'));
@@ -104,12 +126,17 @@ copyDir(p('src'), path.join(STAGE, 'src'));
     for (const d of Object.keys(pkg.dependencies || {})) collect(d);
   };
   collect('puppeteer-core');
+  /* jsdom 도 담는다 — smoke 가 이것으로 dist 를 실제로 열어 본다.
+     없으면 배포본에서 `require('jsdom')` 에서 죽어, **사용자가 스스로 데이터를 다시 받았을 때
+     검사가 하나도 안 도는** 상태가 된다. 위키 표 모양이 바뀌거나 번역이 빠져도 아무도 안 잡는다.
+     (2026-09-22 에 카풀 무장 5종이 조용히 빠져 있던 것이 이 부류다) */
+  collect('jsdom');
   let n = 0;
   for (const name of seen) {
     const src = p('node_modules', name);
     if (fs.existsSync(src)) { copyDir(src, path.join(STAGE, 'node_modules', name)); n++; }
   }
-  if (n) console.log(`  puppeteer-core 동봉: ${n}개 패키지 (위키 자동복구용)`);
+  if (n) console.log(`  도구 동봉: ${n}개 패키지 (puppeteer-core = 위키 자동복구 · jsdom = 검사)`);
   else console.log('  ⚠ puppeteer-core 미설치 — 릴리스에 위키 자동복구가 빠집니다 (npm install --no-save puppeteer-core)');
 }
 
