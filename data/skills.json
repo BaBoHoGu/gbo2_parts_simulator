@@ -13756,7 +13756,7 @@
  "ユニコーンガンダム［HML装備］": [
   {
    "name": "能力UP「NT-D（B）」",
-   "nameKo": "能力UP「NT-D（B）」",
+   "nameKo": "능력 UP 「NT-D(B)」",
    "forever": false,
    "secs": 60,
    "hp": 50,
@@ -14101,7 +14101,7 @@
   },
   {
    "name": "能力UP「NT-D：共鳴」",
-   "nameKo": "能力UP「NT-D：共鳴」",
+   "nameKo": "능력 UP 「NT-D：공명」",
    "forever": false,
    "secs": 60,
    "hp": 50,

@@ -69,14 +69,28 @@ const ok = (label, cond, extra) => {
     const JA = /[ぁ-ゖァ-ヺ]/;
     const TAIL = new RegExp(TAIL_SRC, 'g');
     const cut = t => String(t).replace(TAIL, '');
+    /* 칸을 통째로 이어 붙여 보면 안 된다 — 이 화면은 **가진 기체 이름을 줄줄이** 늘어놓아서,
+       「카풀 - カプール」 뒤에 다른 이름이 바로 붙는다. 그러면 꼬리표가 이름의 끝이 아니게 돼
+       봐 주는 규칙이 안 걸리고 거짓 경보가 난다(실제로 그렇게 났다).
+       글자 조각 하나씩 본다 — 어차피 그게 사람이 읽는 단위다. */
+    const texts = el => {
+      const out = [];
+      const walk = n => {
+        if (n.nodeType === 3) { const t = n.nodeValue.trim(); if (t) out.push(t); return; }
+        for (const c of n.childNodes) walk(c);
+      };
+      walk(el);
+      return out;
+    };
     const bad = [];
     let panes = 0;
     for (const it of items) {
       it.click(); await wait(25);
-      const t = document.querySelector('#codexPane').textContent;
-      if (t && t.length > 20) panes++;
+      const pane = document.querySelector('#codexPane');
+      if (pane.textContent && pane.textContent.length > 20) panes++;
       const nm = it.textContent.replace(/\s+/g, ' ').trim().slice(0, 30);
-      if (JA.test(cut(t)) || JA.test(cut(nm))) bad.push(nm);
+      const hit = [...texts(pane), ...texts(it)].find(t => JA.test(cut(t)));
+      if (hit) bad.push(nm + '  ← ' + hit.slice(0, 30));
     }
     // 스킬 보기로 돌아가도 멀쩡한가 — 전환이 한쪽으로만 되면 화면이 망가진다
     document.querySelector('#codexView .seg-btn[data-v="skill"]').click();

@@ -165,6 +165,19 @@ function noteCoverage() {
   ok('앱이 모르는 표기가 늘지 않았다 (' + VOCAB_MAX + ' 이하)', v.n <= VOCAB_MAX, { 지금: v.n, 자물쇠: VOCAB_MAX });
   ok('자물쇠가 헐거워지지 않았다 (줄었으면 낮춰 잠글 것)', v.n >= VOCAB_MAX - 40, { 지금: v.n, 자물쇠: VOCAB_MAX });
 
+  /* ── 무장 **이름**이 전부 한글인가 ──
+     build_weapon_i18n 은 「일본어가 남은 항목 N건」이라고 말만 하고 **배포를 안 막는다.**
+     2026-09-22 에 그 대가를 치렀다: ms.json 에 넣은 「 - 원문」 꼬리표가 「<기체명>用」
+     접두사로 흘러들어가 「카풀 - カプル용 아이언 네일」 같은 이름 14개가 그대로 배포됐다.
+     화면 훑기로는 못 잡는다 — 그 기체의 무장표를 열어야만 보인다. 그래서 데이터에서 센다. */
+  const wdict = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'weapons.json'), 'utf8'));
+  const jaName = Object.entries(wdict)
+    .filter(([, ko]) => /[ぁ-ゖァ-ヺ]/.test(String(ko)))
+    .map(([ja, ko]) => ja + ' → ' + ko);
+  console.log('\n무장 이름 — ' + Object.keys(wdict).length + '종 · 일본어가 남은 것 ' + jaName.length);
+  ok('무장 이름이 전부 한글로 나온다', jaName.length === 0,
+    { 남은것: jaName.slice(0, 5), 고치는법: 'weapon_terms.json 에 용어를 더하거나 규칙을 고칠 것' });
+
   const nc = noteCoverage();
   console.log('\n무장 설명 — 備考 있는 무장 ' + nc.tot + '종 · 번역 없음 ' + nc.miss.length
     + ' · 번역에 일본어 남음 ' + nc.ja.length);

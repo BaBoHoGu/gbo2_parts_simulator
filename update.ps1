@@ -527,44 +527,25 @@ if (-not $Check) {
   # 데이터·번역 점검 — UI 점검보다 먼저(빠르고, 잡는 것이 다르다).
   # 「파츠/기체 사전 전수 번역」·「화면에 일본어 잔존 없음」이 여기 있는데 배포 게이트에는
   # 걸려 있지 않아, 자동 번역이 반쪽으로 만든 이름(「緊急修復모주루」)이 그대로 배포됐다.
+  # 검사 — **전부** 돌린다(tools/gates.js 가 tools/ 를 훑어 주워 담는다).
+  # 여태 배포가 부르던 것은 smoke·ja_leak_check·ui_check 셋뿐이었고, 나머지 스물일곱 개는
+  # 사람이 기억해서 손으로 돌려야 했다. 2026-09-22 에 그 대가를 치렀다 —
+  # 번역이 어긋난 7칸과 무장 설명 번역 누락 10건을 배포가 아니라 손으로 잡았다.
+  # 목록을 손으로 적지 않는 이유도 같다: 적으면 새로 만든 검사가 또 빠진다.
+  #   -NoUiCheck : Chrome 안 쓰는 것만 (몇 초)
+  #   -NoSmoke   : 검사를 통째로 건너뜀
   if (($Release -or $Publish) -and -not $NoSmoke) {
-    Write-Host "`n데이터·번역 점검 중… (smoke)" -ForegroundColor Cyan
+    $gateArgs = @()
+    if ($NoUiCheck) { $gateArgs += '--fast' }
+    Write-Host "`n검사 중…" -ForegroundColor Cyan
     $prevEap3 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-    & $node (Join-Path $PSScriptRoot 'tools\smoke.js')
-    $smokeCode = $LASTEXITCODE
+    & $node (Join-Path $PSScriptRoot 'tools\gates.js') @gateArgs
+    $gateCode = $LASTEXITCODE
     $ErrorActionPreference = $prevEap3
-    if ($smokeCode -ne 0) {
-      Write-Host "`n데이터·번역 점검에 걸려 배포를 중단합니다. (위 FAIL 항목 확인)" -ForegroundColor Red
-      Write-Host '  번역이 덜 된 이름은 data/i18n/ms.json · parts.json 에 넣어 주세요.' -ForegroundColor Yellow
-      Write-Host '  그래도 배포하려면 -NoSmoke 를 붙이세요.' -ForegroundColor Yellow
-      Close-Window 1
-    }
-  }
-  # 일본어 잔존 점검 — smoke 는 **기체 선택·파츠 적용 두 화면만** 들른다.
-  # 나중에 붙인 화면(스킬 도감·계산 안 함·기체 스킬 패널·피탄 시뮬·갤러리·토큰)은
-  # 그 두 곳 밖이라, 번역이 빠져도 아무 검사에 안 걸리고 배포될 뻔했다. 전 화면을 열어 본다.
-  if (($Release -or $Publish) -and -not $NoSmoke) {
-    Write-Host "`n일본어 잔존 점검 중… (전 화면·모달)" -ForegroundColor Cyan
-    $prevEap4 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-    & $node (Join-Path $PSScriptRoot 'tools\ja_leak_check.js')
-    $jaCode = $LASTEXITCODE
-    $ErrorActionPreference = $prevEap4
-    if ($jaCode -ne 0) {
-      Write-Host "`n화면에 일본어가 남아 배포를 중단합니다. (위 FAIL 항목 확인)" -ForegroundColor Red
+    if ($gateCode -ne 0) {
+      Write-Host "`n검사에 걸려 배포를 중단합니다. (위 목록 · dist\ui_check 스크린샷 확인)" -ForegroundColor Red
       Write-Host '  번역 사전은 생성물입니다 — data/i18n/*.json 을 직접 고치지 말고 규칙·용어를 고치세요.' -ForegroundColor Yellow
       Write-Host '  그래도 배포하려면 -NoSmoke 를 붙이세요.' -ForegroundColor Yellow
-      Close-Window 1
-    }
-  }
-  if (($Release -or $Publish) -and -not $NoUiCheck) {
-    Write-Host "`nUI 회귀 점검 중… (실제 Chrome, 4개 화면 크기)" -ForegroundColor Cyan
-    $prevEap2 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-    & $node (Join-Path $PSScriptRoot 'tools\ui_check.js') '--shots'
-    $uiCode = $LASTEXITCODE
-    $ErrorActionPreference = $prevEap2
-    if ($uiCode -ne 0) {
-      Write-Host "`nUI 점검에 걸려 배포를 중단합니다. (위 목록 · dist\ui_check 스크린샷 확인)" -ForegroundColor Red
-      Write-Host '  그래도 배포하려면 -NoUiCheck 를 붙이세요.' -ForegroundColor Yellow
       Close-Window 1
     }
   }

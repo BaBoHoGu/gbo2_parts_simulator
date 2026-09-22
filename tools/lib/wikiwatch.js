@@ -69,6 +69,26 @@ function due(ROOT, watch) {
   return out;
 }
 
+/** 감시에서 뗀 **뒤**에도 아주 가끔 돌아본다 — 캐시가 가장 오래된 것부터 N개.
+ *
+ *  왜 필요한가 — 감시는 「값이 굳으면」 끝난다. 그 뒤 위키가 고치면(옛 기체의 오탈자 수정,
+ *  실측값 보강) 다시 볼 길이 밸런스 패치 목록뿐이고, 거기 이름이 안 오르면 영영 안 본다.
+ *  실제로 ガンダムDX 의 설명은 한참 전에 깨진 채로 긁혀 그대로 썩어 있었다
+ *  (「ブースト射撃可&」·「ASL…有br()よろ」). **오래된 캐시는 조용히 썩는다.**
+ *  601개를 한 번에 받을 수는 없으니 매번 N개씩 돌린다 — N=10 이면 60번 배포에 한 바퀴다. */
+function roll(ROOT, allIds, n, skip) {
+  const dir = path.join(ROOT, 'raw', 'wiki');
+  const rows = [];
+  for (const id of allIds) {
+    if (skip && skip.has(id)) continue;
+    let mt = 0;
+    try { mt = fs.statSync(path.join(dir, id + '.html')).mtimeMs; } catch { continue; }
+    rows.push([id, mt]);
+  }
+  rows.sort((a, b) => a[1] - b[1]);
+  return rows.slice(0, n).map(r => r[0]);
+}
+
 /** 새로 받은 페이지를 감시 목록에 올린다(이미 있으면 그대로 둔다). */
 function add(watch, ids) {
   for (const id of ids) if (!watch[id]) watch[id] = { since: today(), sig: '', same: 0 };
@@ -95,4 +115,4 @@ function settle(ROOT, watch, ids, weapons, skills, baseByPage) {
   return { done, moved };
 }
 
-module.exports = { load, save, seed, due, add, settle, sigOf, REFETCH_DAYS, STABLE_HITS, MAX_DAYS, SEED_NEWEST };
+module.exports = { load, save, seed, due, roll, add, settle, sigOf, REFETCH_DAYS, STABLE_HITS, MAX_DAYS, SEED_NEWEST };

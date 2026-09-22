@@ -16,6 +16,7 @@ const readJson = p => JSON.parse(fs.readFileSync(p, 'utf8'));
 const weapons = readJson(path.join(ROOT, 'data', 'weapons.json'));
 const msDict = readJson(path.join(I18N, 'ms.json'));
 const terms = readJson(path.join(I18N, 'weapon_terms.json'));
+const { stripDisambig } = require('./lib/janame.js');
 const overridePath = path.join(I18N, 'weapons.override.json');
 const override = fs.existsSync(overridePath) ? readJson(overridePath) : {};
 
@@ -111,7 +112,12 @@ function translate(name) {
     const k = NFC(m);
     if (k.length < 2 || !s.includes(k)) continue;
     s = s.split(k).join('{{' + hits.length + '}}');
-    hits.push(msDict[m]);
+    /* 기체 이름에 붙은 「 - 원문」 꼬리표는 떼고 쓴다.
+       한국어 이름이 겹치는 기체를 목록에서 가르려고 ms.json 에 「카풀 - カプル」로 적어 뒀는데,
+       그대로 접두사에 들어가 「카풀 - カプル용 아이언 네일」 같은 무장명이 14개 생겼다
+       (2026-09-22 에 그대로 배포됐다). 꼬리표는 **목록에서 기체를 가르려고** 붙인 것이지
+       이름의 일부가 아니다 — 부품으로 쓸 때는 뗀다. */
+    hits.push(stripDisambig(msDict[m]));
   }
 
   // 2) 용어 사전 (긴 것부터). 번역한 자리는 인덱스 마커로 표시해 둔다.

@@ -216,6 +216,11 @@ async function detectPatch(msList) {
     seeded = Object.keys(watch).length;
   }
   const watchIds = WW.due(ROOT, watch);
+  /* 감시에서 뗀 뒤에도 아주 가끔 돌아본다 — 캐시가 가장 오래된 것부터 ROLL 개.
+     감시는 「값이 굳으면」 끝나므로, 그 뒤 위키가 고친 것은 밸런스 패치에 이름이
+     오르지 않는 한 영영 안 본다. 오래된 캐시는 조용히 썩는다(ガンダムDX 가 그랬다). */
+  const ROLL = 10;
+  const rollIds = WW.roll(ROOT, [...baseByPage.keys()], ROLL, new Set(watchIds));
 
   if (emptyUrlAll.length) {
     console.log(`  ⚠ wiki_url 없음  ${emptyUrlAll.length}기 (무장·스킬 누락)`
@@ -228,9 +233,10 @@ async function detectPatch(msList) {
   if (seeded) console.log(`  · 위키 감시 목록을 처음 만듭니다 — 최근 기체 ${seeded}개부터 지켜봅니다.`);
   if (watchIds.length) console.log(`  · 아직 채워지는 중일 수 있는 페이지 ${watchIds.length}개를 다시 받습니다`
     + ` (감시 ${Object.keys(watch).length}개 — data/wiki_watch.json)`);
+  if (rollIds.length) console.log(`  · 캐시가 가장 오래된 ${rollIds.length}개도 돌아봅니다 (순회 — 전체 한 바퀴에 약 ${Math.ceil(baseByPage.size / ROLL)}번)`);
 
   const nothing = !added.length && !changed.length && !removed.length && !partsChanged && !patchNew
-    && !emptyUrlMechs.length && !staleMechs.length && !watchIds.length;
+    && !emptyUrlMechs.length && !staleMechs.length && !watchIds.length && !rollIds.length;
   if (nothing) { console.log('\n✔ 이미 최신 상태입니다.'); return; }
   if (CHECK_ONLY) { console.log('\n(--check: 감지만 하고 반영하지 않았습니다. 반영하려면 --check 없이 실행하세요.)'); return; }
 
@@ -318,7 +324,7 @@ async function detectPatch(msList) {
   }
 
   // (c) 위키·무장·스킬 — 신규/변경 기체 + 새 패치로 조정된 기체 + 무장/스킬 누락 기체(A) 를 받아 병합
-  if (msChanged || patchNew || staleMechs.length || emptyUrlMechs.length || watchIds.length) {
+  if (msChanged || patchNew || staleMechs.length || emptyUrlMechs.length || watchIds.length || rollIds.length) {
     const ids = new Set();
     for (const m of added) { const id = pageId(urlOf(m)); if (id) ids.add(id); }
     for (const c of changed) { const id = pageId(urlOf(c.ms)); if (id) ids.add(id); }
@@ -341,6 +347,7 @@ async function detectPatch(msList) {
     for (const m of staleMechs) { const id = pageId(urlOf(m)); if (id) ids.add(id); }   // A: 누락 기체
     for (const m of emptyUrlMechs) { const id = pageId(urlOf(m)); if (id) ids.add(id); } // B: 방금 연결된 기체
     for (const id of watchIds) ids.add(id);                                                // A2: 아직 채워지는 중
+    for (const id of rollIds) ids.add(id);                                                 // A3: 오래된 것 순회
     const targetIds = [...ids];
     console.log(`  갱신 대상 위키 페이지 ${targetIds.length}개`);
 
