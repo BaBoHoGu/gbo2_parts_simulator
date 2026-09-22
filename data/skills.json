@@ -13563,7 +13563,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 0,
+     "hispeed": 15,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -13701,8 +13701,8 @@
     {
      "from": 2,
      "to": null,
-     "shoot": 15,
-     "melee": 25,
+     "shoot": 20,
+     "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
      "crouchPct": 0,
@@ -13755,8 +13755,8 @@
  ],
  "ユニコーンガンダム［HML装備］": [
   {
-   "name": "能力UP「NT-D（B）」?",
-   "nameKo": "능력UP「NT-D (B)」",
+   "name": "能力UP「NT-D（B）」",
+   "nameKo": "能力UP「NT-D（B）」",
    "forever": false,
    "secs": 60,
    "hp": 50,
@@ -14100,8 +14100,8 @@
    ]
   },
   {
-   "name": "能力UP「NT-D：共鳴」?",
-   "nameKo": "능력 UP 「NT-D：공명」?",
+   "name": "能力UP「NT-D：共鳴」",
+   "nameKo": "能力UP「NT-D：共鳴」",
    "forever": false,
    "secs": 60,
    "hp": 50,

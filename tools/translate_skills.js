@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { translate: one, hasJa, sleep } = require('./lib/mt.js');
-const { protect } = require('./lib/glossary.js');
+const { protect, post } = require('./lib/glossary.js');
 const ROOT = path.join(__dirname, '..');
 const rd = (...p) => JSON.parse(fs.readFileSync(path.join(ROOT, ...p), 'utf8'));
 const rdSafe = (...p) => { try { return rd(...p); } catch { return {}; } };
@@ -30,6 +30,24 @@ const rdSafe = (...p) => { try { return rd(...p); } catch { return {}; } };
     if (cache[n]) continue;
     if (nameDict[n] && !hasJa(nameDict[n])) cache[n] = nameDict[n];
   }
+
+  /* 이미 쌓인 캐시도 훑어 고친다 — 번역기는 캐시에 있는 칸을 건너뛰므로,
+     post() 를 새로 넣어도 예전에 어긋난 채 저장된 칸에는 손이 닿지 않는다.
+     사전은 생성물이지만 이 캐시만은 다시 만들어지지 않으니, 여기서 스스로 고치게 둔다. */
+  {
+    let fixed = 0;
+    for (const [k, v] of Object.entries(cache)) {
+      if (typeof v !== 'string') continue;
+      const p = post(v);
+      if (p !== v) { cache[k] = p; fixed++; }
+    }
+    if (fixed) {
+      /* 바로 저장한다. 번역할 것이 없으면 아래 쓰기 자리에 영영 안 닿아,
+         고친 것이 메모리에만 남고 파일은 그대로였다(실제로 그렇게 났다). */
+      fs.writeFileSync(path.join(ROOT, 'data', 'i18n', 'skill_text.json'), JSON.stringify(cache, null, 1) + '\n');
+      console.log(`  표기가 어긋나 있던 ${fixed}칸을 고쳐 저장했습니다 (MT 가 되돌려 놓은 말)`);
+    }
+  }
   const todo = [...new Set([...names, ...texts])].filter(t => !cache[t]);
   console.log(`번역 대상 고유 텍스트 ${todo.length}개 (캐시 ${Object.keys(cache).length})`);
 
@@ -40,7 +58,7 @@ const rdSafe = (...p) => { try { return rd(...p); } catch { return {}; } };
     if (partCache.has(p)) return partCache.get(p);
     // 게임 용어를 한글로 먼저 박아 두고 보낸다. 안 그러면 gtx 가
     // 「よろけ」를 「쑥쑥」·「잡음」으로 옮기거나 문장에서 통째로 빼 버린다.
-    const ko = await one(protect(p));
+    const ko = post(await one(protect(p)));
     const v = (ko && !hasJa(ko)) ? ko : null;
     partCache.set(p, v);
     await sleep(80);

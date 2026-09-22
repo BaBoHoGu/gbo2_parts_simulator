@@ -197,6 +197,26 @@ async function detectPatch(msList) {
   const staleMechs = staleAll.filter(m => !triedRecently('p:' + pageId(urlOf(m))));
   const skipped = (emptyUrlAll.length - emptyUrlMechs.length) + (staleAll.length - staleMechs.length);
 
+  /* (A2) **덜 채워진 채 굳는 것**을 막는다 — 위 staleAll 은 「무장이 있냐 없냐」만 본다.
+     위키는 새 기체의 틀을 먼저 만들고 며칠에 걸쳐 채우므로, 그 사이 한 번 긁히면
+     무장이 1개라도 들어와 그 뒤로 영영 다시 안 본다(카풀 두 기체에서 5종이 빠져 있었다).
+     그래서 새로 받은 페이지는 **값이 두 번 연속 같아질 때까지** 다시 받는다.
+     규칙과 끝나는 조건은 lib/wikiwatch.js 에 있다. */
+  const WW = require('./lib/wikiwatch.js');
+  const baseByPage = new Map();
+  for (const m of remote) {
+    const id = pageId(urlOf(m));
+    if (id && !baseByPage.has(id)) baseByPage.set(id, baseName(m.MS名));
+  }
+  let watch = WW.load(ROOT);
+  let seeded = 0;
+  if (!Object.keys(watch).length) {
+    // 처음 도입 — 기체 추가 시점을 기록해 둔 적이 없어 페이지 번호가 큰 쪽(=최근)부터 본다
+    watch = WW.seed([...baseByPage.keys()]);
+    seeded = Object.keys(watch).length;
+  }
+  const watchIds = WW.due(ROOT, watch);
+
   if (emptyUrlAll.length) {
     console.log(`  ⚠ wiki_url 없음  ${emptyUrlAll.length}기 (무장·스킬 누락)`
       + (emptyUrlMechs.length ? ' — 위키에서 페이지 자동 조회 시도' : ''));
@@ -205,9 +225,12 @@ async function detectPatch(msList) {
   if (staleAll.length) console.log(`  ⚠ 무장/스킬 누락  ${staleAll.length}기`
     + (staleMechs.length ? ` — ${staleMechs.length}기 재수신` : ''));
   if (skipped) console.log(`  (최근 24h 시도했으나 위키가 여전히 빈 ${skipped}건은 건너뜀 — data/wiki_attempts.json)`);
+  if (seeded) console.log(`  · 위키 감시 목록을 처음 만듭니다 — 최근 기체 ${seeded}개부터 지켜봅니다.`);
+  if (watchIds.length) console.log(`  · 아직 채워지는 중일 수 있는 페이지 ${watchIds.length}개를 다시 받습니다`
+    + ` (감시 ${Object.keys(watch).length}개 — data/wiki_watch.json)`);
 
   const nothing = !added.length && !changed.length && !removed.length && !partsChanged && !patchNew
-    && !emptyUrlMechs.length && !staleMechs.length;
+    && !emptyUrlMechs.length && !staleMechs.length && !watchIds.length;
   if (nothing) { console.log('\n✔ 이미 최신 상태입니다.'); return; }
   if (CHECK_ONLY) { console.log('\n(--check: 감지만 하고 반영하지 않았습니다. 반영하려면 --check 없이 실행하세요.)'); return; }
 
@@ -295,7 +318,7 @@ async function detectPatch(msList) {
   }
 
   // (c) 위키·무장·스킬 — 신규/변경 기체 + 새 패치로 조정된 기체 + 무장/스킬 누락 기체(A) 를 받아 병합
-  if (msChanged || patchNew || staleMechs.length || emptyUrlMechs.length) {
+  if (msChanged || patchNew || staleMechs.length || emptyUrlMechs.length || watchIds.length) {
     const ids = new Set();
     for (const m of added) { const id = pageId(urlOf(m)); if (id) ids.add(id); }
     for (const c of changed) { const id = pageId(urlOf(c.ms)); if (id) ids.add(id); }
@@ -317,6 +340,7 @@ async function detectPatch(msList) {
     }
     for (const m of staleMechs) { const id = pageId(urlOf(m)); if (id) ids.add(id); }   // A: 누락 기체
     for (const m of emptyUrlMechs) { const id = pageId(urlOf(m)); if (id) ids.add(id); } // B: 방금 연결된 기체
+    for (const id of watchIds) ids.add(id);                                                // A2: 아직 채워지는 중
     const targetIds = [...ids];
     console.log(`  갱신 대상 위키 페이지 ${targetIds.length}개`);
 
@@ -343,6 +367,13 @@ async function detectPatch(msList) {
       else { if (id) delete attempts['p:' + id]; delete attempts['n:' + m.MS名]; }
     }
     fs.writeFileSync(path.join(ROOT, 'data', 'wiki_attempts.json'), JSON.stringify(attempts) + '\n');
+
+    /* A2: 이번에 받은 페이지를 감시 목록에 올리고, 값이 그대로인 것은 뗀다.
+       「두 번 연속 같으면 다 채워진 것으로 본다」 — 끝나는 조건이 있어야 영원히 안 받는다. */
+    WW.add(watch, targetIds);
+    const { done, moved } = WW.settle(ROOT, watch, targetIds, weapAfter, sklAfter, baseByPage);
+    if (moved.length) console.log(`  · 위키가 아직 채우는 중인 페이지 ${moved.length}개 (값이 바뀌었습니다: ${moved.slice(0, 6).join(', ')})`);
+    if (done.length) console.log(`  · 값이 굳어 감시에서 뗀 페이지 ${done.length}개 — 남은 감시 ${Object.keys(watch).length}개`);
   }
 
   // (d) 이미지 — 새 기체뿐 아니라 새 파츠도 받아야 하므로 둘 중 하나만 바뀌어도 실행한다.

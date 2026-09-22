@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { translate: one, hasJa, sleep } = require('./lib/mt.js');
-const { protect } = require('./lib/glossary.js');
+const { protect, post } = require('./lib/glossary.js');
 const ROOT = path.join(__dirname, '..');
 const rd = (...p) => JSON.parse(fs.readFileSync(path.join(ROOT, ...p), 'utf8'));
 const rdSafe = (...p) => { try { return rd(...p); } catch { return {}; } };
@@ -85,6 +85,24 @@ function curated(b) {
     if (x.info && x.info['備考']) notes.add(x.info['備考']);
     for (const l of Object.values(x.levels || {})) if (l.raw && l.raw['備考']) notes.add(l.raw['備考']);
   }
+
+  /* 이미 쌓인 캐시도 훑어 고친다 — 번역기는 캐시에 있는 칸을 건너뛰므로,
+     post() 를 새로 넣어도 예전에 어긋난 채 저장된 칸에는 손이 닿지 않는다.
+     사전은 생성물이지만 이 캐시만은 다시 만들어지지 않으니, 여기서 스스로 고치게 둔다. */
+  {
+    let fixed = 0;
+    for (const [k, v] of Object.entries(cache)) {
+      if (typeof v !== 'string') continue;
+      const p = post(v);
+      if (p !== v) { cache[k] = p; fixed++; }
+    }
+    if (fixed) {
+      /* 바로 저장한다. 번역할 것이 없으면 아래 쓰기 자리에 영영 안 닿아,
+         고친 것이 메모리에만 남고 파일은 그대로였다(실제로 그렇게 났다). */
+      fs.writeFileSync(path.join(ROOT, 'data', 'i18n', 'weapon_note.json'), JSON.stringify(cache, null, 1) + '\n');
+      console.log(`  표기가 어긋나 있던 ${fixed}칸을 고쳐 저장했습니다 (MT 가 되돌려 놓은 말)`);
+    }
+  }
   const todo = [...notes].filter(n => !cache[n]);
   console.log(`번역 대상 고유 備考 ${todo.length}개 (캐시 ${Object.keys(cache).length})`);
 
@@ -95,7 +113,7 @@ function curated(b) {
     // 패턴은 값을 그대로 통과시킨다. 값이 문장이면(「効果時間はリミッター解除前と連動」)
     // 일본어가 남으므로, 그럴 땐 정형 처리를 버리고 MT 로 넘긴다.
     if (cur != null && !hasJa(cur)) { partCache.set(p, cur); return cur; }
-    const ko = await one(protect(p));   // 게임 용어를 한글로 먼저 박아 두고 보낸다
+    const ko = post(await one(protect(p)));   // 게임 용어를 한글로 먼저 박아 두고 보낸다
     const v = (ko && !hasJa(ko)) ? cleanUnits(ko) : null;   // MT 결과에 남은 단위도 정리
     partCache.set(p, v);
     await sleep(80);
