@@ -89,7 +89,24 @@ function killTree(pid) {
 /* 서버와 검사가 **같은 SIGN_KEY** 를 봐야 관리자 토큰이 맞는다.
    서버는 .dev.vars 에서 읽고, 검사는 process.env 에서 읽는다 — 여기서 이어 준다.
    안 이어 주면 「관리자는 비밀번호 없이 지운다」 하나만 조용히 실패한다. */
-const devVars = (() => {
+/* 없으면 만든다 — .dev.vars 는 .gitignore 라 **다른 PC·배포본에는 없다.**
+   그러면 갤러리 검사가 「서버 설정이 끝나지 않았습니다 (WHO_SALT)」로 실패해
+   배포가 통째로 막힌다(실측 확인). 여기 값은 로컬 검사 전용 더미로, 진짜 시크릿과
+   아무 상관이 없다 — 진짜 값은 Cloudflare 에만 있다(wrangler pages secret put). */
+function ensureDevVars() {
+  const f = path.join(ROOT, '.dev.vars');
+  if (fs.existsSync(f)) return;
+  fs.writeFileSync(f,
+    '# 로컬 검사 전용 더미값 — 진짜 비밀값이 아니다. tools/gates.js 가 없으면 만든다.' + '\n'
+    + '# 진짜 시크릿은 Cloudflare 에만 있다(wrangler pages secret put). 이 파일은 .gitignore 에 있다.' + '\n'
+    + 'WHO_SALT=local-check-dummy-salt-not-a-secret' + '\n'
+    + 'SIGN_KEY=local-check-dummy-sign-key-not-a-secret' + '\n');
+  console.log('  · 로컬 검사용 .dev.vars 를 만들었습니다 (더미값 · 저장소에 안 올라갑니다)');
+}
+
+/** **쓸 때** 읽는다. 미리 읽으면 ensureDevVars 가 그 실행에서 만든 파일을 못 본다 —
+ *  처음 도는 PC 에서만 관리자 토큰이 조용히 어긋나는, 찾기 어려운 꼴이 된다. */
+function readDevVars() {
   try {
     const t = fs.readFileSync(path.join(ROOT, '.dev.vars'), 'utf8');
     const o = {};
@@ -99,11 +116,11 @@ const devVars = (() => {
     }
     return o;
   } catch { return {}; }
-})();
+}
 
 const run = f => new Promise(resolve => {
   const t0 = Date.now();
-  const env = needsServer(f) ? { ...process.env, ...devVars } : process.env;
+  const env = needsServer(f) ? { ...process.env, ...readDevVars() } : process.env;
   const p = spawn(process.execPath, [path.join(TOOLS, f), ...(ARGS[f] || [])], { cwd: ROOT, env });
   let out = '';
   p.stdout.on('data', d => { out += d; });
@@ -124,6 +141,7 @@ const run = f => new Promise(resolve => {
       console.log('    먼저 그 서버를 내려 주세요 (wrangler 를 물고 있는 node 프로세스).');
       process.exit(1);
     }
+    ensureDevVars();
     fs.mkdirSync(STATE, { recursive: true });
     /* wrangler 를 **node 로 직접** 부른다. npx 를 쓰면 윈도에서 npx.cmd 가 되는데,
        최신 node 는 shell 없이 .cmd 를 못 띄우고(EINVAL), shell:true 로 하면 인자가
