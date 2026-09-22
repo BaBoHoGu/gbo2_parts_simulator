@@ -106,7 +106,9 @@ setTimeout(async () => {
 
   const D = window.GBO2_DATA, I = window.GBO2i18n;
   const partsAll = [].concat(...Object.values(D.parts));
-  check('기체 사전 전수 번역', D.msData.every(m => !kana.test(I.msName(m.MS名))));
+  // 「카풀 - カプール」 같은 꼬리표는 봐 준다 — 규칙은 lib/janame.js 한 곳에 있다
+  const { stripDisambig: noTag } = require('./lib/janame.js');
+  check('기체 사전 전수 번역', D.msData.every(m => !kana.test(noTag(I.msName(m.MS名)))));
   check('파츠 사전 전수 번역',
     partsAll.every(p => !kana.test(I.partName(p.name)) && !kana.test(I.partDesc(p.name, p.description))));
 

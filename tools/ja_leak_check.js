@@ -14,6 +14,7 @@
 //     **가나만** 잡는다.
 const fs = require('fs');
 const path = require('path');
+const { TAIL_SRC } = require('./lib/janame.js');
 const ROOT = path.join(__dirname, '..');
 const FILE = 'file:///' + path.join(ROOT, 'dist', 'gbo2-simulator.html').replace(/\\/g, '/').replace(/ /g, '%20');
 
@@ -57,7 +58,8 @@ function punctRule() {
   await pg.goto(FILE, { waitUntil: 'load', timeout: 180000 });
   await sleep(4000);
 
-  const res = await pg.evaluate(async () => {
+  const res = await pg.evaluate(async (TAIL_SRC) => {
+    const TAIL = new RegExp(TAIL_SRC, 'g');
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const KANA = /[ぁ-ゖァ-ヺ]/;
     /* 가나만 보면 「・사격 보정 ＋25」를 놓친다 — 글자는 한국어인데 부호만 일본어인 꼴이다.
@@ -87,7 +89,9 @@ function punctRule() {
           nodes++; chars += t.length;
           // 원문을 **일부러** 같이 보여 주는 칸은 봐 준다
           if (String(p.className || '').includes('codex-jp')) return;
-          if (KANA.test(t) || PUNCT.test(t)) bad.push({ t: t.slice(0, 40), cls: String(p.className || p.tagName).slice(0, 26) });
+          // 꼬리표(「 - カプール」)는 봐 준다 — 규칙은 lib/janame.js 한 곳에 있다
+          const u = t.replace(TAIL, '');
+          if (KANA.test(u) || PUNCT.test(u)) bad.push({ t: t.slice(0, 40), cls: String(p.className || p.tagName).slice(0, 26) });
           return;
         }
         if (n.nodeType === 1 && n.tagName !== 'BODY' && !shown(n)) return;
@@ -148,7 +152,7 @@ function punctRule() {
     out.push(scan('피탄 시뮬 · 무장 고른 뒤'));
 
     return { out };
-  });
+  }, TAIL_SRC);
 
   await br.close();
 

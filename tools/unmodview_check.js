@@ -10,6 +10,7 @@
 //   ③ 일본어가 남지 않는가 — 원문을 그대로 실으면 이 앱의 원칙이 깨진다.
 //      번역 사전은 **문장 전체**가 열쇠라, 잘라 낸 조각을 넘기면 조용히 원문이 나온다.
 const path = require('path');
+const { TAIL_SRC } = require('./lib/janame.js');
 const ROOT = path.join(__dirname, '..');
 const FILE = 'file:///' + path.join(ROOT, 'dist', 'gbo2-simulator.html').replace(/\\/g, '/').replace(/ /g, '%20');
 
@@ -37,7 +38,7 @@ const ok = (label, cond, extra) => {
   await pg.goto(FILE, { waitUntil: 'load', timeout: 180000 });
   await sleep(4000);
 
-  const r = await pg.evaluate(async () => {
+  const r = await pg.evaluate(async (TAIL_SRC) => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const c = document.querySelector('#infoClose');
     if (c && document.body.classList.contains('info-open')) c.click();
@@ -62,8 +63,12 @@ const ok = (label, cond, extra) => {
       sum += num(chips.find(c => c.startsWith(g)) || '');
     const tags = document.querySelectorAll('#codexList .unmod-grp').length;
 
-    /* 가나만 본다 — 한자는 한국어 표기에도 쓰여(「제간」 등) 잡으면 거짓 경보가 난다. */
+    /* 가나만 본다 — 한자는 한국어 표기에도 쓰여(「제간」 등) 잡으면 거짓 경보가 난다.
+       이 화면은 **가진 기체 이름**을 늘어놓으므로 「카풀 - カプール」 꼬리표가 섞인다 —
+       봐 주는 규칙은 lib/janame.js 한 곳에 있다(셋이 베껴 쓰면 언젠가 갈린다). */
     const JA = /[ぁ-ゖァ-ヺ]/;
+    const TAIL = new RegExp(TAIL_SRC, 'g');
+    const cut = t => String(t).replace(TAIL, '');
     const bad = [];
     let panes = 0;
     for (const it of items) {
@@ -71,7 +76,7 @@ const ok = (label, cond, extra) => {
       const t = document.querySelector('#codexPane').textContent;
       if (t && t.length > 20) panes++;
       const nm = it.textContent.replace(/\s+/g, ' ').trim().slice(0, 30);
-      if (JA.test(t) || JA.test(nm)) bad.push(nm);
+      if (JA.test(cut(t)) || JA.test(cut(nm))) bad.push(nm);
     }
     // 스킬 보기로 돌아가도 멀쩡한가 — 전환이 한쪽으로만 되면 화면이 망가진다
     document.querySelector('#codexView .seg-btn[data-v="skill"]').click();
@@ -79,7 +84,7 @@ const ok = (label, cond, extra) => {
     const backItems = document.querySelectorAll('#codexList .codex-item').length;
 
     return { ms, note, chips, n: items.length, panes, bad, backItems, total, sum, tags };
-  });
+  }, TAIL_SRC);
 
   await br.close();
 
