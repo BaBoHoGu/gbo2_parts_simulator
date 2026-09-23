@@ -119,14 +119,17 @@ if (PRINT) { console.log(body); process.exit(0); }
 let note;
 try { note = fs.readFileSync(NOTE, 'utf8'); } catch { console.log('패치노트.md 가 없어 건너뜁니다.'); process.exit(0); }
 // 사람이 이미 오늘 자 절을 써 뒀으면 **건드리지 않는다.** 초안이 사람 글을 덮으면 안 된다.
-if (new RegExp('^_' + today + ' 업데이트', 'm').test(note)) {
+if (new RegExp('(^|\\r?\\n)_' + today + ' 업데이트').test(note)) {
   console.log(`패치노트에 오늘(${today}) 항목이 이미 있습니다 — 초안을 넣지 않습니다.`);
   process.exit(0);
 }
-// 첫 번째 「---」 구분선 **뒤**가 절이 쌓이는 자리다(위쪽은 내려받기 안내).
-const at = note.indexOf('\n---\n');
-if (at < 0) { console.log('패치노트에서 넣을 자리를 못 찾아 건너뜁니다.'); process.exit(0); }
-const cut = at + '\n---\n'.length;
+/* 첫 번째 「---」 구분선 **뒤**가 절이 쌓이는 자리다(위쪽은 내려받기 안내).
+   줄끝을 '\n' 으로 박아 찾으면 안 된다 — 이 파일은 CRLF 라 한 번도 못 찾고
+   「넣을 자리를 못 찾아 건너뜁니다」만 찍었다(2026-09-23 배포에서 확인). */
+const m = /\r?\n---\r?\n/.exec(note);
+if (!m) { console.log('패치노트에서 넣을 자리를 못 찾아 건너뜁니다.'); process.exit(0); }
+const at = m.index;
+const cut = at + m[0].length;
 fs.writeFileSync(NOTE, note.slice(0, cut) + '\n' + body + note.slice(cut).replace(/^\n+/, ''));
 console.log(`패치노트에 ${today} 초안을 넣었습니다 — 기체 ${c.newMs.length} · 무장 ${c.weap.length} · 스킬 ${c.skill.length}`);
 console.log('  (사실만 적혀 있습니다. 문구는 다듬어 주세요.)');
