@@ -188,6 +188,23 @@ const run = f => new Promise(resolve => {
     }
   };
   await Promise.all(Array.from({ length: JOBS }, worker));
+
+  /* 걸린 검사는 **혼자** 한 번 더 돌린다.
+     동시에 넷을 돌리면 CPU 가 모자라 시간에 기대는 검사가 흔들린다 —
+     2026-09-23 배포에서 gallery_pw_check 와 smoke 가 그렇게 걸려 배포가 멈췄는데,
+     혼자 돌리니 둘 다 통과했다(30/30). **무작위로 배포를 막는 검사는 그 자체가 결함이다.**
+     진짜로 깨진 검사는 혼자 돌려도 걸리므로, 한 번의 재시도로 진짜와 흔들림이 갈린다. */
+  const shaky = [];
+  for (const r of results.filter(x => x.code !== 0)) {
+    const again = await run(r.f);
+    if (again.code === 0) shaky.push(r.f);
+    Object.assign(r, again);          // 두 번째 결과로 갈아 끼운다
+  }
+  if (shaky.length) {
+    console.log('\n  · 혼자 돌리니 통과한 검사 ' + shaky.length + '개: '
+      + shaky.map(f => f.replace('.js', '')).join(', '));
+    console.log('    (동시에 돌 때 부하로 흔들린 것 — 실패로 치지 않습니다)');
+  }
   stopServer();
 
   const bad = results.filter(r => r.code !== 0);
@@ -195,9 +212,13 @@ const run = f => new Promise(resolve => {
     console.log('\n' + '─'.repeat(60));
     for (const r of bad) {
       console.log(`\n■ ${r.f} — 걸린 내용`);
-      // FAIL 줄과 그 뒤 몇 줄만 — 전체를 쏟으면 무엇이 문제인지 안 보인다
+      /* FAIL 줄과 그 뒤 몇 줄만 — 전체를 쏟으면 무엇이 문제인지 안 보인다.
+         「실패」·「오류」까지 넓게 잡으면 **잡음이 진짜를 가린다** — smoke 가 찍는
+         「저장 데이터 파싱 실패: tc_goals」 여섯 줄에 밀려 정작 FAIL 줄이 안 보였다.
+         줄머리의 FAIL 을 먼저 찾고, 하나도 없을 때만 넓게 본다. */
       const lines = r.out.split('\n');
-      const hit = lines.map((l, i) => (/FAIL|실패|오류/.test(l) ? i : -1)).filter(i => i >= 0);
+      let hit = lines.map((l, i) => (/^\s*FAIL\b/.test(l) ? i : -1)).filter(i => i >= 0);
+      if (!hit.length) hit = lines.map((l, i) => (/FAIL|실패|오류/.test(l) ? i : -1)).filter(i => i >= 0);
       const show = new Set();
       for (const i of hit.slice(0, 6)) for (let j = i; j < Math.min(i + 5, lines.length); j++) show.add(j);
       for (const i of [...show].sort((a, b) => a - b)) console.log('   ' + lines[i]);
