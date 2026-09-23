@@ -21,7 +21,7 @@ const clean = s => s
      우리 잘못이 아니라 **위키 쪽 잡음**인데, 그대로 옮기면 화면에 「집속 시간: 3초&」로 보인다.
      전수로 세어 5건뿐이고 모두 잡음이었다(2026-09-23). 반각 `&` 만 본다 —
      「Ζ건담［IFC＆IFB장비］」처럼 **뜻이 있는 것은 전각 ＆** 라 건드리지 않는다. */
-  .replace(/&/g, ' ')
+  .replace(/&/g, '')
   .replace(/\s+/g, ' ').trim();
 
 const parseTable = html => parseGrid(html, clean);

@@ -75,32 +75,10 @@ function vocabMiss() {
   return { segs, n, kinds: miss.size, top: [...miss].sort((a, b) => b[1] - a[1]).slice(0, 5) };
 }
 
-/* ── 무장 설명(備考)이 전부 한글이 되는가 ──
-   사전은 **備考 문장 전체**가 열쇠다. 그래서 위키가 한 글자만 고쳐도 열쇠가 어긋나
-   그 무장만 조용히 일본어로 돌아간다 — 오류도 안 나고 개수도 안 변한다.
-   실제로 카풀 두 기체에서 그렇게 났다(위키가 채워지며 새 무장 5종 + 기존 5종의 문구가 바뀜).
-   화면 훑기(ja_leak_check)로는 못 잡는다 — 3,272종을 다 열어 볼 수는 없어서다.
-   그래서 **데이터에서** 센다. `node tools/translate_notes.js` 가 메꾼다. */
-function noteCoverage() {
-  const rd = f => JSON.parse(fs.readFileSync(path.join(ROOT, ...f), 'utf8'));
-  const dict = rd(['data', 'i18n', 'weapon_note.json']);
-  const weapons = rd(['data', 'weapons.json']);
-  const KANA = /[ぁ-ゖァ-ヺ]/;
-  let tot = 0;
-  const miss = [], ja = [];
-  for (const v of Object.values(weapons)) {
-    for (const w of (v.weapons || [])) {
-      const note = String(((w.info || {})['備考']) || '');
-      if (!note) continue;
-      tot++;
-      const ko = dict[note];
-      const who = (v.names || ['?'])[0] + ' / ' + w.name;
-      if (ko == null) miss.push(who);
-      else if (KANA.test(ko)) ja.push(who);
-    }
-  }
-  return { tot, miss, ja };
-}
+/* 사전을 보는 검사(무장 이름·설명·「null」)는 **tools/dict_check.js 로 옮겼다.**
+   이 파일은 Chrome 이 없으면 첫머리에서 빠져나가는데, 하필 그 자리(배포본의 update.bat)가
+   사전이 깨지는 사고가 나던 곳이었다 — 정작 거기서 검사가 안 돌고 있었다.
+   여기 남는 것은 **브라우저로 앱의 파서를 직접 불러야** 알 수 있는 것들뿐이다. */
 
 (async () => {
   const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
@@ -164,43 +142,6 @@ function noteCoverage() {
   console.log('  많은 것: ' + v.top.map(([k, c]) => k + ' ' + c).join(' · '));
   ok('앱이 모르는 표기가 늘지 않았다 (' + VOCAB_MAX + ' 이하)', v.n <= VOCAB_MAX, { 지금: v.n, 자물쇠: VOCAB_MAX });
   ok('자물쇠가 헐거워지지 않았다 (줄었으면 낮춰 잠글 것)', v.n >= VOCAB_MAX - 40, { 지금: v.n, 자물쇠: VOCAB_MAX });
-
-  /* ── 무장 **이름**이 전부 한글인가 ──
-     build_weapon_i18n 은 「일본어가 남은 항목 N건」이라고 말만 하고 **배포를 안 막는다.**
-     2026-09-22 에 그 대가를 치렀다: ms.json 에 넣은 「 - 원문」 꼬리표가 「<기체명>用」
-     접두사로 흘러들어가 「카풀 - カプル용 아이언 네일」 같은 이름 14개가 그대로 배포됐다.
-     화면 훑기로는 못 잡는다 — 그 기체의 무장표를 열어야만 보인다. 그래서 데이터에서 센다. */
-  const wdict = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'weapons.json'), 'utf8'));
-  const jaName = Object.entries(wdict)
-    .filter(([, ko]) => /[ぁ-ゖァ-ヺ]/.test(String(ko)))
-    .map(([ja, ko]) => ja + ' → ' + ko);
-  console.log('\n무장 이름 — ' + Object.keys(wdict).length + '종 · 일본어가 남은 것 ' + jaName.length);
-  ok('무장 이름이 전부 한글로 나온다', jaName.length === 0,
-    { 남은것: jaName.slice(0, 5), 고치는법: 'weapon_terms.json 에 용어를 더하거나 규칙을 고칠 것' });
-
-  /* ── 번역에 「null」이 박히지 않았는가 ──
-     MT 가 실패하면 null 을 돌려주는데, 그걸 String() 으로 감싸면 문자열 "null" 이 된다.
-     일본어가 없으니 **번역 성공으로 통과**해 사전 19칸에 「null」이 박혔다(2026-09-23).
-     화면에는 설명 한 줄이 통째로 「null」로 나온다. 눈으로만 잡히는 부류라 여기서 센다. */
-  const dicts = ['weapon_note.json', 'skill_text.json', 'skills.json', 'parts.json', 'ms.json'];
-  const nulls = [];
-  for (const f of dicts) {
-    let d;
-    try { d = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', f), 'utf8')); } catch { continue; }
-    for (const [k, v] of Object.entries(d)) {
-      const t = typeof v === 'string' ? v : (v && (v.d || v.n)) || '';
-      if (/(^|[\s/])null([\s/]|$)/.test(t)) nulls.push(f + ' : ' + k.slice(0, 30));
-    }
-  }
-  ok('번역 사전에 「null」이 박히지 않았다', nulls.length === 0,
-    { 걸린것: nulls.slice(0, 5), 원인: 'MT 실패를 문자열로 감싸면 "null" 이 된다 — glossary.js post()' });
-
-  const nc = noteCoverage();
-  console.log('\n무장 설명 — 備考 있는 무장 ' + nc.tot + '종 · 번역 없음 ' + nc.miss.length
-    + ' · 번역에 일본어 남음 ' + nc.ja.length);
-  ok('무장 설명이 전부 한글로 나온다', nc.miss.length === 0 && nc.ja.length === 0,
-    { 번역없음: nc.miss.slice(0, 5), 일본어: nc.ja.slice(0, 5), 메꾸는법: 'node tools/translate_notes.js' });
-  ok('설명을 실제로 셌다 (3000종 이상)', nc.tot > 3000, { 센것: nc.tot });
 
   ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].join(' / '));
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
