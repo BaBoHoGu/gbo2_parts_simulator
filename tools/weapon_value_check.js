@@ -178,6 +178,23 @@ function noteCoverage() {
   ok('무장 이름이 전부 한글로 나온다', jaName.length === 0,
     { 남은것: jaName.slice(0, 5), 고치는법: 'weapon_terms.json 에 용어를 더하거나 규칙을 고칠 것' });
 
+  /* ── 번역에 「null」이 박히지 않았는가 ──
+     MT 가 실패하면 null 을 돌려주는데, 그걸 String() 으로 감싸면 문자열 "null" 이 된다.
+     일본어가 없으니 **번역 성공으로 통과**해 사전 19칸에 「null」이 박혔다(2026-09-23).
+     화면에는 설명 한 줄이 통째로 「null」로 나온다. 눈으로만 잡히는 부류라 여기서 센다. */
+  const dicts = ['weapon_note.json', 'skill_text.json', 'skills.json', 'parts.json', 'ms.json'];
+  const nulls = [];
+  for (const f of dicts) {
+    let d;
+    try { d = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', f), 'utf8')); } catch { continue; }
+    for (const [k, v] of Object.entries(d)) {
+      const t = typeof v === 'string' ? v : (v && (v.d || v.n)) || '';
+      if (/(^|[\s/])null([\s/]|$)/.test(t)) nulls.push(f + ' : ' + k.slice(0, 30));
+    }
+  }
+  ok('번역 사전에 「null」이 박히지 않았다', nulls.length === 0,
+    { 걸린것: nulls.slice(0, 5), 원인: 'MT 실패를 문자열로 감싸면 "null" 이 된다 — glossary.js post()' });
+
   const nc = noteCoverage();
   console.log('\n무장 설명 — 備考 있는 무장 ' + nc.tot + '종 · 번역 없음 ' + nc.miss.length
     + ' · 번역에 일본어 남음 ' + nc.ja.length);

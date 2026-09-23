@@ -17,6 +17,11 @@ const clean = s => s
   .replace(/<br\s*\/?>/gi, ' / ')
   .replace(/<[^>]+>/g, '')
   .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  /* 위키 작성자가 남긴 홀로 있는 `&` 를 뗀다. 원문 HTML 이 실제로 `ひるみ有&amp;<br />` 이다 —
+     우리 잘못이 아니라 **위키 쪽 잡음**인데, 그대로 옮기면 화면에 「집속 시간: 3초&」로 보인다.
+     전수로 세어 5건뿐이고 모두 잡음이었다(2026-09-23). 반각 `&` 만 본다 —
+     「Ζ건담［IFC＆IFB장비］」처럼 **뜻이 있는 것은 전각 ＆** 라 건드리지 않는다. */
+  .replace(/&/g, ' ')
   .replace(/\s+/g, ' ').trim();
 
 const parseTable = html => parseGrid(html, clean);
