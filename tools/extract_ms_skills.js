@@ -41,7 +41,12 @@ function parseSkills(seg) {
       const nameCell = (row[iName] || '').trim();
       if (CATS.includes(nameCell) && !isLv(row[iLv])) { cat = nameCell; continue; }
       if (!isLv(row[iLv])) continue;                 // 스킬 행이 아님
-      const name = nameCell || (row.find(c => c && !isLv(c)) || '');
+      /* atwiki 는 **없는 페이지로 가는 링크**를 「이름?」으로 그린다
+         (`<a title="作成されていません">MACSSオフ? LV1</a>`). 물음표는 위키의 표시 기호지
+         이름의 일부가 아닌데, 태그를 지우고 읽으므로 글자로 딸려 들어왔다 —
+         화면에 「돌격 자세 개?」·「핀 노즐 제어 기구?」로 보였다(13종).
+         GBO2 스킬 이름에 ? 로 끝나는 것은 없다. 캐시 601페이지를 훑어 확인했다. */
+      const name = (nameCell || (row.find(c => c && !isLv(c)) || '')).replace(/\?+$/, '').trim();
       if (!name || name.length < 2) continue;
       skills.push({
         cat,

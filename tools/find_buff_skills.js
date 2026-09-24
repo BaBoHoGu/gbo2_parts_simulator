@@ -148,7 +148,12 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         msLvFrom: need ? Number(need[1]) : 1,
         msLvTo: need && need[2] ? Number(need[2]) : null,
         // 스킬명 = LV 표기가 아닌 첫 칸
-        skill: row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)',
+        /* 끝의 ? 는 atwiki 가 **없는 페이지로 가는 링크**에 붙이는 표시다
+           (`<a title="作成されていません">MACSSオフ? LV1</a>`). 이름의 일부가 아니다 —
+           extract_ms_skills 에서도 같은 이유로 뗀다. 한쪽만 떼면 이름이 갈려
+           스킬을 못 찾는다(실제로 damage_path_check 가 그걸 잡았다). */
+        skill: (row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)')
+          .replace(/\?+$/, '').trim(),
         shoot, melee, shootPct, meleePct, crouchPct, limitUp, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
         foeArmor,
         armorRange, armorBeam, armorMelee, speed, hispeed, thruster, turn, hpUp,

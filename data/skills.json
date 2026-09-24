@@ -263,8 +263,8 @@
  ],
  "ヅダ": [
   {
-   "name": "土星エンジン最大出力?",
-   "nameKo": "토성 엔진 최대 출력?",
+   "name": "土星エンジン最大出力",
+   "nameKo": "토성 엔진 최대 출력",
    "forever": false,
    "secs": 60,
    "hp": 30,
@@ -607,7 +607,7 @@
  ],
  "ジーライン・アサルトアーマー": [
   {
-   "name": "シールドタックル改?",
+   "name": "シールドタックル改",
    "nameKo": "실드 태클 改",
    "forever": false,
    "secs": null,
@@ -11109,8 +11109,8 @@
  ],
  "F90［MZ仕様］": [
   {
-   "name": "OS「TYPE C.A-Ⅲ」?",
-   "nameKo": "OS 「TYPE C.A-Ⅲ」?",
+   "name": "OS「TYPE C.A-Ⅲ」",
+   "nameKo": "OS 「TYPE C.A-Ⅲ」",
    "forever": false,
    "secs": 80,
    "hp": 80,
@@ -11927,8 +11927,8 @@
    ]
   },
   {
-   "name": "フィン・ノズル制御機構?",
-   "nameKo": "핀 노즐 제어 기구?",
+   "name": "フィン・ノズル制御機構",
+   "nameKo": "핀 노즐 제어 기구",
    "forever": false,
    "secs": 25,
    "hp": null,
@@ -11960,7 +11960,7 @@
  ],
  "ウイングガンダムゼロ【EW】": [
   {
-   "name": "ＺＥＲＯシステム?",
+   "name": "ＺＥＲＯシステム",
    "nameKo": "ZERO 시스템",
    "forever": false,
    "secs": 30,
@@ -12185,8 +12185,8 @@
    ]
   },
   {
-   "name": "G-バード高速機動制御機構?",
-   "nameKo": "G-버드 고속 기동 제어 기구?",
+   "name": "G-バード高速機動制御機構",
+   "nameKo": "G-버드 고속 기동 제어 기구",
    "forever": false,
    "secs": 30,
    "hp": null,
@@ -12509,7 +12509,7 @@
  ],
  "シルエットガンダム改": [
   {
-   "name": "MACSSオフ?",
+   "name": "MACSSオフ",
    "nameKo": "MACSS 오프",
    "forever": false,
    "secs": 30,
@@ -12575,8 +12575,8 @@
  ],
  "ビギナ・ギナⅡ［木星決戦仕様］": [
   {
-   "name": "フレキシブルウイングノズル制御機構?",
-   "nameKo": "플렉시블 윙 노즐 제어 기구?",
+   "name": "フレキシブルウイングノズル制御機構",
+   "nameKo": "플렉시블 윙 노즐 제어 기구",
    "forever": false,
    "secs": 75,
    "hp": null,
@@ -13756,7 +13756,7 @@
  "ユニコーンガンダム［HML装備］": [
   {
    "name": "能力UP「NT-D（B）」",
-   "nameKo": "능력 UP 「NT-D(B)」",
+   "nameKo": "능력UP「NT-D (B)」",
    "forever": false,
    "secs": 60,
    "hp": 50,
@@ -14197,7 +14197,7 @@
  ],
  "ガンダムDX": [
   {
-   "name": "シールドタックル改?",
+   "name": "シールドタックル改",
    "nameKo": "실드 태클 改",
    "forever": false,
    "secs": null,

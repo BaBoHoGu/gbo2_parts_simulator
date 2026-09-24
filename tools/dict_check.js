@@ -69,6 +69,36 @@ function noteCoverage() {
   return { tot, miss, ja };
 }
 
+/* ── ④ 번역이 **중간에 잘리지 않았는가** ──
+   MT 는 반각 ? 를 문장 끝으로 읽고 뒤를 버린다. 위키는 값이 불확실할 때 ? 를 붙이므로
+   「よろけ値を 80%?かつ小数点以下切り捨て で計算する」가 「경직치를 80%?」에서 끊겨
+   **뒷문장이 통째로 사라졌다**(2026-09-24, 2칸). 일본어도 null 도 안 남아 아무 검사에 안 걸렸다.
+   판정: 원문의 ? 뒤에 글자가 더 있는데 번역이 ? 로 끝났으면 잘린 것이다. */
+function truncated() {
+  const hit = [];
+  for (const f of ['skill_text.json', 'weapon_note.json']) {
+    const d = rdSafe('data', 'i18n', f);
+    if (!d) continue;
+    for (const [k, v] of Object.entries(d)) {
+      if (typeof v !== 'string') continue;
+      const a = k.split(' / '), b = v.split(' / ');
+      if (a.length !== b.length) continue;
+      for (let i = 0; i < a.length; i++) {
+        const m = /[?？](.+)/.exec(a[i]);
+        if (m && m[1].trim().length >= 4 && /[?？]\s*$/.test(b[i])) {
+          hit.push(f + ' : ' + a[i].slice(0, 40));
+          break;
+        }
+      }
+    }
+  }
+  return hit;
+}
+
+const cut = truncated();
+ok('번역이 중간에 잘리지 않았다', cut.length === 0,
+  { 잘린것: cut.slice(0, 5), 원인: 'MT 가 반각 ? 를 문장 끝으로 읽는다 — glossary.js protect() 가 전각으로 보낸다' });
+
 const nulls = nullCells();
 console.log('번역 사전 ' + DICTS.length + '개를 봅니다\n');
 ok('사전에 「null」이 박히지 않았다', nulls.length === 0,
