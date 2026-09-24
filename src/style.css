@@ -3542,3 +3542,34 @@ body.info-open .sel-info { display: flex; }
 .unmod-kind, .unmod-grp { flex: none; }
 .unmod-item > .unmod-line { grid-column: 1 / -1; grid-row: 2; margin-top: 3px; font-size: 11px; color: var(--muted);
   line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── 무장표가 넘칠 때: 이름 칸을 왼쪽에 붙인다 ──
+   칸이 열 개라 합이 1,054px(964 + 간격 90)인데 폰 세로는 768px 안에 넣는다 —
+   320px 이 넘쳐 옆으로 밀어야 보인다. 밀고 나면 **어느 무장 줄인지 알 수 없는 것**이
+   가장 불편했다(사용자 지적). 구분(주무장/부무장)과 이름 두 칸을 붙여 둔다.
+   `.can-x` 는 ui.js 가 **실제로 넘칠 때만** 켠다 — 데스크톱 1500px·폰가로는 안 넘친다.
+
+   붙인 칸은 배경이 있어야 한다. 없으면 밀려 오는 글자가 그 아래로 비쳐 겹쳐 보인다.
+   행에 배경을 주고(지금 보이는 색과 같다) 칸은 그것을 물려받는다 —
+   :hover·.open 이 행 배경을 바꿔도 붙인 칸이 따라간다. */
+.weapon { background: var(--panel); }
+#weaponList.can-x .w-sec,
+#weaponList.can-x .w-nm {
+  position: sticky; z-index: 2;
+  /* 행이 `align-items: center` 라 칸은 **내용 높이만큼만** 커진다. 그대로 두면 배경이
+     행을 다 못 덮어, 밀려 오는 위력·DPS 글자가 칸 **위아래로 비쳐** 겹쳐 보였다.
+     행 높이만큼 늘여 덮는다. 늘어난 만큼 글자는 가운데로 맞춘다(보이던 모습 그대로). */
+  align-self: stretch;
+}
+/* 구분 칸은 제 배지 색(불투명)을 그대로 쓴다 — inherit 로 덮으면 배지가 사라진다 */
+#weaponList.can-x .w-sec {
+  left: 0; display: flex; align-items: center; justify-content: center;
+  /* 목록 자체의 안쪽 여백 10px 은 칸이 안 덮어, 그 띠로 밀려 오는 글자가 비쳤다.
+     그림자를 색으로 써서 왼쪽으로 그만큼 늘여 막는다(배치는 안 건드린다). */
+  box-shadow: -10px 0 0 var(--panel);
+}
+/* 50px(구분 칸) + 10px(간격) = 60px */
+#weaponList.can-x .w-nm {
+  left: 60px; background: inherit; justify-content: center;
+  box-shadow: 10px 0 10px -8px rgba(0, 0, 0, .55);
+}

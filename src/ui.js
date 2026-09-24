@@ -2785,6 +2785,33 @@
       if (state.openWeapons.includes(w.name)) openWeaponDetail(row, w, d, lv);
     }
     applyWeaponFold();
+    markWeaponScroll();
+  }
+
+  /** 무장표가 가로로 넘치는가를 재서 표시를 켠다.
+   *
+   *  왜 재서 켜나 — 칸이 열 개라 좁은 화면에서만 넘친다(실측: 데스크톱 1500px·폰가로는 0,
+   *  폰세로만 320px 넘침). 늘 켜 두면 안 넘치는 화면에도 그림자가 남아 군더더기가 된다.
+   *  넘칠 때만 이름 칸을 왼쪽에 붙여, 옆으로 밀어도 **어느 무장 줄인지 잃지 않게** 한다. */
+  let weaponScrollObs = null;
+  function markWeaponScroll() {
+    const box = $('#weaponList');
+    if (!box) return;
+    // 2px 여유 — 소수점 반올림으로 1px 차이가 나는 것을 넘침으로 세지 않는다
+    box.classList.toggle('can-x', box.scrollWidth > box.clientWidth + 2);
+
+    /* 그리는 순간 한 번 재는 것으로는 안 된다 — 그때는 아직 최종 배치가 아니다
+       (무장 칸이 접혀 있거나 화면이 아직 안 보이면 폭이 0 이라 「안 넘친다」로 나온다).
+       실제로 그렇게 재서 폰 세로에서 320px 이 넘치는데도 표시가 안 켜졌다.
+       크기가 바뀌는 **모든 순간**(펼치기·회전·패널 열림)에 다시 재도록 한 번만 달아 둔다.
+       붙이는 것은 칸의 위치일 뿐 상자 크기를 바꾸지 않으므로 되먹임이 생기지 않는다. */
+    if (!weaponScrollObs && window.ResizeObserver) {
+      weaponScrollObs = new ResizeObserver(() => {
+        const b = $('#weaponList');
+        if (b) b.classList.toggle('can-x', b.scrollWidth > b.clientWidth + 2);
+      });
+      weaponScrollObs.observe(box);
+    }
   }
 
   /** 무장 표의 열 이름을 한글로. 없는 이름은 원문을 그대로 쓴다. */
@@ -9185,7 +9212,10 @@
     let resizeTimer = null;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { fitBuildBand(); fitWholeRows($('#partList')); }, 120);
+      resizeTimer = setTimeout(() => {
+        fitBuildBand(); fitWholeRows($('#partList'));
+        markWeaponScroll();     // 가로↔세로 회전으로 넘침 여부가 바뀐다
+      }, 120);
     });
 
     document.addEventListener('keydown', ev => {
