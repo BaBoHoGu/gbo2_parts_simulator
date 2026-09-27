@@ -1974,6 +1974,12 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   .w-nm { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
   .w-fixed, .w-debuff, .w-mult { flex-shrink: 0; }
 }
+/* 「넓게 보기」는 폭을 768px 로 잡아 축소해 보여 주므로 위 max-width:700px 에 안 걸린다 —
+   폰인데도 이름 칸(140px)에서 칩이 잘렸다: 「스프레이 빔 포드 4발 ×4연사」가 174px 필요.
+   같은 규칙을 몸통 표시(vm-wide)로 한 번 더 건다. 칩은 줄여 봐야 뜻이 사라지므로 아랫줄로 내린다. */
+body.vm-wide .w-nm { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
+body.vm-wide .w-nm-top { white-space: normal; overflow: visible; text-overflow: clip; }
+body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrink: 0; }
 /* 고정 피해에 파츠 몫이 붙었을 때의 증가분 */
 .w-fixed-up { font-style: normal; color: var(--good, #7ddc8a); font-weight: 700; }
 /* 스러스터 지표 — 나빠지는 방향은 붉게 */

@@ -2797,8 +2797,18 @@
   function markWeaponScroll() {
     const box = $('#weaponList');
     if (!box) return;
-    // 2px 여유 — 소수점 반올림으로 1px 차이가 나는 것을 넘침으로 세지 않는다
-    box.classList.toggle('can-x', box.scrollWidth > box.clientWidth + 2);
+    /* **넘치는 주체가 목록이 아닐 수 있다.**
+       「크게 보기」에서는 무장표가 아래 시트(.build-weapons)에 담기는데, 목록 자체는
+       1,120px 로 늘어나고 **시트가** 367px 만 보여 준다(넘침 771px — 넓게 보기의 두 배).
+       목록만 재면 1,120/1,120 으로 「안 넘친다」가 나와, 크게 보기에서는 이름 고정이
+       **아예 안 걸렸다**(사용자가 「여전히 불편」이라 한 것이 이것이다).
+       그래서 위로 올라가며 **진짜 가로로 스크롤하는 조상**을 찾는다. */
+    let n = box, over = false;
+    while (n && n !== document.documentElement) {
+      if (n.scrollWidth > n.clientWidth + 2) { over = true; break; }   // 2px 여유 — 반올림
+      n = n.parentElement;
+    }
+    box.classList.toggle('can-x', over);
 
     /* 그리는 순간 한 번 재는 것으로는 안 된다 — 그때는 아직 최종 배치가 아니다
        (무장 칸이 접혀 있거나 화면이 아직 안 보이면 폭이 0 이라 「안 넘친다」로 나온다).
@@ -2806,10 +2816,9 @@
        크기가 바뀌는 **모든 순간**(펼치기·회전·패널 열림)에 다시 재도록 한 번만 달아 둔다.
        붙이는 것은 칸의 위치일 뿐 상자 크기를 바꾸지 않으므로 되먹임이 생기지 않는다. */
     if (!weaponScrollObs && window.ResizeObserver) {
-      weaponScrollObs = new ResizeObserver(() => {
-        const b = $('#weaponList');
-        if (b) b.classList.toggle('can-x', b.scrollWidth > b.clientWidth + 2);
-      });
+      // 판정을 여기 **다시 적지 않는다** — 한쪽만 고치면 갈린다.
+      // 실제로 그렇게 갈려, 스크롤 주체를 찾도록 고쳤는데도 크게 보기에서 안 켜졌다.
+      weaponScrollObs = new ResizeObserver(() => markWeaponScroll());
       weaponScrollObs.observe(box);
     }
   }
@@ -9284,6 +9293,10 @@
     } else {
       meta.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
     }
+    /* 「넓게 보기」는 폭을 768px 로 **잡아** 보여 주는 것이라, CSS 의 max-width 로는
+       폰인지 알 수 없다(768px 은 태블릿 구간이다). 몸통에 표시를 달아 준다 —
+       이 표시가 없어서 「이름이 길면 줄바꿈」 규칙이 넓게 보기에만 안 걸렸다. */
+    document.body.classList.toggle('vm-wide', isPhoneWidth() && viewMode === 'wide');
     const b = $('#viewModeBtn');
     if (b) {
       // 글자는 '지금 상태'가 아니라 '누르면 되는 것'을 적는다
