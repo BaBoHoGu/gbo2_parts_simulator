@@ -51,14 +51,27 @@ const copyDir = (src, dst, filter) => {
   }
 };
 
+/* 패치노트를 담을 때 **초안 표식 주석을 벗긴다.**
+   초안은 일부러 ZIP 에 넣는다 — 낡은 안내문이 들어가는 것보다 낫다. 다만 그 안의
+   「문구를 다듬고 이 주석을 지워 주세요」는 나에게 하는 말이라, 받는 사람이
+   메모장으로 열면 그것까지 보인다. 담을 때만 벗기고 원본은 그대로 둔다
+   (저장소의 표식이 사라지면 다음 실행이 사람이 쓴 절로 오해한다).
+   **분기 밖에 둔다** — 경량판 분기 안에 넣었더니 완전판에서 못 보고 죽었다. */
+function copyPatchNote(dst) {
+  const src = p('패치노트.md');
+  if (!fs.existsSync(src)) return;
+  const txt = fs.readFileSync(src, 'utf8').replace(/<!--\s*자동 초안입니다[\s\S]*?-->\s*/g, '');
+  fs.writeFileSync(dst, txt);
+}
+
+// ── 경량판: HTML + 업데이트 스크립트만 (node·도구·이미지 제외, GitHub 에서 데이터 받음) ──
 if (LIGHT) {
-  // ── 경량판: HTML + 업데이트 스크립트만 (node·도구·이미지 제외, GitHub 에서 데이터 받음) ──
   copyFile(p('dist', 'gbo2-simulator.html'), path.join(STAGE, 'gbo2-simulator.html'));
   copyDir(p('pc-light'), STAGE);                                    // 실행.bat·업데이트.bat·업데이트.ps1·사용법.txt
   fs.writeFileSync(path.join(STAGE, '.data-version'), stampArg || '');   // 첫 실행 시 불필요 다운로드 방지
   const apkSrc = p('dist', 'gbo2-simulator-debug.apk');
   if (fs.existsSync(apkSrc)) copyFile(apkSrc, path.join(STAGE, '모바일-앱.apk'));   // 모바일 APK 도 동봉
-  if (fs.existsSync(p('패치노트.md'))) fs.copyFileSync(p('패치노트.md'), path.join(STAGE, '패치노트.md'));
+  copyPatchNote(path.join(STAGE, '패치노트.md'));
 } else {
 
 // 개발 저장소와 같은 레이아웃으로 담는다 → update.ps1 이 도구 수정 없이 그대로 동작한다.
@@ -154,7 +167,7 @@ copyFile(process.execPath, path.join(STAGE, 'node', 'node.exe'));
 
 // 5) 사용법 + 패치노트(변경사항 안내)
 fs.copyFileSync(p('release', '사용법.txt'), path.join(STAGE, '사용법.txt'));
-if (fs.existsSync(p('패치노트.md'))) fs.copyFileSync(p('패치노트.md'), path.join(STAGE, '패치노트.md'));
+copyPatchNote(path.join(STAGE, '패치노트.md'));
 
 }   // end else(완전판)
 
