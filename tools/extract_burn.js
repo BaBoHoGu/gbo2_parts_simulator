@@ -63,7 +63,23 @@ const FX = /(\d+)\s*固定ダメージ\s*[（(]\s*(\d+)\s*[x×ｘ]\s*(\d+)\s*HIT
         const m = ((w.info && w.info['備考']) || '').match(FX);
         return m && +m[2] === base.per && +m[3] === base.hits;
       });
-      if (cand.length !== 1) { miss.push(raw + ' — 기본 ' + base.per + '×' + base.hits + ' 무장 ' + cand.length + '개'); continue; }
+      if (cand.length !== 1) {
+        /* **왜 못 붙었는지 적는다.** 「무장 0개」만 찍히면 표가 낡은 것인지, 이름을 잘못
+           찾은 것인지, 무장이 없어진 것인지 알 수 없어 매번 다시 파 봐야 했다.
+           실제로 フルアーマーΖΖガンダム 는 무장이 200×15 → 250×15 로 올랐는데
+           실측표는 네 기체를 200×15 로 묶은 채였다(2026-09-28). 그 기체의 소이 실측은
+           **낡은 기본값에 딸린 값**이라 새 값을 알 수 없다 — 그러니 지어내지 않고 비운다. */
+        const has = (W[id].weapons || []).map(w => {
+          const m = ((w.info && w.info['備考']) || '').match(FX);
+          return m ? w.name + '(' + m[2] + '×' + m[3] + ')' : null;
+        }).filter(Boolean);
+        miss.push(raw + ' — 표는 기본 ' + base.per + '×' + base.hits + ' 인데 맞는 무장 '
+          + cand.length + '개'
+          + (has.length ? ' · 그 기체의 소이 무장: ' + has.join(' , ')
+            + (cand.length === 0 ? ' ← 실측표가 낡았을 수 있습니다' : '')
+            : ' · 그 기체에 固定ダメージ 무장이 없습니다'));
+        continue;
+      }
       out[id + '|' + cand[0].name] = { base: [base.per, base.hits], soi: [soi.per, soi.hits] };
     }
   }

@@ -77,15 +77,9 @@ function changes() {
   return out;
 }
 
-function draft(c) {
+/** 바뀐 것을 항목으로 적는다 — 새 절과 덧붙임이 같은 사실을 쓰므로 한 곳에 둔다. */
+function facts(c) {
   const L = [];
-  L.push(`_${today} 업데이트_`);
-  L.push('');
-  L.push('<!-- 자동 초안입니다. 아래는 **이번에 실제로 바뀐 것**만 적혀 있습니다.',
-    '     문구를 다듬고 이 주석을 지워 주세요. 지어낸 말은 넣지 않았습니다. -->');
-  L.push('');
-  L.push('## 🔄 데이터 갱신');
-  L.push('');
   if (c.newMs.length) {
     L.push(`- **새 기체 ${c.newMs.length}기** — ${c.newMs.slice(0, 12).join(' · ')}`
       + (c.newMs.length > 12 ? ` 외 ${c.newMs.length - 12}기` : ''));
@@ -100,10 +94,25 @@ function draft(c) {
       + (c.skill.length > 8 ? ` 외 ${c.skill.length - 8}기` : ''));
   }
   if (c.parts) L.push('- **파츠 데이터**가 갱신됐습니다');
-  L.push('');
-  L.push('---');
-  L.push('');
-  return L.join('\n');
+  return L;
+}
+
+const DRAFT_MARK = ['<!-- 자동 초안입니다. 아래는 **이번에 실제로 바뀐 것**만 적혀 있습니다.',
+  '     문구를 다듬고 이 주석을 지워 주세요. 지어낸 말은 넣지 않았습니다. -->'];
+
+/** 오늘 절이 아직 없을 때 — 절을 통째로 만든다. */
+function draft(c, nl) {
+  return [`_${today} 업데이트_`, '', ...DRAFT_MARK, '', '## 🔄 데이터 갱신', '',
+    ...facts(c), '', '---', ''].join(nl);
+}
+
+/** 오늘 절이 이미 있을 때 — 그 절 **끝에** 사실만 덧붙인다.
+ *  여태 「이미 있습니다」라며 아무것도 넣지 않았다. 사람 글을 덮지 않으려는 뜻은 맞지만,
+ *  하루에 두 번 배포하면 **두 번째 실행의 변경이 조용히 사라졌다** — 실제로 2026-09-28
+ *  두 번째 배포에서 위키 수치 수정(214→212발/분 등)이 한 줄도 남지 않았다.
+ *  사람이 쓴 절을 건드리지 않으면서 기록은 남기려면, 끝에 붙이는 것이 답이다. */
+function addendum(c, nl) {
+  return ['## 🔄 데이터 갱신 (덧붙임)', '', ...DRAFT_MARK, '', ...facts(c), ''].join(nl);
 }
 
 const c = changes();
@@ -113,16 +122,27 @@ if (!total) {
   process.exit(0);
 }
 
-const body = draft(c);
-if (PRINT) { console.log(body); process.exit(0); }
-
 let note;
 try { note = fs.readFileSync(NOTE, 'utf8'); } catch { console.log('패치노트.md 가 없어 건너뜁니다.'); process.exit(0); }
-// 사람이 이미 오늘 자 절을 써 뒀으면 **건드리지 않는다.** 초안이 사람 글을 덮으면 안 된다.
-if (new RegExp('(^|\\r?\\n)_' + today + ' 업데이트').test(note)) {
-  console.log(`패치노트에 오늘(${today}) 항목이 이미 있습니다 — 초안을 넣지 않습니다.`);
+/* **이 파일의 줄끝을 따른다.** 여태 '\n' 으로 박아 넣어, CRLF 파일 안에 LF 절이
+   끼어들었다 — 다음에 그 절을 찾는 쪽이 줄끝을 헛짚게 되는 씨앗이다. */
+const nl = /\r\n/.test(note) ? '\r\n' : '\n';
+
+if (PRINT) { console.log(draft(c, nl)); process.exit(0); }
+
+// 사람이 이미 오늘 자 절을 써 뒀으면 그 글은 **건드리지 않고**, 절 끝에 덧붙인다.
+const todaySec = new RegExp('(^|\\r?\\n)_' + today + ' 업데이트[^\\r\\n]*(\\r?\\n)').exec(note);
+if (todaySec) {
+  const from = todaySec.index + todaySec[0].length;
+  const end = /\r?\n---\r?\n/.exec(note.slice(from));
+  const at = end ? from + end.index + (end[0].startsWith('\r') ? 2 : 1) : note.length;
+  fs.writeFileSync(NOTE, note.slice(0, at) + addendum(c, nl) + nl + note.slice(at));
+  console.log(`패치노트 오늘(${today}) 절 끝에 덧붙였습니다 — `
+    + `기체 ${c.newMs.length} · 무장 ${c.weap.length} · 스킬 ${c.skill.length}`);
+  console.log('  (사람이 쓴 글은 건드리지 않았습니다. 사실만 적혀 있습니다.)');
   process.exit(0);
 }
+const body = draft(c, nl);
 /* 첫 번째 「---」 구분선 **뒤**가 절이 쌓이는 자리다(위쪽은 내려받기 안내).
    줄끝을 '\n' 으로 박아 찾으면 안 된다 — 이 파일은 CRLF 라 한 번도 못 찾고
    「넣을 자리를 못 찾아 건너뜁니다」만 찍었다(2026-09-23 배포에서 확인). */
@@ -130,6 +150,6 @@ const m = /\r?\n---\r?\n/.exec(note);
 if (!m) { console.log('패치노트에서 넣을 자리를 못 찾아 건너뜁니다.'); process.exit(0); }
 const at = m.index;
 const cut = at + m[0].length;
-fs.writeFileSync(NOTE, note.slice(0, cut) + '\n' + body + note.slice(cut).replace(/^\n+/, ''));
+fs.writeFileSync(NOTE, note.slice(0, cut) + nl + body + note.slice(cut).replace(/^(\r?\n)+/, ''));
 console.log(`패치노트에 ${today} 초안을 넣었습니다 — 기체 ${c.newMs.length} · 무장 ${c.weap.length} · 스킬 ${c.skill.length}`);
 console.log('  (사실만 적혀 있습니다. 문구는 다듬어 주세요.)');

@@ -68,16 +68,31 @@ function get(url, redirects = 0) {
 
   const needHeadless = [];        // plain https 로 못 받은 것 (대개 Cloudflare) → 헤드리스로 재시도
   const nameById = new Map();
+  /* **막혔으면 두드리기를 그만둔다.**
+     atwiki 가 Cloudflare 뒤로 들어간 뒤로 plain 은 사실상 다 실패한다 — 그런데도
+     페이지마다 요청하고 DELAY_MS 만큼 쉬었다. 11페이지를 받는 실행에서 헛요청 11번과
+     13초를 버렸고, 전체 한 바퀴(약 60페이지)면 60번과 72초였다. 차단된 서버를 그만큼
+     두드리는 것은 차단이 풀리지 않을 이유이기도 하다. 연속으로 이만큼 실패하면 plain 을
+     접고 남은 것은 곧장 헤드리스로 넘긴다.
+     (번역기에서 막힌 입구를 한 번만 확인하고 접게 한 것과 같은 처방이다.) */
+  const PLAIN_GIVEUP = 3;
+  let plainMiss = 0, plainOff = false;
   for (const p of list) {
     const dest = path.join(OUT, p.id + '.html');
     if (!FORCE && fs.existsSync(dest) && fs.statSync(dest).size > 10000) { skip++; continue; }
     nameById.set(p.id, p.names[0]);
+    if (plainOff) { needHeadless.push(p.id); continue; }   // 요청을 안 보내니 쉴 일도 없다
     try {
       const buf = await get(p.url);
       fs.writeFileSync(dest, buf);
       done++;
+      plainMiss = 0;               // 하나라도 받았으면 plain 은 살아 있다
     } catch (e) {
       needHeadless.push(p.id);     // 실패는 헤드리스로 넘긴다 (아직 fail 로 세지 않는다)
+      if (++plainMiss >= PLAIN_GIVEUP) {
+        plainOff = true;
+        console.log(`plain 수신이 ${PLAIN_GIVEUP}번 잇달아 실패 — 남은 것은 곧장 헤드리스로 받습니다`);
+      }
     }
     if ((done + needHeadless.length) % 25 === 0) {
       process.stdout.write(`\r받는 중 ${done + needHeadless.length + skip}/${list.length} (신규 ${done} · 건너뜀 ${skip} · 헤드리스대기 ${needHeadless.length})`);

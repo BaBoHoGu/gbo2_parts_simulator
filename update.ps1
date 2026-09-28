@@ -386,7 +386,10 @@ function Publish-Site {
 
   Write-Host "사이트 게시 중… ($SiteProject)" -ForegroundColor Cyan
   $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-  & npx --no-install wrangler pages deploy $web --project-name $SiteProject --branch main
+  # --commit-dirty: wrangler 는 작업 트리가 깨끗하지 않으면 매번 여러 줄짜리 경고를 낸다.
+  # 여기서 올리는 것은 git 이 아니라 dist 산출물이라 트리 상태와 상관이 없고, 그 경고가
+  # **진짜 경고를 묻는다**(배포 로그에서 실제 문제를 찾기 어려웠다).
+  & npx --no-install wrangler pages deploy $web --project-name $SiteProject --branch main --commit-dirty=true
   $ok = ($LASTEXITCODE -eq 0)
   $ErrorActionPreference = $prevEap
   Clear-SiteCred
