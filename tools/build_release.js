@@ -166,7 +166,12 @@ if (process.platform !== 'win32' || process.arch !== 'x64') {
 copyFile(process.execPath, path.join(STAGE, 'node', 'node.exe'));
 
 // 5) 사용법 + 패치노트(변경사항 안내)
-fs.copyFileSync(p('release', '사용법.txt'), path.join(STAGE, '사용법.txt'));
+/* 사용법은 **저장소가 들고 있는 원본**에서 가져온다(pc-full/). 경량판이 pc-light/ 에서
+   가져오는 것과 짝이다. 예전에는 release/ 에 두고 읽었는데, 그 폴더는 gitignore 라
+   git 이 모르는 파일이었다 — 쌓인 배포본을 정리하다 같이 지워졌고(2026-09-28),
+   옛 빌드 폴더에 남아 있던 사본으로 겨우 되살렸다. 그마저 없었으면 다시 써야 했다.
+   게다가 여기서 죽어도 배포는 멈추지 않아, 낡은 완전판이 최신인 척 올라갔을 것이다. */
+copyFile(p('pc-full', '사용법.txt'), path.join(STAGE, '사용법.txt'));
 copyPatchNote(path.join(STAGE, '패치노트.md'));
 
 }   // end else(완전판)
