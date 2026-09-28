@@ -9227,34 +9227,54 @@
       }, 120);
     });
 
-    document.addEventListener('keydown', ev => {
-      if (ev.key !== 'Escape') return;
-      if (mobileSheetOpen()) { closeMobileSheets(); return; }   // 모바일 슬라이드 시트 먼저 닫기
-      if (!$('#mskillInline').hidden) { openMskill(false); return; }
-      if (!$('#stageHelpModal').hidden) { openStageHelp(false); return; }
-      if (!$('#expHelpModal').hidden) { openExpHelp(false); return; }
-      if (!$('#uploadModal').hidden) { openUpload(false); return; }
-      if (!$('#adminModal').hidden) { openAdmin(false); return; }
-      if (state.view === 'codex') { openCodex(false); return; }
-      if (state.view === 'gallery') { openGallery(false); return; }
-      if (!$('#pietanModal').hidden) { openPietan(false); return; }
-      if (!$('#compareModal').hidden) { openCompareModal(false); return; }
-      if (!$('#ownedModal').hidden) { openOwnedModal(false); return; }
-      if (!$('#savedModal').hidden) { openSavedModal(false); return; }
-      if (!$('#autoResultPanel').hidden) { openResultModal(false); return; }
-      if ($('#msDrawer').classList.contains('open')) { openMsDrawer(false); return; }
-      if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return; }
+    /** 한 걸음 뒤로. 닫거나 돌아갈 것이 있었으면 true, 더 갈 곳이 없으면 false.
+     *
+     *  Esc 와 **안드로이드 하드웨어 뒤로가기가 같은 것을 쓴다.** 예전에는 자바 쪽이
+     *  「열려 있는 모달」의 선택자 목록을 따로 들고 있었는데, 화면이 늘 때마다 그 목록을
+     *  같이 고쳐야 해서 어긋났다 — 실제로 기체 정보 칸(body.info-open)이 빠져 있어,
+     *  정보를 열어 둔 채 뒤로가기를 누르면 **앱이 그냥 죽었다.**
+     *  판단은 화면을 아는 이쪽이 하고, 자바는 묻기만 한다.
+     *
+     *  @param {Element|null} focused 입력칸에서 눌렀는지 — Esc 는 ev.target,
+     *         하드웨어 뒤로가기는 그런 것이 없으므로 null 이 온다. */
+    function navBack(focused) {
+      if (mobileSheetOpen()) { closeMobileSheets(); return true; }   // 모바일 슬라이드 시트 먼저 닫기
+      if (!$('#mskillInline').hidden) { openMskill(false); return true; }
+      if (!$('#stageHelpModal').hidden) { openStageHelp(false); return true; }
+      if (!$('#expHelpModal').hidden) { openExpHelp(false); return true; }
+      if (!$('#uploadModal').hidden) { openUpload(false); return true; }
+      if (!$('#adminModal').hidden) { openAdmin(false); return true; }
+      if (state.view === 'codex') { openCodex(false); return true; }
+      if (state.view === 'gallery') { openGallery(false); return true; }
+      if (!$('#pietanModal').hidden) { openPietan(false); return true; }
+      if (!$('#compareModal').hidden) { openCompareModal(false); return true; }
+      if (!$('#ownedModal').hidden) { openOwnedModal(false); return true; }
+      if (!$('#savedModal').hidden) { openSavedModal(false); return true; }
+      if (!$('#autoResultPanel').hidden) { openResultModal(false); return true; }
+      if ($('#msDrawer').classList.contains('open')) { openMsDrawer(false); return true; }
+      if ($('#autoDrawer').classList.contains('open')) { openDrawer(false); return true; }
 
       // 입력 중이면 화면을 벗어나지 않는다 — 내용이 있으면 비우고, 없으면 포커스만 해제
-      const t = ev.target;
-      if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) {
-        if (t.value) { t.value = ''; t.dispatchEvent(new Event('input')); }
-        else t.blur();
-        return;
+      if (focused && /^(INPUT|SELECT|TEXTAREA)$/.test(focused.tagName)) {
+        if (focused.value) { focused.value = ''; focused.dispatchEvent(new Event('input')); }
+        else focused.blur();
+        return true;
       }
 
-      if (state.view === 'build') setView('select');
+      if (state.view === 'build') { setView('select'); return true; }
+      // 기체 정보 칸 — 폰에서는 화면을 통째로 덮으므로, 이것이 열려 있으면
+      // 뒤로가기는 「닫기」여야 한다. 목록보다 **뒤**에 둔다(파츠 화면이 먼저다).
+      if (document.body.classList.contains('info-open')) { closeInfo(); return true; }
+      return false;                     // 더 갈 곳이 없다 — 여기서가 시작 화면이다
+    }
+
+    document.addEventListener('keydown', ev => {
+      if (ev.key === 'Escape') navBack(ev.target);
     });
+
+    /* 안드로이드 껍데기가 부르는 한 곳. 'back' 이면 처리했고, 'exit' 면 시작 화면이라
+       더 갈 곳이 없다는 뜻이다(그때 껍데기가 종료할지 묻는다). */
+    window.GBO2Back = () => (navBack(null) ? 'back' : 'exit');
   }
 
   // 모바일 슬라이드 시트 — 성능·무장·상세를 오른쪽에서 열고 닫는다(하단 액션바로 토글).
@@ -9297,6 +9317,10 @@
        폰인지 알 수 없다(768px 은 태블릿 구간이다). 몸통에 표시를 달아 준다 —
        이 표시가 없어서 「이름이 길면 줄바꿈」 규칙이 넓게 보기에만 안 걸렸다. */
     document.body.classList.toggle('vm-wide', isPhoneWidth() && viewMode === 'wide');
+    /* 무장표의 왼쪽 고정 두 칸을 좁히는 표시. **두 보기 모두** 폰이면 켠다 —
+       크게 보기는 390px 라 화면이 좁고, 넓게 보기는 768px 로 잡아 축소하므로
+       어느 쪽이든 그 264px 이 보이는 폭의 대부분을 먹는다. */
+    document.body.classList.toggle('wnarrow', isPhoneWidth());
     const b = $('#viewModeBtn');
     if (b) {
       // 글자는 '지금 상태'가 아니라 '누르면 되는 것'을 적는다

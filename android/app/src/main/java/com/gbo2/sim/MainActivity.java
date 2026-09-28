@@ -585,27 +585,49 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** 하드웨어 뒤로가기: 모달 닫기 → 기체 선택 → 종료 (웹의 Escape 처리 재사용). */
+    /** 하드웨어 뒤로가기 — 한 걸음 뒤로 가고, 시작 화면이면 종료를 묻는다.
+     *
+     *  **무엇이 열려 있는지는 여기서 따지지 않는다.** 예전에는 이쪽이 모달 선택자
+     *  목록을 들고 있었는데, 화면이 늘 때마다 같이 고쳐야 해서 어긋났다 —
+     *  기체 정보 칸이 목록에 없어, 정보를 열어 둔 채 누르면 앱이 그냥 죽었다.
+     *  판단은 화면을 아는 웹(window.GBO2Back)이 하고 여기서는 묻기만 한다. */
     @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
         if (web == null) { super.onBackPressed(); return; }
+        // 옛 배포본(GBO2Back 이 없는 HTML)이 실려 있을 수 있다 — 그때는 Escape 로 물러난다.
         String js =
             "(function(){"
-          + "  var sel='#pietanModal:not([hidden]),#compareModal:not([hidden]),#ownedModal:not([hidden]),"
-          + "#savedModal:not([hidden]),#mskillInline:not([hidden]),#autoResultPanel:not([hidden])';"
-          + "  var open=document.querySelector(sel)||document.querySelector('#autoDrawer.open')"
-          + "||document.body.classList.contains('view-build');"
-          + "  if(open){document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',keyCode:27,which:27,bubbles:true}));return 'handled';}"
-          + "  return 'exit';"
+          + "  if(typeof window.GBO2Back==='function')return window.GBO2Back();"
+          + "  document.dispatchEvent(new KeyboardEvent('keydown',"
+          + "    {key:'Escape',keyCode:27,which:27,bubbles:true}));"
+          + "  return document.body.classList.contains('view-build')?'back':'exit';"
           + "})()";
         web.evaluateJavascript(js, new ValueCallback<String>() {
             @Override
             public void onReceiveValue(String value) {
-                if (value == null || !value.contains("handled")) finish();
+                if (value != null && value.contains("back")) return;   // 한 걸음 물러났다
+                askExit();
             }
         });
     }
+
+    /** 시작 화면에서 한 번 더 누른 것 — 정말 끝낼지 묻는다.
+     *  묻지 않고 끝내면 만들던 구성이 한 번의 오조작으로 사라진다. */
+    private void askExit() {
+        if (isFinishing() || exitAsking) return;
+        exitAsking = true;
+        new android.app.AlertDialog.Builder(this)
+            .setMessage("종료하시겠습니까?")
+            .setCancelable(true)
+            .setNegativeButton("아니요", (d, w) -> d.dismiss())
+            .setPositiveButton("네", (d, w) -> finish())
+            .setOnDismissListener(d -> exitAsking = false)
+            .show();
+    }
+
+    /** 물어보는 창이 겹쳐 뜨지 않게 한다 — 뒤로가기를 연타하면 여러 장이 쌓인다. */
+    private boolean exitAsking = false;
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {

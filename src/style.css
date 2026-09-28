@@ -1980,6 +1980,54 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 body.vm-wide .w-nm { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
 body.vm-wide .w-nm-top { white-space: normal; overflow: visible; text-overflow: clip; }
 body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrink: 0; }
+/* ── 폰: 왼쪽 고정 두 칸이 보이는 폭의 72% 를 먹던 것 ──
+   실측(390px 폰, 크게 보기): 보이는 폭 367 · 표 전체 1178 · 넘침 811.
+   그 중 구분(50) + 이름(214) = 264 가 왼쪽에 **붙박이로** 고정돼,
+   수치 여덟 칸(722px)을 103px 짜리 창으로 훑어야 했다.
+   이름을 왼쪽에 붙든 것 자체는 맞다 — 밀고 나면 어느 줄인지 알 수 없었으니까.
+   줄일 것은 **폭**이다.
+
+   A) 이름 칸을 좁히고 두 줄을 허용한다. 위에서 이미 줄바꿈을 켜 뒀으므로
+      좁혀도 글자가 잘리지 않고 아래로 넘어간다.
+   B) 「구분」은 글자를 버리고 색점만 남긴다. 표는 이미 주무장→부무장 순으로
+      묶여 있어 구분은 경계를 알려 주는 표지에 가깝고, 줄을 누르면 상세에
+      그대로 적힌다. 칸 자체는 **지우지 않는다** — 지우면 머리줄과 어긋나고
+      고정 위치(left) 계산이 통째로 흔들린다. */
+.wnarrow .weapon,
+.wnarrow .weapon-head {
+  /* fr 로 두면 표가 화면보다 넓을 때 이름 칸이 다시 늘어난다(0.9fr 이 173px 이 됐다).
+     상한을 **고정 px** 로 묶는다 — 좁혀도 위에서 켠 줄바꿈이 글자를 아래로 내려 준다. */
+  /* 하한 96px 에서는 「메가 빔 캐논 최대 19히트」가 99px 를 요구해 3px 모자랐다.
+     칩은 줄이면 뜻이 사라지므로 칸 쪽을 맞춘다. */
+  grid-template-columns: 10px minmax(106px, 124px) 52px 105px 125px 104px 92px 88px 96px 112px;
+  gap: 7px;
+}
+/* 좁힌 이름 칸에서는 **줄바꿈이 반드시 켜져 있어야** 한다 — 한 줄 고정이 남아 있으면
+   좁힌 만큼 그대로 잘린다(124px 에서 무장 여섯 개의 이름이 잘렸다).
+   여태 이 해제는 넓게 보기(vm-wide)에만 걸려 있었다. */
+.wnarrow .w-nm { flex-wrap: wrap; white-space: normal; row-gap: 2px; }
+.wnarrow .w-nm-top { white-space: normal; overflow: visible; text-overflow: clip; }
+.wnarrow .w-fixed, .wnarrow .w-debuff, .wnarrow .w-mult { flex-shrink: 0; }
+
+/* 구분 — 글자를 감추고 동그란 색점으로. 뜻은 색이 지닌다.
+   **칸을 점으로 줄이면 안 된다.** 이 칸은 왼쪽에 붙박이로 고정돼 있어서,
+   행 높이를 덮지 못하면 표를 밀 때 그 틈으로 뒤의 수치가 비쳐 나온다
+   (10px 짜리 점이 36px 행을 덮지 못해 검사에 걸렸다).
+   칸은 행을 덮은 채 두고, 점은 그 안에 그린다. */
+.wnarrow .w-sec {
+  font-size: 0; padding: 0; width: 10px; border-radius: 0;
+  background: inherit;                     /* 행 배경 그대로 — 불투명해야 한다 */
+  display: flex; align-items: center; justify-content: center;
+}
+.wnarrow .w-sec::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--muted);
+}
+.wnarrow .w-sec.main::before { background: var(--accent); }
+/* 머리줄의 「구분」 글자도 같이 감춘다 — 10px 칸에 글자가 남으면 삐져나온다 */
+.wnarrow .weapon-head > :first-child { font-size: 0; }
+/* 고정 칸의 왼쪽 자리도 좁아진 폭에 맞춘다 (구분 10 + gap 7 = 17) */
+.wnarrow #weaponList.can-x .w-nm { left: 17px; }
+
 /* 고정 피해에 파츠 몫이 붙었을 때의 증가분 */
 .w-fixed-up { font-style: normal; color: var(--good, #7ddc8a); font-weight: 700; }
 /* 스러스터 지표 — 나빠지는 방향은 붉게 */
@@ -3215,7 +3263,10 @@ body.info-open .sel-info { display: flex; }
 @media (max-width: 1100px) {
   body.info-open .sel-2col { grid-template-columns: 1fr; }
   body.info-open .sel-2col > .ms-grid { padding-right: 20px; }
-  .sel-info { position: fixed; inset: 0; z-index: 60; border-left: 0; background: var(--bg); }
+  /* **width 를 같이 풀어야 한다.** inset:0 만 주면 위의 width:60% 가 그대로 이겨,
+     「전체를 덮으라」고 해 놓고 폭은 60% 에 머문다 — 폰에서 오른쪽 40% 에 못 쓰는
+     기체 목록이 남고, 정보는 그 좁은 60% 안에서 다시 절반으로 줄어 보였다. */
+  .sel-info { position: fixed; inset: 0; width: auto; z-index: 60; border-left: 0; background: var(--bg); }
   .mi-blist { max-height: none; }
 }
 /* 좁은 화면 — 2열로 두니 칸 높이가 제각각이라 빈 자리가 생기고 눈이 갈피를 못 잡았다.
