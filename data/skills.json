@@ -6082,6 +6082,37 @@
  ],
  "ヘイズル・アウスラ": [
   {
+   "name": "オーバーブースト",
+   "nameKo": "오버 부스트",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
    "name": "シールド・ブースター制御機構",
    "nameKo": "실드 부스터 제어 기구",
    "forever": false,
@@ -6105,7 +6136,38 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 15,
+     "hispeed": 20,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -10018,6 +10080,27 @@
      "thruster": 0,
      "turn": 15,
      "hpUp": 0
+    },
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 18,
+     "hpUp": 0
     }
    ]
   }
@@ -10176,7 +10259,7 @@
    "name": "能力UP「覚醒（B）」",
    "nameKo": "능력UP「각성 (B)」",
    "forever": false,
-   "secs": 60,
+   "secs": 80,
    "hp": 50,
    "manual": false,
    "levels": [
@@ -11516,6 +11599,27 @@
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
     }
    ]
   }
@@ -11642,7 +11746,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 25,
+     "hispeed": 20,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
@@ -12644,7 +12748,7 @@
    "name": "最大出力（T）",
    "nameKo": "최대 출력 (T)",
    "forever": false,
-   "secs": 60,
+   "secs": 90,
    "hp": null,
    "manual": true,
    "levels": [
@@ -14376,6 +14480,157 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 18,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ガルバルディβ高機動型［T仕様］": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "カプル": [
+  {
+   "name": "突撃体勢改",
+   "nameKo": "돌격 자세 개",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 20,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "νガンダム［DFF装備］": [
+  {
+   "name": "サイコフレーム共振（A）",
+   "nameKo": "사이코프레임 공진 (A)",
+   "forever": true,
+   "secs": null,
+   "hp": 50,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 25,
+     "melee": 35,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 20,
+     "hispeed": 15,
+     "thruster": 0,
+     "turn": 25,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
+   "name": "フルアタック",
+   "nameKo": "풀 어택",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 20,
+     "dmgMelee": 20,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 10,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
      "hpUp": 0
     }
    ]

@@ -1,6 +1,24 @@
 {
- "pickupsUpdated": "2026-09-24",
+ "pickupsUpdated": "2026-09-28",
  "pickups": [
+  {
+   "name": "ν건담[더블 핀 판넬 장비]",
+   "consoleStart": "2026-09-24",
+   "consoleEnd": "2026-10-01",
+   "start": "2026-11-26",
+   "end": "2026-12-03",
+   "tokens": 195,
+   "url": "https://bo2.ggame.jp/kr/info/?p=197504"
+  },
+  {
+   "name": "【배틀 오퍼레이션 가을 축제】 MS 확정 스페셜",
+   "consoleStart": "2026-09-24",
+   "consoleEnd": "2026-10-01",
+   "start": "2026-11-26",
+   "end": "2026-12-03",
+   "tokens": null,
+   "url": "https://bo2.ggame.jp/kr/info/?p=197567"
+  },
   {
    "name": "카풀(CN) & 카풀",
    "consoleStart": "2026-09-17",
@@ -189,30 +207,17 @@
    "end": "2026-10-08",
    "tokens": 195,
    "url": "https://bo2.ggame.jp/kr/info/?p=193370"
-  },
+  }
+ ],
+ "steamUpdated": "2026-09-28",
+ "steamNews": [
   {
-   "name": "【8주년 대감사제】 제1탄",
-   "consoleStart": "2026-07-23",
-   "consoleEnd": "2026-07-30",
-   "start": "2026-09-24",
-   "end": "2026-10-01",
-   "tokens": 285,
-   "url": "https://bo2.ggame.jp/kr/info/?p=191292"
-  },
-  {
-   "name": "【8주년 대감사제】 72시간 한정",
-   "consoleStart": "2026-07-19",
-   "consoleEnd": "2026-07-26",
+   "name": "제간[고기동 사양]",
    "start": "2026-09-24",
    "end": "2026-10-01",
    "tokens": 75,
-   "url": "https://bo2.ggame.jp/kr/info/?p=191322",
-   "startRaw": "2026-09-20",
-   "endRaw": "2026-09-27"
-  }
- ],
- "steamUpdated": "2026-09-24",
- "steamNews": [
+   "url": "https://store.steampowered.com/news/app/1367080/view/699902693745886288?l=koreana"
+  },
   {
    "name": "플린트",
    "start": "2026-09-17",
@@ -268,20 +273,6 @@
    "end": "2026-09-10",
    "tokens": 120,
    "url": "https://store.steampowered.com/news/app/1367080/view/667249691758428712?l=koreana"
-  },
-  {
-   "name": "【가을 축제 전월제】: 건담 DX",
-   "start": "2026-08-27",
-   "end": "2026-09-03",
-   "tokens": null,
-   "url": "https://store.steampowered.com/news/app/1367080/view/667249057895285021?l=koreana"
-  },
-  {
-   "name": "커스텀 파츠",
-   "start": "2026-08-27",
-   "end": "2026-09-03",
-   "tokens": 75,
-   "url": "https://store.steampowered.com/news/app/1367080/view/667249057895285021?l=koreana"
   }
  ]
 }
