@@ -139,7 +139,12 @@ function curated(b) {
       console.log(`  표기가 어긋나 있던 ${fixed}칸을 고쳐 저장했습니다 (MT 가 되돌려 놓은 말)`);
     }
   }
-  const todo = [...notes].filter(n => !cache[n]);
+  /* 캐시에 **일본어가 남은 채** 저장된 칸도 다시 대상에 넣는다.
+     번역이 실패하면 원문을 그대로 넣어 캐시하므로, 그 칸은 다음 실행에서 「이미 있다」로
+     영영 건너뛰어졌다 — 번역기가 막혀 있던 동안 굳은 칸들이 그렇게 남아,
+     「번역 대상 0개」라고 말하면서도 화면에는 일본어가 나왔다(2026-09-24 ~ 28).
+     **지우지는 않고** 대상에만 넣는다 — 또 실패하면 옛 값이 남는 편이 낫다. */
+  const todo = [...notes].filter(n => !cache[n] || hasJa(cache[n]));
   console.log(`번역 대상 고유 備考 ${todo.length}개 (캐시 ${Object.keys(cache).length})`);
 
   const partCache = new Map();

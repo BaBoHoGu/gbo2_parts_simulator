@@ -200,15 +200,24 @@ const LIST = process.argv.includes('--list');
   const action = await pg.evaluate(() => {
     const T = window.GBO2UiTest;
     const want = ['強化タックル', '瞬間噴射精密制御', 'クイックブースト', 'アサルトブースター'];
-    const read = [], said = new Map();
+    const read = [], said = new Map(), miss = new Set();
     for (const ms of T.msData()) {
       const lv = T.msLevel(ms);
+      const got = new Set();
       for (const r of (T.thrusterSkillsOf(ms, lv, 'normal') || []))
-        if (want.includes(r.name)) read.push(r.name + ' ' + r.lv + ' ' + r.key + ' ' + r.v);
+        if (want.includes(r.name)) { read.push(r.name + ' ' + r.lv + ' ' + r.key + ' ' + r.v); got.add(r.name); }
       for (const u of (T.thrusterUnmodelled(ms, lv, 'normal') || []))
-        if (want.includes(u.name)) said.set(u.name + '|' + u.lv, u.why);
+        if (want.includes(u.name)) { said.set(u.name + '|' + u.lv, u.why); got.add(u.name); }
+      /* 앱이 고른 것 중 넷에 들고 **원문이 スラスター 를 말하는데** 읽지도 적지도
+         않은 것 — 그것이 말없이 사라진 것이다. 스러스터를 아예 안 말하는 LV 도 있어
+         (ザクⅠ 의 アサルトブースター LV2) 이름만으로 가리면 안 적은 게 맞는 것까지 문다. */
+      for (const sk of (T.pickedSkills(ms, lv, 'normal') || [])) {
+        if (!want.includes(sk.name) || got.has(sk.name)) continue;
+        if (!/スラスター/.test((sk.eff || '') + ' ' + (sk.desc || ''))) continue;
+        miss.add(ms.MS名 + ' / ' + sk.name + ' ' + sk.lv);
+      }
     }
-    return { read: [...new Set(read)], said: [...said] };
+    return { read: [...new Set(read)], said: [...said], miss: [...miss] };
   });
 
   /* ── 값이 여럿인 줄에서 가장 좋은 것을 집지 않는가 ──
@@ -479,10 +488,16 @@ const LIST = process.argv.includes('--list');
   {
     ok('태클·점프 한 번 값을 이동 축으로 읽지 않는다',
       action && action.read.length === 0, action && action.read);
-    // 버리기만 하고 말을 안 하면 안 된다 — 일곱 LV 이 모두 이유와 함께 나와야 한다
-    ok('그 일곱을 「계산 안 함」에 이유와 함께 적는다',
-      action && action.said.length === 7 && action.said.every(x => /한 번/.test(x[1])),
-      action && action.said);
+    /* 버리기만 하고 말을 안 하면 안 된다 — 넷 중 하나도 조용히 사라지면 안 된다.
+       **몇 가지인지 세지 않는다.** 「일곱」은 그때 데이터의 눈금이어서, 밸런스 패치로
+       기체 하나의 스킬 LV 이 바뀌자 앱은 멀쩡한데 검사가 물었다(2026-09-28, 일곱→여섯).
+       재야 할 것은 수가 아니라 **말없이 버린 것이 없는가**다 — 그건 앱이 고른 목록과
+       맞대 봐야 알 수 있어서, pickedSkills 훅을 열고 거기에 견준다. */
+    ok('그 넷을 하나도 빼지 않고 「계산 안 함」에 이유와 함께 적는다',
+      action && action.miss.length === 0 && action.said.length > 0
+        && action.said.every(x => /한 번/.test(x[1])),
+      action && (action.miss.length ? '말없이 빠진 것: ' + action.miss.slice(0, 4).join(' , ')
+        : action.said));
   }
   {
     ok('실드 매수로 변하는 값에서 가장 좋은 것을 집지 않는다',

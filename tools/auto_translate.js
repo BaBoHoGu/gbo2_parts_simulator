@@ -39,8 +39,27 @@ function purgeStale(obj, val) {
   const msAuto = rdSafe('data', 'i18n', 'ms.auto.json');
   const staleMs = purgeStale(msAuto, v => String(v));
   const newMs = [...new Set(msData.map(m => base(m.MS名)))].filter(n => !msDict[n] && !msAuto[n]);
+  /* 미러가 같은 기체의 이름을 **전각↔반각으로 바꿔** 보내는 일이 있다.
+     실제로 「カプル（ＣＮ）」가 「カプル（CN）」로 바뀌어, 사전에는 옛 열쇠가 남고
+     새 이름은 다시 번역돼 「카풀(CN)」과 「카풀 (CN)」로 **표기가 갈렸다**(2026-09-28).
+     글자만 다르고 같은 이름이므로, 새로 번역하지 말고 **있던 번역을 물려받는다.**
+     번역 호출도 아낀다 — 구글은 하루 한도가 있고 실제로 429 로 막힌 적이 있다. */
+  const half = x => String(x).replace(/[Ａ-Ｚａ-ｚ０-９（）［］]/g,
+    c => ({ '（': '(', '）': ')', '［': '[', '］': ']' }[c] || String.fromCharCode(c.charCodeAt(0) - 0xFEE0)));
+  const byHalf = new Map();
+  for (const [k, v] of [...Object.entries(msAuto), ...Object.entries(msDict)]) {
+    if (typeof v === 'string') byHalf.set(half(k), v);
+  }
+
   let okMs = 0; const leftMs = [];
   for (const n of newMs) {
+    const same = byHalf.get(half(n));
+    if (same) {
+      msAuto[n] = same;
+      okMs++;
+      console.log('  전각/반각만 다른 이름 — 있던 번역을 물려받음: ' + n + ' → ' + same);
+      continue;
+    }
     const t = net ? await translate(n) : null;
     if (t == null) net = false;                                  // 한 번 실패하면 이후는 폴백만
     const ko = (t && !hasJa(t)) ? t : (translitName(n) || n);

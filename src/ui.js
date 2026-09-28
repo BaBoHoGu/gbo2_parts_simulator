@@ -9552,6 +9552,26 @@
     weaponData: () => weaponData,
     thrusterSkillsOf,
     thrusterUnmodelled,     // 「계산 안 함」에 든 것과 그 이유를 게이트에서 재려고
+    /* 그 기체·그 LV 에서 앱이 **실제로 고른** 스킬 목록.
+       게이트가 「스러스터를 건드리는 스킬이 말없이 사라지지 않았는가」를 재려면
+       앱이 무엇을 골랐는지 알아야 한다. 게이트가 그 고르기를 흉내 내면
+       재는 대상을 베끼는 셈이라 둘이 같이 틀려도 통과한다. */
+    pickedSkills: (ms, lv, form) => {
+      if (!ms) return [];
+      const modes = skillModesFor(msSkillsData[baseName(ms.MS名)] || [], form);
+      const byName = new Map();
+      for (const mo of modes) for (const sk of (mo.skills || [])) {
+        if (!byName.has(sk.name)) byName.set(sk.name, []);
+        byName.get(sk.name).push(sk);
+      }
+      const out = [];
+      for (const cands of byName.values()) {
+        const sk = pickByMsLv(cands, lv);
+        // 원문도 함께 넘긴다 — 그 LV 이 스러스터를 말하는지 게이트가 스스로 가려야 한다
+        if (sk) out.push({ name: sk.name, lv: sk.lv || '', eff: sk.eff || '', desc: sk.desc || '' });
+      }
+      return out;
+    },
     thrusterSkillFx,
     thrusterMetrics,        // 파츠·스킬 경감이 겹치는 방식(곱)을 게이트에서 재려고
     // 주무장 LV 왕복 점검용 — 읽기만 한다

@@ -272,7 +272,15 @@ const ok = (label, cond, extra) => {
   ok('픽업 예상 표가 빠른 순서다',
     tblOrder.length > 3 && tblOrder.every((d, i) => i === 0 || tblOrder[i - 1] <= d),
     tblOrder.slice(0, 4).join(' , '));
-  ok('미래시에 오늘 표시가 있다', !!fut.today);
+  /* 「오늘」 금은 **오늘이 든 달 덩이에만** 그린다 — 그러니 이번 달이 미래시에 남아
+     있을 때만 보여야 한다. 그냥 「있어야 한다」로 뒀더니, 9월 픽업이 모두 끝나
+     10·11월만 남은 2026-09-28 에 앱은 멀쩡한데 검사가 물었다.
+     단정하지 말고 **켜짐 여부 = 이번 달이 있느냐**로 맞춘다. */
+  const nowM = new Date().getMonth() + 1;
+  const hasNowM = mb.some(t => t.startsWith(nowM + '월'));
+  ok('오늘 표시는 이번 달이 표에 있을 때만 나온다', fut.today === hasNowM,
+    '이번 달 ' + nowM + '월 ' + (hasNowM ? '있음' : '없음')
+    + ' · 표시 ' + (fut.today ? '있음' : '없음'));
 
   /* 이름에 섞여 오는 위키 태그가 글자로 보이면 안 된다 — 실제로 「건담 <ruby>DX…」가 그랬다.
      **미래시 라벨만 보면 안 잡힌다** — 태그가 있는 건담 DX 는 「벗어남」으로 빠져서 거기

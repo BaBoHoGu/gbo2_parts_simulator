@@ -326,7 +326,16 @@ async function detectPatch(msList) {
   // (c) 위키·무장·스킬 — 신규/변경 기체 + 새 패치로 조정된 기체 + 무장/스킬 누락 기체(A) 를 받아 병합
   if (msChanged || patchNew || staleMechs.length || emptyUrlMechs.length || watchIds.length || rollIds.length) {
     const ids = new Set();
-    for (const m of added) { const id = pageId(urlOf(m)); if (id) ids.add(id); }
+    /* **감시에 올릴 것은 따로 모은다.** 받는 것과 감시하는 것은 다른 일이다 —
+       예전엔 받은 페이지를 전부 감시에 넣어, 순회로 훑은 **오래된 기체까지** 딸려 들어갔다.
+       그 결과 감시 목록이 189개로 불어났고 그 중 80개가 육전형 건담·돔 같은 옛 기체였다.
+       감시의 이유는 「위키가 **아직 채우는 중**이라 며칠 뒤 값이 달라진다」 하나뿐이다.
+       그런 기체는 둘이다: **새로 들어온 기체**와 **방금 패치로 조정된 기체**. */
+    const watchAdd = new Set();
+    for (const m of added) {
+      const id = pageId(urlOf(m));
+      if (id) { ids.add(id); watchAdd.add(id); }
+    }
     for (const c of changed) { const id = pageId(urlOf(c.ms)); if (id) ids.add(id); }
     // 밸런스 패치로 무장이 바뀐 기체.
     // patchNew 만 보면, 감지가 실패한 채 patch.json 만 새 날짜로 적힌 적이 있을 때
@@ -336,7 +345,8 @@ async function detectPatch(msList) {
       const stamp = Date.parse(patch.date.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3T00:00:00+09:00'));
       let stale = 0;
       for (const id of patch.ids) {
-        if (patchNew) { ids.add(id); continue; }
+        // 패치 직후 위키는 수치를 며칠에 걸쳐 채운다 — 신규 기체와 같은 이유로 지켜본다
+        if (patchNew) { ids.add(id); watchAdd.add(id); continue; }
         const f = path.join(ROOT, 'raw', 'wiki', id + '.html');
         let mt = 0;
         try { mt = fs.statSync(f).mtimeMs; } catch { mt = 0; }
@@ -377,8 +387,13 @@ async function detectPatch(msList) {
 
     /* A2: 이번에 받은 페이지를 감시 목록에 올리고, 값이 그대로인 것은 뗀다.
        「두 번 연속 같으면 다 채워진 것으로 본다」 — 끝나는 조건이 있어야 영원히 안 받는다. */
-    WW.add(watch, targetIds);
-    const { done, moved } = WW.settle(ROOT, watch, targetIds, weapAfter, sklAfter, baseByPage);
+    /* 받은 것 전부가 아니라 **신규·패치 조정분만** 감시에 올린다.
+       미러에서 스탯만 바뀐 기체는 안 넣는다 — 그 페이지는 어차피 이번에 한 번 받았고,
+       며칠을 더 지켜볼 이유가 없다(대개 패치분과 겹치기도 한다). */
+    WW.add(watch, [...watchAdd]);
+    // 이번에 받은 것 중 **감시 중인 것만** 값을 견준다(목록 밖은 볼 이유가 없다)
+    const { done, moved } = WW.settle(ROOT, watch,
+      targetIds.filter(id => watch[id]), weapAfter, sklAfter, baseByPage);
     if (moved.length) console.log(`  · 위키가 아직 채우는 중인 페이지 ${moved.length}개 (값이 바뀌었습니다: ${moved.slice(0, 6).join(', ')})`);
     if (done.length) console.log(`  · 값이 굳어 감시에서 뗀 페이지 ${done.length}개 — 남은 감시 ${Object.keys(watch).length}개`);
   }
