@@ -3,3 +3,5 @@ build/
 *.apk
 local.properties
 app/src/main/assets/index.html
+# 시작 화면 로고도 빌드가 assets/images/ui 에서 복사해 온다 — 원본은 저장소에 하나뿐이다
+app/src/main/assets/brand-wide.webp
