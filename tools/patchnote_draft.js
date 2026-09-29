@@ -19,7 +19,14 @@ const { execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..');
 const NOTE = path.join(ROOT, '패치노트.md');
 const PRINT = process.argv.includes('--print');
-const today = new Date().toISOString().slice(0, 10);
+/* **로컬 날짜**로 잡는다. toISOString() 은 UTC 라, 한국(UTC+9)에서 오전 9시 전에
+   배포하면 어제 날짜가 된다 — 실제로 2026-09-29 08:24 배포가 09-28 절에 덧붙었다.
+   배포 스크립트의 「오늘 항목이 있는가」 검사는 Get-Date(로컬)를 쓰므로,
+   기준이 갈리면 경고는 뜨는데 글은 엉뚱한 절에 들어간다. 같은 기준으로 맞춘다. */
+const today = (() => {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+})();
 
 const rd = p => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8')); } catch { return null; } };
 /** HEAD 시점의 파일. 없으면 null (새 파일이거나 git 밖). */

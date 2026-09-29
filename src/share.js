@@ -276,7 +276,17 @@ async function checkUpdate() {
   //    이때는 같은 날 재배포를 알 수 없다 — 그래도 '모르는 것보다는 낫다'.
   const mine = B.date || '';
   const asset = (r.json.assets || []).find(a => a.name === 'gbo2-simulator.html');
-  const latest = asset ? String(asset.updated_at || '').slice(0, 10) : (remote || '').slice(0, 10);
+  /* updated_at 은 **UTC** 이고 B.date 는 만든 PC 의 **로컬 날짜**다. 그대로 견주면
+     한국 시간 자정~오전 9시에 나간 배포가 UTC 로는 전날이라 「최신 아님」이 된다.
+     UTC 를 로컬 날짜로 되돌린 뒤 견준다. */
+  const localDay = iso => {
+    const t = Date.parse(iso);
+    if (isNaN(t)) return '';
+    const d = new Date(t);
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  };
+  const latest = asset ? localDay(asset.updated_at) : (remote || '').slice(0, 10);
   if (!latest) return { ok: false, msg: '업데이트 정보를 읽지 못했습니다' };
   return { ok: true, newer: !!(mine && latest > mine), latest, mine };
 }

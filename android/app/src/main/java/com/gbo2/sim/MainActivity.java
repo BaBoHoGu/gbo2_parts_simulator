@@ -89,6 +89,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        registerPredictiveBack();   // 예측형 뒤로가기 — 안 걸면 13+ 에서 우리 처리가 통째로 건너뛰어진다
         web = new WebView(this);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -594,7 +595,12 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
-        if (web == null) { super.onBackPressed(); return; }
+        handleBack();
+    }
+
+    /** 뒤로가기 본체 — 옛 경로(onBackPressed)와 예측형 경로가 **같은 것**을 부른다. */
+    private void handleBack() {
+        if (web == null) { superBack(); return; }
         // 옛 배포본(GBO2Back 이 없는 HTML)이 실려 있을 수 있다 — 그때는 Escape 로 물러난다.
         String js =
             "(function(){"
@@ -631,7 +637,45 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) { onBackPressed(); return true; }
+        if (keyCode == KeyEvent.KEYCODE_BACK) { handleBack(); return true; }
         return super.onKeyDown(keyCode, event);
+    }
+
+    /** 더 갈 곳이 없을 때 시스템 기본 뒤로가기. 예측형에서는 super.onBackPressed() 가
+     *  다시 우리에게 돌아올 수 있어, 창을 닫는 쪽으로만 쓴다. */
+    @SuppressWarnings("deprecation")
+    private void superBack() { finish(); }
+
+    /* ── 예측형 뒤로가기(Android 13+) ─────────────────────────────────
+       **targetSdk 36 에서는 onBackPressed() 가 불리지 않을 수 있다.** 13(API 33)부터
+       예측형 뒤로가기가 생겼고, 16 을 타깃하면 기본으로 켜지며 매니페스트로 끌 수도 없다.
+       그러면 우리 처리(한 걸음 뒤로 · 종료 확인)가 통째로 건너뛰어지고 앱이 그냥 닫힌다.
+       그래서 **콜백을 직접 등록해** 같은 handleBack() 으로 들어오게 한다.
+       12 이하에서는 예전처럼 onBackPressed()/onKeyDown 이 부른다 — 두 길이 한 곳으로 모인다. */
+    private Object backCallback;
+
+    private void registerPredictiveBack() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        try {
+            android.window.OnBackInvokedCallback cb = this::handleBack;
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, cb);
+            backCallback = cb;
+        } catch (Throwable t) {
+            // 등록에 실패해도 앱은 돌아야 한다 — 그때는 옛 경로가 받는다.
+            backCallback = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (backCallback != null && Build.VERSION.SDK_INT >= 33) {
+            try {
+                getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(
+                    (android.window.OnBackInvokedCallback) backCallback);
+            } catch (Throwable ignored) { }
+            backCallback = null;
+        }
+        super.onDestroy();
     }
 }

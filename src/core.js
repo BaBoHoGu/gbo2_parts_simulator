@@ -256,11 +256,14 @@ function getBaseStats(ms, form) {
   // 지상·우주 구분 없이 하나로 주는 기체가 있어 먼저 깔고, 개별 값이 있으면 덮어쓴다
   if (ms['旋回_変形時'] != null) {
     const v = Number(ms['旋回_変形時']);
-    base.turnPerformanceGround = v;
-    base.turnPerformanceSpace = v;
+    if (!isNaN(v)) { base.turnPerformanceGround = v; base.turnPerformanceSpace = v; }
   }
   for (const [key, field] of Object.entries(TRANSFORM_FIELD)) {
-    if (ms[field] != null) base[key] = Number(ms[field]);
+    if (ms[field] == null) continue;
+    // 숫자가 아니면 통상치를 그대로 쓴다 — NaN 을 넣으면 합계가 통째로 NaN 이 되어
+    // 화면에 「NaN」 이 찍힌다. 값을 모르는 것과 0 은 다르다.
+    const v = Number(ms[field]);
+    if (!isNaN(v)) base[key] = v;
   }
   // 変形 스탯이 없는 「시스템 발동(트랜잠) 등」 모드 — override 로 넣은 절대값으로 갈아끼운다.
   const alt = ms._altMode;
@@ -291,6 +294,10 @@ function initializeLimits(ms) {
     const field = LIMIT_FIELD[key];
     const raw = ms[field];
     if (raw === undefined || raw === null) continue;
+    /* 빈 문자열을 거른다. Number('') 는 0 이라, 상한이 빈 칸으로 들어오면
+       그 스탯이 **0 으로 깎인다** — 화면에 HP 0 이 뜨는 꼴이다.
+       지금 데이터에는 없지만(전수 0건), 미러가 한 번 비워 보내면 바로 난다. */
+    if (typeof raw === 'string' && raw.trim() === '') continue;
     const n = Number(raw);
     if (!isNaN(n)) { limits[key] = n; flags[key] = true; }
   }

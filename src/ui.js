@@ -4928,7 +4928,10 @@
     const code = t.startsWith(SHARE_PREFIX) ? t.slice(SHARE_PREFIX.length) : t;
     try {
       const c = JSON.parse(b64urlDecode(code));
-      return { ms: c.m, parts: c.p || [], stage: c.s, expansion: c.e, expLevel: c.l };
+      // 숫자·문자열·null 도 올바른 JSON 이다 — 그때 c.m 은 undefined 라
+      // 「기체 없는 구성」이 조용히 만들어진다. 모양을 먼저 본다.
+      if (!c || typeof c !== 'object' || Array.isArray(c) || typeof c.m !== 'string') return null;
+      return { ms: c.m, parts: Array.isArray(c.p) ? c.p : [], stage: c.s, expansion: c.e, expLevel: c.l };
     } catch { return null; }
   }
 
@@ -9222,6 +9225,10 @@
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
+        /* 보기 모드를 **먼저** 다시 건다. 회전하면 기기 폭이 바뀌어 viewport 배율과
+           폰 전용 표시(vm-wide·wnarrow)가 달라지는데, 여태 여기서 안 불러
+           돌린 뒤에도 세로 설정이 그대로 남아 있었다. */
+        applyViewMode();
         fitBuildBand(); fitWholeRows($('#partList'));
         markWeaponScroll();     // 가로↔세로 회전으로 넘침 여부가 바뀐다
       }, 120);
@@ -9320,8 +9327,20 @@
      핀치 줌을 열어 두어 작으면 손가락으로 키울 수 있다. */
   const WIDE_W = 768;
   // 메타를 바꾸면 innerWidth 가 따라 바뀐다 — 기기 본래 폭은 처음 한 번만 잰다
-  const DEVICE_CSS_W = window.innerWidth;
-  const isPhoneWidth = () => DEVICE_CSS_W <= 700;
+  /* 기기 폭은 **잴 때마다** 본다. 예전에는 로드 시점 innerWidth 를 const 로 얼려 뒀는데,
+     폰을 돌려도 그 값이 그대로라 「넓게 보기」가 세로 배율(0.51)을 유지한 채 가로를 덮었다 —
+     레이아웃 폭이 768 → 1662px 로 벌어지고 글자가 절반이 됐다.
+
+     innerWidth 를 쓰면 안 된다. 「넓게 보기」는 viewport 폭을 768 로 **잡아 버리므로**
+     innerWidth 는 기기 폭이 아니다(실측: 세로 768 · 가로 1662).
+     screen.width 는 두 보기·두 방향 모두에서 실제 기기 폭과 같았다(390 / 844).
+
+     innerWidth 도 함께 보는 이유는 데스크톱이다 — 창을 좁히면 screen 은 그대로지만
+     사람이 보는 폭은 좁다. 둘 중 하나라도 좁으면 좁은 것으로 친다.
+     폰 가로(screen 844 · inner 1662)는 어느 쪽도 걸리지 않아 그대로 넓은 화면이 된다 —
+     가로에서 새로 열었을 때와 같은 결과다(그게 옳다). */
+  const deviceCssW = () => Number((window.screen || {}).width) || window.innerWidth;
+  const isPhoneWidth = () => deviceCssW() <= 700 || window.innerWidth <= 700;
   const VIEW_KEY = 'gbo2.viewMode';
   let viewMode = 'large';
   try { viewMode = localStorage.getItem(VIEW_KEY) || 'wide'; } catch (e) { viewMode = 'wide'; }
@@ -9329,13 +9348,15 @@
   function applyViewMode() {
     const meta = document.querySelector('meta[name="viewport"]');
     if (!meta) return;
-    if (isPhoneWidth() && viewMode === 'wide') {
-      const scale = (DEVICE_CSS_W / WIDE_W).toFixed(4);
-      meta.setAttribute('content',
-        `width=${WIDE_W}, initial-scale=${scale}, user-scalable=yes, viewport-fit=cover`);
-    } else {
-      meta.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
-    }
+    const wide = isPhoneWidth() && viewMode === 'wide';
+    const want = wide
+      ? `width=${WIDE_W}, initial-scale=${(deviceCssW() / WIDE_W).toFixed(4)},`
+        + ' user-scalable=yes, viewport-fit=cover'
+      : 'width=device-width, initial-scale=1, viewport-fit=cover';
+    /* **바뀐 때만** 아래에서 resize 를 다시 쏜다. 무조건 쏘면, 회전 때문에 resize 에서
+       이 함수를 부르는 지금 구조에서 서로를 끝없이 부른다(120ms 마다 영원히). */
+    const changed = meta.getAttribute('content') !== want;
+    meta.setAttribute('content', want);
     /* 「넓게 보기」는 폭을 768px 로 **잡아** 보여 주는 것이라, CSS 의 max-width 로는
        폰인지 알 수 없다(768px 은 태블릿 구간이다). 몸통에 표시를 달아 준다 —
        이 표시가 없어서 「이름이 길면 줄바꿈」 규칙이 넓게 보기에만 안 걸렸다. */
@@ -9352,8 +9373,8 @@
         ? '글자를 키웁니다 — 성능은 아래 「성능」 버튼으로 봅니다'
         : '한 화면에 넓게 봅니다 — 성능·파츠가 같이 보이고 글자는 작아집니다';
     }
-    // 폭이 바뀌었으니 높이를 다시 잰다(띠·줄 맞춤)
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
+    // 폭이 바뀌었을 때만 높이를 다시 잰다(띠·줄 맞춤)
+    if (changed) setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
   }
 
   function toggleViewMode() {

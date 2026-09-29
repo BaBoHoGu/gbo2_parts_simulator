@@ -267,7 +267,13 @@ function weaponModsOf(equipped, msLv, msAttr, expansion) {
 
   for (const p of equipped || []) {
     // 일부 신규 파츠 설명은 전각 ％(U+FF05) 를 쓴다 — 규칙(반각 %)이 매칭되도록 정규화한다
-    const desc = (p.description || '').replace(/\\n/g, '').replace(/／/g, '/').replace(/％/g, '%');
+    /* `\\n` 은 **문자 두 개**(역슬래시+n)를 지우는 규칙이다. 설명에 진짜 줄바꿈이 든
+       파츠가 31종 있는데 그건 안 지워진다 — 지금은 결과가 달라지지 않지만(실측 0건),
+       규칙 하나가 문장 첫머리(^)를 보고 있어 문구가 바뀌면 조용히 빠진다.
+       진짜 줄바꿈은 **문장 구분**으로 바꿔 둔다(지우면 두 문장이 붙어 버린다). */
+    const desc = (p.description || '')
+      .replace(/\\n/g, '').replace(/[\r\n]+/g, '。')
+      .replace(/／/g, '/').replace(/％/g, '%');
 
     // 실탄 한정 파츠면 시간 단축도 실탄 무장에만 건다(기본 규칙은 scope:'all' 이라 전 무장에 걸린다)
     const solidOnly = SOLID_ONLY_PART_RE.test(desc);
@@ -400,8 +406,12 @@ function applyDamagePct(dmg, pct) {
 }
 
 /** 시간을 percent 만큼 단축한다. 소수 둘째 자리까지. */
-const shortenTime = (sec, pct) =>
-  Math.round(Number(sec) * (1 - Number(pct) / 100) * 100) / 100;
+const shortenTime = (sec, pct) => {
+  // 단축이 100% 를 넘으면 시간이 **음수**가 된다. 지금 현실 조합의 최대는 리로드 17% 지만,
+  // 파츠가 늘면 넘을 수 있고 그때 「-2초」 같은 값이 그대로 화면에 나간다.
+  const cut = Math.min(Math.max(Number(pct) || 0, 0), 100);
+  return Math.max(0, Math.round(Number(sec) * (1 - cut / 100) * 100) / 100);
+};
 
 /**
  * 「5秒」「17.5秒」처럼 단위가 붙은 표기에 단축을 적용한다. 숫자가 없으면 그대로 둔다.

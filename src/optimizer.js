@@ -91,6 +91,12 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
     // 파생 지표(공격 지표·내구 지표)는 파츠 효과를 UI 에서 계산해 넘겨준다(있을 때만).
     const dv = derived ? derived(set, res.total) : null;
     const valOf = k => (dv && k in dv) ? dv[k] : res.total[k];
+    /* 값을 못 구한 목표(파생 지표인데 derived 훅이 없을 때 등)는 **못 맞춘 것으로 센다.**
+       예전에는 undefined 가 그대로 흘러 `target - undefined = NaN` 이 되고,
+       `NaN > 0` 이 false 라 페널티가 0 이었다 — 목표가 아무 말 없이 사라지고
+       「달성했다(feasible)」고까지 말했다(실측: ehpSolid 하한 999999 에 feasible=true).
+       조용히 틀리느니 못 맞췄다고 말하는 쪽이 낫다. */
+    const unmet = k => { const v = valOf(k); return typeof v !== 'number' || !isFinite(v); };
     let value = 0;
     for (const k of STAT_KEYS) {
       const w = weights[k];
@@ -101,12 +107,14 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
     let penalty = 0;
     for (const [k, target] of Object.entries(minimums || {})) {
       if (!target) continue;
+      if (unmet(k)) { penalty += 1000; continue; }       // 잴 수 없다 = 못 맞췄다
       const short = target - valOf(k);
       if (short > 0) penalty += 1000 + 100 * (short / (UNIT[k] || 1));
     }
     // 상한 목표 — 초과하면 하한과 대칭으로 페널티를 준다(그 스탯을 넘기지 않는 구성으로 흐르게).
     for (const [k, target] of Object.entries(maximums || {})) {
       if (target == null || target === '') continue;
+      if (unmet(k)) { penalty += 1000; continue; }       // 잴 수 없다 = 못 맞췄다
       const over = valOf(k) - target;
       if (over > 0) penalty += 1000 + 100 * (over / (UNIT[k] || 1));
     }
@@ -157,9 +165,20 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
 
   // 잠금("반드시 유지")은 제외("후보에서 빼기")보다 강하다.
   // banned 를 뺀 목록에서 찾으면 잠근 파츠가 조용히 사라지므로 전체 목록에서 찾는다.
-  const locked = (opts.locked || [])
+  const lockWanted = (opts.locked || [])
     .map(name => every.find(p => p.name === name))
     .filter(p => p && !categoryRestricted(p, ms));
+  /* **잠금끼리 충돌하면 그대로 두면 안 된다.** 잠금은 한 번도 검증되지 않았고
+     추가할 때만 검증해서, 충돌하는 둘을 잠그면 그 둘이 결과로 그대로 나왔다 —
+     장착할 수 없는 구성을 「이게 최적」이라고 내민 셈이다(실측으로 재현).
+     앞에 적은 것을 살리고, 함께 둘 수 없는 것은 뺀다. 무엇을 뺐는지 같이 돌려주어
+     화면이 「이 둘은 같이 못 답니다」라고 말할 수 있게 한다. */
+  const locked = [];
+  const droppedLocks = [];
+  for (const p of lockWanted) {
+    if (isValidSetWith(ms, locked.concat([p]), slotCap(ms, stage, fullstDefs))) locked.push(p);
+    else droppedLocks.push(p.name);
+  }
 
   const cap = slotCap(ms, stage, fullstDefs);
   const scorer = makeScorer(ms, { ...opts, stage, expansion, expLevel: opts.expLevel }, partsByCat, fullstDefs);
@@ -296,13 +315,14 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
     if (opts.onProgress) opts.onProgress((r + 1) / restarts);
   }
 
-  if (!best) return { parts: [], stats: null, score: 0, feasible: false, evaluations };
+  if (!best) return { parts: [], stats: null, score: 0, feasible: false, evaluations, droppedLocks };
   return {
     parts: best.set,
     stats: best.score.stats,
     score: best.score.value,
     feasible: best.score.feasible,
-    evaluations
+    evaluations,
+    droppedLocks      // 함께 둘 수 없어 뺀 잠금 (없으면 빈 배열)
   };
 }
 
