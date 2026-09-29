@@ -99,7 +99,19 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accen
 .topbar .brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
 .topbar .brand b { font-size: var(--fs-2xl); letter-spacing: .3px; }
 .topbar .brand span { color: var(--muted); font-size: var(--fs-xs); }
-.topbar .brand img { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; background: #0b0d10; }
+/* 가로로 긴 배너 로고다. 네모 아이콘 시절의 30x30 + cover 를 그대로 두면
+   가운데만 잘려 글자를 못 읽는다 — 높이만 잡고 폭은 비율대로 둔다. */
+.topbar .brand img {
+  height: 26px; width: auto; max-width: 190px;
+  object-fit: contain; border-radius: 0; background: none;
+}
+/* 폰에서는 상단바가 빽빽하다 — 로고를 조금 줄여 버튼 자리를 뺏지 않게 한다.
+   「넓게 보기」는 폭을 768 로 잡아 버려 max-width:700 에 안 걸린다 —
+   이 저장소가 늘 밟던 함정이라 몸통 표시(vm-wide)로 한 번 더 건다. */
+@media (max-width: 700px) {
+  .topbar .brand img { height: 22px; max-width: 150px; }
+}
+body.vm-wide .topbar .brand img { height: 22px; max-width: 150px; }
 .topbar .spacer { flex: 1; }
 
 /* ---- 진행 단계 표시(스텝퍼) ---- */
@@ -1504,6 +1516,11 @@ input[type="search"], input[type="text"] { width: 100%; }
    1280px 에서 1,309px → 한 줄에 들어온다. */
 @media (max-width: 1400px) {
   .topbar .brand span { display: none; }
+  /* 배너 로고는 네모 아이콘(30px)보다 ~120px 넓다. 그대로 두니 1280px 과 폰에서
+     상단바가 두 줄(91px)이 됐다 — 검사가 잡았다.
+     로고가 이미 무엇인지 말해 주므로, 좁아지면 **옆 글자를 먼저 접는다.**
+     제목은 탭 이름에 그대로 남는다. */
+  .topbar .brand > div { display: none; }
 }
 
 /* 좁은 화면(모바일) */

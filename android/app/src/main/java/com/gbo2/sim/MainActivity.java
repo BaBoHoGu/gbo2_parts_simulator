@@ -367,12 +367,27 @@ public class MainActivity extends Activity {
         v.setBackgroundColor(Color.parseColor("#0f1013"));
         v.setClickable(true);   // 뒤 WebView 로 터치가 새지 않게
 
-        TextView t = new TextView(this);
-        t.setText("GBO2 커스텀 파츠");
-        t.setTextColor(Color.parseColor("#e8eaef"));
-        t.setTextSize(20);
-        t.setGravity(android.view.Gravity.CENTER);
-        v.addView(t);
+        /* 로고를 띄운다. assets 에 둔 webp 를 그대로 읽는다 — drawable 로 또 복사해 두면
+           웹과 앱이 서로 다른 그림을 갖게 되고, 바꿀 때 한쪽을 잊는다. */
+        android.widget.ImageView logo = new android.widget.ImageView(this);
+        android.graphics.Bitmap bmp = null;
+        try (java.io.InputStream in = getAssets().open("brand-wide.webp")) {
+            bmp = android.graphics.BitmapFactory.decodeStream(in);
+        } catch (Exception ignored) { }
+        if (bmp != null) {
+            logo.setImageBitmap(bmp);
+            logo.setAdjustViewBounds(true);
+            int w = Math.min((int) (getResources().getDisplayMetrics().widthPixels * 0.72), 900);
+            v.addView(logo, new LinearLayout.LayoutParams(w, LinearLayout.LayoutParams.WRAP_CONTENT));
+        } else {
+            // 그림을 못 읽어도 시작 화면은 떠야 한다 — 예전처럼 글자로 대신한다.
+            TextView t = new TextView(this);
+            t.setText("GBO2 커스텀 파츠");
+            t.setTextColor(Color.parseColor("#e8eaef"));
+            t.setTextSize(20);
+            t.setGravity(android.view.Gravity.CENTER);
+            v.addView(t);
+        }
 
         splashMsg = new TextView(this);
         splashMsg.setText("최신 데이터 확인 중…");

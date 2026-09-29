@@ -73,6 +73,14 @@ function Build-Apk {
 
   # 최신 dist 를 assets 로 복사
   Copy-Item $distHtml (Join-Path $androidDir 'app\src\main\assets\index.html') -Force
+  # 시작 화면 로고도 같이 넣는다 — 앱이 이 파일을 assets 에서 바로 읽는다.
+  # drawable 로 따로 복사해 두면 웹과 앱이 서로 다른 그림을 갖게 되고 한쪽을 잊는다.
+  $brand = Join-Path $PSScriptRoot 'assets\images\ui\brand-wide.webp'
+  if (Test-Path $brand) {
+    Copy-Item $brand (Join-Path $androidDir 'app\src\main\assets\brand-wide.webp') -Force
+  } else {
+    Write-Host '  시작 화면 로고가 없어 글자로 대체됩니다.' -ForegroundColor Yellow
+  }
 
   $vcode = Get-Date -Format 'yyyyMMdd'
   # versionName 은 OTA 기준값이기도 하다 — 분 단위 타임스탬프라 같은 날 재배포도 폰에 반영된다.
