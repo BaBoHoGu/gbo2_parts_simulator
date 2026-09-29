@@ -148,6 +148,20 @@ function expansionShieldHp(expansion, expLevel, equipped) {
   return cnt * e.perExtra.shieldHp;
 }
 
+/**
+ * 내구 지표 — 이 속성 공격을 기준으로 「실제로 버티는 총량」. HP ÷ (1 − 내성/100).
+ *
+ * 화면(성능표·카드·비교)과 자동 구성이 **같은 자**를 써야 해서 여기 둔다.
+ * 자동 구성에는 이 값이 특히 중요하다 — 내성은 선형이 아니라서, 40→41 보다 49→50 이
+ * 훨씬 크다. 예전 점수는 Σ w·Δ스탯 이라 어디서 올리든 같게 쳐서 상한 근처에서
+ * 잘못된 파츠를 골랐다(표본 12기 전부 손해, 평균 −4,869 실효 HP).
+ */
+const durabilityOf = (total, armorKey) =>
+  Math.round((total.hp || 0) / (1 - Math.min(total[armorKey] || 0, 99) / 100));
+
+/** 속성 → 내성 스탯 키. */
+const ARMOR_KEY_OF = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee' };
+
 const MAX_PARTS = 8;
 
 /* ------------------------------------------------------------------
@@ -698,6 +712,7 @@ const GBO2Core = {
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
+  durabilityOf, ARMOR_KEY_OF,
   expansionShieldHp,
   effectConflict, partBase
 };

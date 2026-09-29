@@ -6,7 +6,8 @@
  * 파츠 조합을 탐색한다. (다중 시작점 + 최급상승 국소탐색)
  * ------------------------------------------------------------------ */
 
-const { STAT_KEYS, MAX_PARTS, EXPANSION_NONE, calcSlots, calcStats, conflictsWithMovement, categoryRestricted, effectConflict } =
+const { STAT_KEYS, MAX_PARTS, EXPANSION_NONE, calcSlots, calcStats, conflictsWithMovement, categoryRestricted, effectConflict,
+  durabilityOf } =
   (typeof require !== 'undefined' && typeof module !== 'undefined') ? require('./core.js') : window.GBO2Core;
 
 /** 가중치 1.0이 "괜찮은 파츠 한 장 분량"이 되도록 하는 스탯별 환산 단위. */
@@ -76,6 +77,34 @@ function isValidSet(ms, set, stage, fullstDefs) {
 
 /* ---------- 평가 ---------- */
 
+/* 방어 가중치는 **비선형 축**으로 친다.
+   내성은 선형이 아니다 — 실효 HP 는 HP ÷ (1 − 내성/100) 이라, 40→41 보다 49→50 이
+   훨씬 크다. 예전 점수는 Σ w·Δ스탯 이라 어디서 올리든 같게 쳐서 **상한 근처에서
+   잘못된 파츠를 골랐다.** 표본 12기로 재 보니 실효 HP 를 직접 노린 구성이
+   12기 전부 더 튼튼했다(평균 +4,869 · 최대 +11,754 실효 HP).
+
+   값은 core 의 durabilityOf 로 구한다 — 화면과 같은 자를 쓰고, 이미 계산된 total 위의
+   산술이라 **공짜다.** (처음엔 화면의 derivedMetrics 훅을 평가마다 불렀는데, 이득은
+   그대로이면서 자동 구성이 6.9초 → 12.5초가 됐다. 그 훅은 목표 판정에만 쓴다.)
+
+   공격은 건드리지 않는다 — 실효 보정은 파츠 설명을 훑어야 나와 값이 비싸고,
+   이번 측정에서 이득이 확인되지 않았다. 이동계는 선형이 맞다. */
+const DEF_WEIGHTS = ['hp', 'armorRange', 'armorBeam', 'armorMelee'];
+const DEF_ARMOR = ['armorRange', 'armorBeam', 'armorMelee'];
+
+/** 가중치를 몫(share)으로 — 전부 0 이면 고르게 나눈다. */
+function shareOf(weights, keys) {
+  const w = keys.map(k => Math.max(0, Number(weights[k]) || 0));
+  const sum = w.reduce((a, b) => a + b, 0);
+  const out = {};
+  keys.forEach((k, i) => { out[k] = sum > 0 ? w[i] / sum : 1 / keys.length; });
+  return out;
+}
+
+/** 세 속성의 실효 HP 를 가중치 몫대로 섞은 값. */
+const durMix = (total, share) =>
+  DEF_ARMOR.reduce((s, k) => s + share[k] * durabilityOf(total, k), 0);
+
 function makeScorer(ms, opts, partsByCat, fullstDefs) {
   const { stage, expansion, expLevel, weights = {}, minimums, maximums, skill, derived, form, weaponLv } = opts;
   // 스킬을 켠 채로 자동 구성하면 그 보정까지 감안해 최적화한다 (상한에 걸려 파츠 선택이 달라진다)
@@ -85,6 +114,12 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
   // 레벨링크 시스템 파츠는 기본값만 붙는데, 여기서 최대치로 세면 **화면에 없는 이득**을
   // 보고 그 파츠를 고른다(고른 근거와 보이는 수치가 어긋난다).
   const base = calcStats(ms, [], stage, expansion, partsByCat, fullstDefs, expLevel, form, skill, weaponLv).total;
+
+  const wDef = DEF_WEIGHTS.reduce((s, k) => s + (Number(weights[k]) || 0), 0);
+  const useDef = wDef > 0;
+  // 세 속성을 어떤 몫으로 볼지는 **내성 가중치**가 정한다(HP 가중치는 세 축 모두를 올린다).
+  const defShare = shareOf(weights, DEF_ARMOR);
+  const baseDefMix = useDef ? durMix(base, defShare) : 0;
 
   return function score(set) {
     const res = calcStats(ms, set, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill, weaponLv);
@@ -101,8 +136,11 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
     for (const k of STAT_KEYS) {
       const w = weights[k];
       if (!w) continue;
+      // 실효 HP 축으로 대신 치는 스탯은 여기서 두 번 세지 않는다
+      if (useDef && DEF_WEIGHTS.includes(k)) continue;
       value += w * (res.total[k] - base[k]) / UNIT[k];
     }
+    if (useDef) value += wDef * (durMix(res.total, defShare) - baseDefMix) / UNIT.ehpSolid;
     // 하한 목표는 강한 페널티로 표현해 탐색이 충족 방향으로 흐르게 한다.
     let penalty = 0;
     for (const [k, target] of Object.entries(minimums || {})) {

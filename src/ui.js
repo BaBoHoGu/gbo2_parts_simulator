@@ -98,8 +98,8 @@
 
   // 내구 지표 = HP / (1 - 내성/100) — 피해 종류별 실효 HP. 원본 번들(of 함수)과 동일 공식.
   // HP·내성은 상한 반영된 total 값을 넣는다.
-  const durabilityOf = (total, armorKey) =>
-    Math.round((total.hp || 0) / (1 - Math.min(total[armorKey] || 0, 99) / 100));
+  // 공식은 core 에 있다 — 화면과 자동 구성이 **같은 자**를 쓴다(두 벌을 두면 갈린다).
+  const durabilityOf = C.durabilityOf;
 
   /* ---------- 누적치(스태거) 스킬 ---------- */
   // 방어측 스킬의 누적치 영향을 파싱한다. 두 패턴이 핵심:
@@ -4451,7 +4451,9 @@
       weaponLv: wantWeaponLv(),     // 주무장 LV 도 화면과 같은 기준으로 (레벨링크 파츠 판정)
       restarts: 1
     };
-    // 파생 지표(공격 지표·내구 지표) 목표가 하나라도 있으면 계산 훅을 넘긴다 (없으면 오버헤드 0).
+    /* 파생 지표 목표가 하나라도 있을 때만 계산 훅을 넘긴다 (없으면 오버헤드 0).
+       점수의 실효 HP 축은 이 훅을 쓰지 않는다 — core 의 durabilityOf 로 공짜로 구한다.
+       한때 여기서 늘 넘기게 했더니 자동 구성이 6.9초 → 12.5초가 됐다. */
     if ([...Object.keys(state.minimums), ...Object.keys(state.maximums)].some(k => DERIVED_KEYS.includes(k)))
       opts.derived = (set, total) => derivedMetrics(set, total);
 
