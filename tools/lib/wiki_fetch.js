@@ -6,6 +6,8 @@
 //   fetchWikiHtml(ids, onHtml)   pages/{id}.html 들을 받아 onHtml(id, html) 호출
 //   resolvePageIds(names)        機体一覧 태그 페이지에서 기체명 → 페이지ID Map
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
   + '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -36,11 +38,26 @@ async function withBrowser(fn) {
   catch { throw new Error('puppeteer-core 가 없습니다. `npm install --no-save puppeteer-core` 후 다시 실행하세요.'); }
   const chrome = findChrome();
   if (!chrome) throw new Error('시스템 Chrome/Edge 를 찾지 못했습니다. 환경변수 CHROME_PATH 로 지정하세요.');
+  /* 프로필 자리를 **우리가 정한다.** 안 정하면 puppeteer 가 임시 프로필을 만들고
+     프로세스가 끝날 때 지우는데, 윈도우가 lockfile 을 아직 잡고 있으면
+     `EBUSY ... unlink lockfile` 이 **미처리 예외**로 터져 Node 를 죽인다.
+     실제로 2026-09-30 배포가 수집·빌드를 다 마치고 그 뒤에 이걸로 멈췄다. */
+  const profile = path.join(os.tmpdir(), 'gbo2-wiki-profile-' + process.pid + '-' + Date.now());
   const browser = await puppeteer.launch({
-    executablePath: chrome, headless: 'new',
+    executablePath: chrome, headless: 'new', userDataDir: profile,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled', '--window-size=1300,900']
   });
-  try { return await fn(browser); } finally { await browser.close().catch(() => {}); }
+  try {
+    return await fn(browser);
+  } finally {
+    await browser.close().catch(() => {});
+    // 우리가 치운다 — 못 치워도 넘어간다(임시 폴더라 남아도 해롭지 않다).
+    // 닫힌 직후엔 아직 잠겨 있을 수 있어 잠깐 기다렸다 한 번 더 해 본다.
+    for (const wait of [0, 300, 1200]) {
+      if (wait) await sleep(wait);
+      try { fs.rmSync(profile, { recursive: true, force: true }); break; } catch { /* 다음 차례 */ }
+    }
+  }
 }
 
 /** 새 탭을 만들고 봇 탐지 회피 설정을 건다. */

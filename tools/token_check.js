@@ -272,15 +272,44 @@ const ok = (label, cond, extra) => {
   ok('픽업 예상 표가 빠른 순서다',
     tblOrder.length > 3 && tblOrder.every((d, i) => i === 0 || tblOrder[i - 1] <= d),
     tblOrder.slice(0, 4).join(' , '));
-  /* 「오늘」 금은 **오늘이 든 달 덩이에만** 그린다 — 그러니 이번 달이 미래시에 남아
-     있을 때만 보여야 한다. 그냥 「있어야 한다」로 뒀더니, 9월 픽업이 모두 끝나
-     10·11월만 남은 2026-09-28 에 앱은 멀쩡한데 검사가 물었다.
-     단정하지 말고 **켜짐 여부 = 이번 달이 있느냐**로 맞춘다. */
-  const nowM = new Date().getMonth() + 1;
-  const hasNowM = mb.some(t => t.startsWith(nowM + '월'));
-  ok('오늘 표시는 이번 달이 표에 있을 때만 나온다', fut.today === hasNowM,
-    '이번 달 ' + nowM + '월 ' + (hasNowM ? '있음' : '없음')
-    + ' · 표시 ' + (fut.today ? '있음' : '없음'));
+  /* 「오늘」 금은 오늘이 **어느 달 덩이의 주 눈금 안에** 들 때 그려진다.
+     달 머리글(10월·11월)로 판단하면 안 된다 — 주 눈금은 달 경계를 넘는다.
+     실제로 2026-09-30 에 10월 덩이의 첫 주 눈금이 **9/30** 이라 표시가 거기 떴는데,
+     머리글만 보던 검사는 「9월이 없으니 뜨면 안 된다」며 물었다(앱은 멀쩡했다).
+     그리는 규칙을 베끼지 않고, **화면에 찍힌 주 눈금**에서 범위를 읽어 견준다. */
+  const blocks = await pg.evaluate(() =>
+    [...document.querySelectorAll('[data-ck="pickup"] .fw-month-block')].map(bl => ({
+      head: (bl.querySelector('.fw-mhead') || {}).textContent.replace(/\s+/g, ' ').trim(),
+      weeks: [...bl.querySelectorAll('.fw-cell span')].map(e => e.textContent.trim()),
+      today: !!bl.querySelector('.fw-today'),
+    })));
+
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  // 「M/D」 눈금을 날짜로. 달이 거꾸로 가면 해가 넘어간 것이다(12월 → 1월).
+  const weekDates = (labels) => {
+    let year = now.getFullYear(), prev = -1;
+    return labels.map(t => {
+      const m = t.match(/(\d+)\/(\d+)/);
+      if (!m) return null;
+      const mm = Number(m[1]);
+      if (prev > 0 && mm < prev) year++;
+      prev = mm;
+      return new Date(year, mm - 1, Number(m[2])).getTime();
+    }).filter(Boolean);
+  };
+  const DAY = 86400000;
+  let expected = null;                       // 오늘이 든 덩이의 머리글
+  for (const b of blocks) {
+    const d = weekDates(b.weeks);
+    if (!d.length) continue;
+    if (midnight >= d[0] && midnight < d[d.length - 1] + 7 * DAY) { expected = b.head; break; }
+  }
+  const marked = blocks.filter(b => b.today).map(b => b.head);
+  ok('오늘 표시는 오늘이 든 주 눈금에만 나온다',
+    marked.length === (expected ? 1 : 0) && (!expected || marked[0] === expected),
+    { 오늘: now.toDateString(), 있어야할곳: expected || '(없음)', 실제로있는곳: marked,
+      덩이: blocks.map(b => b.head + ' [' + b.weeks.join(' ') + ']') });
 
   /* 이름에 섞여 오는 위키 태그가 글자로 보이면 안 된다 — 실제로 「건담 <ruby>DX…」가 그랬다.
      **미래시 라벨만 보면 안 잡힌다** — 태그가 있는 건담 DX 는 「벗어남」으로 빠져서 거기
