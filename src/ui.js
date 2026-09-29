@@ -4089,14 +4089,9 @@
 
     // 캐시 키의 구분자는 보통 문자로 둔다 — 예전엔 NUL(U+0000) 이 박혀 있어
     // ui.js 가 '바이너리' 로 취급돼 grep 이 이 파일을 줄 단위로 못 뒤졌다.
-    // 강화 단계도 키에 넣는다 — 단계를 내리면 슬롯이 줄어 장착 가능/불가가 뒤집히는데,
-    // 순서를 그대로 두면 「장착 가능 먼저」 정렬이 무너져 불가 타일이 앞에 남는다.
-    // (순서 고정은 '장착/해제 중에 타일이 움직이지 않게' 하려는 것이라, 단계까지 붙들 이유는 없다)
     const key = [state.partTab, q, state.ms ? state.ms.MS名 : '', state.stage].join('|');
     if (key !== partOrderKey) {
-      // 필터/기체/강화가 바뀔 때만 '장착 가능→장착 중→불가' 로 정렬해 순서를 고정한다.
-      const rank = r => (r.isEquipped ? 1 : r.chk.ok ? 0 : 2);
-      partOrder = list.map(rowOf).sort((a, b) => rank(a) - rank(b)).map(r => r.p);
+      partOrder = list.slice();          // 필터·기체·강화가 바뀌면 바탕 순서를 새로 잡는다
       partOrderKey = key;
     } else {
       // 같은 필터 안에서는 순서 유지(빠진 건 제거, 새로 든 건 뒤에).
@@ -4104,7 +4099,27 @@
       partOrder = partOrder.filter(p => set.has(p));
       for (const p of list) if (!have.has(p)) partOrder.push(p);
     }
-    return partOrder.map(rowOf);
+
+    /* 묶음이 섞였을 때만 다시 정렬한다 — '장착 가능 → 장착 중 → 불가'.
+     *
+     * 예전에는 필터가 바뀔 때만 정렬하고 장착하는 동안에는 순서를 얼렸다. 손가락 밑에서
+     * 타일이 움직이지 않게 하려던 것인데, 값을 재 보니 대가가 훨씬 컸다 —
+     * 파츠 5개를 달면 아직 달 수 있는 것은 **1~3개**뿐인데 그것이 막힌 파츠 **66개**
+     * 뒤에 흩어지고, 목록이 13~15 덩어리로 끊겼다. 쓰는 사람은 회색 타일 수십 개를
+     * 지나며 아직 되는 것을 찾아야 했다(사용자 지적).
+     *
+     * 다시 정렬하되 두 가지를 지킨다:
+     *   · **섞였을 때만** 한다. 그냥 다시 그리는 것만으로는 순서가 안 흔들린다.
+     *   · **안정 정렬**이라 묶음 안의 순서는 그대로다 — 되는 것들끼리의 자리는 안 바뀐다. */
+    const rows = partOrder.map(rowOf);
+    const rank = r => (r.isEquipped ? 1 : r.chk.ok ? 0 : 2);
+    const ranks = rows.map(rank);
+    const mixed = ranks.some((v, i) => i > 0 && v < ranks[i - 1]);
+    if (mixed) {
+      rows.sort((a, b) => rank(a) - rank(b));   // Array.prototype.sort 는 안정적이다
+      partOrder = rows.map(r => r.p);
+    }
+    return rows;
   }
 
   // 파츠 타일은 파츠 수만큼만 만들어 두고(현재 163개, 갱신 때마다 늘어난다) 상태만 갱신한다.
