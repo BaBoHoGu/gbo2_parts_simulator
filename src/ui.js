@@ -1132,7 +1132,17 @@
     if (!box || !b) return;
     // 날짜만 적으면 같은 날 두 번 빌드했을 때 어느 것이 도는지 구분이 안 된다.
     // 실기에서 "새 APK 를 깔았는데 옛 화면" 을 가릴 방법이 없어 분까지 적는다.
-    box.textContent = `데이터 ${b.stamp || b.date} · 기체 ${b.ms.toLocaleString()} · 파츠 ${b.parts} · 무장 ${b.weapons.toLocaleString()}`;
+    let txt = `데이터 ${b.stamp || b.date} · 기체 ${b.ms.toLocaleString()} · 파츠 ${b.parts} · 무장 ${b.weapons.toLocaleString()}`;
+    /* 여기 적힌 것은 **HTML 의 빌드 시각**이고, 그 HTML 은 OTA 로 갱신된다 —
+       옛 APK 를 쓰고 있어도 최신으로 보인다. 그래서 「APK 를 다시 설치하세요」라고
+       안내해도 했는지 확인할 길이 없었다(09-29·09-30).
+       앱에서는 앱 자신의 버전을 함께 적는다. 브라우저에서는 창구가 없어 그대로다. */
+    try {
+      const av = window.AndroidBridge && typeof window.AndroidBridge.appVersion === 'function'
+        ? String(window.AndroidBridge.appVersion() || '') : '';
+      if (av) txt += ` · 앱 ${av}`;
+    } catch (e) { /* 창구가 없거나 막히면 데이터만 적는다 */ }
+    box.textContent = txt;
   }
 
   /* 기체 목록을 그리는 곳은 이제 둘이다 — 기체 선택 화면과, 파츠 화면의 「기체 변경」 서랍.

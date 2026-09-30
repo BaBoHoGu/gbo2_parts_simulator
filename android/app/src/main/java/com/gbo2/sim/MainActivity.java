@@ -190,6 +190,23 @@ public class MainActivity extends Activity {
             }
 
             /**
+             * 이 **앱 자체**의 버전(versionName = 빌드 시각).
+             *
+             * 화면의 날짜 배지는 HTML 의 빌드 시각이고 그건 OTA 로 갱신된다 —
+             * 옛 APK 를 쓰고 있어도 최신으로 보인다. 그래서 「APK 를 다시 설치하세요」를
+             * 안내해도 했는지 확인할 길이 없었다. 앱이 자기 버전을 직접 말하게 한다.
+             */
+            @JavascriptInterface
+            public String appVersion() {
+                try {
+                    return getPackageManager()
+                        .getPackageInfo(getPackageName(), 0).versionName;
+                } catch (Exception e) {
+                    return "";
+                }
+            }
+
+            /**
              * 글 파일(토큰 계산기 백업 JSON 등)을 Download 폴더에. 웹 쪽의 `a.download` 는
              * WebView 에서 **아무 일도 하지 않는다** — 눌러도 조용히 끝나서, 저장 경고문이
              * 안내하는 그 버튼이 앱에서만 먹통이었다. 이미지와 같은 길로 내보낸다.
