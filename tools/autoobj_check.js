@@ -89,5 +89,31 @@ const ui = fs.readFileSync(path.join(ROOT, 'src', 'ui.js'), 'utf8');
 ok('화면이 내구 공식을 따로 들고 있지 않다',
   !/durabilityOf\s*=\s*\(total,\s*armorKey\)\s*=>\s*\n?\s*Math\.round\(/.test(ui));
 
+/* ④ 파츠 데이터의 **순서**가 답을 바꾸면 안 된다.
+   parts.json 은 생성물이라 갱신 때마다 순서가 달라질 수 있는데, 예전에는 그 순서가
+   그대로 답을 갈랐다 — 표본 8기 전부 다른 구성이 나왔고 실효 HP 차이가 최대 1,547 이었다.
+   같은 기체·같은 설정이면 어제와 오늘이 같아야 한다. */
+const reordered = {
+  뒤집음: Object.fromEntries(Object.entries(byCat).map(([k, v]) => [k, v.slice().reverse()])),
+  // 한 자리씩 민다 — 뒤집기와는 다른 흐트러짐
+  한칸밀기: Object.fromEntries(Object.entries(byCat)
+    .map(([k, v]) => [k, v.length ? v.slice(1).concat(v[0]) : v])),
+};
+const namesOf = (parts) => parts.map(p => p.name).sort().join('|');
+const orderDiff = [];
+for (const ms of sample.slice(0, 3)) {
+  const base = namesOf(O.optimize(ms, OPT, byCat, fullst).parts);
+  for (const [label, alt] of Object.entries(reordered)) {
+    const got = namesOf(O.optimize(ms, OPT, alt, fullst).parts);
+    if (got !== base) orderDiff.push({ ms: ms.MS名, 순서: label });
+  }
+}
+ok('파츠 데이터 순서가 바뀌어도 같은 구성을 낸다', orderDiff.length === 0, orderDiff.slice(0, 3));
+
+/* 같은 입력이면 몇 번을 돌려도 같아야 한다(시드 고정). */
+const ms1 = sample[0];
+const twice = [0, 1].map(() => namesOf(O.optimize(ms1, OPT, byCat, fullst).parts));
+ok('같은 입력을 두 번 돌리면 같은 구성이다', twice[0] === twice[1]);
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

@@ -222,8 +222,21 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
   const scorer = makeScorer(ms, { ...opts, stage, expansion, expLevel: opts.expLevel }, partsByCat, fullstDefs);
   const pool = all.filter(p => !locked.some(l => l.name === p.name));
 
-  // 단독으로도 장착 불가한 파츠는 후보에서 제외 (슬롯 초과 등)
-  const candidates = pool.filter(p => isValidSetWith(ms, locked.concat([p]), cap));
+  /* 단독으로도 장착 불가한 파츠는 후보에서 제외 (슬롯 초과 등).
+     그리고 **이름순으로 세워 둔다.**
+
+     parts.json 은 생성물이라 갱신 때마다 순서가 달라질 수 있는데, 그 순서가 답을
+     바꿨다. 무작위 채우기(shuffled)가 입력 순서를 타고, 동점일 때는 먼저 만난
+     후보가 이기기 때문이다. 표본 8기를 원본·뒤집음·섞음으로 돌려 보니
+     **8기 전부** 다른 구성이 나왔고 실효 HP 차이가 최대 1,547 이었다 —
+     같은 기체·같은 설정인데 어제와 다른 답이 나오는 셈이다.
+
+     localeCompare 는 쓰지 않는다. 환경(ICU)에 따라 결과가 달라져 「기계마다 다른 답」이
+     된다. 코드 단위로 곧이곧대로 견준다. */
+  const byName = (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+  const candidates = pool
+    .filter(p => isValidSetWith(ms, locked.concat([p]), cap))
+    .sort(byName);
 
   let best = null;
   let evaluations = 0;
