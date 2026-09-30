@@ -1,4 +1,5 @@
 // 빌드 결과를 실제 크로미움으로 열어 스크린샷을 남긴다 (육안 확인용).
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const fs = require('fs');
 const puppeteer = require('puppeteer');
@@ -9,7 +10,7 @@ const url = 'file:///' + path.join(DIST, 'gbo2-simulator.html').replace(/\\/g, '
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await puppeteer.launch({ args: ['--allow-file-access-from-files'] });
+  const browser = await GBO2Browser.launch({ args: ['--allow-file-access-from-files'] });
   const page = await browser.newPage();
   page.on('console', m => { if (m.type() === 'error') console.log('CONSOLE ERROR:', m.text()); });
   page.on('pageerror', e => console.log('PAGE ERROR:', e.message));

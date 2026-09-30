@@ -190,6 +190,25 @@ function Publish-Commit([string]$Root = $PSScriptRoot, [switch]$DryRun) {
     if (-not $ahead.Count) { return }
     if ($DryRun) { Write-Host "[말만] origin/$branch 로 커밋 $($ahead.Count)개를 밀었을 것" -ForegroundColor DarkCyan; return }
     Write-Host "GitHub 푸시 중… (커밋 $($ahead.Count)개)" -ForegroundColor Cyan
+
+    <# 밀기 전에 **받아서 얹는다.**
+       원격에는 공유 구성 자동 백업 커밋이 하루 한두 번 들어온다. 그동안 배포는 그냥
+       밀기만 해서, 그 사이 백업이 하나라도 들어오면 매번 푸시가 거절됐다
+       (09-28·09-29·09-30 세 번 연속, 모두 손으로 밀어야 했다).
+       코드 쪽 변경이 남아 있을 수 있으므로 --autostash 로 잠시 치웠다 되돌린다. #>
+    & git -C $Root fetch origin $branch 2>&1 | Out-Null
+    $behind = @(& git -C $Root rev-list "HEAD..origin/$branch" 2>$null)
+    if ($LASTEXITCODE -eq 0 -and $behind.Count) {
+      Write-Host "  원격이 커밋 $($behind.Count)개 앞서 있습니다 — 받아서 얹습니다." -ForegroundColor DarkGray
+      & git -C $Root rebase --autostash "origin/$branch" 2>&1 | Out-Null
+      if ($LASTEXITCODE -ne 0) {
+        # 정말 겹쳤다. 억지로 밀지 않는다 — 깨끗이 되돌리고 사람에게 넘긴다.
+        & git -C $Root rebase --abort 2>&1 | Out-Null
+        Write-Host '  원격과 겹쳐 자동으로 얹지 못했습니다 — 직접 `git pull --rebase` 후 푸시하세요.' -ForegroundColor Yellow
+        return
+      }
+    }
+
     & git -C $Root push origin HEAD 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) { Write-Host '푸시 완료.' -ForegroundColor Green }
     else { Write-Host '푸시에 실패했습니다 — 직접 `git push` 하세요.' -ForegroundColor Yellow }

@@ -9,6 +9,7 @@
 // 팔레트에서 빠진 색 때문에 어두운 화면에 흰 상자가 남았다.
 //
 // 그래서 보는 것은 셋이다: **계산이 맞는가 · 데이터가 실렸는가 · 읽히는가.**
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -32,7 +33,7 @@ const ok = (label, cond, extra) => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1500, height: 1100 });
   const errs = [];

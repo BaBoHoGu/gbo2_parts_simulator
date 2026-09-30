@@ -6,6 +6,7 @@
 // 규칙만 봐서는 실제로 눌리는지 알 수 없으므로, **좌표를 찍어 elementFromPoint 로** 확인한다.
 //   ① 늘린 만큼 위아래 가장자리에서 그 버튼이 잡히는가
 //   ② 이웃 버튼의 한가운데는 여전히 **이웃**이 잡히는가 (자리를 뺏지 않았는가)
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -72,7 +73,7 @@ const STEAL = sel => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
   await pg.goto(URL, { waitUntil: 'load', timeout: 180000 });

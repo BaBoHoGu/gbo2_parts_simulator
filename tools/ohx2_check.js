@@ -3,6 +3,7 @@
 //
 // 2배 문구가 있는 기체에만 붙고, 문구 없는 오버로드 LV3 기체엔 안 붙어야 한다.
 // 사이코뮤 증폭장치는 사이코뮤 무장에만 붙는다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const fs = require('fs');
 const ROOT = path.join(__dirname, '..');
@@ -40,7 +41,7 @@ for (const [ms, modes] of Object.entries(skills)) {
 console.log('  2배 대상 ' + expect.length + '기 / 오버로드지만 비대상 ' + notExpect.length + '기');
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e.message).slice(0, 120)));

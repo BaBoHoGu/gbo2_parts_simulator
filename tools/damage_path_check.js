@@ -12,6 +12,7 @@
 // 두 값은 **같아야 하는 게 아니라, 설명되는 만큼만 달라야** 한다:
 //   피탄 = floor(무장표 1히트 × 상성배율) × 전탄배수  (+ 고정 피해)
 // 상성 배율은 기체마다 하나뿐이므로, 한 기체 안에서 무장마다 배율이 달라지면 그것이 버그다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -39,7 +40,7 @@ const check = (label, cond, extra) => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1600, height: 1200 });
   const errs = [];

@@ -1,4 +1,5 @@
 // 스킬 도감을 열어 찍는다. 조사용.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -11,7 +12,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await puppeteer.launch({ headless: 'new', executablePath: findChrome(), args: ['--no-sandbox'] });
+  const browser = await GBO2Browser.launch({ headless: 'new', executablePath: findChrome(), args: ['--no-sandbox'] });
   const pg = await browser.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e)));

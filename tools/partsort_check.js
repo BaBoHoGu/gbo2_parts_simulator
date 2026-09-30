@@ -5,6 +5,7 @@
 // 아직 달 수 있는 것들 사이에 끼어들고 목록이 24 덩어리로 끊겼다 —
 // 쓰는 사람은 회색 타일 수십 개를 지나며 되는 것을 찾아야 했다(사용자 지적).
 // 정렬은 눈에 띄는 기능이 아니라 조용히 되돌아가기 쉽다. 실제 화면에서 재서 지킨다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const fs = require('fs');
 const ROOT = path.join(__dirname, '..');
@@ -22,7 +23,7 @@ const ok = (name, cond, extra) => {
 
 (async () => {
   if (!CHROME) { console.log('  크롬을 못 찾아 건너뜁니다.'); process.exit(0); }
-  const b = await puppeteer.launch({ executablePath: CHROME, headless: 'new',
+  const b = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new',
     args: ['--allow-file-access-from-files'] });
   const pg = await b.newPage();
   await pg.setViewport({ width: 1400, height: 900 });

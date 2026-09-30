@@ -8,6 +8,7 @@
 // 이 화면은 기체 선택 화면과 **같은 필터를 나눠 쓴다.** 그래서 「티어에서만 숨어야 할 것」이
 // 실제로 숨는지가 핵심이다 — 실제로 한 번 안 숨었다(.gallery-grid 의 display:grid 가
 // [hidden] 을 이겼다. 이 저장소가 같은 함정을 아홉 번 개별 규칙으로 막아 온 그것이다).
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -41,7 +42,7 @@ const TOTALS = {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1500, height: 1100 });
   const errs = [];
@@ -140,7 +141,7 @@ const TOTALS = {
 
   /* 폰에서도 전환이 제 모양이어야 한다. 좁은 화면에서 눌리면 글자가 세로로 쌓인다. */
   await br.close();
-  const br2 = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br2 = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg2 = await br2.newPage();
   await pg2.emulate({ viewport: { width: 390, height: 860, isMobile: true, hasTouch: true },
     userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126 Mobile Safari/537.36' });

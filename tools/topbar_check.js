@@ -7,6 +7,7 @@
 //
 // **감춘 것이 사라지면 안 된다.** 상단바에서 뺀 버튼은 반드시 메뉴 어딘가에 있어야 한다 —
 // 그것만 보는 검사를 따로 둔다(줄 수만 보면 「다 지워서 통과」가 가능하다).
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -36,7 +37,7 @@ const MUST_REACH = ['#openAuto', '#pietanBtn', '#compareBtn', '#save', '#share',
 
 (async () => {
   for (const w of [1920, 1500, 1280]) {
-    const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+    const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
     const pg = await br.newPage();
     await pg.setViewport({ width: w, height: 950 });
     await pg.goto(URL, { waitUntil: 'load', timeout: 180000 });
@@ -88,7 +89,7 @@ const MUST_REACH = ['#openAuto', '#pietanBtn', '#compareBtn', '#save', '#share',
   }
 
   // 폰 — 더 접히지만 역시 하나도 사라지면 안 된다
-  const br2 = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br2 = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg2 = await br2.newPage();
   await pg2.emulate({ viewport: { width: 390, height: 860, isMobile: true, hasTouch: true },
     userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126 Mobile Safari/537.36' });

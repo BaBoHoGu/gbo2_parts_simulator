@@ -3,6 +3,7 @@
 //
 // 칸을 늘렸을 때 헤더·행의 칸 수가 맞는지, Δ 열이 2칸에서만 나오는지,
 // 3칸 이상에서 최고값 표시가 붙는지, 가로로 페이지를 밀지 않는지 본다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
@@ -23,7 +24,7 @@ const check = (label, ok, extra) => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   // 시작 시 스크립트가 죽으면 화면은 그럴듯하게 뜨고 배선만 끊긴다 — 조용히 지나가지 않게 잡는다
   const errs = [];

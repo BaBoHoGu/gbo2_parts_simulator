@@ -8,6 +8,7 @@
 //   android/app/src/main/res/mipmap-*/ic_launcher.png   APK 아이콘 (5개 밀도)
 //   assets/brand.webp                                    좌측 상단 대표 이미지 (앱에 인라인된다)
 //   assets/favicon.png                                   브라우저 탭 아이콘 (HTML 에 인라인된다)
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -29,7 +30,7 @@ const MIPMAP = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
   if (!chrome) { console.error('시스템 Chrome/Edge 를 찾지 못했습니다.'); process.exit(1); }
 
   const dataUri = 'data:image/png;base64,' + fs.readFileSync(SRC).toString('base64');
-  const browser = await puppeteer.launch({ executablePath: chrome, headless: 'new', args: ['--no-sandbox'] });
+  const browser = await GBO2Browser.launch({ executablePath: chrome, headless: 'new', args: ['--no-sandbox'] });
   const page = await browser.newPage();
   await page.setContent('<html><body></body></html>');
 

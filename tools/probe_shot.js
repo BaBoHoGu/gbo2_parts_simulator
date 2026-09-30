@@ -1,5 +1,6 @@
 // 화면 한 곳을 찍어 눈으로 본다. 조사용.
 //   node tools/probe_shot.js <셀렉터|full> [파일이름] [폭] [높이]
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -15,7 +16,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await puppeteer.launch({ headless: 'new', executablePath: findChrome(), args: ['--no-sandbox'] });
+  const browser = await GBO2Browser.launch({ headless: 'new', executablePath: findChrome(), args: ['--no-sandbox'] });
   const pg = await browser.newPage();
   await pg.setViewport({ width: VW, height: VH, deviceScaleFactor: 2 });
   await pg.goto(URL, { waitUntil: 'load', timeout: 180000 });

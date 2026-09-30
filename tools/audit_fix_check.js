@@ -6,6 +6,7 @@
 // ③ 피탄 「격파까지」가 히트가 아니라 발(전탄) 기준인가
 // ④ 받는 쪽에도 고정 피해가 들어가는가
 // ⑤ 실효 HP 파츠가 '공격' 으로 분류되지 않는가
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
@@ -44,7 +45,7 @@ const pickMs = async (pg, q) => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e.message).slice(0, 140)));

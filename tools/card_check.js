@@ -4,6 +4,7 @@
 //
 // 배경: 카드가 피해경감을 접지 않은 내구 지표를 그리고 공격 지표 행은 아예 없었다(2026-08-31).
 // 화면과 카드는 코드가 갈라져 있어, 한쪽만 고치면 조용히 어긋난다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 
@@ -25,7 +26,7 @@ const URL = 'file:///' + FILE.replace(/\\/g, '/').replace(/ /g, '%20');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1500, height: 1000 });
   await pg.goto(URL, { waitUntil: 'load', timeout: 120000 });

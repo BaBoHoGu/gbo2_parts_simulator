@@ -9,6 +9,7 @@
 //   ② **왜** 안 넣는지를 갈래로 나눠 보여 주는가
 //   ③ 일본어가 남지 않는가 — 원문을 그대로 실으면 이 앱의 원칙이 깨진다.
 //      번역 사전은 **문장 전체**가 열쇠라, 잘라 낸 조각을 넘기면 조용히 원문이 나온다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const { TAIL_SRC } = require('./lib/janame.js');
 const ROOT = path.join(__dirname, '..');
@@ -30,7 +31,7 @@ const ok = (label, cond, extra) => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e.message).slice(0, 140)));

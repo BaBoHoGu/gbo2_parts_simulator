@@ -6,6 +6,7 @@
 // 그렇게 했는데, 나눠 쓰면 이번엔 **한쪽만 갱신되는** 사고가 난다 —
 // 필터를 서랍에서 만졌는데 저쪽 칩은 그대로이거나, 서랍을 닫아도 계속 그리거나.
 // 그래서 여는 것만 보지 않고 **양쪽이 같이 움직이는지**까지 본다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -29,7 +30,7 @@ const ok = (label, cond, extra) => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1500, height: 1000 });
   const errs = [];

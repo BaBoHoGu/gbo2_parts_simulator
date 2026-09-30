@@ -1,5 +1,6 @@
 // PNG 카드를 실제로 뽑아 저장한다. 조사용 — 배포물에 영향 없음.
 //   node tools/probe_card.js [summary|detail]
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -13,7 +14,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await puppeteer.launch({ headless: 'new', executablePath: findChrome(), args: ['--no-sandbox'] });
+  const browser = await GBO2Browser.launch({ headless: 'new', executablePath: findChrome(), args: ['--no-sandbox'] });
   const pg = await browser.newPage();
   await pg.setViewport({ width: 1500, height: 1000 });
   await pg.goto(URL, { waitUntil: 'load', timeout: 180000 });

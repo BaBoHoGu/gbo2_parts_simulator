@@ -9,6 +9,7 @@
 //    대신 **스크롤이 튀지 않고 보던 타일이 대부분 남는지**를 잰다.
 // ② 강화 단계를 내리면 슬롯이 줄어 장착 가능/불가가 뒤집히므로 순서를 다시 잡아야 한다
 // ③ 소스에 NUL(U+0000) 이 남아 있으면 안 된다 (grep 이 파일을 바이너리로 취급한다)
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const fs = require('fs');
 const ROOT = path.join(__dirname, '..');
@@ -40,7 +41,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const names = () => [...document.querySelectorAll('#partList .part-tile .pt-nm')].map(e => e.textContent);
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e.message).slice(0, 140)));

@@ -10,6 +10,7 @@
 //   ③ 상단이 상태바에 먹힘         body 의 safe-area padding 은 position:fixed 에 안 걸린다
 //   ④ 눌리지 않는 버튼            .toast{pointer-events:none} · 액션바가 드로어 위
 //   ⑤ 가로 스크롤                 무장 표가 화면을 밀어냈다
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 
@@ -148,7 +149,7 @@ async function step(pg, view, name) {
 
 async function runView(view) {
   console.log('\n■ ' + view.tag + ' (' + view.w + 'x' + view.h + ', pointer=' + (view.touch ? 'coarse' : 'fine') + ')');
-  const browser = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: ['--no-sandbox'] });
+  const browser = await GBO2Browser.launch({ headless: 'new', executablePath: CHROME, args: ['--no-sandbox'] });
   try {
     const pg = await browser.newPage();
     if (view.touch) {

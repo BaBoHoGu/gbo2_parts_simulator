@@ -5,6 +5,7 @@
 //    (예전엔 뒤의 둘이 피해경감을 빼먹어 24,572 vs 22,115 로 갈렸다)
 // ② 변형 모드에서 자동 구성이 변형 수치로 최적화한다 (후보 카드 == 적용 후 성능표)
 // ③ 「위력순」 정렬이 표에 보이는 값 순서와 맞는다 (파츠 보정 반영)
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const fs = require('fs');
 const ROOT = path.join(__dirname, '..');
@@ -37,7 +38,7 @@ const tfMs = msData.find(m => TF_FIELDS.some(f => m[f] != null));
 const tfName = tfMs ? (dict[String(tfMs.MS名).replace(/_LV\d+$/, '')] || String(tfMs.MS名)) : null;
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e.message).slice(0, 140)));

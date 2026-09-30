@@ -5,6 +5,7 @@
 // 피탄 시뮬은 「격파까지」에 이미 넣고 있는데 자동 구성이 재는 실효 HP 축에서 빠져 있으면,
 // 사용자가 본 발수를 그대로 목표로 걸었는데도 「하한 미달」 이 뜬다 — 정작 그 파츠를 뽑으라고
 // 만든 기능이 그 파츠를 못 세는 셈이다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
@@ -26,7 +27,7 @@ const check = (label, ok, extra) => {
 const num = s => Number(String(s).replace(/,/g, ''));
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e.message).slice(0, 140)));

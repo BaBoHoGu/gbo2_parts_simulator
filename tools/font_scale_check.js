@@ -9,6 +9,7 @@
 //
 // 「달라진 것이 없어야 한다」가 아니다 — 합쳤으니 달라지는 게 정상이다.
 // 보려는 것은 **얼마나·어디가** 달라졌는지다. 1px 넘게 움직인 자리는 눈에 띄므로 따로 센다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -78,7 +79,7 @@ async function snap(br, file, view) {
 }
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   let big = 0, small = 0, same = 0, onlyOne = 0;
   const bigList = [];
   for (const v of VIEWS) {

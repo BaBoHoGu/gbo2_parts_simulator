@@ -7,6 +7,7 @@
 // 대부분이 상황 한정(공중·태클·착지캔슬·발동중)인데, 상시로 잘못 두면 아무도 모르게
 // 부스트 지속이 좋게 나온다. 그래서 「상시로 잡힌 것」을 통째로 못 박아 둔다 —
 // 여기 없는 이름이 상시로 올라오면 그 순간 실패한다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -45,7 +46,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const LIST = process.argv.includes('--list');
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   await pg.goto(FILE, { waitUntil: 'load', timeout: 180000 });
   await sleep(4000);

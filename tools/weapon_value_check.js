@@ -16,6 +16,7 @@
 //   ② 「피해 쪽 배수 = 누적치 쪽 배수」로 가두려 했더니 324건이 걸렸는데 **버그는 0** 이었다 —
 //      연속발사(206)는 앱이 일부러 안 세고, 나머지는 원문이 두 칸에 다르게 적혀 있다.
 //      가둘 수 없는 것은 가두지 않는다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -81,7 +82,7 @@ function vocabMiss() {
    여기 남는 것은 **브라우저로 앱의 파서를 직접 불러야** 알 수 있는 것들뿐이다. */
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e.message).slice(0, 140)));

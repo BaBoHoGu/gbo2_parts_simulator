@@ -19,6 +19,7 @@
 //   ④ 붙인 칸이 행을 덮는가 — 안 덮으면 밀려 오는 글자가 위아래로 비친다
 //   ⑤ 이름 칸에서 칩이 잘리지 않는가 — 「스프레이 빔 포드 4발 ×4연사」가 140px 칸에 174px 필요했다
 //   ⑥ 안 넘치는 화면(데스크톱·폰가로)에는 안 켜지는가 — 그림자만 남으면 군더더기다
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const FILE = 'file:///' + path.join(ROOT, 'dist', 'gbo2-simulator.html').replace(/\\/g, '/').replace(/ /g, '%20');
@@ -118,7 +119,7 @@ async function measure(br, { w, h, mobile, viewMode }) {
 }
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const wide = await measure(br, { w: 390, h: 844, mobile: true, viewMode: 'wide' });
   const large = await measure(br, { w: 390, h: 844, mobile: true, viewMode: 'large' });
   const land = await measure(br, { w: 844, h: 390, mobile: true });

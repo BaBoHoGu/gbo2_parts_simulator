@@ -7,6 +7,7 @@
 //   · 공유 코드·갤러리 — 싣지 않는다. 남이 올린 구성을 내가 보던 LV 로 그리면
 //     위력도 레벨링크 보너스도 그 구성의 값이 아니게 된다.
 // 한쪽만 보면 반대쪽이 조용히 어긋나므로 **둘을 같이** 본다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -30,7 +31,7 @@ const ok = (label, cond, extra) => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1500, height: 1000 });
   const errs = [];

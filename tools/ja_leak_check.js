@@ -12,6 +12,7 @@
 //   · codex-jp — 번역이 원문과 다를 때 **원문 이름을 일부러 같이 보여 주는 칸**이다(ui.js).
 //   · 한자는 가나와 달리 한국어 표기에도 쓰여(「제간」 등) 거짓 경보가 나므로, 화면 글자는
 //     **가나만** 잡는다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const { TAIL_SRC } = require('./lib/janame.js');
@@ -50,7 +51,7 @@ function punctRule() {
 }
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   const errs = [];
   pg.on('pageerror', e => errs.push(String(e.message).slice(0, 140)));

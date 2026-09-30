@@ -1,4 +1,5 @@
 // 파츠 적용 화면을 찍는다. 조사용.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -10,7 +11,7 @@ const OUT = path.join(ROOT, 'dist', 'shots');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await puppeteer.launch({ headless: 'new', executablePath: findChrome(), args: ['--no-sandbox'] });
+  const browser = await GBO2Browser.launch({ headless: 'new', executablePath: findChrome(), args: ['--no-sandbox'] });
   const pg = await browser.newPage();
   await pg.setViewport({ width: 1500, height: 950, deviceScaleFactor: 2 });
   await pg.goto(URL, { waitUntil: 'load', timeout: 180000 });

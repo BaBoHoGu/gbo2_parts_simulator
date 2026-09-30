@@ -4,6 +4,7 @@
 //
 // 배경: 계산부(damage.js)는 맞는데 무장 표를 그리는 호출이 expansion 인자를 빠뜨려
 // 화면에만 반영이 안 된 적이 있다(2026-08-29). 계층 테스트로는 안 잡혀서 실측을 남긴다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 
@@ -33,7 +34,7 @@ const readTimes = () => [...document.querySelectorAll('#weaponList > *')]
   .filter(t => t && t !== '—');
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1500, height: 1000 });
   await pg.goto(URL, { waitUntil: 'load', timeout: 120000 });

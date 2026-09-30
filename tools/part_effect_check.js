@@ -9,6 +9,7 @@
 // 두 방향을 다 본다:
 //   ① 아무것도 안 바뀌는데 「반영 안 됨」 고지가 없다  → 사용자가 슬롯을 헛되이 쓴다
 //   ② 고지를 달아 뒀는데 실제로는 수치가 바뀐다        → 고지가 거짓말이다
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -42,7 +43,7 @@ const CONDITIONAL = new Set([
 ]);
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1600, height: 1200 });
   const errs = [];

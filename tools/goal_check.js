@@ -3,6 +3,7 @@
 //
 // 「이 무장 N발 버티기」 를 누르면 자동 구성의 실효 HP 하한이 걸려야 한다.
 // 목표가 안 걸리면 관통·폭풍 경감 장갑 같은 조건부 파츠는 계속 안 뽑힌다.
+const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
@@ -23,7 +24,7 @@ const check = (label, ok, extra) => {
 };
 
 (async () => {
-  const br = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+  const br = await GBO2Browser.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   const pg = await br.newPage();
   await pg.setViewport({ width: 1500, height: 1000 });
   await pg.goto(URL, { waitUntil: 'load', timeout: 120000 });
