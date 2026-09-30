@@ -115,5 +115,38 @@ const ms1 = sample[0];
 const twice = [0, 1].map(() => namesOf(O.optimize(ms1, OPT, byCat, fullst).parts));
 ok('같은 입력을 두 번 돌리면 같은 구성이다', twice[0] === twice[1]);
 
+/* ⑤ **단순 탐욕보다 못하면 안 된다.**
+   예전에는 못했다 — 한 장씩 가장 좋은 것만 집는 탐욕이 우리 탐색을 이기는 기체가 있었다
+   (54,782 vs 56,526). 무작위로 채우고 국소탐색만 하면 「둘이 모여야 효과가 나는 수」를
+   놓치기 때문이다(상한만 올려 주는 신형 장갑 넷이 그런 파츠다).
+   빔 서치가 그것을 메웠는지 여기서 지킨다 — 되돌리면 바로 깨진다. */
+const greedyBuild = (ms) => {
+  const pool = [].concat(...Object.values(byCat)).filter(p => !C.categoryRestricted(p, ms));
+  const stat = set => C.calcStats(ms, set, 6, '拡張スキル無し', byCat, fullst, null, 'normal').total;
+  let sel = [];
+  for (let i = 0; i < C.MAX_PARTS; i++) {
+    let best = null;
+    for (const p of pool) {
+      if (sel.some(q => q.name === p.name)) continue;
+      const cand = sel.concat([p]);
+      if (!O.isValidSet(ms, cand, 6, fullst)) continue;
+      const v = ehpMix(stat(cand));
+      if (!best || v > best.v) best = { cand, v };
+    }
+    if (!best) break;
+    sel = best.cand;
+  }
+  return ehpMix(stat(sel));
+};
+
+const beaten = [];
+for (const ms of sample) {
+  const r = O.optimize(ms, OPT, byCat, fullst);
+  const mine = ehpMix(C.calcStats(ms, r.parts, 6, '拡張スキル無し', byCat, fullst, null, 'normal').total);
+  const greedy = greedyBuild(ms);
+  if (mine < greedy - 1) beaten.push({ ms: ms.MS名, 지금: Math.round(mine), 탐욕: Math.round(greedy) });
+}
+ok('단순 탐욕보다 못한 기체가 없다', beaten.length === 0, beaten.slice(0, 3));
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

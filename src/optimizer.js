@@ -286,12 +286,66 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
   const hasTargets = Object.values(opts.minimums || {}).some(v => v)
     || Object.values(opts.maximums || {}).some(v => v != null && v !== '');
 
+  /* ── 빔 서치 ──────────────────────────────────────────────────
+     깊이마다 **상위 몇 개의 부분해**를 들고 한 장씩 전진한다.
+
+     왜 필요한가 — 지금까지는 무작위로 채운 뒤 국소탐색으로 다듬었다. 그 방식은
+     「둘이 모여야 비로소 효과가 나는 수」를 놓친다. 이 저장소에도 그런 파츠가 넷 있다:
+       新型耐実弾装甲 · 新型耐ビーム装甲 · 新型耐格闘装甲 (상한 +20)
+       高純度推進剤 (상한 +10)
+     혼자 달면 이득이 **0** 이라 첫 수에서 버려지고, 짝이 될 장갑과 만날 기회가 없다.
+     상위 몇 개를 들고 가면 다음 수에서 살아난다.
+
+     재서 정했다 — 재시작 6회로는 40회 대비 평균 1,274(최대 3,810) 실효 HP 를
+     놓치고 있었다. 운에 기대고 있었다는 뜻이다.
+
+     비용은 너비 × 후보 × 칸 이라 재시작을 늘리는 것보다 훨씬 싸다.
+     동점은 집합 이름으로 갈라 **순서에 흔들리지 않게** 한다(③ 과 같은 이유). */
+  /* 너비는 재서 정했다 — 6:8/12 · 10:9/12 · 16:10/12 · 24:10/12 (기준 이상 기체 수).
+     16 에서 수렴하고 24 는 평균 +68 뿐이라 값을 더 치르지 않는다. */
+  const BEAM_WIDTH = opts.beamWidth || 16;
+  const setKey = set => set.map(p => p.name).sort().join('|');
+
+  function beamSearch() {
+    const room = MAX_PARTS - locked.length;
+    if (room <= 0 || !candidates.length) return null;
+    let frontier = [{ set: locked.slice(), sc: evaluate(locked.slice()), k: setKey(locked) }];
+    let best = frontier[0];
+    for (let depth = 0; depth < room; depth++) {
+      const seen = new Set();
+      const next = [];
+      for (const st of frontier) {
+        for (const p of candidates) {
+          if (st.set.some(q => q.name === p.name)) continue;
+          const cand = st.set.concat([p]);
+          if (!isValidSetWith(ms, cand, cap)) continue;
+          const k = setKey(cand);
+          if (seen.has(k)) continue;          // 순서만 다른 같은 집합은 한 번만 본다
+          seen.add(k);
+          next.push({ set: cand, sc: evaluate(cand), k });
+        }
+      }
+      if (!next.length) break;
+      next.sort((a, b) => (b.sc.value - a.sc.value) || (a.k < b.k ? -1 : a.k > b.k ? 1 : 0));
+      // 파츠가 적은 해가 최고일 수도 있다 — 깊이마다 최고를 따로 기억한다
+      if (next[0].sc.value > best.sc.value) best = next[0];
+      frontier = next.slice(0, BEAM_WIDTH);
+    }
+    return best.set;
+  }
+
+  // 목표(하한/상한)가 걸려 있으면 충족 우선 재구성(feasBuild)이 먼저다 — 그 길은 건드리지 않는다.
+  const beamStart = hasTargets ? null : beamSearch();
+
   for (let r = 0; r < restarts; r++) {
     // --- 초기해 ---
     // 목표(하한/상한)가 있으면 앞쪽 재시작은 '충족 우선 구성'에서 출발해 좁은 실현영역을 잡는다.
     // 나머지 재시작은 무작위로 채워 다양성을 준다.
     let cur;
-    if (hasTargets && r < Math.max(2, Math.ceil(restarts / 3))) {
+    if (r === 0 && beamStart) {
+      // 첫 판은 빔 서치가 찾아 둔 곳에서 시작해 국소탐색으로 다듬는다
+      cur = beamStart.slice();
+    } else if (hasTargets && r < Math.max(2, Math.ceil(restarts / 3))) {
       cur = feasBuild();
       for (const p of shuffled(candidates, rnd)) {   // 남는 슬롯을 채워 가치도 확보
         if (cur.length >= MAX_PARTS) break;
