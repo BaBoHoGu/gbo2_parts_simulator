@@ -43,6 +43,7 @@
   <button id="galleryBtn" class="btn-ghost" title="다른 사람이 올린 구성을 둘러보고 그대로 가져옵니다">🌏 갤러리</button>
   <button id="codexBtn" class="btn-ghost" title="기체와 상관없이 스킬을 분류별로 모아 봅니다">📖 스킬 도감</button>
   <button id="tokenBtn" class="btn-ghost" title="토큰 수급·픽업 달성 계산기">🪙 토큰</button>
+  <button id="planBtn" class="btn-ghost" title="어느 기체를 먼저 강화할지 순위를 매겨 둡니다">🗂 강화 플랜</button>
 
   <!-- ── 아래는 상단바에 직접 보이지 않는다 — 「⬆ 내보내기」와 「⋯」 메뉴의 원본이다.
        메뉴는 원본의 글자·설명을 읽어 만들고, 누르면 원본을 click() 한다.
@@ -219,6 +220,64 @@
 /*__TOKEN_BODY__*/
   </div>
 </section>
+
+<!-- ⑥ 강화 플랜 — 어느 기체를 먼저 강화할지 1~3순위로 묶어 둔다.
+     파츠 구성은 담지 않는다(그건 저장 목록이 한다). 여기 담는 것은 **목표**뿐이다:
+     어느 기체를 · 어디까지 강화할지(미강화/4단계/풀강) · 어떤 확장 스킬을 올릴지. -->
+<section class="screen screen-plan" id="screenPlan">
+  <div class="select-head">
+    <div class="select-title">
+      <button id="planBack" class="back-btn" title="돌아가기">‹ 돌아가기</button>
+      <h1>강화 플랜</h1>
+      <span class="data-fresh" id="planNote"></span>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">속성</span><div class="chips" id="planAttrChips"></div></div>
+      <div class="filter-group"><span class="filter-lb">코스트</span><div class="chips" id="planCostChips"></div></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group"><span class="filter-lb">레벨</span><div class="chips" id="planLvChips"></div></div>
+      <div class="filter-group"><span class="filter-lb">등급</span><div class="chips" id="planRarityChips"></div></div>
+      <div class="filter-group"><span class="filter-lb">순위</span><div class="chips" id="planRankChips"></div></div>
+    </div>
+  </div>
+  <div class="plan-body" id="planBody"></div>
+</section>
+
+<!-- 강화 플랜 — 한 칸 설정. 기체는 「기체 변경」 서랍을 그대로 빌려 고른다. -->
+<div class="auto-modal-back" id="planEditBack" hidden></div>
+<div class="auto-modal plan-edit-modal" id="planEditModal" hidden role="dialog" aria-label="강화 플랜 항목">
+  <div class="am-head">
+    <b id="planEditTitle">강화 플랜 추가</b>
+    <span class="grow"></span>
+    <button id="planEditClose" class="btn-ghost">닫기</button>
+  </div>
+  <div class="admin-body plan-edit-body">
+    <div class="pe-row">
+      <label>기체</label>
+      <button type="button" id="planPickMs" class="btn-ghost grow">+ 기체 선택</button>
+    </div>
+    <div class="pe-row">
+      <label>강화</label>
+      <span class="seg" id="planStageSeg"></span>
+    </div>
+    <div class="pe-row">
+      <label for="planExp">확장 스킬</label>
+      <select id="planExp" class="grow"></select>
+      <select id="planExpLevel" title="확장 스킬 레벨"></select>
+    </div>
+    <div class="pe-row">
+      <label>순위</label>
+      <span class="seg" id="planRankSeg"></span>
+    </div>
+    <div class="pe-note" id="planEditNote"></div>
+    <div class="pe-actions">
+      <button type="button" id="planDelete" class="btn-ghost" hidden>삭제</button>
+      <span class="grow"></span>
+      <button type="button" id="planSave" class="btn-primary">저장</button>
+    </div>
+  </div>
+</div>
 
 <!-- ④ 스킬 도감 — 기체와 상관없이 위키 분류대로 스킬을 모아 본다 -->
 <section class="screen screen-codex" id="screenCodex">

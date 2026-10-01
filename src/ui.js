@@ -1262,18 +1262,18 @@
 
   function setView(view) {
     const changed = state.view !== view;
-    if ((view === 'gallery' || view === 'codex' || view === 'token') && changed) viewBefore = state.view;
+    if ((view === 'gallery' || view === 'codex' || view === 'token' || view === 'plan') && changed) viewBefore = state.view;
     state.view = view;
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
     if (view === 'select' && changed) { renderMsList(); renderViewChips(); }
-    for (const v of ['select', 'build', 'gallery', 'codex', 'token'])
+    for (const v of ['select', 'build', 'gallery', 'codex', 'token', 'plan'])
       document.body.classList.toggle('view-' + v, view === v);
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
       li.classList.toggle('on', li.dataset.step === view));
     // 화면 전환 시 스크롤을 위로 되돌린다
     const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex'),
-      token: $('#screenToken') }[view] || $('#screenSelect');
+      token: $('#screenToken'), plan: $('#screenPlan') }[view] || $('#screenSelect');
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
@@ -4892,7 +4892,9 @@
      목록은 등록해 두고 그린다. 닫을 때 등록을 빼는 이유: 안 빼면 서랍이 닫힌 뒤에도
      renderMsList() 가 숨은 칸을 계속 그린다(기체 1,709 개짜리 목록이라 공짜가 아니다). */
   let msDrawerView = null;
-  function openMsDrawer(open) {
+  /* onPick 을 넘기면 **고른 뒤 할 일만** 갈아친다 (강화 플랜이 기체를 고를 때 쓴다).
+     목록·필터·검색은 그대로 빌려 쓴다 — 같은 목록을 또 만들면 필터가 둘로 갈라진다. */
+  function openMsDrawer(open, onPick) {
     const dr = $('#msDrawer');
     if (!dr) return;
     if (open && !msDrawerView) {
@@ -4900,9 +4902,11 @@
         box: '#msDrawerList', count: '#msDrawerCount', showInfo: false,
         // 서랍에서는 지금 쓰고 있는 기체에 테두리를 준다 (기체 선택 화면은 정보 칸 기준이다)
         isSel: m => !!(state.ms && state.ms.MS名 === m.MS名),
+        pick: onPick,
         // 누르면 곧바로 바꾼다. selectMs 가 하는 일을 그대로 쓴다 — 목록에서 고르는 것과
         // 결과가 달라지면 「어느 쪽으로 골랐는지」에 따라 구성이 남거나 사라진다.
         onPick: m => {
+          if (msDrawerView && msDrawerView.pick) { msDrawerView.pick(m); return; }
           const same = state.ms && state.ms.MS名 === m.MS名;
           openMsDrawer(false);
           if (same) return;
@@ -5320,6 +5324,318 @@
   // 스킬명을 긴 것부터. 짧은 이름이 긴 이름을 잘라먹지 않게 한다.
   let _skNames = null;
   const skillNamesByLen = () => (_skNames ||= Object.keys(skillText).sort((a, b) => b.length - a.length));
+
+  /* ---------- 강화 플랜 ----------
+     「어느 기체를 먼저 강화할지」를 1~3순위로 묶어 두는 화면.
+     파츠 구성은 담지 않는다 — 그건 저장 목록이 한다. 여기 담는 것은 **목표**뿐이다:
+     기체 · 어디까지 강화할지(미강화/4단계/풀강) · 어떤 확장 스킬을 올릴지.
+
+     순위를 옮기는 길을 둘 둔다. 드래그는 손잡이(⠿)에서 포인터 이벤트로 직접 만든다 —
+     HTML5 드래그는 **터치에서 아예 안 걸려서**, 폰에서 쓰는 이 앱에서는 쓸 수 없다.
+     그래도 드래그가 어려운 자리(보조기기·좁은 화면)가 있으니 카드마다 1·2·3 단추도 둔다. */
+  const PLAN_KEY = 'gbo2.plan';
+  const PLAN_RANKS = [1, 2, 3];
+  let planItems = [];              // { id, ms, stage, exp, expLevel, rank }
+  let planEdit = null;             // 지금 모달에서 고치고 있는 항목 (새 항목이면 id 없음)
+  let planFilter = { attr: '', cost: 'all', lv: 'all', rarity: 'all', rank: 'all' };
+
+  function loadPlan() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(PLAN_KEY) || '[]');
+      planItems = (Array.isArray(raw) ? raw : []).filter(x => x && x.ms).map(x => ({
+        id: String(x.id || (Date.now() + '-' + Math.random().toString(36).slice(2, 7))),
+        ms: String(x.ms),
+        stage: [0, 4, 6].includes(Number(x.stage)) ? Number(x.stage) : 6,
+        exp: typeof x.exp === 'string' ? x.exp : C.EXPANSION_NONE,
+        expLevel: Math.min(Math.max(Number(x.expLevel) || 1, 1), C.MAX_EXPANSION_LEVEL),
+        rank: PLAN_RANKS.includes(Number(x.rank)) ? Number(x.rank) : 1
+      }));
+    } catch { planItems = []; }
+  }
+  function savePlan() {
+    try { localStorage.setItem(PLAN_KEY, JSON.stringify(planItems)); } catch { /* 무시 */ }
+  }
+
+  /** 이 항목의 기체 데이터. 데이터가 갱신돼 이름이 사라졌으면 null — 카드가 그 사실을 적는다. */
+  const planMsOf = it => msData.find(m => m.MS名 === it.ms) || null;
+
+  function planPasses(it) {
+    const f = planFilter;
+    if (f.rank !== 'all' && it.rank !== f.rank) return false;
+    const ms = planMsOf(it);
+    // 기체를 못 찾으면 기체 기준 필터로는 거르지 않는다 — 조용히 사라지면 지울 수도 없다
+    if (!ms) return f.attr === '' && f.cost === 'all' && f.lv === 'all' && f.rarity === 'all';
+    if (f.attr && ms.属性 !== f.attr) return false;
+    if (f.cost === 'low') { if (ms.コスト > 250) return false; }
+    else if (f.cost !== 'all' && ms.コスト !== f.cost) return false;
+    if (f.lv === '4+') { if (msLevel(ms) < 4) return false; }
+    else if (f.lv !== 'all' && msLevel(ms) !== f.lv) return false;
+    if (f.rarity !== 'all' && msRarity(ms) !== f.rarity) return false;
+    return true;
+  }
+
+  function openPlan(open) {
+    if (!open) { setView(viewBefore === 'plan' ? 'select' : (viewBefore || 'select')); return; }
+    setView('plan');
+    renderPlan();
+  }
+
+  function renderPlan() {
+    const body = $('#planBody');
+    if (!body) return;
+    body.innerHTML = '';
+    const shown = planItems.filter(planPasses);
+    const note = $('#planNote');
+    if (note) note.textContent = planItems.length
+      ? (shown.length === planItems.length ? planItems.length + '개' : shown.length + ' / ' + planItems.length + '개')
+      : '';
+
+    for (const rank of PLAN_RANKS) {
+      const zone = el('div', 'plan-zone');
+      const mine = shown.filter(it => it.rank === rank);
+      const head = el('div', 'plan-zone-head');
+      head.append(el('span', '', rank + '순위'));
+      head.append(el('span', 'pz-count', mine.length + '개'));
+      zone.append(head);
+
+      const drop = el('div', 'plan-drop');
+      drop.dataset.rank = String(rank);
+      if (!mine.length) {
+        drop.append(el('div', 'plan-empty',
+          planItems.length ? '여기로 끌어다 놓거나, ＋로 추가하세요.' : '＋로 기체를 추가하세요.'));
+      }
+      for (const it of mine) drop.append(planCard(it));
+
+      const add = el('button', 'plan-add', '＋ 기체 추가');
+      add.onclick = () => openPlanEdit(null, rank);
+      drop.append(add);
+      zone.append(drop);
+      body.append(zone);
+    }
+  }
+
+  function planCard(it) {
+    const ms = planMsOf(it);
+    const card = el('div', 'plan-card');
+    card.dataset.id = it.id;
+
+    const grip = el('div', 'plan-grip', '⠿');
+    grip.title = '끌어서 순위 옮기기';
+    card.append(grip);
+    planDragFrom(grip, card, it);
+
+    if (ms) card.append(img(msImg(ms.MS名), 'ms', ms.MS名));
+
+    const main = el('div', 'plan-main');
+    main.append(el('div', 'plan-name', ms ? T.msName(ms.MS名) : it.ms));
+
+    const tags = el('div', 'plan-tags');
+    if (ms) {
+      tags.append(el('span', '', T.attrName(ms.属性) || '-'));
+      tags.append(el('span', '', '코스트 ' + ms.コスト));
+      const r = msRarity(ms);
+      if (r) tags.append(el('span', '', r + '성'));
+    } else {
+      // 데이터에서 사라진 기체 — 말없이 비우지 않고 그대로 적는다
+      tags.append(el('span', '', '데이터에 없는 기체'));
+    }
+    tags.append(el('span', 'pt-goal', STAGE_LABEL[it.stage] || String(it.stage)));
+    if (it.exp !== C.EXPANSION_NONE)
+      tags.append(el('span', 'pt-goal', expShort(it.exp) + ' LV' + it.expLevel));
+    main.append(tags);
+
+    // 드래그를 못 쓰는 자리를 위한 두 번째 길
+    const move = el('div', 'plan-move');
+    for (const r of PLAN_RANKS) {
+      const b = el('button', r === it.rank ? 'on' : '', String(r));
+      b.title = r + '순위로 옮기기';
+      b.onclick = ev => {
+        ev.stopPropagation();
+        if (r === it.rank) return;
+        it.rank = r; savePlan(); renderPlan();
+      };
+      move.append(b);
+    }
+    main.append(move);
+    card.append(main);
+
+    card.title = (ms ? T.msName(ms.MS名) : it.ms) + ' — 눌러서 고치기';
+    card.onclick = () => openPlanEdit(it, it.rank);
+    return card;
+  }
+
+  /* 포인터로 끄는 드래그. 손잡이에서만 시작한다 — 카드 전체에 touch-action: none 을 걸면
+     목록 스크롤이 죽는다. 임계값(6px)을 넘겨야 끌기로 보고, 그 전엔 그냥 눌린 것이다. */
+  function planDragFrom(handle, card, it) {
+    handle.addEventListener('pointerdown', down => {
+      if (down.button != null && down.button > 0) return;
+      down.preventDefault();
+      const x0 = down.clientX, y0 = down.clientY;
+      let ghost = null, overBox = null;
+      const rect = card.getBoundingClientRect();
+      const dx = x0 - rect.left, dy = y0 - rect.top;
+
+      const start = () => {
+        ghost = card.cloneNode(true);
+        ghost.classList.add('ghost');
+        ghost.style.width = rect.width + 'px';
+        document.body.append(ghost);
+        card.classList.add('dragging');
+        document.body.classList.add('plan-dragging');
+      };
+      const paint = (ev) => {
+        ghost.style.left = (ev.clientX - dx) + 'px';
+        ghost.style.top = (ev.clientY - dy) + 'px';
+        // 손가락 아래 있는 받는 자리 — 유령은 pointer-events: none 이라 가리지 않는다
+        const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        const box = under && under.closest ? under.closest('.plan-drop') : null;
+        if (box !== overBox) {
+          if (overBox) overBox.classList.remove('over');
+          overBox = box;
+          if (overBox) overBox.classList.add('over');
+        }
+      };
+      const move = ev => {
+        if (!ghost && Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 6) return;
+        if (!ghost) start();
+        paint(ev);
+      };
+      const up = ev => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', up);
+        if (!ghost) return;                       // 끌지 않았다 — 그냥 누른 것
+        ghost.remove();
+        card.classList.remove('dragging');
+        document.body.classList.remove('plan-dragging');
+        if (overBox) overBox.classList.remove('over');
+        const rank = overBox ? Number(overBox.dataset.rank) : null;
+        ev.stopPropagation();
+        if (!rank || rank === it.rank) return;
+        it.rank = rank; savePlan(); renderPlan();
+      };
+      // 손잡이가 포인터를 붙잡아 둔다 — 그래야 카드를 다시 그려도 끌기가 끊기지 않는다
+      try { handle.setPointerCapture(down.pointerId); } catch { /* 무시 */ }
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', up);
+    });
+  }
+
+  function openPlanEdit(it, rank) {
+    planEdit = it
+      ? { ...it }
+      : { ms: '', stage: 6, exp: C.EXPANSION_NONE, expLevel: 1, rank: rank || 1 };
+    $('#planEditTitle').textContent = it ? '강화 플랜 고치기' : '강화 플랜 추가';
+    $('#planDelete').hidden = !it;
+    syncPlanEdit();
+    $('#planEditModal').hidden = false;
+    $('#planEditBack').hidden = false;
+  }
+  function closePlanEdit() {
+    $('#planEditModal').hidden = true;
+    $('#planEditBack').hidden = true;
+    planEdit = null;
+  }
+
+  /** 모달의 칸들을 planEdit 에서 다시 칠한다 (한 방향으로만 흐르게 — 손으로 토글하면 어긋난다). */
+  function syncPlanEdit() {
+    if (!planEdit) return;
+    const ms = msData.find(m => m.MS名 === planEdit.ms) || null;
+    $('#planPickMs').textContent = ms ? T.msName(ms.MS名) : '+ 기체 선택';
+    for (const b of document.querySelectorAll('#planStageSeg .seg-btn'))
+      b.classList.toggle('on', Number(b.dataset.v) === planEdit.stage);
+    for (const b of document.querySelectorAll('#planRankSeg .seg-btn'))
+      b.classList.toggle('on', Number(b.dataset.v) === planEdit.rank);
+    $('#planExp').value = planEdit.exp;
+    $('#planExpLevel').value = String(planEdit.expLevel);
+    $('#planExpLevel').disabled = planEdit.exp === C.EXPANSION_NONE;
+    $('#planSave').disabled = !planEdit.ms;
+    $('#planEditNote').textContent = planEdit.ms ? '' : '기체를 먼저 고르세요.';
+  }
+
+  function initPlan() {
+    loadPlan();
+
+    // 강화 단계 · 순위 — 칸을 코드에 박지 않고 목록에서 만든다
+    const stageSeg = $('#planStageSeg');
+    for (const v of [0, 4, 6]) {
+      const b = el('button', 'seg-btn', STAGE_LABEL[v]);
+      b.type = 'button'; b.dataset.v = String(v);
+      b.onclick = () => { planEdit.stage = v; syncPlanEdit(); };
+      stageSeg.append(b);
+    }
+    const rankSeg = $('#planRankSeg');
+    for (const v of PLAN_RANKS) {
+      const b = el('button', 'seg-btn', v + '순위');
+      b.type = 'button'; b.dataset.v = String(v);
+      b.onclick = () => { planEdit.rank = v; syncPlanEdit(); };
+      rankSeg.append(b);
+    }
+
+    // 확장 스킬 — 파츠 화면과 **같은 목록**을 쓴다
+    const exp = $('#planExp');
+    for (const name of C.EXPANSION_SKILLS) exp.append(new Option(C.EXPANSION_LABEL[name] || name, name));
+    const expLv = $('#planExpLevel');
+    for (let lv = 1; lv <= C.MAX_EXPANSION_LEVEL; lv++) expLv.append(new Option('LV' + lv, String(lv)));
+    exp.onchange = () => { planEdit.exp = exp.value; syncPlanEdit(); };
+    expLv.onchange = () => { planEdit.expLevel = Number(expLv.value); syncPlanEdit(); };
+
+    // 기체 선택은 「기체 변경」 서랍을 그대로 빌린다 — 목록·필터·검색이 이미 한 벌 있다
+    $('#planPickMs').onclick = () => openMsDrawer(true, m => {
+      planEdit.ms = m.MS名;
+      openMsDrawer(false);
+      syncPlanEdit();
+    });
+
+    $('#planSave').onclick = () => {
+      if (!planEdit || !planEdit.ms) return;
+      if (planEdit.id) {
+        const i = planItems.findIndex(x => x.id === planEdit.id);
+        if (i >= 0) planItems[i] = { ...planEdit };
+      } else {
+        planItems.push({ ...planEdit, id: Date.now() + '-' + Math.random().toString(36).slice(2, 7) });
+      }
+      savePlan();
+      closePlanEdit();
+      renderPlan();
+    };
+    $('#planDelete').onclick = () => {
+      if (!planEdit || !planEdit.id) return;
+      planItems = planItems.filter(x => x.id !== planEdit.id);
+      savePlan();
+      closePlanEdit();
+      renderPlan();
+    };
+    $('#planEditClose').onclick = closePlanEdit;
+    $('#planEditBack').onclick = closePlanEdit;
+
+    // 상단 필터 — 기체 선택 화면과 **같은 칩 목록**을 쓴다(따로 두면 어긋난다)
+    const planChips = (boxSel, items, key) => {
+      const box = $(boxSel);
+      if (!box) return;
+      for (const it of items) {
+        const chip = el('button', 'chip' + (planFilter[key] === it.v ? ' on' : '') + (it.cls ? ' ' + it.cls : ''), it.label);
+        chip.onclick = () => {
+          planFilter[key] = it.v;
+          [...box.children].forEach(c => c.classList.remove('on'));
+          chip.classList.add('on');
+          renderPlan();
+        };
+        box.append(chip);
+      }
+    };
+    planChips('#planAttrChips',
+      [{ label: '전체', v: '' },
+       { label: T.attrName('強襲'), v: '強襲', cls: 'attr-強襲' },
+       { label: T.attrName('汎用'), v: '汎用', cls: 'attr-汎用' },
+       { label: T.attrName('支援'), v: '支援', cls: 'attr-支援' }], 'attr');
+    planChips('#planCostChips', COST_CHIPS, 'cost');
+    planChips('#planLvChips', LEVEL_CHIPS, 'lv');
+    planChips('#planRarityChips', RARITY_CHIPS, 'rarity');
+    planChips('#planRankChips',
+      [{ label: '전체', v: 'all' }].concat(PLAN_RANKS.map(r => ({ label: r + '순위', v: r }))), 'rank');
+  }
 
   /* ---------- 스킬 도감 ---------- */
   // 기체와 상관없이 스킬을 위키 분류대로 모아 본다.
@@ -9054,6 +9370,11 @@
       undoToast('파츠 ' + snap.equipped.length + '개를 모두 해제', snap);
     };
 
+    // 강화 플랜
+    $('#planBtn').onclick = () => openPlan(true);
+    $('#planBack').onclick = () => openPlan(false);
+    initPlan();
+
     // 저장: 이름을 지정해 목록에 담는다 / 불러오기: 저장 목록을 카드로 연다
     $('#save').onclick = saveCurrentBuild;
     $('#load').onclick = () => openSavedModal(true);
@@ -9298,8 +9619,20 @@
       if (!$('#expHelpModal').hidden) { openExpHelp(false); return true; }
       if (!$('#uploadModal').hidden) { openUpload(false); return true; }
       if (!$('#adminModal').hidden) { openAdmin(false); return true; }
+      /* 플랜 모달이 열려 있으면 그것이 먼저다. 단, 그 위에 기체 서랍이 또 열려 있으면
+         서랍이 먼저다 — 아래의 서랍 처리는 화면 검사보다 뒤에 있어서 여기서 같이 본다
+         (순서를 위로 옮기면 피탄·비교 모달보다 앞서게 되므로 건드리지 않는다). */
+      if (!$('#planEditModal').hidden) {
+        if ($('#msDrawer').classList.contains('open')) { openMsDrawer(false); return true; }
+        closePlanEdit();
+        return true;
+      }
       if (state.view === 'codex') { openCodex(false); return true; }
       if (state.view === 'gallery') { openGallery(false); return true; }
+      if (state.view === 'plan') { openPlan(false); return true; }
+      /* 토큰 화면이 여기 **없었다** — 뒤로가기를 누르면 돌아가지 않고 앱이 닫혔다
+         (돌아가는 길이 「‹ 돌아가기」 버튼 하나뿐이었다). 화면을 하나 더 붙이면서 같이 고친다. */
+      if (state.view === 'token') { setView(viewBefore || 'select'); return true; }
       if (!$('#pietanModal').hidden) { openPietan(false); return true; }
       if (!$('#compareModal').hidden) { openCompareModal(false); return true; }
       if (!$('#ownedModal').hidden) { openOwnedModal(false); return true; }
@@ -9441,7 +9774,7 @@
   const EXPORT_MENU = ['#save', '#share', '#pngBtn', '#uploadBtn'];
   const MORE_MENU = ['#load', '#importBtn', '#ownedBtn', '#updateBtn', '#viewModeBtn'];
   // 좁은 화면에서는 이것들도 「⋯」로 접는다 — 폰 상단바에 여덟 개는 못 선다
-  const MOBILE_FOLD = ['#compareBtn', '#galleryBtn', '#codexBtn', '#tokenBtn'];
+  const MOBILE_FOLD = ['#compareBtn', '#galleryBtn', '#codexBtn', '#tokenBtn', '#planBtn'];
 
   /** 원본 버튼들을 항목으로 하는 메뉴를 연다. 이미 열려 있으면 닫는다. */
   function openTopbarMenu(anchor, selectors) {
@@ -9497,17 +9830,18 @@
     bar.append(btn);
     btn.onclick = ev => {
       ev.stopPropagation();
-      // 좁은 화면에서는 접어 둔 것들을 앞에 붙인다 — 상단바에서 사라진 것이 여기 있어야 한다
-      const list = isMobileFold() ? MOBILE_FOLD.concat(MORE_MENU) : MORE_MENU;
+      /* 상단바에서 **지금 안 보이는 것**을 앞에 붙인다 — 사라진 것이 여기 있어야 한다.
+         예전엔 「폰 폭이냐」로 전부냐 아니냐를 정했는데, 그러면 중간 폭(바가 두 줄로
+         넘칠 만큼만 좁은 자리)에서 접힌 버튼이 메뉴에도 없어 **아무 데서도 못 누르는**
+         버튼이 된다. 폭이 0 인지 직접 보는 쪽이 접힘 규칙과 어긋나지 않는다. */
+      const list = MOBILE_FOLD.filter(s => {
+        const b = $(s);
+        return b && b.getBoundingClientRect().width === 0;
+      }).concat(MORE_MENU);
       openTopbarMenu(btn, list);
     };
   }
 
-  /** 좁은 화면이라 상단바 보조 버튼을 접었는가 — CSS 의 `.in-more` 규칙과 같은 조건. */
-  const isMobileFold = () => {
-    const b = $('#galleryBtn');
-    return !!b && b.getBoundingClientRect().width === 0;
-  };
 
   function setupMobileSheets() {
     // 파츠 상세는 인라인(장착↔파츠 사이)로 두고, 성능·무장만 슬라이드 시트로.
