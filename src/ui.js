@@ -459,30 +459,8 @@
     return v;
   }
 
-  /** 장착 파츠의 % 피해 경감(被ダメージ軽減) — 내구 지표·피탄에 반영. 오버튠은 LV 스케일·상한 반영. */
-  function partDamageCuts(equipped, msLv) {
-    const cuts = [];
-    const ATTR = { '実弾': 'solid', 'ビーム': 'beam', '格闘': 'melee', '射撃': 'shoot' };
-    for (const p of equipped) {
-      const d = String(p.description || '');
-      for (const [ja, scope] of Object.entries(ATTR)) {
-        const m = d.match(new RegExp(ja + '属性から受けるダメージ[をが]\\s*(\\d+)\\s*[%％]\\s*軽減'));
-        if (!m) continue;
-        let pct = Number(m[1]);
-        const per = d.match(/機体LVが1上昇するごとに(?:さらに)?\s*(\d+)\s*[%％]/);   // 오버튠 LV 스케일
-        const max = d.match(/最大上昇値は\s*(\d+)\s*[%％]/);
-        if (per && max) pct = Math.min(pct + (Math.max(1, msLv) - 1) * Number(per[1]), Number(max[1]));
-        if (pct > 0) cuts.push({ scope, pct });
-      }
-      // 조건 없는 전체 경감 (교육형 컴퓨터[특방]·신형완충재·사이코프레임 등)
-      // 「機体HP[の/に]受けるダメージを N%軽減」·「敵から受けるダメージを N%軽減」.
-      // (부위장갑 「機体HPへのダメージを」는 「受ける」가 없어 안 걸림 — 국부라 제외가 맞음)
-      const all = d.match(/敵から受けるダメージを\s*(\d+)\s*[%％]\s*軽減/)
-        || d.match(/機体HP[のに]受けるダメージを\s*(\d+)\s*[%％]\s*軽減/);
-      if (all) cuts.push({ scope: 'all', pct: Number(all[1]) });
-    }
-    return cuts;
-  }
+  // 파츠 피해경감 파싱도 core 에 있다 (위와 같은 이유).
+  const partDamageCuts = C.partDamageCuts;
 
   // 공격 지표용 '대표 무장' — 실탄·빔·격투 각각에 어떤 % 가 걸리는지 재 보는 데만 쓴다.
   // damage.js 의 빔 판정은 attr 이 아니라 '무장 이름'을 보므로, 빔 쪽 대표는 이름을 빔으로 준다.
@@ -523,13 +501,8 @@
     return out;
   }
 
-  /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. */
-  function staggerDmgFactor(cuts, attr) {
-    const kind = attr === 'melee' ? 'melee' : 'shoot';
-    let f = 1;
-    for (const c of cuts) if (c.scope === 'all' || c.scope === kind || c.scope === attr) f *= (1 - c.pct / 100);
-    return f;
-  }
+  // 피해경감 계산은 core 에 있다 — 자동 구성과 같은 자를 써야 해서 옮겼다.
+  const staggerDmgFactor = C.staggerDmgFactor;
 
   const ARMOR_KEY = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee', shield: 'armorMelee' };
 
@@ -4540,7 +4513,13 @@
       const r = O.optimize(state.ms, { ...opts, weights, expansion: exp, expLevel, seed, iters }, partsByCat, fullst);
       evals += r.evaluations || 0;
       // usedWeights: '왜 이 파츠?' 기여도 계산에 그 후보를 만든 가중치를 쓴다.
-      if (r.parts.length || r.feasible) { r.expansion = exp; r.expLevel = expLevel; r.usedWeights = weights; r.abs = absScore(r.stats.total, weights); }
+      // usedOpts: 기여도를 **점수와 똑같은 자**로 재려고 그 후보를 만든 설정을 그대로 들고 간다
+      //           (가중치만 들고 가면 피해 % 표·목표·주무장 LV 가 빠져 자가 달라진다).
+      if (r.parts.length || r.feasible) {
+        r.expansion = exp; r.expLevel = expLevel; r.usedWeights = weights;
+        r.usedOpts = { ...opts, weights, expansion: exp, expLevel };
+        r.abs = absScore(r.stats.total, weights);
+      }
       return r;
     };
     const yieldMaybe = async () => { bar.style.width = (++step / total * 100) + '%'; if (step % 3 === 0) await nextFrame(); };
@@ -4700,6 +4679,8 @@
     turnPerformanceGround: 'mob', turnPerformanceSpace: 'mob'
   };
   const ROLE_LABEL = { def: '내구', atk: '공격', mob: '기동' };
+  // 가중치를 하나도 안 준 구성의 기여도를 잴 때 쓰는 '전부 1' 가중치 (0 만 주면 점수가 0 이 된다)
+  const EVEN_WEIGHTS = Object.fromEntries(C.STAT_KEYS.map(k => [k, 1]));
 
   function partContributions(c) {
     const w = c.usedWeights || state.weights;
@@ -4710,8 +4691,29 @@
     const fullDv = derivedMetrics(c.parts, full);   // 전체 구성의 실효 지표 (한 번만)
     // 가중치를 하나도 안 준 경우엔 모든 스탯을 동일 가중(1)으로 본다.
     const anyW = C.STAT_KEYS.some(k => (w[k] || 0) > 0);
-    const wScore = tot => C.STAT_KEYS.reduce((s, k) => s + (anyW ? (w[k] || 0) : 1) * (tot[k] || 0) / (O.UNIT[k] || 1), 0);
-    const fullScore = wScore(full);
+
+    /* 기여도는 **자동 구성이 고를 때 쓴 점수 그 자체**로 잰다 — 같은 makeScorer 를 불러 쓴다.
+       예전엔 여기서 따로 셈을 했다: 원시 가중합 + 실효 지표를 전부 가중치 1 로 평평하게 더하기.
+       그래서 「사격 5」만 준 구성에서도 기동·내구 실효가 같은 무게로 섞여, 점수가 고른 이유와
+       패널이 적어 주는 이유가 어긋났다. 셈을 두 군데 두면 반드시 갈라진다 —
+       피해경감 파츠가 그 증거였다. 패널은 기여도를 줬지만 점수는 그 축을 아예 안 봤다
+       (실측: 표본 12기에서 자동 구성이 경감 파츠를 하나도 고르지 않았고, 그래도 1스왑 최적이었다).
+       점수가 안 보는 것에 기여도를 주는 쪽이 틀린 것이다.
+       값은 score() 가 돌려주는 것(value − penalty)을 그대로 쓴다 — 목표를 깨는 파츠는
+       페널티 차이로 자연히 1순위가 되고, 그것이 '목표 필수' 정렬과도 맞는다. */
+    const scorerOpts = c.usedOpts
+      ? { ...c.usedOpts, weights: anyW ? w : EVEN_WEIGHTS }
+      : {
+        stage: state.stage, expansion: exp, expLevel: expLv,
+        weights: anyW ? w : EVEN_WEIGHTS,
+        minimums: state.minimums, maximums: state.maximums,
+        skill, form: state.form, weaponLv: wantWeaponLv(),
+        partDmgPct: partDmgPctMap()
+      };
+    if ([...Object.keys(state.minimums), ...Object.keys(state.maximums)].some(k => DERIVED_KEYS.includes(k)))
+      scorerOpts.derived = (set, total) => derivedMetrics(set, total);
+    const scorer = O.makeScorer(state.ms, scorerOpts, partsByCat, fullst);
+    const fullScore = scorer(c.parts).value;
     // 지정한 목표들 (파츠별 '목표 필수' 판정용)
     const targets = [
       ...Object.entries(state.minimums).filter(([, v]) => v).map(([k, v]) => ({ k, v: +v, kind: 'min' })),
@@ -4724,8 +4726,10 @@
 
     const out = c.parts.map(p => {
       const without = c.parts.filter(q => q.name !== p.name);
-      // 자동 구성과 같은 모드로 재야 기여도가 맞는다 (변형 화면이면 변형 수치)
-      const st = C.calcStats(state.ms, without, state.stage, exp, partsByCat, fullst, expLv, state.form, skill, wantWeaponLv()).total;
+      // 점수를 부르면 그 안에서 이미 calcStats 를 돌린다 — 수치를 따로 또 구하지 않고 받아 쓴다
+      // (자동 구성과 같은 모드·주무장 LV 로 재진다. 예전엔 여기서 인자를 손으로 맞춰야 했다).
+      const sc = scorer(without);
+      const st = sc.stats.total;
       const woDv = derivedMetrics(without, st);
       // 원시 스탯 상승분
       const rawDiffs = C.STAT_KEYS.map(k => ({ k, d: (full[k] || 0) - (st[k] || 0) })).filter(x => x.d > 0).sort((a, b) => b.d - a.d);
@@ -4752,8 +4756,8 @@
         const woOk = t.kind === 'min' ? vWo >= t.v : vWo <= t.v;
         if (fullOk && !woOk) criticalFor.push(tLabel(t.k));
       }
-      // 순위 점수 = 원시 가중 기여 + 실효 지표 기여 (피해경감 파츠도 정당하게 순위에 오르게)
-      const rank = (fullScore - wScore(st)) + DERIVED_KEYS.reduce((s, k) => s + Math.max(0, fullDv[k] - woDv[k]) / (O.UNIT[k] || 1), 0);
+      // 순위 점수 = 이 파츠를 뺐을 때 **자동 구성 점수**가 떨어지는 양
+      const rank = fullScore - sc.value;
       const stats = rawDiffs.length
         ? rawDiffs.slice(0, 3).map(d => C.STAT_LABEL[d.k] + ' +' + Math.round(d.d))
         : effDiffs.slice(0, 2).map(d => '실효 ' + effShort(d.k) + ' +' + Math.round(d.d));

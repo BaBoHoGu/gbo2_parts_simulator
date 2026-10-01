@@ -481,7 +481,10 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
   };
 }
 
-const GBO2Optimizer = { optimize, PRESETS, UNIT, isValidSet };
+/* makeScorer 도 내보낸다 — 「왜 이 파츠?」 기여도가 **골라진 것과 같은 자**를 쏨다.
+   한도는 패널이 원시 가중합에 실효 지표를 평평하게(가중치 1) 더해 쓰섬다 —
+   「사곝 5」만 줄 구성에서도 기동·내구가 같은 무게로 섞여, 골람 이유와 적어 주는 이유가 어긋났다. */
+const GBO2Optimizer = { optimize, makeScorer, PRESETS, UNIT, isValidSet };
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Optimizer;
 if (typeof window !== 'undefined') window.GBO2Optimizer = GBO2Optimizer;
 

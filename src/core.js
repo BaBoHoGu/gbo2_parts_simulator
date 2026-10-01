@@ -162,6 +162,45 @@ const durabilityOf = (total, armorKey) =>
 /** 속성 → 내성 스탯 키. */
 const ARMOR_KEY_OF = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee' };
 
+/**
+ * 장착 파츠의 % 피해 경감(被ダメージ軽減). 오버튠처럼 기체 LV 로 커지는 것은 스케일·상한 반영.
+ *
+ * durabilityOf 와 같은 이유로 여기 둔다 — 화면(내구 지표·피탄)과 자동 구성이 **같은 자**를
+ * 써야 한다. 한때 화면에만 있어서, 자동 구성은 피해경감 파츠를 아예 못 보는데
+ * 「왜 이 파츠?」 패널은 그 파츠에 기여도를 줬다(고른 이유와 적어 주는 이유가 어긋났다).
+ */
+function partDamageCuts(equipped, msLv) {
+  const cuts = [];
+  const ATTR = { '実弾': 'solid', 'ビーム': 'beam', '格闘': 'melee', '射撃': 'shoot' };
+  for (const p of equipped) {
+    const d = String((p && p.description) || '');
+    for (const [ja, scope] of Object.entries(ATTR)) {
+      const m = d.match(new RegExp(ja + '属性から受けるダメージ[をが]\\s*(\\d+)\\s*[%％]\\s*軽減'));
+      if (!m) continue;
+      let pct = Number(m[1]);
+      const per = d.match(/機体LVが1上昇するごとに(?:さらに)?\s*(\d+)\s*[%％]/);   // 오버튠 LV 스케일
+      const max = d.match(/最大上昇値は\s*(\d+)\s*[%％]/);
+      if (per && max) pct = Math.min(pct + (Math.max(1, msLv) - 1) * Number(per[1]), Number(max[1]));
+      if (pct > 0) cuts.push({ scope, pct });
+    }
+    // 조건 없는 전체 경감 (교육형 컴퓨터[특방]·신형완충재·사이코프레임 등)
+    // 「機体HP[の/に]受けるダメージを N%軽減」·「敵から受けるダメージを N%軽減」.
+    // (부위장갑 「機体HPへのダメージを」는 「受ける」가 없어 안 걸림 — 국부라 제외가 맞음)
+    const all = d.match(/敵から受けるダメージを\s*(\d+)\s*[%％]\s*軽減/)
+      || d.match(/機体HP[のに]受けるダメージを\s*(\d+)\s*[%％]\s*軽減/);
+    if (all) cuts.push({ scope: 'all', pct: Number(all[1]) });
+  }
+  return cuts;
+}
+
+/** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. 경감은 **곱으로** 쌓인다. */
+function staggerDmgFactor(cuts, attr) {
+  const kind = attr === 'melee' ? 'melee' : 'shoot';
+  let f = 1;
+  for (const c of cuts) if (c.scope === 'all' || c.scope === kind || c.scope === attr) f *= (1 - c.pct / 100);
+  return f;
+}
+
 const MAX_PARTS = 8;
 
 /* ------------------------------------------------------------------
@@ -712,7 +751,7 @@ const GBO2Core = {
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
-  durabilityOf, ARMOR_KEY_OF,
+  durabilityOf, ARMOR_KEY_OF, partDamageCuts, staggerDmgFactor,
   expansionShieldHp,
   effectConflict, partBase
 };
