@@ -503,6 +503,26 @@
     };
   }
 
+  /* 파츠별 피해 % — 자동 구성이 「피해 %를 올려 주는 파츠」를 볼 수 있게 미리 나눠 둔다.
+     partAttackBonus 는 장착 집합 전체를 받는데, 기여가 파츠별로 독립이라
+     (weaponModsOf 가 파츠를 훑어 더한다) 하나씩 재서 더해도 같은 값이 나온다.
+     평가마다 파츠 설명을 훑으면 자동 구성이 느려진다 — 방어 축에서 그렇게 했다가
+     6.9초가 12.5초가 됐다. 그래서 **한 번만** 만들어 넘긴다.
+     사격은 실탄·빔을 따로 두고 쓰는 쪽에서 min 을 잡는다(화면과 같은 기준). */
+  function partDmgPctMap() {
+    const lv = msLevel(state.ms);
+    const attr = state.ms && state.ms.属性;
+    const out = {};
+    for (const p of allParts) {
+      const mods = D.weaponModsOf([p], lv, attr, state.expansion);
+      const s = D.damagePctFor(mods, PROBE_SOLID, 'shoot');
+      const b = D.damagePctFor(mods, PROBE_BEAM, 'shoot');
+      const m = D.damagePctFor(mods, PROBE_MELEE, 'melee');
+      if (s || b || m) out[p.name] = { s, b, m };
+    }
+    return out;
+  }
+
   /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. */
   function staggerDmgFactor(cuts, attr) {
     const kind = attr === 'melee' ? 'melee' : 'shoot';
@@ -4470,6 +4490,10 @@
       minimums: state.minimums,
       maximums: state.maximums,
       locked: [...state.locked],
+      /* 파츠별 피해 % — 자동 구성 점수가 피해 % 파츠를 볼 수 있게 한다.
+         **한 번만** 계산한다. 평가마다 파츠 설명을 훑으면 비싸진다.
+         기여가 파츠별로 독립이라(weaponModsOf 가 파츠를 훑어 더한다) 미리 나눠 둘 수 있다. */
+      partDmgPct: partDmgPctMap(),
       banned: [...state.banned],   // 기본 제외한 파츠는 자동 구성에서도 빠진다
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       form: state.form,             // 변형 화면을 보고 있으면 변형 수치로 최적화한다

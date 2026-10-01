@@ -148,5 +148,68 @@ for (const ms of sample) {
 }
 ok('단순 탐욕보다 못한 기체가 없다', beaten.length === 0, beaten.slice(0, 3));
 
+/* ⑥ **피해 % 파츠를 점수가 본다.**
+   그 파츠들은 total.shoot 을 바꾸지 않고 무장 쪽에만 걸려서, 예전 점수는 아예 못 봤다 —
+   사격 특화 프로그램 같은 것을 고를 이유가 없었다. 표본 12기로 재 보니 실효 배율이
+   12기 전부 올랐다(평균 +0.121 ≈ 피해 +7%). 되돌리면 조용히 나빠지므로 여기서 지킨다. */
+const D = require(path.join(ROOT, 'src', 'damage.js'));
+const PROBE_SOLID = { name: 'マシンガン', type: 'shooting', attr: 'solid', info: {}, levels: {} };
+const PROBE_BEAM = { name: 'ビーム・ライフル', type: 'shooting', attr: 'beam', info: {}, levels: {} };
+const PROBE_MELEE = { name: 'ヒート・サーベル', type: 'melee', attr: 'melee', info: {}, levels: {} };
+const allParts = [].concat(...Object.values(byCat).filter(Array.isArray));
+
+const dmgMapFor = (ms) => {
+  const lv = C.msLevel(ms.MS名), attr = ms['属性'];
+  const out = {};
+  for (const p of allParts) {
+    const m = D.weaponModsOf([p], lv, attr, '拡張スキル無し');
+    const sp = D.damagePctFor(m, PROBE_SOLID, 'shoot');
+    const bp = D.damagePctFor(m, PROBE_BEAM, 'shoot');
+    const mp = D.damagePctFor(m, PROBE_MELEE, 'melee');
+    if (sp || bp || mp) out[p.name] = { s: sp, b: bp, m: mp };
+  }
+  return out;
+};
+// 실효 사격 배율 — 화면과 같은 기준(min(실탄, 빔))
+const effMul = (ms, parts, total) => {
+  const m = D.weaponModsOf(parts, C.msLevel(ms.MS名), ms['属性'], '拡張スキル無し');
+  const pct = Math.min(D.damagePctFor(m, PROBE_SOLID, 'shoot'),
+    D.damagePctFor(m, PROBE_BEAM, 'shoot'));
+  return (1 + (total.shoot || 0) / 100) * (1 + pct / 100);
+};
+
+/* **같은 코드의 두 설정을 견주면 안 된다.** 처음엔 「표를 준 쪽 vs 안 준 쪽」으로 썼는데,
+   축을 꺼서 심으니 양쪽이 똑같이 나빠져 검사가 안 물었다(허깨비였다).
+   재는 대상 밖의 자로 본다 — **실효 배율에서 1스왑 최적인가.** */
+const atkSwap = [];
+for (const ms of sample) {
+  const r = O.optimize(ms, { stage: 6, restarts: 6, weights: { shoot: 5 },
+    partDmgPct: dmgMapFor(ms) }, byCat, fullst);
+  const stat = set => C.calcStats(ms, set, 6, '拡張スキル無し', byCat, fullst, null, 'normal').total;
+  const cur = effMul(ms, r.parts, stat(r.parts));
+  const pool = allParts.filter(p => !C.categoryRestricted(p, ms));
+  let found = null;
+  for (let i = 0; i < r.parts.length && !found; i++) {
+    const rest = r.parts.filter((_, j) => j !== i);
+    for (const p of pool) {
+      if (r.parts.some(q => q.name === p.name)) continue;
+      const cand = rest.concat([p]);
+      if (!O.isValidSet(ms, cand, 6, fullst)) continue;
+      const v = effMul(ms, cand, stat(cand));
+      if (v > cur + 0.004) {
+        found = { 뺀것: r.parts[i].name, 넣은것: p.name,
+          지금: +cur.toFixed(3), 더나음: +v.toFixed(3) };
+        break;
+      }
+    }
+  }
+  if (found) atkSwap.push({ ms: ms.MS名, ...found });
+}
+ok('결과가 실효 사격 배율에서 1스왑 최적이다', atkSwap.length === 0, atkSwap.slice(0, 2));
+
+/* 피해 % 파츠가 실제로 존재해야 이 검사가 뜻을 갖는다(헛돌지 않게). */
+const anyPct = Object.keys(dmgMapFor(sample[0])).length;
+ok('피해 % 를 주는 파츠가 데이터에 있다', anyPct > 0, { 개수: anyPct });
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

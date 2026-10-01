@@ -92,6 +92,22 @@ function isValidSet(ms, set, stage, fullstDefs) {
 const DEF_WEIGHTS = ['hp', 'armorRange', 'armorBeam', 'armorMelee'];
 const DEF_ARMOR = ['armorRange', 'armorBeam', 'armorMelee'];
 
+/* 공격 가중치도 **실효 보정**으로 친다.
+   보정 자체는 선형이다(방어와 달리 분모에 안 들어간다). 문제는 다른 데 있다 —
+   **피해 % 파츠가 점수에 아예 안 잡힌다.** 그 파츠들은 total.shoot 을 바꾸지 않고
+   무장 쪽에만 걸리기 때문이다. 그래서 사격 특화 프로그램 같은 것을 고를 이유가 없었다.
+
+   실효 보정 = ((1 + 보정/100) × (1 + 피해%/100) − 1) × 100   (화면의 effShoot 과 같은 식)
+   곱이라 **보정이 높을수록 피해 %가 더 값지다** — 보정 40 에서 +20% 는 +0.28,
+   보정 100 에서는 +0.40 이다.
+
+   표본 12기로 재 보니 실효 배율을 직접 노린 구성이 **12기 전부** 더 셌다
+   (평균 +0.180 배율 ≈ 피해 +10%).
+
+   파츠별 피해 %는 **미리 한 번 계산해** 넘겨받는다(opts.partDmgPct). 평가마다
+   파츠 설명을 훑으면 비싸진다 — 방어 축에서 그렇게 했다가 자동 구성이 1.8배 느려졌다. */
+const ATK_WEIGHTS = ['shoot', 'meleeCorrection'];
+
 /** 가중치를 몫(share)으로 — 전부 0 이면 고르게 나눈다. */
 function shareOf(weights, keys) {
   const w = keys.map(k => Math.max(0, Number(weights[k]) || 0));
@@ -117,6 +133,31 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
 
   const wDef = DEF_WEIGHTS.reduce((s, k) => s + (Number(weights[k]) || 0), 0);
   const useDef = wDef > 0;
+
+  /* 공격 축 — 파츠별 피해 %를 미리 받아 둔 것이 있을 때만 켠다.
+     { 파츠이름: { s: 실탄사격%, b: 빔사격%, m: 격투% } }
+     사격은 min(실탄, 빔) 을 쓴다 — 무장 종류를 가리지 않고 걸리는 몫만 센다(화면과 같다). */
+  const dmgPct = opts.partDmgPct || null;
+  const wShoot = Number(weights.shoot) || 0;
+  const wMelee = Number(weights.meleeCorrection) || 0;
+  const useAtk = !!dmgPct && (wShoot > 0 || wMelee > 0);
+  const pctOf = (set) => {
+    let s = 0, b = 0, m = 0;
+    for (const p of set) {
+      const e = dmgPct[p.name];
+      if (!e) continue;
+      s += e.s || 0; b += e.b || 0; m += e.m || 0;
+    }
+    return { shoot: Math.min(s, b), melee: m };
+  };
+  // 실효 보정 — 화면의 effShoot·effMelee 와 같은 식
+  const effCorr = (corr, pct) => ((1 + (corr || 0) / 100) * (1 + pct / 100) - 1) * 100;
+  const atkValue = (total, set) => {
+    const p = pctOf(set);
+    return wShoot * effCorr(total.shoot, p.shoot) / UNIT.shoot
+      + wMelee * effCorr(total.meleeCorrection, p.melee) / UNIT.meleeCorrection;
+  };
+  const baseAtk = useAtk ? atkValue(base, []) : 0;
   // 세 속성을 어떤 몫으로 볼지는 **내성 가중치**가 정한다(HP 가중치는 세 축 모두를 올린다).
   const defShare = shareOf(weights, DEF_ARMOR);
   const baseDefMix = useDef ? durMix(base, defShare) : 0;
@@ -136,11 +177,13 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
     for (const k of STAT_KEYS) {
       const w = weights[k];
       if (!w) continue;
-      // 실효 HP 축으로 대신 치는 스탯은 여기서 두 번 세지 않는다
+      // 실효 축으로 대신 치는 스탯은 여기서 두 번 세지 않는다
       if (useDef && DEF_WEIGHTS.includes(k)) continue;
+      if (useAtk && ATK_WEIGHTS.includes(k)) continue;
       value += w * (res.total[k] - base[k]) / UNIT[k];
     }
     if (useDef) value += wDef * (durMix(res.total, defShare) - baseDefMix) / UNIT.ehpSolid;
+    if (useAtk) value += atkValue(res.total, set) - baseAtk;
     // 하한 목표는 강한 페널티로 표현해 탐색이 충족 방향으로 흐르게 한다.
     let penalty = 0;
     for (const [k, target] of Object.entries(minimums || {})) {
