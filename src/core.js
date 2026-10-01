@@ -193,6 +193,69 @@ function partDamageCuts(equipped, msLv) {
   return cuts;
 }
 
+/* ---------- 슬러스터(부스트) ----------
+ * 화면과 자동 구성이 같은 자를 쓰게 여기 둔다. 위키 83(전투 시스템) 실측표.
+ * 초기소비·소비속도는 % 가 아니라 '스라값 그 자체'(절대값)다.
+ *   「初期消費量はスラスター値そのもの（固定値）」「回復速度は全機固定で約5/s」
+ * 열은 표준/강습/적성 셋뿐이라, 적성이 있으면 적성 · 없고 강습이면 강습 · 그 외 표준.
+ */
+const THRUSTER_TBL = {
+  ground: { init: { std: 20, assault: 15, adapt: 19 }, rate: { std: 8, assault: 8, adapt: 7.6 } },
+  space: { init: { std: 15, assault: 16, adapt: 12 }, rate: { std: 6.4, assault: 6.4, adapt: 4.0 } }
+};
+const THR_RECOVER = 5;                 // 스라값/초 — 전 기체 공통
+const isTankMs = ms => /タンク|ヒルドルブ/.test(String((ms && ms.MS名) || ''));
+
+/** 이 환경에서 쓸 표 열 (적성 → 강습 → 표준). */
+const thrusterCol = (ms, env) => {
+  const adapt = env === 'ground' ? ms['環境適正_地上'] : ms['環境適正_宇宙'];
+  return adapt ? 'adapt' : (ms['属性'] === '強襲' ? 'assault' : 'std');
+};
+
+/** 장착 파츠의 슬러스터 효과(% 합). 회복·OH 단축·소비 경감. */
+function thrusterPartFx(equipped) {
+  let recover = 0, oh = 0, cutInit = 0, cutRate = 0;
+  for (const p of equipped || []) {
+    const d = String((p && p.description) || '').replace(/\\n/g, ' ');
+    let m = d.match(/スラスターの回復速度が\s*(\d+)\s*[%％]\s*上昇/);
+    if (m) recover += Number(m[1]);
+    m = d.match(/スラスターオーバーヒート時の回復時間が\s*(\d+)\s*[%％]\s*短縮/);
+    if (m) oh += Number(m[1]);
+    // 「高速移動開始時と…消費量を N%軽減」은 초기소비까지, 「高速移動中の…」은 이동 중만
+    m = d.match(/高速移動開始時[^。]*?スラスター消費量を\s*(\d+)\s*[%％]\s*軽減/);
+    if (m) { cutInit += Number(m[1]); cutRate += Number(m[1]); }
+    else {
+      m = d.match(/高速移動中の[^。]*?スラスター消費量を\s*(\d+)\s*[%％]\s*軽減/);
+      if (m) cutRate += Number(m[1]);
+    }
+  }
+  return { recover, oh, cutInit, cutRate };
+}
+
+/**
+ * 부스트 지속(초) — (스라값 − 초기소비) ÷ 소비속도. 탱크형은 소비속도가 위키 미확정이라 null.
+ *
+ * **슬러스터는 선형이다** — 한 포인트는 어디서나 1/소비속도 초다(내성처럼 분모에 안 들어간다).
+ * 비선형인 곳은 그 옆이다: 부스트로 가는 **거리 = 고속이동 × 지속**, 곱이다.
+ * 그래서 고속이동과 슬러스터를 따로 선형으로 더하면 둘이 서로를 값지게 만드는 몫을 못 본다.
+ */
+function boostSecFrom(ms, thrusterVal, fx, env) {
+  if (!ms || !thrusterVal || isTankMs(ms)) return null;
+  const t = THRUSTER_TBL[env];
+  const col = thrusterCol(ms, env);
+  const init = t.init[col] * (1 - (fx.cutInit || 0) / 100);
+  const rate = t.rate[col] * (1 - (fx.cutRate || 0) / 100);
+  if (!(thrusterVal > init) || !(rate > 0)) return null;
+  return (thrusterVal - init) / rate;
+}
+
+/* 소비경감을 **미리 더해 둔 표**로 부르는 길을 따로 둔다 — 자동 구성은 평가마다
+   파츠 설명을 훑을 수 없다(방어 축에서 그렇게 했다가 6.9초가 12.5초가 됐다).
+   경감은 파츠별로 더해지므로(thrusterPartFx 가 합산) 미리 나눠 둘 수 있다. */
+function boostSecOf(ms, thrusterVal, equipped, env) {
+  return boostSecFrom(ms, thrusterVal, thrusterPartFx(equipped), env);
+}
+
 /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. 경감은 **곱으로** 쌓인다. */
 function staggerDmgFactor(cuts, attr) {
   const kind = attr === 'melee' ? 'melee' : 'shoot';
@@ -752,6 +815,7 @@ const GBO2Core = {
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
   durabilityOf, ARMOR_KEY_OF, partDamageCuts, staggerDmgFactor,
+  THRUSTER_TBL, THR_RECOVER, isTankMs, thrusterCol, thrusterPartFx, boostSecOf, boostSecFrom,
   expansionShieldHp,
   effectConflict, partBase
 };

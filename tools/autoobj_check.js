@@ -211,5 +211,60 @@ ok('결과가 실효 사격 배율에서 1스왑 최적이다', atkSwap.length =
 const anyPct = Object.keys(dmgMapFor(sample[0])).length;
 ok('피해 % 를 주는 파츠가 데이터에 있다', anyPct > 0, { 개수: anyPct });
 
+/* ⑦ **부스트 거리를 점수가 본다.**
+   슬러스터 자체는 선형이지만(지속 = (스라−초기소비)/소비속도) 실제로 가는 거리는
+   고속이동 × 지속, 곧 **곱**이다. 예전 점수는 두 스탯을 따로 선형으로 더해서
+   ① 서로를 값지게 만드는 몫을 못 봤고 ② 소비경감 파츠(연소효율 보조장치)는
+   스탯을 안 올려서 아예 안 보였다. 재 보니 12기 전부 1스왑으로 더 멀리 갈 수 있었다
+   (평균 +13.5%). 고친 뒤 거리 평균 +25.4%.
+   자는 공격 축과 같은 꼴 — **절대 1스왑 최적인가.** 두 설정을 견주면 허깨비가 된다. */
+const thrMapAll = (() => {
+  const out = {};
+  for (const p of allParts) {
+    const f = C.thrusterPartFx([p]);
+    if (f.cutInit || f.cutRate) out[p.name] = { cutInit: f.cutInit, cutRate: f.cutRate };
+  }
+  return out;
+})();
+ok('슬러스터 소비경감 파츠가 데이터에 있다', Object.keys(thrMapAll).length > 0,
+  { 개수: Object.keys(thrMapAll).length });
+
+// 지상·우주 평균 부스트 거리 — core 의 계산(화면이 쓰는 그것)
+const boostDist = (ms, parts, total) => {
+  let s = 0;
+  for (const env of ['ground', 'space']) {
+    const sec = C.boostSecOf(ms, total.thruster, parts, env);
+    if (sec) s += sec * (total.highSpeedMovement || 0);
+  }
+  return s / 2;
+};
+
+const mobSwap = [];
+for (const ms of sample) {
+  const r = O.optimize(ms, { stage: 6, restarts: 6,
+    weights: { highSpeedMovement: 5, thruster: 5 }, partThrFx: thrMapAll }, byCat, fullst);
+  const stat2 = set => C.calcStats(ms, set, 6, '拡張スキル無し', byCat, fullst, null, 'normal').total;
+  const cur = boostDist(ms, r.parts, stat2(r.parts));
+  if (!cur) continue;                         // 지속이 안 나오는 기체(탱크 등)는 축이 꺼진다
+  let found = null;
+  for (let i = 0; i < r.parts.length && !found; i++) {
+    const rest = r.parts.filter((_, j) => j !== i);
+    for (const p of allParts) {
+      if (r.parts.some(q => q.name === p.name)) continue;
+      if (C.categoryRestricted(p, ms)) continue;
+      const cand = rest.concat([p]);
+      if (!O.isValidSet(ms, cand, 6, fullst)) continue;
+      const v = boostDist(ms, cand, stat2(cand));
+      if (v > cur * 1.005) {
+        found = { 뺀것: r.parts[i].name, 넣은것: p.name,
+          지금: Math.round(cur), 더나음: Math.round(v) };
+        break;
+      }
+    }
+  }
+  if (found) mobSwap.push({ ms: ms.MS名, ...found });
+}
+ok('결과가 부스트 거리에서 1스왑 최적이다', mobSwap.length === 0, mobSwap.slice(0, 2));
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

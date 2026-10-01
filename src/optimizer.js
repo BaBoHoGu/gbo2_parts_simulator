@@ -7,7 +7,7 @@
  * ------------------------------------------------------------------ */
 
 const { STAT_KEYS, MAX_PARTS, EXPANSION_NONE, calcSlots, calcStats, conflictsWithMovement, categoryRestricted, effectConflict,
-  durabilityOf } =
+  durabilityOf, boostSecFrom } =
   (typeof require !== 'undefined' && typeof module !== 'undefined') ? require('./core.js') : window.GBO2Core;
 
 /** 가중치 1.0이 "괜찮은 파츠 한 장 분량"이 되도록 하는 스탯별 환산 단위. */
@@ -18,7 +18,12 @@ const UNIT = {
   // 파생 지표(공격 지표=실효 보정, 내구 지표=실효 HP) — 하한/상한 목표용 페널티 환산
   effShoot: 5, effMelee: 5, durSolid: 2, durBeam: 2, durMelee: 2,
   // 실효 HP — 「적 무장 N발 버티기」 목표가 쓰는 축. HP 와 같은 눈금으로 둔다.
-  ehpSolid: 250, ehpBeam: 250, ehpMelee: 250
+  ehpSolid: 250, ehpBeam: 250, ehpMelee: 250,
+  /* 부스트 거리는 **절대 눈금을 안 쓴다** — MOB_SCALE 로 상대값(기준 대비 몇 %)을 쓴다.
+     처음엔 절대 눈금 60 으로 뒀는데(d(거리)/d(고속이동) = 지속 ≈ 12초, 예전 눈금 5 → 60),
+     거리가 기체마다 700~5,000 으로 7배 벌어져 큰 기체에서 축이 다른 축을 삼켰다.
+     실측: 「격투 중심」 프로필에서 원시 가중총점이 12/12 떨어졌다(151.8 → 129.0).
+     격투 4 를 준 사람에게 격투를 깎아 거리를 사 준 셈이다. */
 };
 
 /** 프리셋: 자주 쓰는 운용 방향별 가중치. */
@@ -108,6 +113,31 @@ const DEF_ARMOR = ['armorRange', 'armorBeam', 'armorMelee'];
    파츠 설명을 훑으면 비싸진다 — 방어 축에서 그렇게 했다가 자동 구성이 1.8배 느려졌다. */
 const ATK_WEIGHTS = ['shoot', 'meleeCorrection'];
 
+/* ---------- 기동 축 — 부스트 거리 ----------
+   슬러스터 자체는 **선형이다**: 부스트 지속 = (스라값 − 초기소비) ÷ 소비속도 이므로
+   한 포인트는 어디서나 1/소비속도 초다. 내성(1/(1−a))처럼 분모에 들어가지 않는다.
+   비선형은 그 옆에 있다 — 부스트로 실제로 가는 **거리 = 고속이동 × 지속**, 곱이다.
+
+   두 스탯을 따로 선형으로 더하면 두 가지를 놓친다.
+     ① 서로를 값지게 만드는 몫 — 지속이 길수록 고속이동 1이 더 멀리 간다(그 반대도).
+     ② 슬러스터 **소비경감** 파츠(연소효율 보조장치 등)는 스탯을 하나도 안 올려서
+        점수에 아예 보이지 않았다. 피해 % 파츠와 똑같은 구멍이다.
+   표본 12기로 재 보니 **12기 전부** 1스왑으로 더 멀리 갈 수 있었다(평균 +13.5%, 최대 +35%).
+
+   거리는 지상·우주 평균으로 본다 — 화면이 둘을 함께 적고, 한쪽만 고르면 그 환경에
+   적성이 없는 기체가 부당하게 깎인다.
+   축은 **두 가중치가 모두 0 보다 클 때만** 켠다. 고속이동만 노린 사람에게 슬러스터
+   파츠를 들이밀면 그건 그가 말한 것이 아니다. */
+const MOB_WEIGHTS = ['highSpeedMovement', 'thruster'];
+const MOB_ENVS = ['ground', 'space'];
+/* 거리는 **기준 대비 비율**로 센다 — 기체마다 절대 거리가 7배 벌어져서, 절대 눈금을
+   쓰면 거리가 큰 기체에서 이 축이 다른 축을 삼킨다(실측으로 걸렸다. UNIT 주석 참고).
+   눈금은 재서 정했다. 5 와 3 을 견주니 **기동을 노린 쪽 이득은 똑같은데**(둘 다 +25.4%,
+   12/12) 안 노린 쪽 피해만 달랐다 — 「격투 중심」 프로필에서 격투보정 평균이
+   5 에서는 −1.2(자쿠 데저트 43 → 35), 3 에서는 −0.3(43 → 42)이었다.
+   공짜로 얻는 쪽을 골랐다. */
+const MOB_SCALE = 3;
+
 /** 가중치를 몫(share)으로 — 전부 0 이면 고르게 나눈다. */
 function shareOf(weights, keys) {
   const w = keys.map(k => Math.max(0, Number(weights[k]) || 0));
@@ -158,6 +188,36 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
       + wMelee * effCorr(total.meleeCorrection, p.melee) / UNIT.meleeCorrection;
   };
   const baseAtk = useAtk ? atkValue(base, []) : 0;
+
+  /* 기동 축 — 파츠별 슬러스터 소비경감을 미리 받아 둔 것이 있을 때만 켠다.
+     { 파츠이름: { cutInit, cutRate } } (경감이 0 인 파츠는 표에 없다) */
+  const thrFx = opts.partThrFx || null;
+  const wHs = Number(weights.highSpeedMovement) || 0;
+  const wTh = Number(weights.thruster) || 0;
+  const wMob = wHs + wTh;
+  const useMob = !!thrFx && wHs > 0 && wTh > 0;
+  const fxOf = (set) => {
+    let cutInit = 0, cutRate = 0;
+    for (const p of set) {
+      const e = thrFx[p.name];
+      if (!e) continue;
+      cutInit += e.cutInit || 0; cutRate += e.cutRate || 0;
+    }
+    return { cutInit, cutRate };
+  };
+  // 지상·우주 평균 거리. 지속을 못 내는 기체(탱크·스라 부족)는 0 — 그러면 축이 고르게 꺼진다.
+  const mobDist = (total, set) => {
+    const fx = fxOf(set);
+    let s = 0;
+    for (const env of MOB_ENVS) {
+      const sec = boostSecFrom(ms, total.thruster, fx, env);
+      if (sec) s += sec * (total.highSpeedMovement || 0);
+    }
+    return s / MOB_ENVS.length;
+  };
+  const baseMob = useMob ? mobDist(base, []) : 0;
+  // 탱크처럼 지속이 아예 안 나오는 기체는 거리가 늘 0 이라 축이 아무 말도 못 한다 — 선형으로 둔다.
+  const mobAlive = useMob && baseMob > 0;
   // 세 속성을 어떤 몫으로 볼지는 **내성 가중치**가 정한다(HP 가중치는 세 축 모두를 올린다).
   const defShare = shareOf(weights, DEF_ARMOR);
   const baseDefMix = useDef ? durMix(base, defShare) : 0;
@@ -180,10 +240,12 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
       // 실효 축으로 대신 치는 스탯은 여기서 두 번 세지 않는다
       if (useDef && DEF_WEIGHTS.includes(k)) continue;
       if (useAtk && ATK_WEIGHTS.includes(k)) continue;
+      if (mobAlive && MOB_WEIGHTS.includes(k)) continue;
       value += w * (res.total[k] - base[k]) / UNIT[k];
     }
     if (useDef) value += wDef * (durMix(res.total, defShare) - baseDefMix) / UNIT.ehpSolid;
     if (useAtk) value += atkValue(res.total, set) - baseAtk;
+    if (mobAlive) value += wMob * MOB_SCALE * (mobDist(res.total, set) / baseMob - 1);
     // 하한 목표는 강한 페널티로 표현해 탐색이 충족 방향으로 흐르게 한다.
     let penalty = 0;
     for (const [k, target] of Object.entries(minimums || {})) {

@@ -501,6 +501,17 @@
     return out;
   }
 
+  /* 파츠별 슬러스터 소비경감 표 — partDmgPctMap 과 같은 꼴. 경감은 파츠별로 더해지므로
+     미리 나눠 둘 수 있다. 경감이 0 인 파츠는 표에 넣지 않는다(지금 164개 중 2개뿐). */
+  function partThrFxMap() {
+    const out = {};
+    for (const p of allParts) {
+      const f = C.thrusterPartFx([p]);
+      if (f.cutInit || f.cutRate) out[p.name] = { cutInit: f.cutInit, cutRate: f.cutRate };
+    }
+    return out;
+  }
+
   // 피해경감 계산은 core 에 있다 — 자동 구성과 같은 자를 써야 해서 옮겼다.
   const staggerDmgFactor = C.staggerDmgFactor;
 
@@ -1692,22 +1703,17 @@
   }
 
   /* ---------- 슬러스터 지표 ---------- */
-  // 위키 83(전투 시스템) 실측표. 초기소비·소비속도는 % 가 아니라 '스라값 그 자체'(절대값)다.
-  //   「初期消費量はスラスター値そのもの（固定値）」「回復速度は全機固定で約5/s」
-  // 열은 표준/강습/적성 셋뿐이라, 적성이 있으면 적성 · 없고 강습이면 강습 · 그 외 표준을 쓴다
-  // (강습이면서 적성인 조합은 위키에 값이 없다).
-  const THRUSTER_TBL = {
-    ground: { init: { std: 20, assault: 15, adapt: 19 }, rate: { std: 8, assault: 8, adapt: 7.6 } },
-    space: { init: { std: 15, assault: 16, adapt: 12 }, rate: { std: 6.4, assault: 6.4, adapt: 4.0 } }
-  };
-  const THR_RECOVER = 5;                 // 스라값/초 — 전 기체 공통
+  // 표(위키 83 실측)·회복 상수·탱크 판정·파츠 소비경감은 core 에 있다.
+  // 화면과 자동 구성이 같은 자를 써야 해서 옮겼다 — 셈이 두 군데면 갈라진다.
+  const THRUSTER_TBL = C.THRUSTER_TBL;
+  const THR_RECOVER = C.THR_RECOVER;
   const OH_SEC = 7, OH_SEC_GROUND_ADAPT = 6.3;   // 지상적성만 10% 짧다(우주적성은 효과 없음)
   // 부스트 계열 스킬은 '효과가 끝나면' 슬러스터 OH 복귀가 21초로 늘어난다(기본의 3배).
   // 스킬 설명에 「効果終了時のOH回復時間は21秒」 로 못박혀 있는 셋만 잡는다 — 합쳐 38기.
   // 발동 중에만 걸리는 값이라 지표를 갈아치우지 않고, 옆에 따로 적어 준다.
   const OH_LONG_SKILLS = ['EXブースト', 'オーバーブースト', 'シューティングブースト'];
   const OH_LONG_SEC = 21;
-  const isTankMs = ms => /タンク|ヒルドルブ/.test(String(ms && ms.MS名 || ''));
+  const isTankMs = C.isTankMs;
 
   /** 이 기체 LV 에서 쓸 수 있는 '부스트 후 OH 21초' 스킬 이름(한글). 없으면 null. */
   function ohLongSkillOf(ms, lv) {
@@ -2105,24 +2111,7 @@
     return fx;
   }
 
-  function thrusterPartFx(equipped) {
-    let recover = 0, oh = 0, cutInit = 0, cutRate = 0;
-    for (const p of equipped || []) {
-      const d = String(p.description || '').replace(/\\n/g, ' ');
-      let m = d.match(/スラスターの回復速度が\s*(\d+)\s*[%％]\s*上昇/);
-      if (m) recover += Number(m[1]);
-      m = d.match(/スラスターオーバーヒート時の回復時間が\s*(\d+)\s*[%％]\s*短縮/);
-      if (m) oh += Number(m[1]);
-      // 「高速移動開始時と…消費量を N%軽減」은 초기소비까지, 「高速移動中の…」은 이동 중만
-      m = d.match(/高速移動開始時[^。]*?スラスター消費量を\s*(\d+)\s*[%％]\s*軽減/);
-      if (m) { cutInit += Number(m[1]); cutRate += Number(m[1]); }
-      else {
-        m = d.match(/高速移動中の[^。]*?スラスター消費量を\s*(\d+)\s*[%％]\s*軽減/);
-        if (m) cutRate += Number(m[1]);
-      }
-    }
-    return { recover, oh, cutInit, cutRate };
-  }
+  const thrusterPartFx = C.thrusterPartFx;
 
   /**
    * 환경(지상/우주)별 슬러스터 지표.
@@ -4467,6 +4456,9 @@
          **한 번만** 계산한다. 평가마다 파츠 설명을 훑으면 비싸진다.
          기여가 파츠별로 독립이라(weaponModsOf 가 파츠를 훑어 더한다) 미리 나눠 둘 수 있다. */
       partDmgPct: partDmgPctMap(),
+      /* 파츠별 슬러스터 소비경감 — 자동 구성이 「연소효율 보조장치」처럼 스탯을 하나도
+         안 올리면서 부스트를 늘려 주는 파츠를 볼 수 있게 한다. 위와 같은 이유로 한 번만. */
+      partThrFx: partThrFxMap(),
       banned: [...state.banned],   // 기본 제외한 파츠는 자동 구성에서도 빠진다
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       form: state.form,             // 변형 화면을 보고 있으면 변형 수치로 최적화한다
@@ -4708,7 +4700,7 @@
         weights: anyW ? w : EVEN_WEIGHTS,
         minimums: state.minimums, maximums: state.maximums,
         skill, form: state.form, weaponLv: wantWeaponLv(),
-        partDmgPct: partDmgPctMap()
+        partDmgPct: partDmgPctMap(), partThrFx: partThrFxMap()
       };
     if ([...Object.keys(state.minimums), ...Object.keys(state.maximums)].some(k => DERIVED_KEYS.includes(k)))
       scorerOpts.derived = (set, total) => derivedMetrics(set, total);
