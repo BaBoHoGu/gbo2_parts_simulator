@@ -427,7 +427,61 @@ function shortenTimeText(text, pct) {
   });
 }
 
+/* ---------- 대상 HP 에 따라 달라지는 추가 피해 ----------
+ * 「攻撃対象のHPが100%の場合、ダメージ＋100%上昇」처럼 **맞는 쪽 HP 비율**로 달라지는 값.
+ * 데이터에 11개 무장이 있고, 수치가 다 적힌 것은 둘뿐이다:
+ *   레일건［최대출력］【TB】  100% → +100% · 70~100% → +50% · 40~70% → +20%
+ *   X1改용 스크류 웨브        100~50% → 1HIT당 +400 · 50~25% → +200 · 25%미만 없음
+ * 나머지 아홉은 **셀 수가 없다** — 「追加ダメージ発生」이라고만 적혀 값이 없거나,
+ * 스킬 발동이 조건이거나, 최대 HP 의 %가 HP 0.5%마다 연속으로 줄어드는 곡선이다.
+ * 그런 것은 지어내지 않고 unknown 으로 돌려 **화면이 그렇게 말하게** 한다.
+ *
+ * 구간은 lo(이 비율 이상) 하나로 충분하다. 큰 lo 부터 보고 처음 걸리는 것을 쓴다 —
+ * 「100%의 경우」는 lo=100 이라 정확히 가득일 때만, 「100%미만 70%이상」은 lo=70 이 된다.
+ */
+const HP_SEG = /(?:攻撃)?対象の(?:機体)?HP(?:が|は)/;
+function hpBonusOf(note) {
+  const segs = String(note || '').split(/\s*\/\s*/).filter(s => HP_SEG.test(s));
+  if (!segs.length) return null;
+  const bands = [];
+  let unknown = null;
+  for (const seg of segs) {
+    // 값이 없는 것·조건이 더 붙은 것은 셀 수 없다
+    if (/追加ダメージ発生/.test(seg) || /低下する/.test(seg) || /最大HP\d+[%％]分/.test(seg)) {
+      unknown = unknown || (/スキル発動中/.test(seg)
+        ? '스킬 발동이 조건이라 셈에 넣지 않습니다'
+        : '원문에 추가 피해의 값이 없어 셈에 넣지 않습니다');
+      continue;
+    }
+    if (/スキル発動中/.test(seg)) { unknown = unknown || '스킬 발동이 조건이라 셈에 넣지 않습니다'; continue; }
+    let lo = null, m;
+    if ((m = /HP(?:が|は)\s*(\d+)\s*[%％]\s*未満\s*(\d+)\s*[%％]\s*以上/.exec(seg))) lo = Number(m[2]);
+    else if ((m = /HP(?:が|は)\s*(\d+)\s*[%％]\s*[~～]\s*(\d+)\s*[%％]\s*以上/.exec(seg))) lo = Number(m[2]);
+    else if ((m = /HP(?:が|は)\s*(\d+)\s*[%％]\s*以上/.exec(seg))) lo = Number(m[1]);
+    else if (/HP(?:が|は)\s*\d+\s*[%％]\s*未満/.test(seg)) continue;     // 보너스 없는 구간
+    else if ((m = /HP(?:が|は)\s*(\d+)\s*[%％]\s*の場合/.exec(seg))) lo = Number(m[1]);
+    if (lo == null) { unknown = unknown || '구간을 읽지 못해 셈에 넣지 않습니다'; continue; }
+
+    if ((m = /ダメージ\s*[＋+]\s*(\d+)\s*[%％]\s*上昇/.exec(seg))) bands.push({ lo, pct: Number(m[1]), flat: 0 });
+    else if ((m = /1\s*HIT\s*毎に\s*(\d+)\s*ダメージ追加/.exec(seg))) bands.push({ lo, pct: 0, flat: Number(m[1]) });
+    else if (/追加ダメージ無し/.test(seg)) { /* 보너스 없는 구간 — 적지 않는다 */ }
+    else unknown = unknown || '추가 피해의 꼴을 읽지 못해 셈에 넣지 않습니다';
+  }
+  if (unknown || !bands.length) {
+    return { unknown: true, why: unknown || '추가 피해의 값을 읽지 못해 셈에 넣지 않습니다' };
+  }
+  bands.sort((a, b) => b.lo - a.lo);
+  return { unknown: false, bands };
+}
+
+/** 이 HP 비율(0~100)에서 걸리는 구간. 없으면 null. */
+function hpBandAt(bands, ratioPct) {
+  for (const b of bands) if (ratioPct >= b.lo) return b;
+  return null;
+}
+
 const GBO2Damage = {
+  hpBonusOf, hpBandAt,
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag,

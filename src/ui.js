@@ -7095,7 +7095,15 @@
    * 필요한 실효 HP = 1발(전탄 명중) 피해 × N. 자동 구성의 ehp* 축이 같은 값을 재므로 그대로 넘긴다.
    * (내구 지표 dur* 는 '내성' 단위라 HP 와 따로 놀아 발수 조건을 담지 못한다)
    */
-  function pietanGoalRow(w, dmg, hits) {
+  /* 대상 HP 에 따라 피해가 달라지면 「1발」이라는 값이 없다 — N 발을 실제로 쌓아 합을 낸다.
+     이 함수가 없던 때는 dmg × N 이라 레일건 같은 무장에서 목표가 작게 잡혔다. */
+  function pietanNeedEhp(I, dmg, n) {
+    if (!I || !I.hpBands) return dmg * n;
+    const r = I.stepHits(n);
+    return r.total || dmg * n;
+  }
+
+  function pietanGoalRow(w, dmg, hits, I) {
     const wrap = el('div', 'pietan-goal');
     wrap.append(el('span', 'pietan-ctrl-lb', '버티기 목표'));
     const inp = el('input');
@@ -7109,7 +7117,8 @@
     btn.onclick = () => {
       const n = Math.max(1, Number(inp.value) || hits + 1);
       const key = PIETAN_EHP[w.attr] || 'ehpSolid';
-      state.minimums[key] = dmg * n;
+      const need = pietanNeedEhp(I, dmg, n);
+      state.minimums[key] = need;
       // 어느 무장 기준인지 기억한다 — 관통·폭풍 경감처럼 그 무장에만 걸리는 파츠 경감을
       // 자동 구성도 같은 조건으로 재야 사용자가 본 숫자와 자를 맞출 수 있다.
       goalWeapon = w;
@@ -7118,14 +7127,17 @@
       renderAutoGrid();
       openPietan(false);
       openDrawer(true);
-      toast(`${DERIVED_LABEL[key]} 하한 ${(dmg * n).toLocaleString()} 으로 걸었습니다 — ${T.weaponName(w.name)} ${n}발 버티기`);
+      toast(`${DERIVED_LABEL[key]} 하한 ${need.toLocaleString()} 으로 걸었습니다 — ${T.weaponName(w.name)} ${n}발 버티기`);
     };
     wrap.append(btn);
 
     const nt = el('span', 'pietan-mnote');
     const note = () => {
       const n = Math.max(1, Number(inp.value) || hits + 1);
-      nt.textContent = '필요 실효 HP ' + (dmg * n).toLocaleString() + ' (1발 ' + dmg.toLocaleString() + ' × ' + n + ')';
+      const need = pietanNeedEhp(I, dmg, n);
+      nt.textContent = '필요 실효 HP ' + need.toLocaleString()
+        + (I && I.hpBands ? ' (' + n + '발 누적 — 발마다 피해가 다릅니다)'
+          : ' (1발 ' + dmg.toLocaleString() + ' × ' + n + ')');
     };
     note();
     wrap.append(nt);
@@ -7732,7 +7744,33 @@
     const inFx = fixedDamageWithParts({ info: { '備考': w.note || '' }, mods: w.mods }, eEq);
     const fxAdd = inFx ? inFx.total : 0;
     const dmg = oneHit * nNc + fxAdd;            // 방아쇠 한 번(전탄 명중) 피해
-    const hits = dmg > 0 ? Math.ceil(eff / dmg) : null;
+
+    /* 대상 HP 에 따라 커지는 추가 피해(레일건［최대출력］ 등) — **구간을 따라가며** 센다.
+       나눗셈 한 번으로는 못 센다: 첫 발은 +100%인데 HP 가 깎이면 +50% → +20% → 0 으로 내려간다.
+       「첫 발만」으로 어림잡는 것도 재 봤는데 10발 → 9발이 될 뿐 실제(8발)와 또 어긋났다.
+       비율은 실효 HP 위에서 본다 — 실효 HP 와 피해가 같은 자이므로 실제 HP 비율과 같다.
+       고정 추가분은 소이 고정 피해(fxAdd)와 같은 규칙으로 다룬다(같은 성질을 다르게 셀 이유가 없다). */
+    const hpB = D.hpBonusOf(w.note || '');
+    const hpBands = (hpB && !hpB.unknown) ? hpB.bands : null;
+    const hpUnknown = (hpB && hpB.unknown) ? hpB.why : null;
+    /** n 번째(0부터) 방아쇠에서, 남은 실효 HP 가 left 일 때의 피해. */
+    const dmgAt = (left) => {
+      if (!hpBands || !(eff > 0)) return dmg;
+      const b = D.hpBandAt(hpBands, left / eff * 100);
+      if (!b) return dmg;
+      return Math.floor(oneHit * (1 + (b.pct || 0) / 100) + (b.flat || 0)) * nNc + fxAdd;
+    };
+    /** 실효 HP 를 다 깎는 데 드는 방아쇠 수와, 그때까지의 누적 피해. */
+    const stepHits = (targetHits) => {
+      let left = eff, n = 0, total = 0;
+      while (n < 200 && (targetHits != null ? n < targetHits : left > 0)) {
+        const d = dmgAt(left);
+        if (!(d > 0)) return { n: null, total };
+        left -= d; total += d; n++;
+      }
+      return { n, total };
+    };
+    const hits = dmg > 0 ? (hpBands ? stepHits(null).n : Math.ceil(eff / dmg)) : null;
     // 사격의 powerCharged = 집속 (멜리 헤비어택은 위 변형으로 처리)
     const chgOne = (!isMelee && w.charged && w.charged !== w.power) ? perHit(w.charged, [1]) : 0;
     const chgDmg = chgOne ? chgOne * nCh + fxAdd : 0;
@@ -7742,7 +7780,8 @@
     const stagN = perHitStagger > 0 ? Math.ceil(stg.threshold / perHitStagger) : null;
     return { eff, stg, isMelee, variants, dirs, vi, di, meleeCcd, eatk, eCorr, eMul, eEq,
       eAttrBonus, ePartPct, nNc, nCh, oneHit, inFx, fxAdd, dmg, hits, chgOne, chgDmg, chgHits,
-      condCuts, dmgFactor, eMult, perHitStagger, stagN };
+      condCuts, dmgFactor, eMult, perHitStagger, stagN,
+      hpBands, hpUnknown, dmgAt, stepHits };
   }
 
   /** 상대 무장 → 나 (받는 피해·격파·경직). */
@@ -7752,7 +7791,7 @@
     // 화면에 근거를 적을 때 계산 안의 값이 그대로 필요하다 — 다시 세지 말고 받아 쓴다.
     const { eff, stg, isMelee, variants, dirs, meleeCcd, eatk, eCorr, eMul, eEq, eAttrBonus,
       ePartPct, nNc, nCh, oneHit, inFx, fxAdd, dmg, hits, chgOne, chgDmg, chgHits,
-      condCuts, dmgFactor, eMult, perHitStagger, stagN } = I;
+      condCuts, dmgFactor, eMult, perHitStagger, stagN, hpBands, hpUnknown } = I;
     pietanVariant = I.vi; pietanDir = I.di;   // 범위를 벗어난 선택은 계산이 0 으로 되돌린다
 
     const hd = el('div', 'pietan-rhd');
@@ -7818,12 +7857,33 @@
     // 전탄 배수가 있으면 '1발' 이 몇 히트인지 함께 밝힌다(무장 표의 '전탄' 표기와 같은 뜻)
     const nTxt = nNc > 1 ? ` (1발 = ${oneHit.toLocaleString()} × ${eMult.nc.label})` : '';
     const fxTxt = fxAdd ? ` + 고정 ${fxAdd.toLocaleString()}` : '';
+    /* 대상 HP 에 따라 피해가 달라지는 무장은 「÷ 1발」이 거짓말이 된다 — 발마다 값이 다르다.
+       그래서 근거를 **발마다** 적는다. 셈에 못 넣는 무장(값이 원문에 없거나 스킬 조건)은
+       숫자를 지어내지 않고 그 사실을 적는다 — 파츠 쪽 UNMODELLED_FX 와 같은 원칙이다. */
+    const hpWhy = hpBands && hits != null
+      ? (() => {
+        const out = []; let left = eff;
+        for (let i = 0; i < hits && i < 12; i++) {
+          const b = D.hpBandAt(hpBands, left / eff * 100);
+          const d = I.dmgAt(left);
+          out.push(`${i + 1}발 ${Math.round(left / eff * 100)}%→${d.toLocaleString()}`);
+          left -= d;
+        }
+        return ' · ' + out.join(' / ');
+      })()
+      : '';
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
-      `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1발 ${dmg.toLocaleString()}${nTxt}${fxTxt}${dirTxt}${cutTxt}`));
+      hpBands
+        ? `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} — 대상 HP 에 따라 피해가 달라집니다${hpWhy}`
+        : `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1발 ${dmg.toLocaleString()}${nTxt}${fxTxt}${dirTxt}${cutTxt}`));
+    if (hpUnknown) {
+      box.append(metric('※ 반영하지 않은 효과', '대상 HP 비례 추가 피해',
+        hpUnknown + ' — 실제로는 이 계산보다 더 아픕니다.', 'sub pietan-unmod'));
+    }
     // 여기서 나온 「몇 발 버티나」 를 그대로 자동 구성 목표로 넘긴다.
     // 이게 없으면 사용자가 실효 HP 를 손으로 계산해 목표 칸에 옮겨 적어야 했다 —
     // 관통·폭풍 경감 장갑 같은 조건부 파츠는 이 목표를 걸어야 비로소 제값으로 뽑힌다.
-    if (hits != null && dmg > 0) box.append(pietanGoalRow(w, dmg, hits));
+    if (hits != null && dmg > 0) box.append(pietanGoalRow(w, dmg, hits, I));
     if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
     // 감소 스킬을 감소 큰 순으로 하나씩 곱하며 매번 내림한 과정 표기 (6% ×0.8 ×0.5 내림)
     const stepTxt = stg.mults.length ? ` (${w.stagger}%${stg.mults.map(m => ' ×' + m).join('')} 내림)` : '';
