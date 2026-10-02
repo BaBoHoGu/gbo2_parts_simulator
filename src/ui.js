@@ -5412,19 +5412,21 @@
 
   const PLAN_EXP_SLOTS = 3;         // 확장 스킬 1~3순위
 
+  /* 플랜의 확장 스킬은 **늘 최대 레벨**이다 — 올릴 거면 끝까지 올리는 것이 전제라
+     고를 것이 없다. 그래서 레벨 칸을 두지 않는다(요청). 저장할 때도 레벨은 안 남긴다.
+     쓰는 쪽이 늘 이 값을 보도록 상수로 둔다. */
+  const PLAN_EXP_LEVEL = C.MAX_EXPANSION_LEVEL;
+
   /** 저장된 항목에서 확장 스킬 목록을 꺼낸다. 길이는 늘 3이고 빈 칸은 '확장 없음'. */
   function planExpsOf(x) {
-    const lv = v => Math.min(Math.max(Number(v) || 1, 1), C.MAX_EXPANSION_LEVEL);
     const out = [];
     if (Array.isArray(x && x.exps)) {
-      for (const e of x.exps.slice(0, PLAN_EXP_SLOTS)) {
-        out.push({ name: typeof (e && e.name) === 'string' ? e.name : C.EXPANSION_NONE,
-          level: lv(e && e.level) });
-      }
+      for (const e of x.exps.slice(0, PLAN_EXP_SLOTS))
+        out.push({ name: typeof (e && e.name) === 'string' ? e.name : C.EXPANSION_NONE });
     } else if (x && typeof x.exp === 'string') {
-      out.push({ name: x.exp, level: lv(x.expLevel) });      // 하나만 담던 옛 저장분
+      out.push({ name: x.exp });                              // 하나만 담던 옛 저장분
     }
-    while (out.length < PLAN_EXP_SLOTS) out.push({ name: C.EXPANSION_NONE, level: 1 });
+    while (out.length < PLAN_EXP_SLOTS) out.push({ name: C.EXPANSION_NONE });
     return out;
   }
   /** 실제로 고른 확장만 (빈 칸 제외). */
@@ -5629,21 +5631,8 @@
       line('DP', r.openSum.dp.toLocaleString() + ' DP');
     }
 
-    // 보이는 항목 전체 — 플랜을 다 끝내려면
-    const sum = { left: 0, runs: 0, hours: 0, tickets: 0, kit: 0, dp: 0, unknown: 0 };
-    for (const x of shown) {
-      const c = planCalc(x);
-      if (c.why) { sum.unknown++; continue; }
-      sum.left += c.afterDup; sum.runs += c.runs; sum.hours += c.hours; sum.tickets += c.tickets;
-      if (c.openSum) { sum.kit += c.openSum.kit; sum.dp += c.openSum.dp; }
-    }
-    sec('보이는 항목 ' + shown.length + '개 합계');
-    // (합계 줄은 아래에서 채운다 — 포커스 되돌리기는 맨 끝에서 한 번만 한다)
-    line('남은 pt (중복 뺀 뒤)', sum.left.toLocaleString() + ' pt');
-    line('기다리면', planHours(sum.hours));
-    line('티켓으로 다 건너뛰면', sum.tickets.toLocaleString() + '장');
-    if (sum.kit) line('개량 키트 · DP', sum.kit.toLocaleString() + '개 · ' + sum.dp.toLocaleString() + ' DP');
-    if (sum.unknown) line('셈에서 뺀 항목', sum.unknown + '개 (자료 없음)');
+    /* 여기는 **고른 기체 하나**만 본다. 플랜 전체 합계는 순위마다 아래에 붙어 있다 —
+       같은 숫자를 두 군데 적으면 어느 쪽을 보는지 헷갈린다. */
 
     // 치던 칸으로 돌려놓는다 (커서는 끝으로 — 숫자 칸이라 그 편이 이어 치기 좋다)
     if (planFocusKey) {
@@ -5701,19 +5690,42 @@
          쓴다(planCalc). 여기서 따로 세면 둘이 갈라진다. 셀 수 없는 항목은 숨기지 않고
          몇 개인지 적는다 — 조용히 빠지면 합계가 작게 보인다. */
       const foot = el('div', 'plan-foot');
-      const t = { tickets: 0, kit: 0, dp: 0, unknown: 0 };
+      /* 개량 키트는 **등급마다 다른 물건**이다(개량 키트[★] ≠ [★★★]). 한 숫자로 합치면
+         가진 것과 맞춰 볼 수가 없다 — 등급별로 쪼갠다. DP 는 하나로 합쳐도 된다. */
+      const kitBy = {};
+      let dp = 0;
+      const skipped = [];
       for (const x of mine) {
         const c = planCalc(x);
-        if (c.why) { t.unknown++; continue; }
-        t.tickets += c.tickets;
-        if (c.openSum) { t.kit += c.openSum.kit; t.dp += c.openSum.dp; }
+        if (c.why) { skipped.push({ ms: x.ms, why: c.why }); continue; }
+        if (!c.openSum) continue;              // 풀강이 목표일 때만 개방 비용이 든다
+        kitBy[c.rar] = (kitBy[c.rar] || 0) + c.openSum.kit;
+        dp += c.openSum.dp;
       }
       if (mine.length) {
         foot.append(el('span', 'pf-lb', rank + '순위 도합'));
-        foot.append(el('span', 'pf-v', '티켓 ' + t.tickets.toLocaleString() + '장'));
-        foot.append(el('span', 'pf-v', '개량 키트 ' + t.kit.toLocaleString() + '개'));
-        foot.append(el('span', 'pf-v', t.dp.toLocaleString() + ' DP'));
-        if (t.unknown) foot.append(el('span', 'pf-dim', '자료 없는 기체 ' + t.unknown + '개 제외'));
+        const rars = Object.keys(kitBy).sort((a, b) => a - b);
+        if (rars.length) {
+          for (const r of rars)
+            foot.append(el('span', 'pf-v', '개량 키트[' + '★'.repeat(Number(r)) + '] ' + kitBy[r].toLocaleString() + '개'));
+          foot.append(el('span', 'pf-v', dp.toLocaleString() + ' DP'));
+        } else {
+          foot.append(el('span', 'pf-dim', '개방 비용 없음 (풀강 목표가 없습니다)'));
+        }
+        /* 뺀 것은 **무엇을 왜** 뺐는지 적는다. 개수만 적으면 합계가 왜 작은지 알 수 없고,
+           조용히 빼면 다 됐다고 읽힌다. */
+        if (skipped.length) {
+          const names = skipped.map(s => {
+            const m = msData.find(x => x.MS名 === s.ms);
+            return m ? T.msName(m.MS名) : s.ms;
+          });
+          const why = skipped.every(s => /강화 pt 자료가 없습니다/.test(s.why))
+            ? '강화 pt 가 원본·위키 어디에도 없어 셈할 수 없습니다'
+            : '자료를 찾을 수 없어 셈할 수 없습니다';
+          const d = el('span', 'pf-dim', '셈에서 뺌 — ' + names.join(', ') + ' : ' + why);
+          d.title = skipped.map(s => s.ms + ' — ' + s.why).join('\n');
+          foot.append(d);
+        }
         zone.append(foot);
       }
       body.append(zone);
@@ -5749,8 +5761,9 @@
     tags.append(el('span', 'pt-goal', STAGE_LABEL[it.stage] || String(it.stage)));
     // 확장은 고른 순서가 곧 순위다 — ①②③ 로 적어 어느 것을 먼저 올릴지 보이게
     planExpPicked(it).forEach((e, i) => {
-      const t = el('span', 'pt-goal', '①②③'[i] + ' ' + expShort(e.name) + ' LV' + e.level);
-      t.title = (i + 1) + '순위 확장 — ' + (C.EXPANSION_LABEL[e.name] || e.name) + ' LV' + e.level;
+      // 레벨은 늘 최대라 칸에 적지 않는다 (적어 봐야 모두 같은 글자다) — 설명에만 남긴다
+      const t = el('span', 'pt-goal', '①②③'[i] + ' ' + expShort(e.name));
+      t.title = (i + 1) + '순위 확장 — ' + (C.EXPANSION_LABEL[e.name] || e.name) + ' LV' + PLAN_EXP_LEVEL;
       tags.append(t);
     });
     main.append(tags);
@@ -5872,11 +5885,9 @@
       b.classList.toggle('on', Number(b.dataset.v) === planEdit.rank);
     for (let i = 0; i < PLAN_EXP_SLOTS; i++) {
       const e = planEdit.exps[i];
-      const sel = $('#planExp' + i), lv = $('#planExpLevel' + i);
+      const sel = $('#planExp' + i);
       if (!sel) continue;
       sel.value = e.name;
-      lv.value = String(e.level);
-      lv.disabled = e.name === C.EXPANSION_NONE;
     }
 
     /* 같은 기체를 플랜에 두 번 담지 않는다 — 두 줄이 서로 다른 목표를 말하면
@@ -5915,18 +5926,14 @@
       lb.htmlFor = 'planExp' + i;
       row.append(lb);
 
-      const sel = el('select', 'pe-exp');
+      // 레벨 칸은 두지 않는다 — 플랜의 확장은 늘 LV5 다(요청). 스킬만 고른다.
+      const sel = el('select', 'pe-exp pe-exp-wide');
       sel.id = 'planExp' + i;
+      sel.title = '확장 스킬 (LV' + PLAN_EXP_LEVEL + ' 기준)';
       for (const name of C.EXPANSION_SKILLS) sel.append(new Option(C.EXPANSION_LABEL[name] || name, name));
       sel.onchange = () => { planEdit.exps[i].name = sel.value; syncPlanEdit(); };
 
-      const lv = el('select', 'pe-explv');
-      lv.id = 'planExpLevel' + i;
-      lv.title = '확장 스킬 레벨';
-      for (let n = 1; n <= C.MAX_EXPANSION_LEVEL; n++) lv.append(new Option('LV' + n, String(n)));
-      lv.onchange = () => { planEdit.exps[i].level = Number(lv.value); syncPlanEdit(); };
-
-      row.append(sel, lv);
+      row.append(sel);
       expBox.append(row);
     }
 

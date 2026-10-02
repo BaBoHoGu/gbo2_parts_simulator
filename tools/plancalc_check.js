@@ -347,7 +347,9 @@ const noCap = msData.find(m => {
   });
   ok('확장 칸이 1~3순위로 셋이다',
     expRows.labels.join(',') === '확장 1순위,확장 2순위,확장 3순위', expRows);
-  ok('확장 칸마다 레벨 칸이 따로 있다', expRows.sels.length === 6, expRows);
+  // 레벨은 늘 LV5 라 칸을 두지 않는다 — 선택 칸은 셋뿐이다
+  ok('확장 레벨 칸은 없다 (늘 LV5)', expRows.sels.length === 3
+    && expRows.sels.every(id => id.indexOf('planExpLevel') !== 0), expRows);
   const setThree = await pg.evaluate(() => {
     const names = [];
     for (let i = 0; i < 3; i++) {
@@ -355,8 +357,6 @@ const noCap = msData.find(m => {
       const o = [...s.options].slice(1 + i)[0];
       s.value = o.value; s.dispatchEvent(new Event('change'));
       names.push(o.textContent.trim());
-      const lv = document.querySelector('#planExpLevel' + i);
-      lv.value = String(i + 1); lv.dispatchEvent(new Event('change'));
     }
     document.querySelector('#planSave').click();
     return names;
@@ -367,44 +367,67 @@ const noCap = msData.find(m => {
     return [...c.querySelectorAll('.plan-tags span')].map(s => s.textContent.trim());
   });
   ok('박스가 확장 셋을 ①②③ 로 적는다',
-    ['①', '②', '③'].every(mark => tagTxt.some(t => t.indexOf(mark) === 0))
-    && tagTxt.some(t => /LV1/.test(t)) && tagTxt.some(t => /LV3/.test(t)),
+    ['①', '②', '③'].every(mark => tagTxt.some(t => t.indexOf(mark) === 0)),
     { tagTxt, setThree });
+  // 레벨은 모두 같으므로 칸에 적지 않는다(적어 봐야 같은 글자다)
+  ok('박스에 확장 레벨을 적지 않는다',
+    !tagTxt.some(t => /LV\d/.test(t) && /①|②|③/.test(t)), tagTxt);
   const stored = await pg.evaluate(() => {
     try { return (JSON.parse(localStorage.getItem('gbo2.plan') || '[]')[0] || {}).exps; }
     catch { return null; }
   });
   ok('확장 셋이 순서대로 저장된다',
     Array.isArray(stored) && stored.length === 3
-    && stored[0].level === 1 && stored[2].level === 3, stored);
+    && stored.every(e => typeof e.name === 'string'), stored);
+  ok('저장물에 레벨을 남기지 않는다',
+    Array.isArray(stored) && stored.every(e => e.level === undefined), stored);
 
-  /* ── ④ 순위마다 도합 (티켓 · 개량 키트 · DP) */
-  const foot = await pg.evaluate(() => {
-    const z = document.querySelector('.plan-zone');
-    const f = z.querySelector('.plan-foot');
-    return f ? { txt: f.textContent.replace(/\s+/g, ' ').trim(),
-      vals: [...f.querySelectorAll('.pf-v')].map(v => v.textContent.trim()) } : null;
-  });
-  ok('순위 아래에 도합 줄이 있다', !!foot, foot);
-  ok('도합에 티켓 · 개량 키트 · DP 가 모두 있다',
-    !!foot && /티켓/.test(foot.txt) && /개량 키트/.test(foot.txt) && /DP/.test(foot.txt), foot);
-  // 숫자가 맞는가 — 1순위에 든 그 한 기의 값과 같아야 한다
-  const fm3 = byRar[3], f3 = fm3.fullst.map(e => e.points);
-  const wantTickets = Math.ceil(f3[5] / 100) * 14;
-  const wantKit = OPEN[3][0][0] + OPEN[3][1][0], wantDp = OPEN[3][0][1] + OPEN[3][1][1];
-  const fnum = i => {
-    const m = String(foot.vals[i]).replace(/,/g, '').match(/\d+/);
-    return m ? Number(m[0]) : null;
-  };
-  ok('도합 숫자가 규칙과 맞는다',
-    !!foot && fnum(0) === wantTickets && fnum(1) === wantKit && fnum(2) === wantDp,
-    { 앱: foot && foot.vals, 손: [wantTickets, wantKit, wantDp] });
-  // 빈 순위에는 도합을 달지 않는다 (0 만 적힌 줄은 읽을 것이 없다)
-  const emptyFoot = await pg.evaluate(() =>
-    [...document.querySelectorAll('.plan-zone')].map(z =>
-      ({ cards: z.querySelectorAll('.plan-card').length, foot: !!z.querySelector('.plan-foot') })));
+  /* ── ④ 순위 도합은 **개량 키트(등급별) · DP** 만. 티켓은 빠진다(우측에서 본다).
+     개량 키트는 등급마다 다른 물건이라 한 숫자로 합치면 안 된다 —
+     같은 순위에 2성과 3성을 넣고 **따로 적히는지** 본다. */
+  const r2 = byRar[2], r3 = byRar[3], r5 = byRar[5];
+  await openPlanWith([
+    { id: 'K2', ms: r2.MS名, stage: 6, rank: 1, now: 0, dup: 0 },
+    { id: 'K3', ms: r3.MS名, stage: 6, rank: 1, now: 0, dup: 0 },
+    { id: 'K4', ms: r5.MS名, stage: 4, rank: 2, now: 0, dup: 0 },   // 4단계는 개방이 없다
+    { id: 'KX', ms: noCap.MS名, stage: 6, rank: 2, now: 0, dup: 0 } // 셈할 수 없는 기체
+  ], { boost: 1, succ: 1, x3: false });
+
+  const foots = await pg.evaluate(() =>
+    [...document.querySelectorAll('.plan-zone')].map(z => ({
+      cards: z.querySelectorAll('.plan-card').length,
+      has: !!z.querySelector('.plan-foot'),
+      txt: (z.querySelector('.plan-foot') || { textContent: '' }).textContent.replace(/\s+/g, ' ').trim(),
+      vals: [...z.querySelectorAll('.plan-foot .pf-v')].map(v => v.textContent.trim()),
+      dim: [...z.querySelectorAll('.plan-foot .pf-dim')].map(v => v.textContent.trim())
+    })));
+  const f1 = foots[0], f2 = foots[1];
+  ok('도합에 티켓이 더 이상 없다', !/티켓/.test(f1.txt), f1);
+  ok('개량 키트가 **등급별로 따로** 적힌다',
+    /개량 키트\[★★\]/.test(f1.txt) && /개량 키트\[★★★\]/.test(f1.txt), f1);
+  const num = s => { const m = String(s).replace(/,/g, '').match(/\d+/g); return m ? Number(m[m.length - 1]) : null; };
+  const wantKit = OPEN[2][0][0] + OPEN[2][1][0];
+  const wantDp = (OPEN[2][0][1] + OPEN[2][1][1]) + (OPEN[3][0][1] + OPEN[3][1][1]);
+  ok('등급별 키트 수와 DP 합이 규칙과 맞는다',
+    num(f1.vals[0]) === wantKit && num(f1.vals[1]) === wantKit && num(f1.vals[2]) === wantDp,
+    { 앱: f1.vals, 손: [wantKit, wantKit, wantDp] });
+  ok('풀강 목표가 없는 순위는 개방 비용이 없다고 적는다',
+    /개방 비용 없음/.test(f2.txt), f2);
+  ok('셈에서 뺀 기체를 **이름과 이유**까지 적는다',
+    f2.dim.some(d => /셈에서 뺌/.test(d) && /강화 pt/.test(d)), f2.dim);
+  const emptyFoot = foots.map(z => ({ cards: z.cards, foot: z.has }));
   ok('빈 순위에는 도합 줄이 없다',
     emptyFoot.every(z => (z.cards > 0) === z.foot), emptyFoot);
+
+  /* ── 우측은 고른 기체 하나만 본다 (플랜 전체 합계 절은 뺐다) */
+  const noSum = await pg.evaluate(() => {
+    const t = document.querySelector('#planCalc').textContent.replace(/\s+/g, ' ');
+    return { hasSum: /합계/.test(t), secs: [...document.querySelectorAll('#planCalc .pc-sec > b')]
+      .map(b => b.textContent.replace(/\?$/, '').trim()) };
+  });
+  ok('우측에 플랜 전체 합계가 없다', !noSum.hasSum, noSum);
+  ok('우측 절은 목표 · 기체 중복 · 강화 작업 · 개방 뿐이다',
+    noSum.secs.join(',') === '목표,기체 중복,강화 작업,개방 (4→5, 5→6)', noSum.secs);
 
   ok('페이지 오류 없음', errs.length === 0, errs.slice(0, 3));
   await br.close();

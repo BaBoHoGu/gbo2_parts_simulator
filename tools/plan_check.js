@@ -171,13 +171,12 @@ const ok = (label, good, extra) => {
     // 「확장 없음」이 아닌 첫 항목
     const opt = [...exp.options].find((o, i) => i > 0);
     if (opt) { exp.value = opt.value; exp.dispatchEvent(new Event('change')); }
-    const lv = document.querySelector('#planExpLevel0');
-    lv.value = '3'; lv.dispatchEvent(new Event('change'));
     return { stage: st ? st.textContent.trim() : '', exp: opt ? opt.textContent.trim() : '',
-      lvDisabled: lv.disabled };
+      lvBoxes: document.querySelectorAll('[id^=planExpLevel]').length };
   });
   ok('강화 단계와 확장 스킬을 지정할 수 있다', !!setGoal.stage && !!setGoal.exp, setGoal);
-  ok('확장을 고르면 레벨 칸이 열린다', setGoal.lvDisabled === false, setGoal);
+  // 플랜의 확장은 늘 LV5 라 레벨 칸 자체를 두지 않는다
+  ok('확장 레벨 칸이 없다', setGoal.lvBoxes === 0, setGoal);
 
   await pg.evaluate(() => document.querySelector('#planSave').click());
   await sleep(500);
@@ -193,8 +192,10 @@ const ok = (label, good, extra) => {
   });
   ok('저장하면 박스가 생긴다', saved.closed && saved.inRank2, saved);
   ok('박스가 고른 기체 이름을 적는다', saved.name === picked, saved);
+  // 확장은 ① 로 시작하는 꼬리표로 적힌다 (레벨은 늘 LV5 라 적지 않는다)
   ok('박스가 강화 단계와 확장 스킬을 적는다',
-    saved.tags.some(t => /단계|풀강|미강화/.test(t)) && saved.tags.some(t => /LV3/.test(t)), saved.tags);
+    saved.tags.some(t => /단계|풀강|미강화/.test(t)) && saved.tags.some(t => t.indexOf('①') === 0),
+    saved.tags);
   ok('저장소에 남는다', saved.stored === 1, saved.stored);
 
   // ── 진짜 마우스로 2순위 → 3순위로 끈다

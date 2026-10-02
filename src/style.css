@@ -306,7 +306,8 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .plan-edit-body .pe-exp { width: 160px; }
-.plan-edit-body .pe-explv { width: 68px; }
+/* 레벨 칸을 뺀 자리를 이름이 쓴다 — 확장 이름이 길어 160px 에서는 많이 잘렸다 */
+.plan-edit-body .pe-exp-wide { width: 236px; }
 /* 강화 / 순위 — 한 줄에 둘. 각자 제 라벨을 작게 달고 간다. */
 .plan-edit-body .pe-row-pair { gap: 14px; flex-wrap: wrap; }
 .plan-edit-body .pe-sub { display: flex; align-items: center; gap: 7px; }
