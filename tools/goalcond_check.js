@@ -153,18 +153,19 @@ const num = s => Number(String(s).replace(/,/g, ''));
   await sleep(1500);
   await pg.evaluate(() => document.querySelector('#pietanBtn').click());
   await sleep(1500);
+  /* 화면 글자는 이제 **HP 눈금**이다(사용자가 제 HP 와 견주다 헷갈려서 바꿨다).
+     자동 구성이 쓰는 실효 HP 는 그 줄의 title 에 남겨 뒀으므로 거기서 읽는다 —
+     그 값이 곧 「이 무장 기준·조건부 경감까지 접은」 실효 HP 다. */
   const now = await pg.evaluate(() => {
     const m = [...document.querySelectorAll('#pietanModal .pietan-metric')].find(x => /격파까지/.test(x.textContent));
-    return m ? m.textContent.replace(/\s+/g, ' ').trim() : '';
+    return m ? { txt: m.textContent.replace(/\s+/g, ' ').trim(), title: m.title || '' } : { txt: '', title: '' };
   });
-  const eff = num((now.match(/내구 ([\d,]+)/) || [])[1]);
-  const factor = Number((now.match(/경감 ×([\d.]+)/) || [])[1] || 1);
-  const expect = Math.round(eff / factor);
-  console.log(`   피탄: 내구 ${eff.toLocaleString()} ÷ 경감 ×${factor} = ${expect.toLocaleString()}`);
+  const expect = num((now.title.match(/실효 HP ([\d,]+)/) || [])[1]);
+  console.log(`   피탄(툴팁): 실효 HP ${expect.toLocaleString()}`);
   console.log(`   자동 구성 측정값: ${measured.toLocaleString()}`);
   check('같은 구성을 두 화면이 같은 값으로 잰다', measured === expect,
     `자동 ${measured.toLocaleString()} ≠ 피탄 ${expect.toLocaleString()}`
-    + (/관통 경감/.test(now) ? ' (관통 경감이 한쪽에만 반영됨)' : ''));
+    + (/관통 경감/.test(now.txt) ? ' (관통 경감이 한쪽에만 반영됨)' : ''));
 
   check('스크립트 오류 없음', errs.length === 0, errs.join(' / '));
   await br.close();

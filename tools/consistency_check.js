@@ -89,7 +89,11 @@ const tfName = tfMs ? (dict[String(tfMs.MS名).replace(/_LV\d+$/, '')] || String
   }));
   await pg.evaluate(() => document.querySelector('#pietanBtn').click());
   await sleep(1200);
-  const pie = nums(await pg.evaluate(() => (document.querySelector('#pietanDura') || {}).textContent || ''));
+  /* 피탄 상단은 이제 「HP · 실탄 내구 지표 · 빔 · 격투」 순이다 — HP 칸은 빼고 내구만 읽는다.
+     (상자 전체 글자를 긁으면 HP 가 섞여 들어와 개수가 안 맞는다) */
+  const pie = nums(await pg.evaluate(() =>
+    [...document.querySelectorAll('#pietanDura .pietan-dura-cell:not(.pietan-dura-hp)')]
+      .map(e => e.textContent).join(' ')));
   await pg.evaluate(() => document.querySelector('#pietanClose').click());
   await sleep(500);
   await pg.evaluate(() => { window.prompt = () => '일관성점검'; document.querySelector('#save').click(); });

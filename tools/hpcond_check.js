@@ -159,10 +159,41 @@ ok('구간 경계가 맞는다 (100→100 · 99.9→50 · 70→50 · 69→20 · 
   /* 앱의 식을 베끼지 않고 **화면이 적어 준 내구와 발마다의 피해**로 다시 센다.
      근거 줄에 「1발 100%→5,868」 꼴로 적혀 있으니, 그 값들을 더해 내구를 넘기는
      발수가 화면의 발수와 같아야 한다. */
-  const eff = Number((rr.kill.note.match(/내구\s*([\d,]+)/) || [])[1].replace(/,/g, ''));
+  /* 근거 줄은 **기체 HP 눈금**으로 적는다 — 실효 HP(내구 지표)로 적었더니 사용자가
+     제 HP 와 견주다 헷갈렸다(「1발 20,134 인데 내 HP 는 24,000?」). 둘은 비율이 같아
+     발수는 그대로다. 실효 HP 는 그 줄의 title 에 남아 있다. */
+  // 문구가 바뀌어 못 읽으면 **여기서 죽지 않고** 0 으로 둔다 — 죽으면 뒤 검사가 안 돈다
+  const effRaw = (rr.kill.note.match(/HP\s*([\d,]+)/) || [])[1];
+  const eff = effRaw ? Number(effRaw.replace(/,/g, '')) : 0;
   const steps = [...rr.kill.note.matchAll(/(\d+)발\s*(\d+)%→([\d,]+)/g)]
     .map(m => ({ n: +m[1], pct: +m[2], d: Number(m[3].replace(/,/g, '')) }));
   ok('근거에 발마다의 피해가 적혀 있다', steps.length >= 3, steps.slice(0, 3));
+
+  /* **기체 HP 눈금으로 적는가.** 내구 지표로 적었더니 사용자가 제 HP 와 견주다 헷갈렸다.
+     그래서 ① 글에 「내구」가 없고 ② 적힌 HP 가 그 기체의 실제 HP 이며
+     ③ 실효 HP 는 title 에만 남아 있는지 본다(자동 구성이 그 눈금을 쓰므로 사라지면 안 된다). */
+  const hpInfo = await pg.evaluate(() => {
+    const row = [...document.querySelectorAll('#pietanModal .pietan-metric')]
+      .find(x => (x.querySelector('.pietan-mlb') || {}).textContent === '격파까지');
+    const head = [...document.querySelectorAll('#pietanDura .pietan-dura-cell')]
+      .map(e => e.textContent.replace(/\s+/g, ' ').trim());
+    return { title: row ? row.title : '', head };
+  });
+  ok('근거 줄에 「내구」라고 적지 않는다', !/내구/.test(rr.kill.note), rr.kill.note.slice(0, 60));
+  /* 기대 HP 는 **앱이 적어 준 값이 아니라** core 로 직접 센다 — 베끼면 같이 틀린다.
+     맞는 쪽 기체는 위에서 「건담 Ez8」로 골랐고, 파츠 없이 6강 기준이다. */
+  const C2 = require(path.join(ROOT, 'src', 'core.js'));
+  const defMs = msData.filter(m => /Ez8/.test(m.MS名))
+    .sort((a, b) => C2.msLevel(b.MS名) - C2.msLevel(a.MS名))[0];
+  const myHp = Math.round(C2.calcStats(defMs, [], 6, '拡張スキル無し',
+    JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'parts.json'), 'utf8')),
+    JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'fullst.json'), 'utf8')),
+    null, 'normal').total.hp || 0);
+  ok('적힌 HP 가 그 기체의 실제 HP 다', eff === myHp, { 적힌값: eff, 실제HP: myHp, 기체: defMs.MS名 });
+  ok('실효 HP 는 툴팁에 남아 있다', /실효 HP [\d,]+/.test(hpInfo.title), hpInfo.title.slice(0, 60));
+  // 윗줄 차례 — HP · 실탄 내구 지표 · 빔 · 격투
+  ok('윗줄이 HP 먼저, 그다음 속성별 내구 지표다',
+    /^HP/.test(hpInfo.head[0] || '') && /내구 지표/.test(hpInfo.head[1] || ''), hpInfo.head);
   let left = eff, n = 0;
   for (const s of steps) { left -= s.d; n++; if (left <= 0) break; }
   const shown = Number((rr.kill.v.match(/\d+/) || [])[0]);

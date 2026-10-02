@@ -7135,9 +7135,14 @@
     const note = () => {
       const n = Math.max(1, Number(inp.value) || hits + 1);
       const need = pietanNeedEhp(I, dmg, n);
-      nt.textContent = '필요 실효 HP ' + need.toLocaleString()
+      /* **HP 눈금으로 적는다** — 위 「격파까지」와 같은 자라야 둘을 견줄 수 있다.
+         다만 자동 구성에 거는 값은 **실효 HP 그대로**다(그쪽 목표 칸이 실효 HP 축이라서).
+         숫자가 둘이면 헷갈리므로, 실제로 걸리는 값은 뒤에 작게 밝혀 둔다. */
+      const needHp = I && I.toHp ? I.toHp(need) : need;
+      nt.textContent = '필요 HP ' + needHp.toLocaleString()
         + (I && I.hpBands ? ' (' + n + '발 누적 — 발마다 피해가 다릅니다)'
-          : ' (1발 ' + dmg.toLocaleString() + ' × ' + n + ')');
+          : ' (1발 ' + (I && I.toHp ? I.toHp(dmg) : dmg).toLocaleString() + ' × ' + n + ')')
+        + ' · 자동 구성에는 실효 HP ' + need.toLocaleString() + ' 로 걸립니다';
     };
     note();
     wrap.append(nt);
@@ -7397,15 +7402,23 @@
     const box = $('#pietanDura'); if (!box) return;
     const r = stats();
     box.innerHTML = '';
-    box.append(el('span', 'pietan-dura-lb', '내구 지표 (실효 HP)'));
+    /* **HP 를 맨 앞에 둔다.** 내구 지표만 늘어놓으니 사용자가 제 HP 와 견주다 헷갈렸다
+       (「1발 20,134 인데 내 HP 는 24,000?」). 기준이 되는 HP 를 먼저 보여 주고,
+       그 뒤에 속성별 내구 지표를 「○○ 내구 지표」로 이름까지 붙여 적는다. */
+    const hpCell = el('span', 'pietan-dura-cell pietan-dura-hp');
+    hpCell.append(el('span', 'pietan-dura-t', 'HP'));
+    hpCell.append(el('span', 'pietan-dura-v', Math.round(r.total.hp || 0).toLocaleString()));
+    hpCell.title = '기체 HP — 아래 「격파까지」의 피해도 이 눈금으로 적습니다';
+    box.append(hpCell);
     // 성능표와 같은 계산을 쓴다 — 예전엔 경감을 빼고 그려서, 같은 이름의 지표가
     // 성능 24,572 · 여기 22,115 로 갈렸다(격파 발수는 피해 쪽에서 경감해 맞았지만 표시가 달랐다).
     const cuts = damageCutsOf(state.equipped, { skillMs: state.ms });
     for (const [dattr, , lb] of DURA_ATTRS) {
       const cell = el('span', 'pietan-dura-cell');
       cell.append(el('i', 'pietan-dot ' + ARMOR_KEY[dattr]));
-      cell.append(el('span', 'pietan-dura-t', lb));
+      cell.append(el('span', 'pietan-dura-t', lb + ' 내구 지표'));
       cell.append(el('span', 'pietan-dura-v', enduranceOf(r.total, dattr, cuts).toLocaleString()));
+      cell.title = lb + ' 공격을 기준으로 실제로 버티는 총량 (HP ÷ (1 − 내성) ÷ 피해경감)';
       box.append(cell);
     }
     // 전제를 여기 적는다 — 이게 아래 모든 수치의 뜻을 정하는데, 예전에는 결과 맨 아래
@@ -7805,7 +7818,14 @@
     return { eff, stg, isMelee, variants, dirs, vi, di, meleeCcd, eatk, eCorr, eMul, eEq,
       eAttrBonus, ePartPct, nNc, nCh, oneHit, inFx, fxAdd, dmg, hits, chgOne, chgDmg, chgHits,
       condCuts, dmgFactor, eMult, perHitStagger, stagN,
-      hpBands, hpUnknown, dmgAt, stepHits };
+      hpBands, hpUnknown, dmgAt, stepHits,
+      /* 화면에 적을 때 쓰는 **기체 HP 눈금**.
+         셈은 실효 HP(내구 지표) 위에서 한다 — 그래야 「내성이 높을수록 한 대가 덜 아프다」가
+         나눗셈 한 번으로 풀린다. 그런데 그 숫자를 그대로 보여 주니 사용자가 제 HP 와
+         견주다 헷갈렸다(「1발 20,134 인데 내 HP 는 24,000?」).
+         실효 HP = HP ÷ (1 − 내성) 이므로 HP/실효 를 곱하면 **실제로 깎이는 양**이 된다. */
+      myHp: Math.round(r.total.hp || 0),
+      toHp: v => Math.round(v * (eff > 0 ? (r.total.hp || 0) / eff : 1)) };
   }
 
   /** 상대 무장 → 나 (받는 피해·격파·경직). */
@@ -7879,8 +7899,14 @@
     const varTxt = variants && variants.length > 1 ? `${variants[pietanVariant].label} ` : '';
     const dirTxt = dirs ? ` · ${varTxt}${mLabel(dirs[pietanDir].label)} ${dirs[pietanDir].raw}` : '';
     // 전탄 배수가 있으면 '1발' 이 몇 히트인지 함께 밝힌다(무장 표의 '전탄' 표기와 같은 뜻)
-    const nTxt = nNc > 1 ? ` (1발 = ${oneHit.toLocaleString()} × ${eMult.nc.label})` : '';
-    const fxTxt = fxAdd ? ` + 고정 ${fxAdd.toLocaleString()}` : '';
+    /* HP 눈금으로 바꿀 때 **조각마다 따로 반올림하면 산수가 안 맞는다** —
+       1발 271 인데 1히트 136 × 2발 = 272 가 나왔다(검사가 잡았다).
+       그래서 조각을 먼저 반올림하고, 합계는 그 조각들을 더해서 만든다. */
+    const oneHitHp = I.toHp(oneHit);
+    const fxHp = I.toHp(fxAdd);
+    const dmgHp = oneHitHp * nNc + fxHp;
+    const nTxt = nNc > 1 ? ` (1발 = ${oneHitHp.toLocaleString()} × ${eMult.nc.label})` : '';
+    const fxTxt = fxAdd ? ` + 고정 ${fxHp.toLocaleString()}` : '';
     /* 대상 HP 에 따라 피해가 달라지는 무장은 「÷ 1발」이 거짓말이 된다 — 발마다 값이 다르다.
        그래서 근거를 **발마다** 적는다. 셈에 못 넣는 무장(값이 원문에 없거나 스킬 조건)은
        숫자를 지어내지 않고 그 사실을 적는다 — 파츠 쪽 UNMODELLED_FX 와 같은 원칙이다. */
@@ -7890,16 +7916,29 @@
         for (let i = 0; i < hits && i < 12; i++) {
           const b = D.hpBandAt(hpBands, left / eff * 100);
           const d = I.dmgAt(left);
-          out.push(`${i + 1}발 ${Math.round(left / eff * 100)}%→${d.toLocaleString()}`);
+          out.push(`${i + 1}발 ${Math.round(left / eff * 100)}%→${I.toHp(d).toLocaleString()}`);
           left -= d;
         }
         return ' · ' + out.join(' / ');
       })()
       : '';
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
+      /* **기체 HP 로 적는다.** 셈은 실효 HP(내구 지표) 위에서 하지만, 그 숫자를 그대로
+         보여 주니 제 HP 와 견주다 헷갈린다는 말이 나왔다 — 「1발 20,134 인데 내 HP 는 24,000?」.
+         여기 적히는 값은 **실제로 HP 바에서 깎이는 양**이다(내성을 이미 뺀 값).
+         내구 지표는 모달 맨 윗줄에 그대로 있다. */
       hpBands
-        ? `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} — 대상 HP 에 따라 피해가 달라집니다${hpWhy}`
-        : `${ATTR_LABEL[w.attr]} 내구 ${eff.toLocaleString()} ÷ 1발 ${dmg.toLocaleString()}${nTxt}${fxTxt}${dirTxt}${cutTxt}`));
+        ? `HP ${I.myHp.toLocaleString()} — 대상 HP 에 따라 피해가 달라집니다${hpWhy}`
+        : `HP ${I.myHp.toLocaleString()} ÷ 1발 ${dmgHp.toLocaleString()}${nTxt}${fxTxt}${dirTxt}${cutTxt}`));
+    /* 실효 HP(내구 지표)는 **화면에서 뺐지만** 자동 구성이 쓰는 눈금이라 어딘가에는 있어야 한다.
+       글로 적으면 HP 와 숫자가 둘이 되어 다시 헷갈리므로 툴팁으로만 남긴다. */
+    /* eff 는 HP ÷ (1 − 내성) 까지만이다 — 피해경감은 피해 쪽(dmgFactor)에 걸려 있다.
+       자동 구성의 ehp* 축은 **경감까지 접은** 값을 쓰므로 여기서 나눠 준다.
+       (처음에 eff 를 그대로 적었다가 34,315 vs 42,894 로 어긋나 검사가 잡았다) */
+    const killRow = box.lastElementChild;
+    const effWeapon = Math.round(eff / (dmgFactor || 1));
+    if (killRow) killRow.title = '실효 HP ' + effWeapon.toLocaleString()
+      + ' — HP ÷ (1 − 내성) ÷ 피해경감. 자동 구성의 「실효 HP」 목표가 쓰는 눈금입니다.';
     if (hpUnknown) {
       box.append(metric('※ 반영하지 않은 효과', '대상 HP 비례 추가 피해',
         hpUnknown + ' — 실제로는 이 계산보다 더 아픕니다.', 'sub pietan-unmod'));
