@@ -1255,14 +1255,18 @@
   // 화면은 셋이다 — 기체 선택 · 파츠 적용 · 공유 갤러리.
   // 갤러리는 단계(stepper)에 넣지 않는다. 흐름의 한 단계가 아니라 언제든 다녀오는 곳이라,
   // 들어오기 전 화면을 기억해 두고 「돌아가기」로 그리로 되돌린다.
-  let viewBefore = 'select';
+/* 갤러리·스킬 도감·토큰·강화 플랜에서 뒤로가기는 **언제나 기체 선택**으로 간다.
+   예전엔 '들어오기 전 화면'(viewBefore)으로 돌아갔는데, 그 넷이 서로를 기억해서
+   강화 플랜 → 토큰 → 뒤로(강화 플랜) → 뒤로(토큰) 처럼 **고리에 갇혔다**.
+   파츠 구성은 그대로 남아 있고 「2 파츠 적용」을 누르면 바로 돌아가므로,
+   한 군데로 모으는 편이 예측 가능하고 갇히지 않는다. */
+  const AUX_BACK = 'select';
   // 지금 보고 있는 구성이 갤러리에서 온 것인가. 「기체 변경」이 어디로 돌아갈지 정한다
   // — 갤러리에서 골라 들어왔는데 기체 선택 화면으로 튕기면 찾던 자리를 잃는다.
   let fromGallery = false;
 
   function setView(view) {
     const changed = state.view !== view;
-    if ((view === 'gallery' || view === 'codex' || view === 'token' || view === 'plan') && changed) viewBefore = state.view;
     state.view = view;
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
@@ -5313,11 +5317,9 @@
    *   그대로 둬야 한다. 안 그러면 그 구성이 '들어오기 전' 이 돼, 「돌아가기」가
    *   기체 선택이 아니라 방금 보던 구성으로 되돌아가는 고리가 생긴다.
    */
-  function openGallery(open, back) {
-    if (!open) { setView(viewBefore === 'gallery' ? 'select' : viewBefore); return; }
-    const before = viewBefore;
+  function openGallery(open) {
+    if (!open) { setView(AUX_BACK); return; }
     setView('gallery');
-    if (back) viewBefore = before;
     // 캐시가 있으면 먼저 보여 주고(오프라인에서도 열린다) 새로 받아 온다
     if (!galleryList.length && S) galleryList = S.readCache();
     updateAdminBtn();
@@ -5538,10 +5540,25 @@
       box.append(d);
       return d;
     };
-    const sec = title => {
+    /* 머리줄. help 를 주면 ? 를 달고, 누르면 그 아래에 설명을 펼친다.
+       설명을 늘 펼쳐 두면 자리만 먹고(요청으로 지웠다), 툴팁은 폰에서 안 뜬다 —
+       ? 는 둘 다 피한다. */
+    const sec = (title, help) => {
       const d = el('div', 'pc-sec');
       d.append(el('b', '', title));
       box.append(d);
+      if (help) {
+        const q = el('button', 'pc-help', '?');
+        q.type = 'button';
+        q.title = '설명 보기';
+        q.setAttribute('aria-label', title + ' 설명');
+        d.querySelector('b').append(q);
+        const note = el('div', 'pc-note');
+        note.hidden = true;
+        note.textContent = help;
+        q.onclick = () => { note.hidden = !note.hidden; q.classList.toggle('on', !note.hidden); };
+        box.append(note);
+      }
       return d;
     };
     /* 값이 바뀌면 패널을 통째로 다시 그린다 — 그러면 **치던 칸의 포커스가 날아간다.**
@@ -5564,6 +5581,12 @@
     line('남은 pt', r.left.toLocaleString() + ' pt', 'pc-big');
 
     sec('기체 중복');
+    // 3배 이벤트는 바로 아래 「등급 보상」을 바꾸는 스위치다 — 바꾸는 값 **위에** 둔다
+    const x3 = el('label', 'pc-chk');
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = planOpt.x3;
+    cb.onchange = () => { planOpt.x3 = cb.checked; savePlanOpt(); renderPlanCalc(); };
+    x3.append(cb, el('span', '', '3배 이벤트 (중복 보상 ×3)'));
+    box.append(x3);
     line('등급 보상 (상한치의 ' + (r.pct != null ? r.pct + '%' : '—') + ')',
       r.dupOne == null ? '자료 없음' : '+' + r.dupOne.toLocaleString() + ' pt');
     const dupRow = el('div', 'pc-line');
@@ -5571,14 +5594,12 @@
     dupRow.append(numInput('dup', it.dup, v => { it.dup = v; savePlan(); renderPlanCalc(); }));
     box.append(dupRow);
     line('중복으로 채우는 pt', '−' + r.dupGot.toLocaleString() + ' pt');
-    // 3배 이벤트는 중복 보상에만 걸린다 — 걸리는 자리 바로 아래에 둔다
-    const x3 = el('label', 'pc-chk');
-    const cb = el('input'); cb.type = 'checkbox'; cb.checked = planOpt.x3;
-    cb.onchange = () => { planOpt.x3 = cb.checked; savePlanOpt(); renderPlanCalc(); };
-    x3.append(cb, el('span', '', '3배 이벤트 (중복 보상 ×3)'));
-    box.append(x3);
 
-    sec('강화 작업');
+    sec('강화 작업',
+      '티켓 1장 = 5시간, 14장 = 70시간 = 100pt 로 봅니다. '
+      + '×B 작업은 ' + PLAN_HOURS_PER_RUN + 'B 시간(또는 14B장)을 쓰고 ' + PLAN_PT_PER_RUN + 'B pt 를 줍니다.\n'
+      + '「결과 가정」은 그 결과가 계속 나왔다고 쳤을 때입니다 — 기댓값이 아닙니다. '
+      + '초성공 ×3 으로 보면 숫자가 3분의 1로 줄어듭니다.');
     const bRow = el('div', 'pc-line');
     bRow.append(el('span', '', '부스트'));
     const bSel = el('select');
@@ -5591,10 +5612,7 @@
     const sRow = el('div', 'pc-line');
     sRow.append(el('span', '', '결과 가정'));
     const sSel = el('select');
-    /* 아래 설명 줄은 치웠다(요청). 다만 이 한 줄은 자리를 안 먹는 툴팁으로 남긴다 —
-       「초성공 ×3」을 고르면 **그게 계속 나온다고 친 값**이지 기댓값이 아니다.
-       숫자가 3분의 1로 줄어 보이므로, 모르고 보면 계획을 그만큼 잘못 잡는다. */
-    sSel.title = '그 결과가 계속 나왔다고 쳤을 때입니다 (기댓값이 아닙니다).';
+    // 주의는 「강화 작업」 머리의 ? 안에 있다 (툴팁은 폰에서 안 뜬다)
     [[1, '성공'], [2, '대성공 ×2'], [3, '초성공 ×3']].forEach(([v, t]) => sSel.append(new Option(t, String(v))));
     sSel.value = String(planOpt.succ);
     sSel.onchange = () => { planOpt.succ = Number(sSel.value); savePlanOpt(); renderPlanCalc(); };
@@ -5639,7 +5657,7 @@
   }
 
   function openPlan(open) {
-    if (!open) { setView(viewBefore === 'plan' ? 'select' : (viewBefore || 'select')); return; }
+    if (!open) { setView(AUX_BACK); return; }
     setView('plan');
     renderPlan();
   }
@@ -6357,7 +6375,7 @@
   }
 
   function openCodex(open) {
-    if (!open) { setView(viewBefore === 'codex' ? 'select' : viewBefore); return; }
+    if (!open) { setView(AUX_BACK); return; }
     setView('codex');
     renderCodexChips();
     renderCodexList();
@@ -9666,7 +9684,7 @@
     // 기체 정보 칸이 목록을 덮은 채로 열린다 — 버튼에 「기체 리스트로」라고 적고 정보 칸을
     // 내미는 꼴이라, 닫기와 같은 정리를 여기서도 한다.
     $('#backToSelect').onclick = () => {
-      if (fromGallery) { openGallery(true, true); return; }
+      if (fromGallery) { openGallery(true); return; }
       closeInfo();
       setView('select');
     };
@@ -9719,7 +9737,7 @@
     $('#codexBack').onclick = () => openCodex(false);
     // 토큰 계산기 — 화면만 바꾼다. 계산기는 제 스크립트가 알아서 돈다(token.js).
     $('#tokenBtn').onclick = () => setView('token');
-    $('#tokenBack').onclick = () => setView(viewBefore || 'select');
+    $('#tokenBack').onclick = () => setView(AUX_BACK);
     $('#codexSearch').oninput = ev => { codexQ = ev.target.value; renderCodexList(); };
     // 보기 전환 — 고른 것·검색·분류는 보기마다 뜻이 달라 함께 비운다
     for (const b of document.querySelectorAll('#codexView .seg-btn')) {
@@ -9968,7 +9986,7 @@
       if (state.view === 'plan') { openPlan(false); return true; }
       /* 토큰 화면이 여기 **없었다** — 뒤로가기를 누르면 돌아가지 않고 앱이 닫혔다
          (돌아가는 길이 「‹ 돌아가기」 버튼 하나뿐이었다). 화면을 하나 더 붙이면서 같이 고친다. */
-      if (state.view === 'token') { setView(viewBefore || 'select'); return true; }
+      if (state.view === 'token') { setView(AUX_BACK); return true; }
       if (!$('#pietanModal').hidden) { openPietan(false); return true; }
       if (!$('#compareModal').hidden) { openCompareModal(false); return true; }
       if (!$('#ownedModal').hidden) { openOwnedModal(false); return true; }

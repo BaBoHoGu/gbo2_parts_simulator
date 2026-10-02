@@ -266,18 +266,34 @@ const noCap = msData.find(m => {
     if (!chk) return { err: '체크박스 없음' };
     const kids = [...box.children];
     const at = kids.indexOf(chk);
-    // 바로 위가 「중복으로 채우는 pt」 줄이어야 한다
+    // 차례: 「기체 중복」 머리 → 3배 체크 → 「등급 보상」 줄
     const prev = at > 0 ? kids[at - 1].textContent.replace(/\s+/g, ' ').trim() : '';
-    // 「강화 작업」 머리보다 앞에 있어야 한다
-    const work = kids.findIndex(k => k.classList.contains('pc-sec') && /강화 작업/.test(k.textContent));
-    return { prev, before: at < work, notes: box.querySelectorAll('.pc-note').length,
-      succTitle: (box.querySelector('select[title]') || {}).title || '' };
+    const next = kids[at + 1] ? kids[at + 1].textContent.replace(/\s+/g, ' ').trim() : '';
+    return { prev, next, shownNotes: [...box.querySelectorAll('.pc-note')].filter(n => !n.hidden).length };
   });
-  ok('3배 이벤트가 기체 중복 바로 아래에 있다',
-    /중복으로 채우는 pt/.test(x3place.prev) && x3place.before, x3place);
-  ok('아래 설명 줄이 없다', x3place.notes === 0, x3place);
-  ok('「결과 가정」의 주의는 툴팁으로 남아 있다',
-    /기댓값이 아닙니다/.test(x3place.succTitle), x3place.succTitle);
+  ok('차례가 기체 중복 → 3배 이벤트 → 등급 보상 이다',
+    /^기체 중복/.test(x3place.prev) && /등급 보상/.test(x3place.next), x3place);
+  ok('설명 줄이 펼쳐진 채로 있지 않다', x3place.shownNotes === 0, x3place);
+
+  /* ── ② 설명은 「강화 작업」의 ? 로 연다 */
+  const help = await pg.evaluate(() => {
+    const secs = [...document.querySelectorAll('#planCalc .pc-sec')];
+    const work = secs.find(s => /강화 작업/.test(s.textContent));
+    const q = work && work.querySelector('.pc-help');
+    if (!q) return { err: '? 없음' };
+    const before = [...document.querySelectorAll('#planCalc .pc-note')].filter(n => !n.hidden).length;
+    q.click();
+    const after = [...document.querySelectorAll('#planCalc .pc-note')].filter(n => !n.hidden);
+    const txt = after.map(n => n.textContent).join(' ');
+    q.click();
+    const closed = [...document.querySelectorAll('#planCalc .pc-note')].filter(n => !n.hidden).length;
+    return { before, opened: after.length, txt, closed };
+  });
+  ok('「강화 작업」에 ? 가 있고 눌러야 설명이 뜬다',
+    !help.err && help.before === 0 && help.opened === 1 && help.closed === 0, help);
+  ok('설명에 티켓 환산과 「기댓값이 아니다」가 들어 있다',
+    !help.err && /14장/.test(help.txt) && /기댓값이 아닙니다/.test(help.txt),
+    help.txt && help.txt.slice(0, 120));
 
   /* ── ② 같은 기체를 두 번 담지 못한다 */
   await pg.evaluate(() => document.querySelector('.plan-drop[data-rank="2"] .plan-add').click());
