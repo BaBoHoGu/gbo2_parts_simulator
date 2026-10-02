@@ -5408,6 +5408,26 @@
     try { localStorage.setItem(PLAN_OPT_KEY, JSON.stringify(planOpt)); } catch { /* 무시 */ }
   };
 
+  const PLAN_EXP_SLOTS = 3;         // 확장 스킬 1~3순위
+
+  /** 저장된 항목에서 확장 스킬 목록을 꺼낸다. 길이는 늘 3이고 빈 칸은 '확장 없음'. */
+  function planExpsOf(x) {
+    const lv = v => Math.min(Math.max(Number(v) || 1, 1), C.MAX_EXPANSION_LEVEL);
+    const out = [];
+    if (Array.isArray(x && x.exps)) {
+      for (const e of x.exps.slice(0, PLAN_EXP_SLOTS)) {
+        out.push({ name: typeof (e && e.name) === 'string' ? e.name : C.EXPANSION_NONE,
+          level: lv(e && e.level) });
+      }
+    } else if (x && typeof x.exp === 'string') {
+      out.push({ name: x.exp, level: lv(x.expLevel) });      // 하나만 담던 옛 저장분
+    }
+    while (out.length < PLAN_EXP_SLOTS) out.push({ name: C.EXPANSION_NONE, level: 1 });
+    return out;
+  }
+  /** 실제로 고른 확장만 (빈 칸 제외). */
+  const planExpPicked = it => (it.exps || []).filter(e => e.name !== C.EXPANSION_NONE);
+
   function loadPlan() {
     try {
       const raw = JSON.parse(localStorage.getItem(PLAN_KEY) || '[]');
@@ -5415,8 +5435,9 @@
         id: String(x.id || (Date.now() + '-' + Math.random().toString(36).slice(2, 7))),
         ms: String(x.ms),
         stage: [0, 4, 6].includes(Number(x.stage)) ? Number(x.stage) : 6,
-        exp: typeof x.exp === 'string' ? x.exp : C.EXPANSION_NONE,
-        expLevel: Math.min(Math.max(Number(x.expLevel) || 1, 1), C.MAX_EXPANSION_LEVEL),
+        /* 확장 스킬은 1~3순위로 **최대 셋**이다. 예전에 하나만 담던 저장분(exp/expLevel)도
+           그대로 읽어 첫 칸에 넣는다 — 쓰던 플랜이 열었더니 비어 있으면 안 된다. */
+        exps: planExpsOf(x),
         rank: PLAN_RANKS.includes(Number(x.rank)) ? Number(x.rank) : 1,
         now: Math.max(0, Number(x.now) || 0),     // 지금까지 쌓은 강화 pt
         dup: Math.max(0, Number(x.dup) || 0)      // 쓸 수 있는 중복 기체 수
@@ -5550,6 +5571,12 @@
     dupRow.append(numInput('dup', it.dup, v => { it.dup = v; savePlan(); renderPlanCalc(); }));
     box.append(dupRow);
     line('중복으로 채우는 pt', '−' + r.dupGot.toLocaleString() + ' pt');
+    // 3배 이벤트는 중복 보상에만 걸린다 — 걸리는 자리 바로 아래에 둔다
+    const x3 = el('label', 'pc-chk');
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = planOpt.x3;
+    cb.onchange = () => { planOpt.x3 = cb.checked; savePlanOpt(); renderPlanCalc(); };
+    x3.append(cb, el('span', '', '3배 이벤트 (중복 보상 ×3)'));
+    box.append(x3);
 
     sec('강화 작업');
     const bRow = el('div', 'pc-line');
@@ -5564,6 +5591,10 @@
     const sRow = el('div', 'pc-line');
     sRow.append(el('span', '', '결과 가정'));
     const sSel = el('select');
+    /* 아래 설명 줄은 치웠다(요청). 다만 이 한 줄은 자리를 안 먹는 툴팁으로 남긴다 —
+       「초성공 ×3」을 고르면 **그게 계속 나온다고 친 값**이지 기댓값이 아니다.
+       숫자가 3분의 1로 줄어 보이므로, 모르고 보면 계획을 그만큼 잘못 잡는다. */
+    sSel.title = '그 결과가 계속 나왔다고 쳤을 때입니다 (기댓값이 아닙니다).';
     [[1, '성공'], [2, '대성공 ×2'], [3, '초성공 ×3']].forEach(([v, t]) => sSel.append(new Option(t, String(v))));
     sSel.value = String(planOpt.succ);
     sSel.onchange = () => { planOpt.succ = Number(sSel.value); savePlanOpt(); renderPlanCalc(); };
@@ -5579,20 +5610,6 @@
       line('개량 키트[' + '★'.repeat(r.rar) + ']', r.openSum.kit.toLocaleString() + '개');
       line('DP', r.openSum.dp.toLocaleString() + ' DP');
     }
-
-    const x3 = el('label', 'pc-chk');
-    const cb = el('input'); cb.type = 'checkbox'; cb.checked = planOpt.x3;
-    cb.onchange = () => { planOpt.x3 = cb.checked; savePlanOpt(); renderPlanCalc(); };
-    x3.append(cb, el('span', '', '3배 이벤트 (중복 보상 ×3)'));
-    // append() 는 추가한 것이 아니라 undefined 를 돌려준다 — 이어 쓰면 화면이 거기서 멈춘다
-    const x3wrap = el('div', 'pc-sec');
-    x3wrap.append(x3);
-    box.append(x3wrap);
-
-    box.append(el('div', 'pc-note',
-      '티켓 1장 = 5시간, 14장 = 70시간 = 100pt 로 봅니다. ×B 작업은 ' + PLAN_HOURS_PER_RUN
-      + 'B 시간(또는 14B장)을 쓰고 100B pt 를 줍니다. '
-      + '「결과 가정」은 기댓값이 아니라 그 결과가 계속 나왔다고 쳤을 때입니다.'));
 
     // 보이는 항목 전체 — 플랜을 다 끝내려면
     const sum = { left: 0, runs: 0, hours: 0, tickets: 0, kit: 0, dp: 0, unknown: 0 };
@@ -5661,6 +5678,26 @@
       add.onclick = () => openPlanEdit(null, rank);
       drop.append(add);
       zone.append(drop);
+
+      /* 순위마다 도합 — 「이 순위를 끝내려면 무엇이 얼마나」. 우측 계산과 **같은 함수**를
+         쓴다(planCalc). 여기서 따로 세면 둘이 갈라진다. 셀 수 없는 항목은 숨기지 않고
+         몇 개인지 적는다 — 조용히 빠지면 합계가 작게 보인다. */
+      const foot = el('div', 'plan-foot');
+      const t = { tickets: 0, kit: 0, dp: 0, unknown: 0 };
+      for (const x of mine) {
+        const c = planCalc(x);
+        if (c.why) { t.unknown++; continue; }
+        t.tickets += c.tickets;
+        if (c.openSum) { t.kit += c.openSum.kit; t.dp += c.openSum.dp; }
+      }
+      if (mine.length) {
+        foot.append(el('span', 'pf-lb', rank + '순위 도합'));
+        foot.append(el('span', 'pf-v', '티켓 ' + t.tickets.toLocaleString() + '장'));
+        foot.append(el('span', 'pf-v', '개량 키트 ' + t.kit.toLocaleString() + '개'));
+        foot.append(el('span', 'pf-v', t.dp.toLocaleString() + ' DP'));
+        if (t.unknown) foot.append(el('span', 'pf-dim', '자료 없는 기체 ' + t.unknown + '개 제외'));
+        zone.append(foot);
+      }
       body.append(zone);
     }
     renderPlanCalc();
@@ -5692,8 +5729,12 @@
       tags.append(el('span', '', '데이터에 없는 기체'));
     }
     tags.append(el('span', 'pt-goal', STAGE_LABEL[it.stage] || String(it.stage)));
-    if (it.exp !== C.EXPANSION_NONE)
-      tags.append(el('span', 'pt-goal', expShort(it.exp) + ' LV' + it.expLevel));
+    // 확장은 고른 순서가 곧 순위다 — ①②③ 로 적어 어느 것을 먼저 올릴지 보이게
+    planExpPicked(it).forEach((e, i) => {
+      const t = el('span', 'pt-goal', '①②③'[i] + ' ' + expShort(e.name) + ' LV' + e.level);
+      t.title = (i + 1) + '순위 확장 — ' + (C.EXPANSION_LABEL[e.name] || e.name) + ' LV' + e.level;
+      tags.append(t);
+    });
     main.append(tags);
 
     // 드래그를 못 쓰는 자리를 위한 두 번째 길
@@ -5784,9 +5825,10 @@
   }
 
   function openPlanEdit(it, rank) {
+    // exps 는 **얕은 복사로는 안 된다** — 취소해도 원본이 같이 바뀐다
     planEdit = it
-      ? { ...it }
-      : { ms: '', stage: 6, exp: C.EXPANSION_NONE, expLevel: 1, rank: rank || 1 };
+      ? { ...it, exps: it.exps.map(e => ({ ...e })) }
+      : { ms: '', stage: 6, exps: planExpsOf(null), rank: rank || 1, now: 0, dup: 0 };
     $('#planEditTitle').textContent = it ? '강화 플랜 고치기' : '강화 플랜 추가';
     $('#planDelete').hidden = !it;
     syncPlanEdit();
@@ -5810,11 +5852,22 @@
       b.classList.toggle('on', Number(b.dataset.v) === planEdit.stage);
     for (const b of document.querySelectorAll('#planRankSeg .seg-btn'))
       b.classList.toggle('on', Number(b.dataset.v) === planEdit.rank);
-    $('#planExp').value = planEdit.exp;
-    $('#planExpLevel').value = String(planEdit.expLevel);
-    $('#planExpLevel').disabled = planEdit.exp === C.EXPANSION_NONE;
-    $('#planSave').disabled = !planEdit.ms;
-    $('#planEditNote').textContent = planEdit.ms ? '' : '기체를 먼저 고르세요.';
+    for (let i = 0; i < PLAN_EXP_SLOTS; i++) {
+      const e = planEdit.exps[i];
+      const sel = $('#planExp' + i), lv = $('#planExpLevel' + i);
+      if (!sel) continue;
+      sel.value = e.name;
+      lv.value = String(e.level);
+      lv.disabled = e.name === C.EXPANSION_NONE;
+    }
+
+    /* 같은 기체를 플랜에 두 번 담지 않는다 — 두 줄이 서로 다른 목표를 말하면
+       합계도 순위도 뜻을 잃는다. 고치는 중인 자기 자신은 빼고 본다. */
+    const dup = planEdit.ms
+      ? planItems.find(x => x.ms === planEdit.ms && x.id !== planEdit.id) : null;
+    $('#planSave').disabled = !planEdit.ms || !!dup;
+    $('#planEditNote').textContent = !planEdit.ms ? '기체를 먼저 고르세요.'
+      : dup ? '이미 플랜에 있습니다 (' + dup.rank + '순위) — 그 박스를 고치세요.' : '';
   }
 
   function initPlan() {
@@ -5836,13 +5889,28 @@
       rankSeg.append(b);
     }
 
-    // 확장 스킬 — 파츠 화면과 **같은 목록**을 쓴다
-    const exp = $('#planExp');
-    for (const name of C.EXPANSION_SKILLS) exp.append(new Option(C.EXPANSION_LABEL[name] || name, name));
-    const expLv = $('#planExpLevel');
-    for (let lv = 1; lv <= C.MAX_EXPANSION_LEVEL; lv++) expLv.append(new Option('LV' + lv, String(lv)));
-    exp.onchange = () => { planEdit.exp = exp.value; syncPlanEdit(); };
-    expLv.onchange = () => { planEdit.expLevel = Number(expLv.value); syncPlanEdit(); };
+    // 확장 스킬 1~3순위 — 목록은 파츠 화면과 **같은 것**을 쓴다
+    const expBox = $('#planExpRows');
+    for (let i = 0; i < PLAN_EXP_SLOTS; i++) {
+      const row = el('div', 'pe-row');
+      const lb = el('label', '', '확장 ' + (i + 1) + '순위');
+      lb.htmlFor = 'planExp' + i;
+      row.append(lb);
+
+      const sel = el('select', 'pe-exp');
+      sel.id = 'planExp' + i;
+      for (const name of C.EXPANSION_SKILLS) sel.append(new Option(C.EXPANSION_LABEL[name] || name, name));
+      sel.onchange = () => { planEdit.exps[i].name = sel.value; syncPlanEdit(); };
+
+      const lv = el('select', 'pe-explv');
+      lv.id = 'planExpLevel' + i;
+      lv.title = '확장 스킬 레벨';
+      for (let n = 1; n <= C.MAX_EXPANSION_LEVEL; n++) lv.append(new Option('LV' + n, String(n)));
+      lv.onchange = () => { planEdit.exps[i].level = Number(lv.value); syncPlanEdit(); };
+
+      row.append(sel, lv);
+      expBox.append(row);
+    }
 
     // 기체 선택은 「기체 변경」 서랍을 그대로 빌린다 — 목록·필터·검색이 이미 한 벌 있다
     $('#planPickMs').onclick = () => openMsDrawer(true, m => {
@@ -5853,6 +5921,8 @@
 
     $('#planSave').onclick = () => {
       if (!planEdit || !planEdit.ms) return;
+      // 단추를 막아 두지만 여기서도 본다 — 막는 곳이 화면뿐이면 언젠가 샌다
+      if (planItems.some(x => x.ms === planEdit.ms && x.id !== planEdit.id)) { syncPlanEdit(); return; }
       if (planEdit.id) {
         const i = planItems.findIndex(x => x.id === planEdit.id);
         if (i >= 0) planItems[i] = { ...planEdit };

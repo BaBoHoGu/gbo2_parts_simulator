@@ -257,6 +257,139 @@ const noCap = msData.find(m => {
   ok('폰에서 플랜과 계산 사이가 벌어지지 않는다', phPlace.gap < 80, phPlace);
   ok('폰 화면에서 페이지 오류 없음', phErrs.length === 0, phErrs.slice(0, 3));
 
+  /* ── ① 3배 이벤트는 **걸리는 자리(기체 중복) 바로 아래**에 있고, 아래 설명 줄은 없다 */
+  await openPlanWith([{ id: 'X', ms: byRar[3].MS名, stage: 6, exp: '拡張スキル無し',
+    expLevel: 1, rank: 1, now: 0, dup: 0 }], { boost: 1, succ: 1, x3: false });
+  const x3place = await pg.evaluate(() => {
+    const box = document.querySelector('#planCalc');
+    const chk = box.querySelector('.pc-chk');
+    if (!chk) return { err: '체크박스 없음' };
+    const kids = [...box.children];
+    const at = kids.indexOf(chk);
+    // 바로 위가 「중복으로 채우는 pt」 줄이어야 한다
+    const prev = at > 0 ? kids[at - 1].textContent.replace(/\s+/g, ' ').trim() : '';
+    // 「강화 작업」 머리보다 앞에 있어야 한다
+    const work = kids.findIndex(k => k.classList.contains('pc-sec') && /강화 작업/.test(k.textContent));
+    return { prev, before: at < work, notes: box.querySelectorAll('.pc-note').length,
+      succTitle: (box.querySelector('select[title]') || {}).title || '' };
+  });
+  ok('3배 이벤트가 기체 중복 바로 아래에 있다',
+    /중복으로 채우는 pt/.test(x3place.prev) && x3place.before, x3place);
+  ok('아래 설명 줄이 없다', x3place.notes === 0, x3place);
+  ok('「결과 가정」의 주의는 툴팁으로 남아 있다',
+    /기댓값이 아닙니다/.test(x3place.succTitle), x3place.succTitle);
+
+  /* ── ② 같은 기체를 두 번 담지 못한다 */
+  await pg.evaluate(() => document.querySelector('.plan-drop[data-rank="2"] .plan-add').click());
+  await sleep(400);
+  await pg.evaluate(() => document.querySelector('#planPickMs').click());
+  await sleep(800);
+  const sameName = await pg.evaluate(nm => {
+    const cards = [...document.querySelectorAll('#msDrawerList .ms-card')];
+    const c = cards.find(x => x.dataset.ms === nm);
+    if (!c) return null;
+    const r = c.getBoundingClientRect();
+    c.scrollIntoView({ block: 'center' });
+    return true;
+  }, byRar[3].MS名);
+  if (!sameName) {
+    // 목록이 길어 안 보이면 검색으로 좁힌다
+    await pg.evaluate(nm => {
+      const q = document.querySelector('#msDrawerQuery');
+      q.value = nm; q.dispatchEvent(new Event('input', { bubbles: true }));
+    }, byRar[3].MS名);
+    await sleep(800);
+  }
+  await pg.evaluate(nm => {
+    const c = [...document.querySelectorAll('#msDrawerList .ms-card')].find(x => x.dataset.ms === nm);
+    if (c) c.click();
+  }, byRar[3].MS名);
+  await sleep(500);
+  const guard = await pg.evaluate(() => ({
+    note: document.querySelector('#planEditNote').textContent.trim(),
+    saveDisabled: document.querySelector('#planSave').disabled
+  }));
+  ok('이미 플랜에 있는 기체는 저장이 막힌다', guard.saveDisabled, guard);
+  ok('막은 이유와 어디 있는지를 적는다',
+    /이미 플랜에 있습니다/.test(guard.note) && /순위/.test(guard.note), guard);
+  // 막아 두기만 하는 게 아니라 눌러도 안 들어가야 한다
+  await pg.evaluate(() => document.querySelector('#planSave').click());
+  await sleep(300);
+  const afterTry = await pg.evaluate(() => {
+    try { return JSON.parse(localStorage.getItem('gbo2.plan') || '[]').length; } catch { return -1; }
+  });
+  ok('저장을 눌러도 중복이 들어가지 않는다', afterTry === 1, afterTry);
+  await pg.evaluate(() => document.querySelector('#planEditClose').click());
+  await sleep(300);
+
+  /* ── ③ 확장 스킬 1~3순위 */
+  const expRows = await pg.evaluate(() => {
+    document.querySelector('.plan-card .plan-edit-btn').click();
+    const labels = [...document.querySelectorAll('#planExpRows .pe-row > label')].map(l => l.textContent.trim());
+    const sels = [...document.querySelectorAll('#planExpRows select')].map(s => s.id);
+    return { labels, sels };
+  });
+  ok('확장 칸이 1~3순위로 셋이다',
+    expRows.labels.join(',') === '확장 1순위,확장 2순위,확장 3순위', expRows);
+  ok('확장 칸마다 레벨 칸이 따로 있다', expRows.sels.length === 6, expRows);
+  const setThree = await pg.evaluate(() => {
+    const names = [];
+    for (let i = 0; i < 3; i++) {
+      const s = document.querySelector('#planExp' + i);
+      const o = [...s.options].slice(1 + i)[0];
+      s.value = o.value; s.dispatchEvent(new Event('change'));
+      names.push(o.textContent.trim());
+      const lv = document.querySelector('#planExpLevel' + i);
+      lv.value = String(i + 1); lv.dispatchEvent(new Event('change'));
+    }
+    document.querySelector('#planSave').click();
+    return names;
+  });
+  await sleep(500);
+  const tagTxt = await pg.evaluate(() => {
+    const c = document.querySelector('.plan-card');
+    return [...c.querySelectorAll('.plan-tags span')].map(s => s.textContent.trim());
+  });
+  ok('박스가 확장 셋을 ①②③ 로 적는다',
+    ['①', '②', '③'].every(mark => tagTxt.some(t => t.indexOf(mark) === 0))
+    && tagTxt.some(t => /LV1/.test(t)) && tagTxt.some(t => /LV3/.test(t)),
+    { tagTxt, setThree });
+  const stored = await pg.evaluate(() => {
+    try { return (JSON.parse(localStorage.getItem('gbo2.plan') || '[]')[0] || {}).exps; }
+    catch { return null; }
+  });
+  ok('확장 셋이 순서대로 저장된다',
+    Array.isArray(stored) && stored.length === 3
+    && stored[0].level === 1 && stored[2].level === 3, stored);
+
+  /* ── ④ 순위마다 도합 (티켓 · 개량 키트 · DP) */
+  const foot = await pg.evaluate(() => {
+    const z = document.querySelector('.plan-zone');
+    const f = z.querySelector('.plan-foot');
+    return f ? { txt: f.textContent.replace(/\s+/g, ' ').trim(),
+      vals: [...f.querySelectorAll('.pf-v')].map(v => v.textContent.trim()) } : null;
+  });
+  ok('순위 아래에 도합 줄이 있다', !!foot, foot);
+  ok('도합에 티켓 · 개량 키트 · DP 가 모두 있다',
+    !!foot && /티켓/.test(foot.txt) && /개량 키트/.test(foot.txt) && /DP/.test(foot.txt), foot);
+  // 숫자가 맞는가 — 1순위에 든 그 한 기의 값과 같아야 한다
+  const fm3 = byRar[3], f3 = fm3.fullst.map(e => e.points);
+  const wantTickets = Math.ceil(f3[5] / 100) * 14;
+  const wantKit = OPEN[3][0][0] + OPEN[3][1][0], wantDp = OPEN[3][0][1] + OPEN[3][1][1];
+  const fnum = i => {
+    const m = String(foot.vals[i]).replace(/,/g, '').match(/\d+/);
+    return m ? Number(m[0]) : null;
+  };
+  ok('도합 숫자가 규칙과 맞는다',
+    !!foot && fnum(0) === wantTickets && fnum(1) === wantKit && fnum(2) === wantDp,
+    { 앱: foot && foot.vals, 손: [wantTickets, wantKit, wantDp] });
+  // 빈 순위에는 도합을 달지 않는다 (0 만 적힌 줄은 읽을 것이 없다)
+  const emptyFoot = await pg.evaluate(() =>
+    [...document.querySelectorAll('.plan-zone')].map(z =>
+      ({ cards: z.querySelectorAll('.plan-card').length, foot: !!z.querySelector('.plan-foot') })));
+  ok('빈 순위에는 도합 줄이 없다',
+    emptyFoot.every(z => (z.cards > 0) === z.foot), emptyFoot);
+
   ok('페이지 오류 없음', errs.length === 0, errs.slice(0, 3));
   await br.close();
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

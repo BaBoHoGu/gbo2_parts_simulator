@@ -261,11 +261,8 @@
       <label>기체</label>
       <button type="button" id="planPickMs" class="btn-ghost pe-pick">+ 기체 선택</button>
     </div>
-    <div class="pe-row">
-      <label for="planExp">확장 스킬</label>
-      <select id="planExp" class="pe-exp"></select>
-      <select id="planExpLevel" class="pe-explv" title="확장 스킬 레벨"></select>
-    </div>
+    <!-- 확장 스킬 1~3순위 — 칸은 ui.js 가 만든다(개수가 바뀌어도 한 군데만 고치게) -->
+    <div id="planExpRows"></div>
     <!-- 강화와 순위는 칸이 작아 한 줄에 같이 둔다 -->
     <div class="pe-row pe-row-pair">
       <span class="pe-sub"><label>강화</label><span class="seg" id="planStageSeg"></span></span>

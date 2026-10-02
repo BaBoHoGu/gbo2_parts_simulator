@@ -98,13 +98,14 @@ const ok = (label, good, extra) => {
     return {
       modalW: Math.round(r.width), modalH: Math.round(r.height),
       rows: [...m.querySelectorAll('.pe-row')].length,
-      pickW: w('#planPickMs'), expW: w('#planExp'),
+      pickW: w('#planPickMs'), expW: w('#planExp0'),
       stageTop: rowTop('#planStageSeg'), rankTop: rowTop('#planRankSeg'),
-      msTop: rowTop('#planPickMs'), expTop: rowTop('#planExp')
+      msTop: rowTop('#planPickMs'), expTop: rowTop('#planExp0')
     };
   });
   ok('설정 상자가 작다 (폭 ≤ 460px)', shape.modalW <= 460, shape);
-  ok('줄이 셋이다 (기체 / 확장 스킬 / 강화·순위)', shape.rows === 3, shape);
+  // 기체 1 + 확장 1~3순위 3 + 강화·순위 1
+  ok('줄 차례가 기체 / 확장 1~3순위 / 강화·순위 다', shape.rows === 5, shape);
   ok('기체 → 확장 스킬 순서로 쌓인다', shape.msTop < shape.expTop, shape);
   ok('강화와 순위가 같은 줄에 있다', shape.stageTop === shape.rankTop, shape);
   ok('기체·확장 스킬 칸이 상자를 꽉 채우지 않는다',
@@ -166,11 +167,11 @@ const ok = (label, good, extra) => {
   const setGoal = await pg.evaluate(() => {
     const st = [...document.querySelectorAll('#planStageSeg .seg-btn')].find(b => b.dataset.v === '4');
     if (st) st.click();
-    const exp = document.querySelector('#planExp');
+    const exp = document.querySelector('#planExp0');
     // 「확장 없음」이 아닌 첫 항목
     const opt = [...exp.options].find((o, i) => i > 0);
     if (opt) { exp.value = opt.value; exp.dispatchEvent(new Event('change')); }
-    const lv = document.querySelector('#planExpLevel');
+    const lv = document.querySelector('#planExpLevel0');
     lv.value = '3'; lv.dispatchEvent(new Event('change'));
     return { stage: st ? st.textContent.trim() : '', exp: opt ? opt.textContent.trim() : '',
       lvDisabled: lv.disabled };

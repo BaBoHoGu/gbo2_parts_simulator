@@ -223,6 +223,14 @@ body.view-codex   .screen:not(#screenCodex) { display: none; }
 body.plan-dragging .plan-drop { border-color: var(--dim); }
 .plan-drop.over { border-color: var(--accent); border-style: solid; }
 .plan-empty { color: var(--dim); font-size: var(--fs-sm); align-self: center; padding: 0 6px; }
+/* 순위 도합 — 이 순위를 끝내려면 무엇이 얼마나 */
+.plan-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  padding: 6px 4px 0; font-size: var(--fs-sm);
+}
+.plan-foot .pf-lb { color: var(--muted); }
+.plan-foot .pf-v { font-variant-numeric: tabular-nums; }
+.plan-foot .pf-dim { color: var(--dim); font-size: var(--fs-xs); }
 
 .plan-card {
   position: relative;
