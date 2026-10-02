@@ -1,6 +1,24 @@
 {
- "pickupsUpdated": "2026-10-01",
+ "pickupsUpdated": "2026-10-02",
  "pickups": [
+  {
+   "name": "걍 개량형",
+   "consoleStart": "2026-10-01",
+   "consoleEnd": "2026-10-08",
+   "start": "2026-12-03",
+   "end": "2026-12-10",
+   "tokens": 120,
+   "url": "https://bo2.ggame.jp/kr/info/?p=198309"
+  },
+  {
+   "name": "【복각】 F91",
+   "consoleStart": "2026-10-01",
+   "consoleEnd": "2026-10-08",
+   "start": "2026-12-03",
+   "end": "2026-12-10",
+   "tokens": 285,
+   "url": "https://bo2.ggame.jp/kr/info/?p=198333"
+  },
   {
    "name": "ν건담[더블 핀 판넬 장비]",
    "consoleStart": "2026-09-24",
@@ -198,18 +216,9 @@
    "end": "2026-10-15",
    "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=193889"
-  },
-  {
-   "name": "【8주년 대감사제】 제2탄",
-   "consoleStart": "2026-07-30",
-   "consoleEnd": "2026-08-06",
-   "start": "2026-10-01",
-   "end": "2026-10-08",
-   "tokens": 195,
-   "url": "https://bo2.ggame.jp/kr/info/?p=193370"
   }
  ],
- "steamUpdated": "2026-10-01",
+ "steamUpdated": "2026-10-02",
  "steamNews": [
   {
    "name": "제간[고기동 사양]",

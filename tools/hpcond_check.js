@@ -42,10 +42,16 @@ for (const [key, v] of Object.entries(weapons)) {
     (r.unknown ? unknown : counted).push({ key, name: w.name, r });
   }
 }
-ok('備考 에서 HP 비례 추가 피해 무장을 찾았다', counted.length + unknown.length === 11,
+/* **개수를 박지 않는다.** 처음엔 11 / 2 / 9 로 적었는데, 데이터가 갱신되며
+   ギャン改用大型B・S［連続突き］ 가 들어오자마자 깨졌다(못셈 9 → 10).
+   무장은 계속 는다 — 묶는 **성질**을 재고 개수는 적어서 보여만 준다. */
+console.log('  (지금: 셀 수 있음 ' + counted.length + ' · 못 셈 ' + unknown.length + ')');
+ok('HP 비례 추가 피해 무장이 양쪽 다 있다', counted.length > 0 && unknown.length > 0,
   { 셀수있음: counted.length, 못셈: unknown.length });
-ok('수치가 다 적힌 무장은 둘이다', counted.length === 2, counted.map(c => c.name));
-ok('나머지는 못 세는 것으로 갈린다', unknown.length === 9, unknown.length);
+ok('셀 수 있다고 가른 것은 구간이 실제로 읽힌다',
+  counted.every(c => Array.isArray(c.r.bands) && c.r.bands.length > 0
+    && c.r.bands.every(b => b.lo > 0 && (b.pct > 0 || b.flat > 0))),
+  counted.map(c => c.name + ': ' + JSON.stringify(c.r.bands)));
 ok('못 세는 무장마다 이유가 있다', unknown.every(u => u.r.why && u.r.why.length > 4),
   unknown.slice(0, 2).map(u => u.name + ': ' + u.r.why));
 

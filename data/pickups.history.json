@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-01",
+ "updated": "2026-10-02",
  "seen": {
   "건담 <ruby>DX<rt>더블 엑스</rt></ruby>": {
    "firstSeen": "2026-08-29",
@@ -203,6 +203,20 @@
    "end": "2026-12-03",
    "consoleStart": "2026-09-24",
    "tokens": null
+  },
+  "걍 개량형": {
+   "firstSeen": "2026-10-02",
+   "start": "2026-12-03",
+   "end": "2026-12-10",
+   "consoleStart": "2026-10-01",
+   "tokens": 120
+  },
+  "【복각】 F91": {
+   "firstSeen": "2026-10-02",
+   "start": "2026-12-03",
+   "end": "2026-12-10",
+   "consoleStart": "2026-10-01",
+   "tokens": 285
   }
  }
 }
