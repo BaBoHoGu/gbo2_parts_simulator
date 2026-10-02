@@ -288,7 +288,8 @@ const ok = (label, good, extra) => {
   ok('새로 열어도 플랜이 남아 있다', kept === 1, kept);
 
   // ── 삭제
-  await pg.evaluate(() => document.querySelector('.plan-drop[data-rank="1"] .plan-card').click());
+  // 카드 본체는 **우측 계산이 그 박스를 보게** 하는 자리다 — 고치기는 ✎ 로 뺐다
+  await pg.evaluate(() => document.querySelector('.plan-drop[data-rank="1"] .plan-edit-btn').click());
   await sleep(400);
   await pg.evaluate(() => document.querySelector('#planDelete').click());
   await sleep(400);

@@ -5340,9 +5340,73 @@
      그래도 드래그가 어려운 자리(보조기기·좁은 화면)가 있으니 카드마다 1·2·3 단추도 둔다. */
   const PLAN_KEY = 'gbo2.plan';
   const PLAN_RANKS = [1, 2, 3];
+
+  /* ── 강화 수치 ──────────────────────────────────────────────
+     기체마다 다른 「개방 전 상한치」는 **이미 데이터에 있다** — ms.fullst 의 네 번째
+     항목 points 다(강화리스트 화면이 'N pt' 로 보여 주는 그 값). 5·6단계 임계도
+     다섯·여섯 번째에 있다. 1,655기 중 1,642기가 5단계 = 4단계×2, 1,646기가
+     6단계 = ×3 이지만 **어긋나는 기체가 13기 있어** 배수로 짐작하지 않고 실제 값을 쓴다.
+     네 번째 값이 비어 있는 기체가 50기 있다 — 그건 숫자를 지어내지 않고 그렇게 적는다.
+
+     규칙(사용자 제공):
+       ① 강화 1회 = 70시간, 100pt
+       ② 티켓 1장 = 5시간 단축 (14장 = 70시간)
+       ③ 티켓을 겹쳐 최대 10배 부스트 (140장 = 1000pt)
+       ④ 성공 · 대성공(2배) · 초성공(3배)
+       ⑤ 기체 중복 획득 시 **개방 전 상한치**의 등급별 %
+       ⑥ 3배 이벤트면 중복 보상 ×3
+       ⑦ 4→5, 5→6 개방은 두 번이고 비용은 등급별 개량 키트 + DP
+
+     ①②③이 한 자로 맞아떨어진다: 14장 ↔ 70시간 ↔ 100pt. 그래서 B배 작업은
+     70B 시간 또는 14B 장이고 100B pt 를 준다(상한 B=10). 이 해석을 화면에도 적어 둔다. */
+  const PLAN_HOURS_PER_RUN = 70;      // 1배 작업에 드는 시간
+  const PLAN_PT_PER_RUN = 100;        // 1배 작업이 주는 pt
+  const PLAN_HOURS_PER_TICKET = 5;    // 티켓 1장이 대신하는 시간
+  const PLAN_MAX_BOOST = 10;
+  // 중복 획득 보상 — 개방 전 상한치에 대한 %
+  const PLAN_DUP_PCT = { 1: 15, 2: 22.5, 3: 35, 4: 45, 5: 60 };
+  /* 개방 비용 — 등급별, 1차(4→5) · 2차(5→6). 키트는 등급별로 종류가 다르다. */
+  const PLAN_OPEN_COST = {
+    1: [{ kit: 150, dp: 40000 }, { kit: 300, dp: 50000 }],
+    2: [{ kit: 150, dp: 60000 }, { kit: 300, dp: 70000 }],
+    3: [{ kit: 150, dp: 80000 }, { kit: 300, dp: 100000 }],
+    4: [{ kit: 150, dp: 160000 }, { kit: 300, dp: 240000 }],
+    5: [{ kit: 150, dp: 240000 }, { kit: 300, dp: 360000 }]
+  };
+
+  /** 이 기체의 강화 임계치 — { cap4, p5, p6 }. 자료에 없으면 그 자리가 null. */
+  function planThresholds(ms) {
+    const f = (ms && Array.isArray(ms.fullst)) ? ms.fullst : [];
+    const pt = i => (f[i] && f[i].points != null) ? Number(f[i].points) : null;
+    return { cap4: pt(3), p5: pt(4), p6: pt(5) };
+  }
+
+  /** 목표 단계에서 채워야 하는 pt. 미강화면 0, 자료가 없으면 null. */
+  function planGoalPt(ms, stage) {
+    const t = planThresholds(ms);
+    if (stage === 0) return 0;
+    if (stage === 4) return t.cap4;
+    return t.p6;                      // 풀강
+  }
   let planItems = [];              // { id, ms, stage, exp, expLevel, rank }
   let planEdit = null;             // 지금 모달에서 고치고 있는 항목 (새 항목이면 id 없음)
   let planFilter = { attr: '', cost: 'all', lv: 'all', rarity: 'all', rank: 'all' };
+  let planSel = null;              // 우측 계산이 보고 있는 항목 id
+  let planFocusKey = null;         // 다시 그린 뒤 돌려놓을 입력칸
+  // 계산 가정 — 항목이 아니라 화면 전체에 걸린다 (이벤트·부스트는 그때그때 같은 조건이다)
+  const PLAN_OPT_KEY = 'gbo2.planOpt';
+  let planOpt = { boost: 1, succ: 1, x3: false };
+  try {
+    const o = JSON.parse(localStorage.getItem(PLAN_OPT_KEY) || '{}');
+    if (o && typeof o === 'object') {
+      planOpt.boost = Math.min(Math.max(Number(o.boost) || 1, 1), PLAN_MAX_BOOST);
+      planOpt.succ = [1, 2, 3].includes(Number(o.succ)) ? Number(o.succ) : 1;
+      planOpt.x3 = !!o.x3;
+    }
+  } catch { /* 무시 */ }
+  const savePlanOpt = () => {
+    try { localStorage.setItem(PLAN_OPT_KEY, JSON.stringify(planOpt)); } catch { /* 무시 */ }
+  };
 
   function loadPlan() {
     try {
@@ -5353,7 +5417,9 @@
         stage: [0, 4, 6].includes(Number(x.stage)) ? Number(x.stage) : 6,
         exp: typeof x.exp === 'string' ? x.exp : C.EXPANSION_NONE,
         expLevel: Math.min(Math.max(Number(x.expLevel) || 1, 1), C.MAX_EXPANSION_LEVEL),
-        rank: PLAN_RANKS.includes(Number(x.rank)) ? Number(x.rank) : 1
+        rank: PLAN_RANKS.includes(Number(x.rank)) ? Number(x.rank) : 1,
+        now: Math.max(0, Number(x.now) || 0),     // 지금까지 쌓은 강화 pt
+        dup: Math.max(0, Number(x.dup) || 0)      // 쓸 수 있는 중복 기체 수
       }));
     } catch { planItems = []; }
   }
@@ -5379,6 +5445,182 @@
     return true;
   }
 
+  /**
+   * 한 항목의 강화 셈. 숫자를 못 구하면 그 자리를 null 로 두고 why 에 이유를 남긴다 —
+   * 모르는 값을 0 으로 적으면 「다 됐다」로 읽힌다.
+   */
+  function planCalc(it) {
+    const ms = planMsOf(it);
+    if (!ms) return { why: '데이터에 없는 기체입니다 — 자료가 갱신되며 이름이 바뀌었을 수 있습니다.' };
+    const rar = msRarity(ms);
+    const th = planThresholds(ms);
+    const goal = planGoalPt(ms, it.stage);
+    if (goal == null) {
+      return { why: '이 기체는 강화 pt 자료가 없습니다 (원본·위키 어디에도 없는 기체 50기 중 하나).',
+        ms, rar, th };
+    }
+    const now = Math.min(it.now || 0, goal);
+    const left = Math.max(0, goal - now);
+
+    // ⑤⑥ 중복 보상 — 개방 전 상한치의 등급별 %, 3배 이벤트면 ×3
+    const pct = PLAN_DUP_PCT[rar] || null;
+    const dupOne = (pct != null && th.cap4 != null)
+      ? Math.round(th.cap4 * pct / 100) * (planOpt.x3 ? 3 : 1) : null;
+    const dupGot = dupOne != null ? Math.min(dupOne * (it.dup || 0), left) : 0;
+    const afterDup = Math.max(0, left - dupGot);
+
+    // ①②③④ 강화 작업
+    const B = planOpt.boost, S = planOpt.succ;
+    const perRun = PLAN_PT_PER_RUN * B * S;
+    const runs = perRun > 0 ? Math.ceil(afterDup / perRun) : 0;
+    const hours = runs * PLAN_HOURS_PER_RUN * B;
+    const tickets = runs * (PLAN_HOURS_PER_RUN * B / PLAN_HOURS_PER_TICKET);
+
+    // ⑦ 개방 — 풀강이 목표일 때만. 4→5, 5→6 두 번.
+    const open = it.stage === 6 ? (PLAN_OPEN_COST[rar] || null) : null;
+    const openSum = open
+      ? { kit: open[0].kit + open[1].kit, dp: open[0].dp + open[1].dp } : null;
+
+    return { ms, rar, th, goal, now, left, pct, dupOne, dupGot, afterDup,
+      runs, hours, tickets, open, openSum };
+  }
+
+  const planHours = h => h >= 24
+    ? Math.floor(h / 24) + '일 ' + (h % 24) + '시간'
+    : h + '시간';
+
+  function renderPlanCalc() {
+    const box = $('#planCalc');
+    if (!box) return;
+    box.innerHTML = '';
+    box.append(el('h3', '', '강화 수치'));
+
+    const shown = planItems.filter(planPasses);
+    // 어느 것을 볼지는 renderPlan 이 카드를 그리기 전에 정해 둔다 (테두리와 어긋나지 않게)
+    const it = planItems.find(x => x.id === planSel) || null;
+    if (!it) {
+      box.append(el('div', 'pc-empty', '박스를 추가하고 누르면 여기에 강화 계산이 나옵니다.'));
+      return;
+    }
+
+    const r = planCalc(it);
+    box.append(el('div', 'pc-ms', r.ms ? T.msName(r.ms.MS名) : it.ms));
+    box.append(el('div', 'pc-sub',
+      (r.ms ? '★'.repeat(r.rar || 0) + ' · ' : '') + '목표 ' + (STAGE_LABEL[it.stage] || it.stage)));
+
+    if (r.why) { box.append(el('div', 'pc-warn', r.why)); return; }
+
+    const line = (label, value, cls) => {
+      const d = el('div', 'pc-line');
+      d.append(el('span', '', label));
+      d.append(el('b', cls || '', value));
+      box.append(d);
+      return d;
+    };
+    const sec = title => {
+      const d = el('div', 'pc-sec');
+      d.append(el('b', '', title));
+      box.append(d);
+      return d;
+    };
+    /* 값이 바뀌면 패널을 통째로 다시 그린다 — 그러면 **치던 칸의 포커스가 날아간다.**
+       다시 그린 뒤 같은 칸으로 돌려놓는다(어느 칸이었는지는 key 로 기억한다). */
+    const numInput = (key, val, onSet) => {
+      const i = el('input');
+      i.type = 'number'; i.min = '0'; i.value = String(val || 0);
+      i.dataset.k = key;
+      i.oninput = () => { planFocusKey = key; onSet(Math.max(0, Number(i.value) || 0)); };
+      return i;
+    };
+
+    sec('목표');
+    line('개방 전 상한치 (4단계)', r.th.cap4 == null ? '자료 없음' : r.th.cap4.toLocaleString() + ' pt');
+    if (it.stage === 6) line('풀강 임계', r.th.p6 == null ? '자료 없음' : r.th.p6.toLocaleString() + ' pt');
+    const nowRow = el('div', 'pc-line');
+    nowRow.append(el('span', '', '지금까지 쌓은 pt'));
+    nowRow.append(numInput('now', it.now, v => { it.now = v; savePlan(); renderPlanCalc(); }));
+    box.append(nowRow);
+    line('남은 pt', r.left.toLocaleString() + ' pt', 'pc-big');
+
+    sec('기체 중복');
+    line('등급 보상 (상한치의 ' + (r.pct != null ? r.pct + '%' : '—') + ')',
+      r.dupOne == null ? '자료 없음' : '+' + r.dupOne.toLocaleString() + ' pt');
+    const dupRow = el('div', 'pc-line');
+    dupRow.append(el('span', '', '쓸 중복 기체 수'));
+    dupRow.append(numInput('dup', it.dup, v => { it.dup = v; savePlan(); renderPlanCalc(); }));
+    box.append(dupRow);
+    line('중복으로 채우는 pt', '−' + r.dupGot.toLocaleString() + ' pt');
+
+    sec('강화 작업');
+    const bRow = el('div', 'pc-line');
+    bRow.append(el('span', '', '부스트'));
+    const bSel = el('select');
+    for (let b = 1; b <= PLAN_MAX_BOOST; b++) bSel.append(new Option('×' + b, String(b)));
+    bSel.value = String(planOpt.boost);
+    bSel.onchange = () => { planOpt.boost = Number(bSel.value); savePlanOpt(); renderPlanCalc(); };
+    bRow.append(bSel);
+    box.append(bRow);
+
+    const sRow = el('div', 'pc-line');
+    sRow.append(el('span', '', '결과 가정'));
+    const sSel = el('select');
+    [[1, '성공'], [2, '대성공 ×2'], [3, '초성공 ×3']].forEach(([v, t]) => sSel.append(new Option(t, String(v))));
+    sSel.value = String(planOpt.succ);
+    sSel.onchange = () => { planOpt.succ = Number(sSel.value); savePlanOpt(); renderPlanCalc(); };
+    sRow.append(sSel);
+    box.append(sRow);
+
+    line('남은 작업', r.runs.toLocaleString() + '회 (1회 ' + (PLAN_PT_PER_RUN * planOpt.boost * planOpt.succ).toLocaleString() + ' pt)');
+    line('기다리면', planHours(r.hours));
+    line('티켓으로 다 건너뛰면', r.tickets.toLocaleString() + '장', 'pc-big');
+
+    if (r.open) {
+      sec('개방 (4→5, 5→6)');
+      line('개량 키트[' + '★'.repeat(r.rar) + ']', r.openSum.kit.toLocaleString() + '개');
+      line('DP', r.openSum.dp.toLocaleString() + ' DP');
+    }
+
+    const x3 = el('label', 'pc-chk');
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = planOpt.x3;
+    cb.onchange = () => { planOpt.x3 = cb.checked; savePlanOpt(); renderPlanCalc(); };
+    x3.append(cb, el('span', '', '3배 이벤트 (중복 보상 ×3)'));
+    // append() 는 추가한 것이 아니라 undefined 를 돌려준다 — 이어 쓰면 화면이 거기서 멈춘다
+    const x3wrap = el('div', 'pc-sec');
+    x3wrap.append(x3);
+    box.append(x3wrap);
+
+    box.append(el('div', 'pc-note',
+      '티켓 1장 = 5시간, 14장 = 70시간 = 100pt 로 봅니다. ×B 작업은 ' + PLAN_HOURS_PER_RUN
+      + 'B 시간(또는 14B장)을 쓰고 100B pt 를 줍니다. '
+      + '「결과 가정」은 기댓값이 아니라 그 결과가 계속 나왔다고 쳤을 때입니다.'));
+
+    // 보이는 항목 전체 — 플랜을 다 끝내려면
+    const sum = { left: 0, runs: 0, hours: 0, tickets: 0, kit: 0, dp: 0, unknown: 0 };
+    for (const x of shown) {
+      const c = planCalc(x);
+      if (c.why) { sum.unknown++; continue; }
+      sum.left += c.afterDup; sum.runs += c.runs; sum.hours += c.hours; sum.tickets += c.tickets;
+      if (c.openSum) { sum.kit += c.openSum.kit; sum.dp += c.openSum.dp; }
+    }
+    sec('보이는 항목 ' + shown.length + '개 합계');
+    // (합계 줄은 아래에서 채운다 — 포커스 되돌리기는 맨 끝에서 한 번만 한다)
+    line('남은 pt (중복 뺀 뒤)', sum.left.toLocaleString() + ' pt');
+    line('기다리면', planHours(sum.hours));
+    line('티켓으로 다 건너뛰면', sum.tickets.toLocaleString() + '장');
+    if (sum.kit) line('개량 키트 · DP', sum.kit.toLocaleString() + '개 · ' + sum.dp.toLocaleString() + ' DP');
+    if (sum.unknown) line('셈에서 뺀 항목', sum.unknown + '개 (자료 없음)');
+
+    // 치던 칸으로 돌려놓는다 (커서는 끝으로 — 숫자 칸이라 그 편이 이어 치기 좋다)
+    if (planFocusKey) {
+      const back = box.querySelector('input[data-k="' + planFocusKey + '"]');
+      planFocusKey = null;
+      if (back) {
+        back.focus();
+        try { back.setSelectionRange(back.value.length, back.value.length); } catch { /* number 칸은 막힐 수 있다 */ }
+      }
+    }
+  }
+
   function openPlan(open) {
     if (!open) { setView(viewBefore === 'plan' ? 'select' : (viewBefore || 'select')); return; }
     setView('plan');
@@ -5390,6 +5632,10 @@
     if (!body) return;
     body.innerHTML = '';
     const shown = planItems.filter(planPasses);
+    /* 고른 것이 없거나 걸러져 사라졌으면 맨 앞을 고른다 — **카드를 그리기 전에** 정해야
+       테두리가 같이 칠해진다. 예전엔 계산 패널에서 뒤늦게 정해서, 계산은 어떤 기체를
+       보고 있는데 카드에는 아무 표시가 없었다. */
+    if (!shown.some(x => x.id === planSel)) planSel = shown.length ? shown[0].id : null;
     const note = $('#planNote');
     if (note) note.textContent = planItems.length
       ? (shown.length === planItems.length ? planItems.length + '개' : shown.length + ' / ' + planItems.length + '개')
@@ -5417,6 +5663,7 @@
       zone.append(drop);
       body.append(zone);
     }
+    renderPlanCalc();
   }
 
   function planCard(it) {
@@ -5464,8 +5711,17 @@
     main.append(move);
     card.append(main);
 
-    card.title = (ms ? T.msName(ms.MS名) : it.ms) + ' — 눌러서 고치기';
-    card.onclick = () => openPlanEdit(it, it.rank);
+    /* 누르면 **우측 계산이 이 박스를 본다.** 고치기는 ✎ 로 따로 뺐다 —
+       누를 때마다 설정 칸이 뜨면 계산을 볼 수가 없다. */
+    card.classList.toggle('sel', planSel === it.id);
+    card.title = (ms ? T.msName(ms.MS名) : it.ms) + ' — 눌러서 강화 계산 보기';
+    card.onclick = () => { planSel = it.id; renderPlan(); };
+
+    const edit = el('button', 'plan-edit-btn', '✎');
+    edit.title = '고치기';
+    edit.setAttribute('aria-label', '고치기');
+    edit.onclick = ev => { ev.stopPropagation(); openPlanEdit(it, it.rank); };
+    card.append(edit);
     return card;
   }
 
@@ -5601,7 +5857,9 @@
         const i = planItems.findIndex(x => x.id === planEdit.id);
         if (i >= 0) planItems[i] = { ...planEdit };
       } else {
-        planItems.push({ ...planEdit, id: Date.now() + '-' + Math.random().toString(36).slice(2, 7) });
+        const id = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+        planItems.push({ ...planEdit, id });
+        planSel = id;        // 방금 만든 것을 우측 계산이 바로 보게 한다
       }
       savePlan();
       closePlanEdit();
@@ -5609,6 +5867,7 @@
     };
     $('#planDelete').onclick = () => {
       if (!planEdit || !planEdit.id) return;
+      if (planSel === planEdit.id) planSel = null;
       planItems = planItems.filter(x => x.id !== planEdit.id);
       savePlan();
       closePlanEdit();
