@@ -255,20 +255,17 @@
   <div class="admin-body plan-edit-body">
     <div class="pe-row">
       <label>기체</label>
-      <button type="button" id="planPickMs" class="btn-ghost grow">+ 기체 선택</button>
-    </div>
-    <div class="pe-row">
-      <label>강화</label>
-      <span class="seg" id="planStageSeg"></span>
+      <button type="button" id="planPickMs" class="btn-ghost pe-pick">+ 기체 선택</button>
     </div>
     <div class="pe-row">
       <label for="planExp">확장 스킬</label>
-      <select id="planExp" class="grow"></select>
-      <select id="planExpLevel" title="확장 스킬 레벨"></select>
+      <select id="planExp" class="pe-exp"></select>
+      <select id="planExpLevel" class="pe-explv" title="확장 스킬 레벨"></select>
     </div>
-    <div class="pe-row">
-      <label>순위</label>
-      <span class="seg" id="planRankSeg"></span>
+    <!-- 강화와 순위는 칸이 작아 한 줄에 같이 둔다 -->
+    <div class="pe-row pe-row-pair">
+      <span class="pe-sub"><label>강화</label><span class="seg" id="planStageSeg"></span></span>
+      <span class="pe-sub"><label>순위</label><span class="seg" id="planRankSeg"></span></span>
     </div>
     <div class="pe-note" id="planEditNote"></div>
     <div class="pe-actions">

@@ -82,6 +82,34 @@ const ok = (label, good, extra) => {
   ok('기체를 안 고르면 저장이 막히고 그 이유를 적는다',
     modal.saveDisabled && /기체/.test(modal.note), modal);
 
+  /* 상자 크기와 줄 배치 — .auto-modal 기본값(940px)을 그대로 쓰다가 빈 자리만 넓은
+     상자가 됐다. 「기체 / 확장 스킬 / 강화·순위」 세 줄이고, 칸은 내용에 맞아야 한다. */
+  const shape = await pg.evaluate(() => {
+    const m = document.querySelector('#planEditModal');
+    const r = m.getBoundingClientRect();
+    const rowTop = s => {
+      const e = document.querySelector(s);
+      return e ? Math.round(e.getBoundingClientRect().top) : -1;
+    };
+    const w = s => {
+      const e = document.querySelector(s);
+      return e ? Math.round(e.getBoundingClientRect().width) : -1;
+    };
+    return {
+      modalW: Math.round(r.width), modalH: Math.round(r.height),
+      rows: [...m.querySelectorAll('.pe-row')].length,
+      pickW: w('#planPickMs'), expW: w('#planExp'),
+      stageTop: rowTop('#planStageSeg'), rankTop: rowTop('#planRankSeg'),
+      msTop: rowTop('#planPickMs'), expTop: rowTop('#planExp')
+    };
+  });
+  ok('설정 상자가 작다 (폭 ≤ 460px)', shape.modalW <= 460, shape);
+  ok('줄이 셋이다 (기체 / 확장 스킬 / 강화·순위)', shape.rows === 3, shape);
+  ok('기체 → 확장 스킬 순서로 쌓인다', shape.msTop < shape.expTop, shape);
+  ok('강화와 순위가 같은 줄에 있다', shape.stageTop === shape.rankTop, shape);
+  ok('기체·확장 스킬 칸이 상자를 꽉 채우지 않는다',
+    shape.pickW < shape.modalW - 100 && shape.expW < shape.modalW - 100, shape);
+
   await pg.evaluate(() => document.querySelector('#planPickMs').click());
   await sleep(700);
 
@@ -121,6 +149,18 @@ const ok = (label, good, extra) => {
   ok('고르면 서랍이 닫히고 이름이 칸에 들어간다',
     !afterPick.drawerOpen && afterPick.btn === picked, afterPick);
   ok('기체를 고르면 저장이 열린다', !afterPick.saveDisabled, afterPick);
+  /* 이름이 길어도 칸이 한 줄로 버텨야 한다 — 두 줄로 터지면 상자가 다시 커진다.
+     (실측: 「유니콘 건담 [하이퍼 메가 런처 장비] LV2」가 두 줄이 돼 341px 이었다) */
+  const pickBox = await pg.evaluate(() => {
+    const b = document.querySelector('#planPickMs');
+    const cs = getComputedStyle(b);
+    return { h: Math.round(b.getBoundingClientRect().height),
+      lineH: Math.round(parseFloat(cs.lineHeight) || 0),
+      ellipsis: cs.textOverflow, title: b.title };
+  });
+  ok('기체 이름 칸이 한 줄을 지킨다 (길면 … 로 자른다)',
+    pickBox.ellipsis === 'ellipsis' && pickBox.h <= 44, pickBox);
+  ok('잘린 이름은 title 로 전체를 보여 준다', pickBox.title === picked, pickBox);
 
   // 강화 4단계 · 확장 스킬 하나를 지정한다
   const setGoal = await pg.evaluate(() => {

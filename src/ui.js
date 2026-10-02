@@ -5547,7 +5547,9 @@
   function syncPlanEdit() {
     if (!planEdit) return;
     const ms = msData.find(m => m.MS名 === planEdit.ms) || null;
+    // 칸이 좁아 이름이 잘릴 수 있다 — 전체 이름은 title 로 남긴다
     $('#planPickMs').textContent = ms ? T.msName(ms.MS名) : '+ 기체 선택';
+    $('#planPickMs').title = ms ? T.msName(ms.MS名) : '기체를 고릅니다';
     for (const b of document.querySelectorAll('#planStageSeg .seg-btn'))
       b.classList.toggle('on', Number(b.dataset.v) === planEdit.stage);
     for (const b of document.querySelectorAll('#planRankSeg .seg-btn'))

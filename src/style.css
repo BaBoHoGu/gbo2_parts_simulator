@@ -239,10 +239,27 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 .plan-move button.on { border-color: var(--accent); color: var(--accent); }
 
-.plan-edit-body .pe-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.plan-edit-body .pe-row > label { width: 72px; flex-shrink: 0; color: var(--muted); }
+/* 설정 칸은 고를 것이 넷뿐이라 작게 둔다 — .auto-modal 기본값(940px)을 그대로 쓰니
+   빈 자리만 넓은 상자가 됐다. 칸 폭도 내용에 맞춘다(기체 이름·확장 스킬 이름 길이). */
+/* .auto-modal(폭 940px)이 이 파일 **뒤**에 있어 같은 특정도로는 덮인다 — 둘을 겹쳐 쓴다. */
+.auto-modal.plan-edit-modal { width: min(430px, 94vw); }
+.plan-edit-body .pe-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.plan-edit-body .pe-row > label { width: 64px; flex-shrink: 0; color: var(--muted); }
+/* 기체 이름은 길어질 수 있다(「유니콘 건담 [하이퍼 메가 런처 장비] LV2」).
+   그대로 두면 두 줄로 터져 상자가 다시 커진다 — 한 줄로 자르고 전체는 title 로 보여 준다. */
+.plan-edit-body .pe-pick {
+  width: 210px; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.plan-edit-body .pe-exp { width: 160px; }
+.plan-edit-body .pe-explv { width: 68px; }
+/* 강화 / 순위 — 한 줄에 둘. 각자 제 라벨을 작게 달고 간다. */
+.plan-edit-body .pe-row-pair { gap: 14px; flex-wrap: wrap; }
+.plan-edit-body .pe-sub { display: flex; align-items: center; gap: 7px; }
+.plan-edit-body .pe-sub > label { color: var(--muted); flex-shrink: 0; }
+.plan-edit-body .pe-sub .seg-btn { padding: 4px 8px; }
 .plan-edit-body .pe-note { color: var(--dim); font-size: var(--fs-sm); min-height: 18px; }
-.plan-edit-body .pe-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.plan-edit-body .pe-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 
 @media (max-width: 560px) {
   .plan-body { padding: 12px 12px 40px; }
