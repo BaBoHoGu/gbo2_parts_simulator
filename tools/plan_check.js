@@ -84,13 +84,33 @@ const ok = (label, good, extra) => {
 
   await pg.evaluate(() => document.querySelector('#planPickMs').click());
   await sleep(700);
-  const picked = await pg.evaluate(() => {
+
+  /* **여기서 한 번 틀렸다.** 처음엔 카드를 el.click() 으로 눌렀는데, 그건 가려진 것도
+     눌린다 — 서랍이 모달 뒤(z-index 41 vs 51)로 들어가 사람은 아무것도 못 누르는데
+     검사는 통과했다(사용자가 html 을 열어 보고 찾았다).
+     그래서 **그 자리에 실제로 무엇이 있는지** 보고, 진짜 마우스로 누른다. */
+  const hit = await pg.evaluate(() => {
     const c = document.querySelector('#msDrawerList .ms-card');
-    if (!c) return null;
-    const name = (c.querySelector('.nm') || {}).textContent || '';
-    c.click();
-    return name.trim();
+    if (!c) return { err: 'no-card' };
+    const r = c.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const top = document.elementFromPoint(x, y);
+    const dr = document.querySelector('#msDrawer');
+    return {
+      x, y,
+      name: ((c.querySelector('.nm') || {}).textContent || '').trim(),
+      inDrawer: !!(top && dr.contains(top)),
+      topWas: top ? (top.id || top.className || top.tagName) : null,
+      drawerZ: Number(getComputedStyle(dr).zIndex) || 0,
+      modalZ: Number(getComputedStyle(document.querySelector('#planEditModal')).zIndex) || 0
+    };
   });
+  ok('서랍이 모달 위로 올라온다 (뒤에 깔리지 않는다)',
+    !hit.err && hit.drawerZ > hit.modalZ, hit);
+  ok('기체 카드 자리를 눌렀을 때 실제로 그 카드가 닿는다', !hit.err && hit.inDrawer, hit);
+  if (!hit.err && hit.inDrawer) await pg.mouse.click(hit.x, hit.y);
+  await sleep(300);
+  const picked = hit.name;
   ok('기체 선택 서랍에서 기체를 고른다', !!picked, picked);
   await sleep(500);
   const afterPick = await pg.evaluate(() => ({
@@ -283,17 +303,63 @@ const ok = (label, good, extra) => {
     !!viaMenu && phView.view.includes('view-plan'), { viaMenu, ...phView });
   ok('폰에서도 박스가 보인다', phView.cards === 1, phView);
 
+  /* 폰에서도 기체 선택이 닿는지 — 서랍은 92vw, 모달은 94vw 라 화면을 거의 다 덮는다.
+     쌓임 순서가 PC 와 같아도 **자리**가 달라질 수 있어 여기서 다시 재 본다. */
+  await ph.evaluate(() => document.querySelector('.plan-drop[data-rank="2"] .plan-add').click());
+  await sleep(400);
+  await ph.evaluate(() => document.querySelector('#planPickMs').click());
+  await sleep(800);
+  const phHit = await ph.evaluate(() => {
+    const c = document.querySelector('#msDrawerList .ms-card');
+    if (!c) return { err: 'no-card' };
+    const r = c.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const top = document.elementFromPoint(x, y);
+    const dr = document.querySelector('#msDrawer');
+    return { x, y, inDrawer: !!(top && dr.contains(top)),
+      topWas: top ? (top.id || top.className || top.tagName) : null,
+      onScreen: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth };
+  });
+  ok('폰에서도 기체 카드가 화면 안에 있고 닿는다',
+    !phHit.err && phHit.inDrawer && phHit.onScreen, phHit);
+  // 뒤로가기로 서랍→모달 순서대로 닫히는지 (쌓인 둘을 한 번에 날리면 안 된다)
+  const phBack1 = await ph.evaluate(() => { const r = window.GBO2Back();
+    return { r, drawer: document.querySelector('#msDrawer').classList.contains('open'),
+      modal: !document.querySelector('#planEditModal').hidden }; });
+  ok('폰 뒤로가기가 서랍을 먼저 닫는다 (모달은 남는다)',
+    phBack1.r === 'back' && !phBack1.drawer && phBack1.modal, phBack1);
+  await sleep(400);
+  const phBack2 = await ph.evaluate(() => { const r = window.GBO2Back();
+    return { r, modal: !document.querySelector('#planEditModal').hidden,
+      view: document.body.className.match(/view-\w+/g) || [] }; });
+  ok('한 번 더 누르면 모달이 닫히고 플랜 화면이 남는다',
+    phBack2.r === 'back' && !phBack2.modal && phBack2.view.includes('view-plan'), phBack2);
+  /* 서랍은 .open 을 떼도 **0.18초 동안 제자리에 있다**(transform 전환).
+     기다리지 않고 재니 손잡이 자리에 서랍 속 기체 이미지가 잡혀, 앱이 아니라
+     검사가 틀린 것을 앱 버그로 읽을 뻔했다. 전환이 끝날 때까지 기다린다. */
+  await sleep(500);
+
   const tbox = await ph.evaluate(() => {
     const g = document.querySelector('.plan-drop[data-rank="1"] .plan-card .plan-grip');
     const t = document.querySelector('.plan-drop[data-rank="3"]');
     if (!g || !t) return null;
     const a = g.getBoundingClientRect(), b = t.getBoundingClientRect();
-    return { fx: a.left + a.width / 2, fy: a.top + a.height / 2,
+    const fx = a.left + a.width / 2, fy = a.top + a.height / 2;
+    const top = document.elementFromPoint(fx, fy);
+    return { fx, fy,
       tx: b.left + b.width / 2, ty: b.top + b.height / 2,
-      touchAction: getComputedStyle(g).touchAction };
+      touchAction: getComputedStyle(g).touchAction,
+      gripHit: top === g || (top && g.contains(top)),
+      topWas: top ? (top.tagName + '#' + (top.id || '') + '.' + (top.className || '')) : null,
+      // 가려진 것이 있으면 무엇에 가렸는지 바로 보이게 (실제로 이것 때문에 원인을 찾았다)
+      stack: document.elementsFromPoint(fx, fy).slice(0, 4)
+        .map(e => e.tagName + '#' + (e.id || '') + '.' + (String(e.className) || '')),
+      targetOnScreen: b.top >= 0 && b.bottom <= innerHeight };
   });
   ok('손잡이가 터치 스크롤을 막아 둔다 (touch-action: none)',
     !!tbox && tbox.touchAction === 'none', tbox && tbox.touchAction);
+  ok('폰에서 손잡이 자리가 실제로 손잡이다', !!tbox && tbox.gripHit, tbox);
+  ok('받는 자리(3순위)가 화면 안에 있다', !!tbox && tbox.targetOnScreen, tbox);
   if (tbox) {
     await ph.touchscreen.touchStart(tbox.fx, tbox.fy);
     await ph.touchscreen.touchMove(tbox.fx + 15, tbox.fy + 8);

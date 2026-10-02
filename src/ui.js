@@ -4921,6 +4921,11 @@
     }
     dr.classList.toggle('open', open);
     $('#msDrawerBack').classList.toggle('open', open);
+    /* 모달 위에서 열리면 z-index 를 올린다 — 안 올리면 모달 뒤로 들어가 못 누른다.
+       열 때만 켜고 닫을 때 끈다(남겨 두면 다음에 파츠 화면에서 열 때도 떠 있게 된다). */
+    const overModal = open && !!onPick;
+    dr.classList.toggle('over-modal', overModal);
+    $('#msDrawerBack').classList.toggle('over-modal', overModal);
     document.body.classList.toggle('drawer-open', open);
     if (open) {
       renderMsList();

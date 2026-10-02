@@ -1124,6 +1124,12 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 
 .drawer-back.open { display: block; }
 
+/* 모달 위에서 열리는 서랍 (강화 플랜이 기체를 고를 때) — 서랍은 41, 모달은 51 이라
+   그대로 열면 **모달 뒤로 들어가 아무것도 못 누른다.** 그 자리에서만 위로 올린다.
+   덮개(52)는 모달보다 위, 서랍(53)은 덮개보다 위여야 한다. */
+.drawer-back.over-modal { z-index: 52; }
+.drawer.over-modal { z-index: 53; }
+
 .drawer {
   position: fixed;
   top: 0; right: 0; bottom: 0;
