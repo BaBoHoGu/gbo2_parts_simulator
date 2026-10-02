@@ -7362,11 +7362,19 @@
     }
     box.append(wrap);
   }
+  /**
+   * 적 공격보정을 적 기체 수치에서 채운다. **파츠·강화 단계가 반영된 총합**이다
+   * (enemyBaseCorr → enemyStatsTotal → calcStats).
+   *
+   * 무장을 아직 안 골랐으면 **사격보정**을 기본으로 보여 준다 — 무장을 고르면 그 속성
+   * 기준으로 바뀐다(격투 무장이면 격투보정). 예전에는 무장이 없으면 아무것도 안 해서
+   * 기체를 바꿔도 칸에 앞 기체 숫자가 남았다.
+   */
   function pietanAutoCorr() {
-    if (!pietanMs || !pietanPick) return;
-    if (pietanCorrTouched) return;    // 사용자가 값을 만졌으면 무장 바꿔도 고정
+    if (!pietanMs) return;
+    if (pietanCorrTouched) return;    // 사용자가 값을 만졌으면 고정 (기체를 바꾸면 풀린다)
     const c = enemyBaseCorr();
-    pietanCorr = pietanPick.attr === 'melee' ? c.melee : c.shoot;
+    pietanCorr = (pietanPick && pietanPick.attr === 'melee') ? c.melee : c.shoot;
     const inp = $('#pietanCorr'); if (inp) inp.value = pietanCorr;
   }
 
@@ -7636,6 +7644,12 @@
 
   /** 적 세팅이 바뀌면 화면 전체를 다시 그린다 — 수치·목록·전제 배지가 모두 달라진다. */
   function pietanRedrawAll() {
+    /* 적 설정이 바뀔 때마다 공격보정을 다시 맞춘다. 기체 변경·파츠 추가/제거·전체 해제·
+       LV 변경·저장 구성 불러오기가 **전부 여기를 지나가므로** 한 곳에서 처리한다.
+       예전에는 무장을 고를 때만 채워서, 기체를 바꿔도 칸에 앞 기체 숫자가 남아 있었고
+       (실측: 자쿠Ⅱ 19 → 구프로 바꿔도 19) 파츠를 끼워도 보정이 안 따라왔다.
+       손으로 고친 값은 pietanAutoCorr 안에서 지켜 준다. */
+    pietanAutoCorr();
     renderPietanHint(); renderPietanDura(); renderPietanEparts();
     renderPietanChecks(); renderPietanLeft(); renderPietanResult();
   }
