@@ -673,7 +673,9 @@
   </div>
   <div class="pietan-dura" id="pietanDura"></div>
   <div class="pietan-ctrl">
-    <label class="pietan-corr">적 공격보정 <input type="number" id="pietanCorr" value="0" min="0" max="300" step="1"></label>
+    <!-- 적 공격보정은 사격·격투가 따로다. 쓰는 쪽은 고른 무장의 속성에 맞는 칸이다. -->
+    <label class="pietan-corr">적 사격보정 <input type="number" id="pietanCorrShoot" value="0" min="0" max="300" step="1"></label>
+    <label class="pietan-corr">격투보정 <input type="number" id="pietanCorrMelee" value="0" min="0" max="300" step="1"></label>
     <span class="pietan-ctrl-lb">상성(적→나)</span>
     <div class="seg" id="pietanAttr">
       <button class="seg-btn" data-a="disadvantage">적 불리</button>

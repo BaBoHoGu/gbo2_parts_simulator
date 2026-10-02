@@ -7147,8 +7147,14 @@
   let pietanMsBase = '';         // 그 기체의 base 이름
   let pietanMsLv = 1;            // 선택한 적 기체 LV
   let pietanPick = null;         // 선택한 적 무장 (그 LV 기준 위력)
-  let pietanCorr = 0;            // 적 공격보정 (기체에서 자동, 수정 가능)
-  let pietanCorrTouched = false; // 사용자가 공격보정을 직접 만졌는가 — 그러면 무장 바꿔도 고정
+  /* 적 공격보정은 **사격·격투 두 칸**이다. 쓰는 쪽은 고른 무장의 속성에 맞는 칸.
+     예전엔 한 칸이라 무장을 바꿀 때마다 같은 칸의 숫자가 사격↔격투로 갈아끼워졌다 —
+     둘을 같이 볼 수가 없었고, 한쪽을 손으로 고쳐 두면 다른 쪽까지 묶여 버렸다.
+     값을 가져오는 규칙은 그대로다: 기체·파츠에서 자동, 손으로 고치면 그 칸만 고정,
+     기체를 바꾸면 둘 다 풀린다. */
+  const PIETAN_CORR = { shoot: '#pietanCorrShoot', melee: '#pietanCorrMelee' };
+  let pietanCorr = { shoot: 0, melee: 0 };
+  let pietanCorrTouched = { shoot: false, melee: false };
   let pietanAttr = 'same';       // 적의 속성 상성 (same|advantage|disadvantage)
   let pietanAttrTouched = false; // 상성 수동 변경 여부 (그러면 기체 바꿔도 유지)
   let pietanEnemySkills = new Set();  // 체크한 적 공격 스킬 이름들 (여러 개 조합 가능)
@@ -7372,10 +7378,12 @@
    */
   function pietanAutoCorr() {
     if (!pietanMs) return;
-    if (pietanCorrTouched) return;    // 사용자가 값을 만졌으면 고정 (기체를 바꾸면 풀린다)
     const c = enemyBaseCorr();
-    pietanCorr = (pietanPick && pietanPick.attr === 'melee') ? c.melee : c.shoot;
-    const inp = $('#pietanCorr'); if (inp) inp.value = pietanCorr;
+    for (const k of ['shoot', 'melee']) {
+      if (pietanCorrTouched[k]) continue;   // 손으로 만진 칸만 고정 (기체를 바꾸면 풀린다)
+      pietanCorr[k] = c[k];
+      const inp = $(PIETAN_CORR[k]); if (inp) inp.value = pietanCorr[k];
+    }
   }
 
   /** 안내문 — 아직 아무것도 안 골랐을 때만 띄운다.
@@ -7418,7 +7426,7 @@
     pietanPick = null;
     pietanBuild = null;                           // 어디서 온 것도 아니다
     pietanEnemy = { parts: [], stage: 6, expansion: null, expLevel: null };
-    pietanCorrTouched = false;                    // 새 기체는 공격보정 다시 자동
+    pietanCorrTouched = { shoot: false, melee: false };   // 새 기체는 두 칸 다 자동
     pietanAttrTouched = false; pietanAutoAttr();  // 상성도 다시 자동
     pietanEnemySkills.clear(); pietanEnemyDef.clear();
     pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
@@ -7436,7 +7444,8 @@
       ? { parts: [...bs.equipped], stage: bs.stage, expansion: bs.expansion, expLevel: bs.expLevel }
       : { parts: [], stage: 6, expansion: null, expLevel: null };
     pietanBuild = bld; pietanPick = null;
-    pietanCorrTouched = false; pietanAttrTouched = false; pietanAutoAttr();
+    pietanCorrTouched = { shoot: false, melee: false };
+    pietanAttrTouched = false; pietanAutoAttr();
     pietanEnemySkills.clear(); pietanEnemyDef.clear();
     pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
     pietanRedrawAll();
@@ -7729,7 +7738,8 @@
     const meleeCcd = dirs && dirs[di] ? dirs[di].hits : [1];
     // 체크한 적 공격 스킬 반영 — 보정 합·피해% 곱
     const eatk = enemyAttackEffect(isMelee ? 'melee' : 'shoot');
-    const eCorr = pietanCorr + eatk.corr;
+    // 고른 무장의 속성에 맞는 칸을 쓴다
+    const eCorr = (isMelee ? pietanCorr.melee : pietanCorr.shoot) + eatk.corr;
     const eMul = eatk.mul;
     // 적이 낀 파츠 — 상성 우위 배율(카테고리 특공)과 与ダメージ% 는 내 파츠와 같은 규칙으로 건다.
     const eEq = enemyEquipped();
@@ -8093,7 +8103,9 @@
     if (b) b.hidden = !open;
     if (open) {
       $('#pietanMsName').textContent = T.msName(state.ms.MS名);
-      $('#pietanCorr').value = pietanCorr;
+      for (const k of ['shoot', 'melee']) {
+        const inp = $(PIETAN_CORR[k]); if (inp) inp.value = pietanCorr[k];
+      }
       pietanAutoAttr();                 // 내 기체 기준 상성 재계산(수동 변경 전까지)
       syncPietanAttrSeg();
       pietanRedrawAll();
@@ -9996,7 +10008,15 @@
     $('#pietanClose').onclick = () => openPietan(false);
     $('#pietanBack').onclick = () => openPietan(false);
     $('#pietanQuery').oninput = () => renderPietanLeft();
-    $('#pietanCorr').oninput = () => { pietanCorr = Math.max(0, Number($('#pietanCorr').value) || 0); pietanCorrTouched = true; renderPietanResult(); };
+    for (const k of ['shoot', 'melee']) {
+      const inp = $(PIETAN_CORR[k]);
+      if (!inp) continue;
+      inp.oninput = () => {
+        pietanCorr[k] = Math.max(0, Number(inp.value) || 0);
+        pietanCorrTouched[k] = true;        // 만진 칸만 고정된다
+        renderPietanResult();
+      };
+    }
     $('#pietanShield').onclick = () => {
       pietanShield = !pietanShield;
       $('#pietanShield').classList.toggle('on', pietanShield);

@@ -94,7 +94,10 @@ const koB = dict[baseOf(msB)];
   await pg.evaluate(() => document.querySelector('#pietanBtn').click());
   await sleep(1600);
 
-  const corr = () => pg.evaluate(() => Number((document.querySelector('#pietanCorr') || {}).value));
+  // 보정 칸은 **둘**이다 — 사격·격투. 고른 무장의 속성에 맞는 칸이 쓰인다.
+  const corrOfBox = k => pg.evaluate(sel => Number((document.querySelector(sel) || {}).value),
+    k === 'melee' ? '#pietanCorrMelee' : '#pietanCorrShoot');
+  const corr = () => corrOfBox('shoot');
   const back = async () => {
     await pg.evaluate(() => {
       // 「‹ 다른 기체」는 머리 **행 안의 버튼**이다 — 행을 누르면 아무 일도 안 일어난다
@@ -143,11 +146,57 @@ const koB = dict[baseOf(msB)];
     b0 === corrOf(msB, [], 6) && b0 !== a0, { A: a0, B: b0, 손: corrOf(msB, [], 6) });
 
   // 무장 속성에 따라 기준이 바뀐다
+  // 두 칸이 **동시에** 제 값으로 차 있어야 한다 (예전엔 한 칸이라 번갈아 덮였다)
+  ok('사격·격투 칸이 동시에 제 값으로 찬다',
+    (await corrOfBox('shoot')) === corrOf(msB, [], 6)
+    && (await corrOfBox('melee')) === meleeOf(msB, [], 6),
+    { 사격: await corrOfBox('shoot'), 격투: await corrOfBox('melee'),
+      손: [corrOf(msB, [], 6), meleeOf(msB, [], 6)] });
   const mw = await pickWeapon('격투');
   if (mw) {
-    const m1 = await corr();
-    ok('격투 무장을 고르면 격투보정으로 바뀐다',
-      m1 === meleeOf(msB, [], 6), { 앱: m1, 손: meleeOf(msB, [], 6), 무장: mw });
+    ok('격투 무장을 골라도 두 칸은 그대로다 (쓰는 쪽만 격투)',
+      (await corrOfBox('shoot')) === corrOf(msB, [], 6)
+      && (await corrOfBox('melee')) === meleeOf(msB, [], 6),
+      { 사격: await corrOfBox('shoot'), 격투: await corrOfBox('melee'), 무장: mw });
+    /* **칸이 찬 것만 봐서는 모자란다.** 「늘 사격 칸을 쓴다」로 심어 봤더니 그대로 통과했다.
+       계산이 어느 칸을 쓰는지는 **결과 숫자**로만 알 수 있다 — 격투 칸만 흔들어 본다. */
+    const killOf = () => pg.evaluate(() => {
+      const m = [...document.querySelectorAll('#pietanModal .pietan-metric')]
+        .find(x => (x.querySelector('.pietan-mlb') || {}).textContent === '격파까지');
+      return m ? m.querySelector('.pietan-mv').textContent.trim() : null;
+    });
+    const k0 = await killOf();
+    await pg.evaluate(() => {
+      const i = document.querySelector('#pietanCorrMelee');
+      i.value = '250'; i.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await sleep(800);
+    const kMelee = await killOf();
+    ok('격투 무장일 때 **격투 칸**을 흔들면 결과가 바뀐다',
+      !!k0 && kMelee !== k0, { 원래: k0, 격투250: kMelee });
+    // 되돌리고, 이번엔 사격 칸만 흔든다 — 격투 무장이니 결과가 바뀌면 안 된다
+    await pg.evaluate(m => {
+      const i = document.querySelector('#pietanCorrMelee');
+      i.value = String(m); i.dispatchEvent(new Event('input', { bubbles: true }));
+    }, meleeOf(msB, [], 6));
+    await sleep(700);
+    const kBack = await killOf();
+    await pg.evaluate(() => {
+      const i = document.querySelector('#pietanCorrShoot');
+      i.value = '250'; i.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await sleep(800);
+    ok('격투 무장일 때 사격 칸을 흔들어도 결과가 안 바뀐다',
+      (await killOf()) === kBack, { 되돌린뒤: kBack, 사격250: await killOf() });
+    /* 위에서 두 칸을 손으로 만져 **고정**해 뒀다 — 그대로 두면 뒤의 파츠 검사가
+       움직이지 않는다(실제로 그렇게 걸렸다). 기체를 다시 골라 고정을 푼다. */
+    await back();
+    await pg.evaluate(() => {
+      const q = document.querySelector('#pietanQuery');
+      if (q) { q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); }
+    });
+    await sleep(700);
+    await pickMs(koB);
   } else console.log('  (이 기체엔 격투 무장이 없어 건너뜀)');
 
   /* ── ② 파츠를 끼우면 그 값이 반영된다.
@@ -212,14 +261,19 @@ const koB = dict[baseOf(msB)];
     bCorr === corrOf(msB, fit, 6), { 앱: bCorr, 손: corrOf(msB, fit, 6), 파츠없이: corrOf(msB, [], 6) });
 
   // ── 손으로 고친 값은 같은 기체 안에서만 지켜진다
+  const meleeBefore = await corrOfBox('melee');
   await pg.evaluate(() => {
-    const i = document.querySelector('#pietanCorr');
+    const i = document.querySelector('#pietanCorrShoot');
     i.value = '999'; i.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await sleep(600);
   await pickWeapon('실탄');
   const kept = await corr();
   ok('손으로 고친 값은 무장을 바꿔도 지켜진다', kept === 999, kept);
+  // **한 칸만** 고정된다 — 사격을 만졌다고 격투까지 묶이면 안 된다
+  ok('사격 칸을 만져도 격투 칸은 자동 그대로다',
+    (await corrOfBox('melee')) === meleeBefore,
+    { 격투: await corrOfBox('melee'), 원래: meleeBefore });
   await back();
   await pg.evaluate(() => {
     const q = document.querySelector('#pietanQuery');
@@ -230,6 +284,9 @@ const koB = dict[baseOf(msB)];
   const reset = await corr();
   ok('기체를 바꾸면 손으로 고친 값이 풀린다',
     reset === corrOf(msA, [], 6), { 앱: reset, 손: corrOf(msA, [], 6) });
+  ok('기체를 바꾸면 격투 칸도 새 기체 값이다',
+    (await corrOfBox('melee')) === meleeOf(msA, [], 6),
+    { 앱: await corrOfBox('melee'), 손: meleeOf(msA, [], 6) });
 
   ok('페이지 오류 없음', errs.length === 0, errs.slice(0, 3));
   await br.close();
