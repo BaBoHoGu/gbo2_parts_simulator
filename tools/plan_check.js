@@ -104,8 +104,8 @@ const ok = (label, good, extra) => {
     };
   });
   ok('설정 상자가 작다 (폭 ≤ 460px)', shape.modalW <= 460, shape);
-  // 기체 1 + 확장 1~3순위 3 + 강화·순위 1
-  ok('줄 차례가 기체 / 확장 1~3순위 / 강화·순위 다', shape.rows === 5, shape);
+  // 기체 1 + 확장 1~3순위 3 + 강화·순위 1 + 메모 1
+  ok('줄 차례가 기체 / 확장 1~3순위 / 강화·순위 / 메모 다', shape.rows === 6, shape);
   ok('기체 → 확장 스킬 순서로 쌓인다', shape.msTop < shape.expTop, shape);
   ok('강화와 순위가 같은 줄에 있다', shape.stageTop === shape.rankTop, shape);
   ok('기체·확장 스킬 칸이 상자를 꽉 채우지 않는다',

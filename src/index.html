@@ -268,6 +268,12 @@
       <span class="pe-sub"><label>강화</label><span class="seg" id="planStageSeg"></span></span>
       <span class="pe-sub"><label>순위</label><span class="seg" id="planRankSeg"></span></span>
     </div>
+    <!-- 메모 — 박스에 짧게 붙여 둘 한마디. 칸이 좁아 10글자까지만 받는다. -->
+    <div class="pe-row">
+      <label for="planMemo">메모</label>
+      <input type="text" id="planMemo" class="pe-memo" maxlength="10" placeholder="최대 10글자" autocomplete="off">
+      <span class="pe-memo-cnt" id="planMemoCount">0/10</span>
+    </div>
     <div class="pe-note" id="planEditNote"></div>
     <div class="pe-actions">
       <button type="button" id="planDelete" class="btn-ghost" hidden>삭제</button>

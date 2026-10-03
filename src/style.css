@@ -269,6 +269,12 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   border: 1px solid var(--line); border-radius: 4px; padding: 0 4px;
 }
 .plan-tags span.pt-goal { color: var(--accent); border-color: var(--accent); }
+/* 사용자가 적어 둔 메모 — 자동 꼬리표와 섞이지 않게 줄을 따로 쓰고 색을 달리한다 */
+.plan-memo {
+  margin-top: 4px; font-size: var(--fs-xs); color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.plan-memo::before { content: '✎ '; color: var(--dim); }
 /* 손잡이 — 여기만 touch-action 을 끈다. 카드 전체를 끄면 목록 스크롤이 죽는다. */
 .plan-grip {
   flex-shrink: 0; width: 22px; align-self: stretch;
@@ -308,6 +314,8 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .plan-edit-body .pe-exp { width: 160px; }
 /* 레벨 칸을 뺀 자리를 이름이 쓴다 — 확장 이름이 길어 160px 에서는 많이 잘렸다 */
 .plan-edit-body .pe-exp-wide { width: 236px; }
+.plan-edit-body .pe-memo { width: 180px; }
+.plan-edit-body .pe-memo-cnt { color: var(--dim); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 /* 강화 / 순위 — 한 줄에 둘. 각자 제 라벨을 작게 달고 간다. */
 .plan-edit-body .pe-row-pair { gap: 14px; flex-wrap: wrap; }
 .plan-edit-body .pe-sub { display: flex; align-items: center; gap: 7px; }

@@ -5411,6 +5411,7 @@
   };
 
   const PLAN_EXP_SLOTS = 3;         // 확장 스킬 1~3순위
+  const PLAN_MEMO_MAX = 10;         // 메모 글자 수 — 박스가 좁아 이보다 길면 읽을 수가 없다
 
   /* 플랜의 확장 스킬은 **늘 최대 레벨**이다 — 올릴 거면 끝까지 올리는 것이 전제라
      고를 것이 없다. 그래서 레벨 칸을 두지 않는다(요청). 저장할 때도 레벨은 안 남긴다.
@@ -5444,7 +5445,10 @@
         exps: planExpsOf(x),
         rank: PLAN_RANKS.includes(Number(x.rank)) ? Number(x.rank) : 1,
         now: Math.max(0, Number(x.now) || 0),     // 지금까지 쌓은 강화 pt
-        dup: Math.max(0, Number(x.dup) || 0)      // 쓸 수 있는 중복 기체 수
+        dup: Math.max(0, Number(x.dup) || 0),     // 쓸 수 있는 중복 기체 수
+        /* 메모 — 박스에 붙여 둘 한마디. 칸이 좁아 10글자까지다.
+           저장된 것이 더 길면(손으로 고쳤거나 옛 저장분) 여기서 자른다 — 화면만 막으면 샌다. */
+        memo: String(x.memo == null ? '' : x.memo).slice(0, PLAN_MEMO_MAX)
       }));
     } catch { planItems = []; }
   }
@@ -5768,6 +5772,14 @@
     });
     main.append(tags);
 
+    /* 메모 — 사용자가 적어 둔 한마디. 속성·코스트 같은 자동 꼬리표와 섞이면 묻히므로
+       줄을 따로 두고 색을 달리한다. 비어 있으면 줄 자체를 만들지 않는다(빈 자리를 안 먹게). */
+    if (it.memo) {
+      const m = el('div', 'plan-memo', it.memo);
+      m.title = '메모 — ' + it.memo;
+      main.append(m);
+    }
+
     // 드래그를 못 쓰는 자리를 위한 두 번째 길
     const move = el('div', 'plan-move');
     for (const r of PLAN_RANKS) {
@@ -5859,7 +5871,7 @@
     // exps 는 **얕은 복사로는 안 된다** — 취소해도 원본이 같이 바뀐다
     planEdit = it
       ? { ...it, exps: it.exps.map(e => ({ ...e })) }
-      : { ms: '', stage: 6, exps: planExpsOf(null), rank: rank || 1, now: 0, dup: 0 };
+      : { ms: '', stage: 6, exps: planExpsOf(null), rank: rank || 1, now: 0, dup: 0, memo: '' };
     $('#planEditTitle').textContent = it ? '강화 플랜 고치기' : '강화 플랜 추가';
     $('#planDelete').hidden = !it;
     syncPlanEdit();
@@ -5888,6 +5900,13 @@
       const sel = $('#planExp' + i);
       if (!sel) continue;
       sel.value = e.name;
+    }
+    const memo = $('#planMemo');
+    if (memo) {
+      // 치는 중에 커서가 튀지 않게, 값이 실제로 다를 때만 넣는다
+      if (memo.value !== (planEdit.memo || '')) memo.value = planEdit.memo || '';
+      const cnt = $('#planMemoCount');
+      if (cnt) cnt.textContent = (planEdit.memo || '').length + '/' + PLAN_MEMO_MAX;
     }
 
     /* 같은 기체를 플랜에 두 번 담지 않는다 — 두 줄이 서로 다른 목표를 말하면
@@ -5943,6 +5962,17 @@
       openMsDrawer(false);
       syncPlanEdit();
     });
+
+    /* 메모 — maxlength 로 막히지만 **붙여넣기·IME 조합**은 넘어올 수 있어 여기서도 자른다.
+       화면에서만 막으면 저장소에 긴 값이 들어가고, 그러면 박스가 터진다. */
+    const memoInp = $('#planMemo');
+    if (memoInp) memoInp.oninput = () => {
+      const v = memoInp.value.slice(0, PLAN_MEMO_MAX);
+      if (memoInp.value !== v) memoInp.value = v;
+      if (planEdit) planEdit.memo = v;
+      const cnt = $('#planMemoCount');
+      if (cnt) cnt.textContent = v.length + '/' + PLAN_MEMO_MAX;
+    };
 
     $('#planSave').onclick = () => {
       if (!planEdit || !planEdit.ms) return;

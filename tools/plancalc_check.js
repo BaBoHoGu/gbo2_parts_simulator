@@ -382,6 +382,52 @@ const noCap = msData.find(m => {
   ok('저장물에 레벨을 남기지 않는다',
     Array.isArray(stored) && stored.every(e => e.level === undefined), stored);
 
+  /* ── ⑤ 메모 (최대 10글자)
+     maxlength 로 막히지만 **붙여넣기·IME 조합**은 넘어올 수 있다. 화면에서만 막으면
+     저장소에 긴 값이 들어가고 박스가 터지므로, **저장된 값**까지 잘렸는지 본다. */
+  await pg.evaluate(() => document.querySelector('.plan-card .plan-edit-btn').click());
+  await sleep(400);
+  const memoBox = await pg.evaluate(() => {
+    const i = document.querySelector('#planMemo');
+    return i ? { max: i.maxLength, cnt: (document.querySelector('#planMemoCount') || {}).textContent } : null;
+  });
+  ok('메모 칸이 있고 10글자로 막혀 있다', !!memoBox && memoBox.max === 10, memoBox);
+  // 붙여넣기처럼 maxlength 를 건너뛰는 입력을 흉내 낸다
+  await pg.evaluate(() => {
+    const i = document.querySelector('#planMemo');
+    i.value = '가나다라마바사아자차카타파';   // 13글자
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await sleep(400);
+  const memoAfter = await pg.evaluate(() => ({
+    v: document.querySelector('#planMemo').value,
+    cnt: (document.querySelector('#planMemoCount') || {}).textContent
+  }));
+  ok('10글자를 넘겨 넣어도 잘린다', memoAfter.v === '가나다라마바사아자차' && memoAfter.v.length === 10, memoAfter);
+  ok('글자 수를 세어 보여 준다', memoAfter.cnt === '10/10', memoAfter);
+  await pg.evaluate(() => document.querySelector('#planSave').click());
+  await sleep(500);
+  const memoSaved = await pg.evaluate(() => {
+    const card = document.querySelector('.plan-card');
+    let st = null;
+    try { st = (JSON.parse(localStorage.getItem('gbo2.plan') || '[]')[0] || {}).memo; } catch {}
+    return { stored: st, shown: (card.querySelector('.plan-memo') || {}).textContent || '' };
+  });
+  ok('메모가 저장소에도 10글자로 들어간다',
+    memoSaved.stored === '가나다라마바사아자차', memoSaved);
+  ok('박스에 메모가 보인다', /가나다라마바사아자차/.test(memoSaved.shown), memoSaved);
+  // 비우면 줄 자체가 없어진다 (빈 자리를 안 먹게)
+  await pg.evaluate(() => document.querySelector('.plan-card .plan-edit-btn').click());
+  await sleep(400);
+  await pg.evaluate(() => {
+    const i = document.querySelector('#planMemo');
+    i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#planSave').click();
+  });
+  await sleep(500);
+  const memoGone = await pg.evaluate(() => document.querySelectorAll('.plan-card .plan-memo').length);
+  ok('메모를 비우면 그 줄이 사라진다', memoGone === 0, memoGone);
+
   /* ── ④ 순위 도합은 **개량 키트(등급별) · DP** 만. 티켓은 빠진다(우측에서 본다).
      개량 키트는 등급마다 다른 물건이라 한 숫자로 합치면 안 된다 —
      같은 순위에 2성과 3성을 넣고 **따로 적히는지** 본다. */
