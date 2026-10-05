@@ -57,5 +57,49 @@ if (useless.length) {
   useless.slice(0, 5).forEach(u => console.log('     · ' + u.기체 + ' ' + u.칸 + ' = ' + u.값));
 }
 
+/* ── 비슷한 자리도 함께 본다 ──────────────────────────────────────────────
+   「원본을 덮어쓰는」 곳은 다 같은 병을 앓을 수 있다. 다만 위험도가 다르다:
+     · 추가(additions) 계열은 **원본 우선**이라 덮지 않는다 — 죽은 항목만 쌓인다(알림).
+     · override 계열은 덮는다. 원본과 같아지면 무해해지므로 그때도 알림.
+     · 소이(burn)는 기본값이 어긋나면 **스스로 건너뛴다** — 그 장치가 살아 있는지 본다.
+   2026-10-05 전수 점검에서 실제로 썩어 있던 것은 msData.manual.json 하나뿐이었다. */
+
+// ① msData.additions — 원본에도 생겨 이제 안 쓰이는 항목
+try {
+  const add = rd('data', 'msData.additions.json');
+  const dead = (Array.isArray(add) ? add : []).filter(a => a && byName.has(a.MS名));
+  if (dead.length) console.log('  (알림) msData.additions 중 원본에도 생겨 안 쓰이는 기체 '
+    + dead.length + '개: ' + dead.map(a => a.MS名).join(', '));
+} catch { /* 없으면 넘어간다 */ }
+
+// ② fullst.override — 원본이 이미 같아진 교정
+try {
+  const fo = rd('data', 'fullst.override.json');
+  const fullst = rd('data', 'fullst.json');
+  const noop = [];
+  for (const [name, byLv] of Object.entries(fo)) {
+    if (name.startsWith('_')) continue;
+    const def = fullst.find(d => d.name === name);
+    for (const [lvNo, eff] of Object.entries(byLv || {})) {
+      const lv = def && (def.levels || []).find(x => Number(x.level) === Number(lvNo));
+      for (const [k, v] of Object.entries(eff || {})) {
+        if (k.startsWith('_')) continue;
+        if (lv && same((lv.effects || {})[k], v)) noop.push(name + ' LV' + lvNo + ' ' + k);
+      }
+    }
+  }
+  if (noop.length) console.log('  (알림) fullst.override 중 원본이 이미 같아진 교정 '
+    + noop.length + '개: ' + noop.join(', '));
+} catch { /* 없으면 넘어간다 */ }
+
+/* ③ 소이 실측의 자가 치유 장치. burn.override 는 「박을 당시의 기본값」을 들고 있다가
+   원본이 달라지면 그 항목을 **건너뛴다** — msData.manual.json 에 없던 바로 그 장치다.
+   코드에서 사라지면 같은 사고가 소이 쪽에서 난다. */
+{
+  const src = fs.readFileSync(path.join(ROOT, 'tools', 'build.js'), 'utf8');
+  ok('소이 실측에 「기본값이 달라 건너뜀」 장치가 살아 있다',
+    /기본값이 달라 건너뜀/.test(src) && /stale\+\+/.test(src));
+}
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);
