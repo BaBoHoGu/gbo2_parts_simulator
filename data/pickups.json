@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-10-03",
+ "pickupsUpdated": "2026-10-05",
  "pickups": [
   {
    "name": "걍 개량형",
@@ -218,7 +218,7 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=193889"
   }
  ],
- "steamUpdated": "2026-10-03",
+ "steamUpdated": "2026-10-05",
  "steamNews": [
   {
    "name": "제간[고기동 사양]",
@@ -268,20 +268,6 @@
    "end": "2026-09-17",
    "tokens": 180,
    "url": "https://store.steampowered.com/news/app/1367080/view/669502126020362443?l=koreana"
-  },
-  {
-   "name": "【복각】 윙 건담 제로",
-   "start": "2026-09-03",
-   "end": "2026-09-10",
-   "tokens": 270,
-   "url": "https://store.steampowered.com/news/app/1367080/view/667249691758428712?l=koreana"
-  },
-  {
-   "name": "풀 아머 ENGAGE 건담[A 플랜] LV2",
-   "start": "2026-09-03",
-   "end": "2026-09-10",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/667249691758428712?l=koreana"
   }
  ]
 }
