@@ -9,12 +9,13 @@
 #   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
 #   .\update.ps1 -Publish   폰 OTA(data) + PC 배포본 ZIP 을 GitHub 에 올려 링크로 배포
 #   .\update.ps1 -SetSiteKey  Cloudflare 배포 자격 증명을 이 PC 에 등록 (최초 1회, 이후 자동)
+#   .\update.ps1 -SetSecret YT_API_KEY   Cloudflare 함수가 쓸 비밀값을 등록 (키는 저장소에 안 남는다)
 #
 # gbo2.jp 최신 데이터·일본 위키(밸런스 패치 목록 포함)에서 변경분만 가져와
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$SetSiteKey)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$SetSiteKey, [string]$SetSecret)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -299,6 +300,129 @@ $SiteProject = 'gbo2-parts'
 $SiteUrl     = "https://$SiteProject.pages.dev"
 $SiteCred    = Join-Path $CredDir 'site.cred'
 
+# Cloudflare 함수가 쓸 비밀값(YouTube API 키 등)을 등록한다.
+#
+# 왜 wrangler 명령을 그냥 주지 않고 여기 두는가 — wrangler 는 CLOUDFLARE_API_TOKEN 이
+# 있어야 움직이는데, 그 토큰은 DPAPI 로 이 PC 에서만 풀리게 넣어 뒀다. 손으로 치라고 하면
+# 토큰을 어딘가에 평문으로 꺼내 두게 된다. 여기서 Use-SiteCred 로 잠깐만 올린다.
+#
+# 값은 화면에 안 보이게 받아 **stdin 으로만** 넘긴다 — 명령줄 인자로 주면 프로세스 목록과
+# PowerShell 기록에 남는다. 저장소가 공개라 파일에 적는 길은 아예 두지 않는다.
+function Set-SiteSecret([string]$Name) {
+  $Name = ($Name + $null).Trim()
+  if ($Name -cnotmatch '^[A-Z][A-Z0-9_]*$') {
+    Write-Host "비밀값 이름이 이상합니다: '$Name'" -ForegroundColor Red
+    Write-Host '  대문자·숫자·밑줄만 씁니다. 예: .\update.ps1 -SetSecret YT_API_KEY' -ForegroundColor Yellow
+    return
+  }
+  if (-not (Test-Path (Join-Path $PSScriptRoot 'node_modules\wrangler'))) {
+    Write-Host 'wrangler 가 없습니다 — npm install --no-save wrangler' -ForegroundColor Yellow; return
+  }
+  Write-Host "Cloudflare Pages 프로젝트 '$SiteProject' 에 비밀값 '$Name' 을 등록합니다." -ForegroundColor Cyan
+  Write-Host '  값은 화면에 보이지 않습니다. 붙여넣고 Enter 를 누르세요.' -ForegroundColor DarkGray
+  $sec = Read-Host '값' -AsSecureString
+  $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+  try { $plain = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+  finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+  # 붙여넣기가 안 먹어 한두 글자만 들어가는 일이 실제로 있었다(토큰 등록 때). 화면에
+  # 아무것도 안 보이니 그대로 저장되면 다음 호출에서 엉뚱한 오류로 나타난다.
+  if ($plain.Length -lt 8) {
+    Write-Host "입력된 값이 $($plain.Length) 글자입니다 — 붙여넣기가 안 먹은 것 같습니다." -ForegroundColor Red
+    Write-Host '  등록하지 않았습니다. 다시 실행해 주세요.' -ForegroundColor Yellow
+    $plain = $null; return
+  }
+  Write-Host "  받은 값: $($plain.Length) 글자" -ForegroundColor DarkGray
+
+  # 유튜브 키는 **넣기 전에 직접 물어본다.** 길이만 봐서는 모자랐다 — 실제로 한 번
+  # 등록까지 다 됐는데(secret list 에도 떴다) 유튜브는 「API key not valid」 라고 답했고,
+  # 배포를 한 바퀴 돌고 나서야 알았다. 값이 손에 있는 지금 1유닛만 써서 확인하면 된다.
+  # (videos.list 는 1유닛이다. search.list 100유닛을 여기서 태울 이유가 없다)
+  if ($Name -eq 'YT_API_KEY') {
+    if ($plain -notmatch '^AIza[0-9A-Za-z_\-]{35}$') {
+      Write-Host '  ⚠ 구글 API 키 꼴이 아닙니다 (보통 AIza 로 시작하는 39글자).' -ForegroundColor Yellow
+    }
+    Write-Host '  유튜브에 물어보는 중…' -ForegroundColor DarkGray
+    $okKey = $false; $why = ''
+    try {
+      $u = 'https://www.googleapis.com/youtube/v3/videos?part=id&id=dQw4w9WgXcQ&key=' + [uri]::EscapeDataString($plain)
+      $resp = Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 20
+      $okKey = ($resp.StatusCode -eq 200)
+    } catch {
+      $why = ''
+      try {
+        $sr = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())
+        $body = $sr.ReadToEnd()
+        if ($body -match '"message"\s*:\s*"([^"]+)"') { $why = $Matches[1] }
+      } catch { $why = $_.Exception.Message }
+    }
+    if (-not $okKey) {
+      Write-Host '  키가 유튜브에서 거절됐습니다 — 등록하지 않았습니다.' -ForegroundColor Red
+      if ($why) { Write-Host "    구글: $why" -ForegroundColor DarkGray }
+      Write-Host '  확인할 것:' -ForegroundColor Yellow
+      Write-Host '    · 키를 통째로 복사했는가 (앞뒤가 잘리지 않았는가)' -ForegroundColor Yellow
+      Write-Host '    · YouTube Data API v3 가 그 프로젝트에서 「사용 설정됨」인가' -ForegroundColor Yellow
+      Write-Host '    · 키 제한의 API 제한사항에 YouTube Data API v3 가 들어 있는가' -ForegroundColor Yellow
+      Write-Host '    · 방금 만들었다면 몇 분 기다렸다가 다시' -ForegroundColor Yellow
+      $plain = $null; return
+    }
+    Write-Host '  유튜브가 받아 줬습니다.' -ForegroundColor Green
+  }
+  if (-not (Use-SiteCred)) { $plain = $null; return }
+
+  # **파이프로 넘기지 않는다.** PowerShell 은 네이티브 명령에 문자열을 파이프할 때 줄바꿈을
+  # 붙이는데, `wrangler pages secret put` 은 그것을 잘라 내지 않는다(Workers 쪽 secret put 은
+  # 잘라 낸다 — 그래서 괜찮을 줄 알았다). 그 결과 39글자 키가 40글자로 저장됐고,
+  # 유튜브는 「API key not valid」 라고만 답해서 원인을 찾는 데 배포를 세 바퀴 돌았다.
+  # 여기서는 표준입력에 **값만 정확히** 쓰고 닫는다. 명령줄 인자로 주지 않는 이유는
+  # 그러면 프로세스 목록에 키가 보이기 때문이고, 파일로 주지 않는 이유는 디스크에
+  # 평문이 남기 때문이다.
+  $plain = $plain.Trim()
+  $cli = Join-Path $PSScriptRoot 'node_modules\wrangler\bin\wrangler.js'
+  $psi = New-Object Diagnostics.ProcessStartInfo
+  $psi.FileName  = (Get-Command node).Source
+  # ArgumentList 는 .NET Framework(Windows PowerShell 5.1)에 없다 — 문자열로 넘긴다.
+  # 경로에 한글·공백이 있어 따옴표가 꼭 필요하다. 이름·프로젝트는 위에서 꼴을 검사했다.
+  $psi.Arguments = '"' + $cli + '" pages secret put ' + $Name + ' --project-name ' + $SiteProject
+  $psi.RedirectStandardInput = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.UseShellExecute = $false
+  $psi.WorkingDirectory = $PSScriptRoot
+  # 표준입력 작성기는 [Console]::InputEncoding 을 따라간다. 이 스크립트는 한글 때문에
+  # 콘솔을 UTF-8 로 맞춰 두는데, 그 인코딩에 **BOM 이 딸려 있어 값 앞에 한 글자가 붙었다**
+  # (실측: 39 → 40, 앞 글자가 U+FEFF). BOM 없는 UTF-8 로 잠깐 바꿨다가 되돌린다.
+  # (.NET Framework 에는 StandardInputEncoding 이 없어 이 길밖에 없다.
+  #  콘솔이 없는 환경에서는 바꾸지 못하는데, 그래도 받는 쪽이 공백을 털어 내게 해 뒀다.)
+  $prevIn = $null
+  try { $prevIn = [Console]::InputEncoding; [Console]::InputEncoding = New-Object Text.UTF8Encoding($false) } catch { }
+  $proc = [Diagnostics.Process]::Start($psi)
+  # 두 흐름을 차례로 끝까지 읽으면 한쪽이 가득 찼을 때 서로 기다리다 멈춘다. 먼저 걸어 둔다.
+  $tOut = $proc.StandardOutput.ReadToEndAsync()
+  $tErr = $proc.StandardError.ReadToEndAsync()
+  # **바이트로 직접 쓴다.** StandardInput.Write 는 콘솔 인코딩을 따르는데, 이 스크립트가
+  # 한글을 위해 UTF-8 로 맞춰 둔 탓에 **앞에 BOM 한 글자**가 끼어 40글자가 됐다
+  # (실측: 39 → 40, 끝은 깨끗한데 앞이 더러웠다). StandardInputEncoding 은 .NET Framework 에
+  # 없어서 쓸 수 없다. 바이트로 쓰면 인코더를 아예 안 거친다.
+  $bytes = (New-Object Text.UTF8Encoding($false)).GetBytes($plain)
+  $proc.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length)
+  $proc.StandardInput.BaseStream.Flush()
+  $proc.StandardInput.Close()
+  $proc.WaitForExit()
+  if ($prevIn) { try { [Console]::InputEncoding = $prevIn } catch { } }
+  $out = $tOut.Result + $tErr.Result
+  $rc = $proc.ExitCode
+  $plain = $null
+  Clear-SiteCred
+  if ($rc -ne 0) {
+    Write-Host "등록하지 못했습니다 (종료 코드 $rc)." -ForegroundColor Red
+    Write-Host ($out.Trim()) -ForegroundColor DarkGray
+    Write-Host '  토큰 권한을 확인하세요: Account · Cloudflare Pages · Edit' -ForegroundColor Yellow
+    return
+  }
+  Write-Host "등록했습니다 — '$Name' 은 Cloudflare 에만 있고 저장소·앱에는 들어가지 않습니다." -ForegroundColor Green
+  Write-Host '  바뀐 비밀값은 다음 배포(-Publish)부터 함수에 반영됩니다.' -ForegroundColor DarkGray
+}
+
 function Set-SiteKey {
   Write-Host 'Cloudflare 배포 자격 증명을 이 PC 에 등록합니다.' -ForegroundColor Cyan
   Write-Host '  Account ID : Workers & Pages 화면 오른쪽에 있는 32자리' -ForegroundColor DarkGray
@@ -500,6 +624,7 @@ if (Test-Path $bundled) {
 
 # 자격 증명 등록은 여기서 끝난다 — 데이터 수신·빌드를 할 이유가 없다.
 if ($SetSiteKey) { Set-SiteKey; Close-Window 0 }
+if ($SetSecret) { Set-SiteSecret $SetSecret; Close-Window 0 }
 # 배포 전에 '사람이 해야 하는데 잊기 쉬운 둘' 을 확인한다. 막지는 않고 알려만 준다.
 #   ① 소스 커밋·푸시 — 이 스크립트는 소스 저장소를 건드리지 않는다. 안 밀어 두면
 #      저장소가 뒤처지고, PC 를 옮길 때 그만큼 사라진다.
