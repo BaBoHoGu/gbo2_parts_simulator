@@ -139,12 +139,26 @@ export function isGameVideo(title, channel) {
    바꿀 일이 생기면 여기만 고치면 되고, 자(tools/videos_check.js)도 이것을 읽는다. */
 export const RULES = {
   minViews: 1000,     // 거의 안 본 영상은 뺀다
-  minSec: 180,        // 짧은 클립·쇼츠. 지금 뜨는 해설 영상은 8분대라 영향이 없다
+  minSec: 120,        // 짧은 클립·쇼츠 (사용자 결정: 2분)
   dropShorts: true,   // 길이가 길어도 쇼츠로 올린 것이 있다
-  /* 제외할 채널. **이름을 그대로 적는다**(대소문자·앞뒤 공백은 안 따진다).
-     지금은 비어 있다 — 뺄 채널이 생기면 여기에 적으면 된다. */
-  blockChannels: []
+  /* 채널은 **ID 로 맞춘다**(UC…). 이름으로 맞추면 사람이 이름을 바꾸는 순간 조용히 풀린다.
+     핸들(@…)은 영상 자료에 안 들어 있어서 못 쓴다. 이름은 사람이 읽으라고 적어 둔다. */
+  blockChannels: [
+    { id: 'UCj55SRv_sv3N8PDAgyXoJFA', name: 'バトオペ バッジ取得講座', handle: '@BATTOPE_school' }
+  ],
+  /** 가능하면 가져올 채널. 고를 때 먼저 집는다(순서를 바꾸지는 않는다). */
+  preferChannels: [
+    { id: 'UC104DFiu-pTDGR4hEyRhdKg', name: '小倉 / kokura', handle: '@AkokuraSANKA' },
+    { id: 'UClAFsLVoVO2_UH9z0vimajg', name: 'オンドレヤス', handle: '@ondoreyas' }
+  ]
 };
+
+/** 우대 채널인가 */
+export function isPreferred(v, rules = RULES) {
+  const r = { ...RULES, ...(rules || {}) };
+  const id = String(v && v.chId || '');
+  return (r.preferChannels || []).some(c => c.id === id);
+}
 
 /** 「#shorts」·「＃ショート」 꼴. 길이가 3분을 넘어도 쇼츠로 올린 것이 있다. */
 const SHORTS = /[#＃]\s*(shorts?|ショート)\b/i;
@@ -157,8 +171,8 @@ export function passesRules(v, rules = RULES) {
 /** 막힌 이유 한 마디. 통과하면 null. (자에서 「왜 빠졌는지」를 집어 보려고 나눠 둔다) */
 export function whyBlocked(v, rules = RULES) {
   const r = { ...RULES, ...(rules || {}) };
-  const ch = String(v && v.ch || '').trim().toLowerCase();
-  if (r.blockChannels && r.blockChannels.some(b => String(b).trim().toLowerCase() === ch)) return 'channel';
+  const id = String(v && v.chId || '');
+  if ((r.blockChannels || []).some(b => b && b.id && b.id === id)) return 'channel';
   if (r.dropShorts && SHORTS.test(String(v && v.title || ''))) return 'shorts';
   if (r.minViews > 0 && Number(v && v.views || 0) < r.minViews) return 'views';
   /* 길이를 모르는 영상은 **빼지 않는다.** videos.list 가 재생 시간을 못 주는 경우가
@@ -178,4 +192,53 @@ export function whyBlocked(v, rules = RULES) {
 export function filterFor(ms, items, rules = RULES) {
   return (items || []).filter(v =>
     pickMs(v.title) === ms && isGameVideo(v.title, v.ch) && passesRules(v, rules));
+}
+
+/* ===================== 고르기 =====================
+   조회수만 보고 자르면 **갓 올라온 영상이 영영 안 올라온다.** 밸런스 패치 직후 영상은
+   아직 조회수를 못 모았는데, 2년치 인기 영상과 겨루면 질 수밖에 없다 — 정작 지금
+   그 기체가 어떻게 바뀌었는지 말해 주는 것이 그 영상인데도.
+
+   그래서 **최신 자리를 따로 떼어 둔다.** 2달 이내 영상에 몇 칸을 미리 주고,
+   나머지를 조회수로 채운다. 밸런스 패치로 조정된 기체(PATCHED)는 한 칸 더 준다 — 보험이다. */
+export const TAKE = 6;              // 화면에 보일 개수 (사용자 결정)
+export const RECENT_DAYS = 60;      // 「최신」의 경계 (사용자 결정: 2달)
+const RECENT_SLOTS = 2;             // 보통 떼어 두는 최신 자리
+const RECENT_SLOTS_PATCHED = 3;     // 갓 조정된 기체는 한 칸 더
+
+/** 올린 지 RECENT_DAYS 안인가 */
+export const isRecent = (v, now = Date.now()) => {
+  const t = Date.parse(String(v && v.at || ''));
+  return Number.isFinite(t) && (now - t) <= RECENT_DAYS * 86400e3;
+};
+
+/**
+ * 거른 목록에서 화면에 올릴 것을 고른다.
+ *
+ * @param list     이미 filterFor 를 지난 영상들
+ * @param patched  이 기체가 마지막 밸런스 패치로 조정됐는가
+ */
+export function pickTop(list, { patched = false, now = Date.now(), take = TAKE, rules = RULES } = {}) {
+  /* 우대 채널을 **먼저 집는다**(사용자 결정: 「가능하면 가져올 것」).
+     순서를 바꾸는 것이 아니라 고를 때 우선권을 준다 — 화면은 끝에서 조회수 순으로 다시 세운다. */
+  const rank = (a, b) => (isPreferred(b, rules) - isPreferred(a, rules))
+    || (Number(b.views || 0) - Number(a.views || 0));
+
+  const all = [...(list || [])].sort(rank);
+  const slots = Math.min(take, patched ? RECENT_SLOTS_PATCHED : RECENT_SLOTS);
+
+  const out = [];
+  const used = new Set();
+  for (const v of all) {                       // ① 최신 자리부터
+    if (out.length >= slots) break;
+    if (!isRecent(v, now)) continue;
+    out.push(v); used.add(v.id);
+  }
+  for (const v of all) {                       // ② 나머지는 조회수로 채운다
+    if (out.length >= take) break;
+    if (used.has(v.id)) continue;
+    out.push(v); used.add(v.id);
+  }
+  // 화면에는 조회수 순으로 보인다 — 「조회수 많은 순」이라 적어 두었으니 그대로여야 한다
+  return out.sort((a, b) => Number(b.views || 0) - Number(a.views || 0));
 }

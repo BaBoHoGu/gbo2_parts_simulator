@@ -421,8 +421,22 @@ async function detectPatch(msList) {
     }
   }
 
-  // 반영한 밸런스 패치 날짜를 기록해, 다음 실행 때 같은 패치를 다시 받지 않게 한다.
-  if (patchNew && patch.date) fs.writeFileSync(PATCH_FILE, JSON.stringify({ applied: patch.date }, null, 1) + '\n');
+  /* 반영한 밸런스 패치 날짜를 기록해, 다음 실행 때 같은 패치를 다시 받지 않게 한다.
+     **조정된 기체 이름도 함께 남긴다.** 예전에는 날짜만 적었는데, 그러면
+     「이번에 누가 조정됐는가」가 실행이 끝나는 순간 사라졌다. 추천 영상이 이 목록을
+     보험으로 쓴다 — 갓 조정된 기체는 새 영상이 아직 조회수를 못 모았는데, 조회수만
+     보면 그 영상이 영영 안 올라온다. 조정된 기체는 최신 영상 자리를 더 준다. */
+  if (patchNew && patch.date) {
+    const byId = new Map();
+    for (const m of local) {
+      const id = (String(m.wiki_url || '').match(/pages\/(\d+)/) || [])[1];
+      if (id) byId.set(id, String(m.MS名).replace(/_LV\d+$/, ''));
+    }
+    const mechs = [...new Set((patch.ids || []).map(id => byId.get(id)).filter(Boolean))].sort();
+    fs.writeFileSync(PATCH_FILE,
+      JSON.stringify({ applied: patch.date, date: patch.date, mechs }, null, 1) + '\n');
+    console.log(`  밸런스 패치 기체 ${mechs.length}기를 기록했습니다 (추천 영상 보험용)`);
+  }
 
   // 5) 마무리 리포트 — 새 기체 한글명은 사람이 확인해야 한다
   const msDict = rdJson('data', 'i18n', 'ms.json');

@@ -42,9 +42,12 @@ const ok = (label, good, extra) => {
     { why: 'リック・ドムⅡ(GH) 가 ドム 칸으로',
       title: '「バトオペ2」オバチュ格闘LV2付き格闘補正115!リック・ドムⅡ（GH）LV4',
       notMs: 'ドム', wantMs: 'リック・ドムⅡ（GH）' },
-    { why: 'νガンダム 가 ガンダム 칸으로',
+    /* 제목이 [DFF装備] 라고 적어 두었고 그 변형이 자료에 있다 — 본체 νガンダム 이 아니라
+       그쪽으로 가는 것이 맞다. (처음엔 νガンダム 를 기대했는데, 자료에 변형이 생기자
+       자가 울었다. 자가 맞고 기대가 틀렸던 경우다) */
+    { why: 'νガンダム 계열이 ガンダム 칸으로',
       title: '『バトオペ２』νガンダム[DFF装備]！共振後のとんでもない火力',
-      notMs: 'ガンダム', wantMs: 'νガンダム' },
+      notMs: 'ガンダム', wantMs: 'νガンダム［DFF装備］' },
     { why: '육전형 건담 WR 이 본체 칸으로',
       title: '「バトオペ2」継続的な高火力投射!陸戦型ガンダム［WR装備］LV5!',
       notMs: '陸戦型ガンダム', wantMs: '陸戦型ガンダム［WR装備］' }
@@ -148,8 +151,10 @@ const ok = (label, good, extra) => {
      개그 쇼츠인데 1.8만회라 조회수만 보면 올라온다. */
   {
     const { RULES, whyBlocked } = V;
-    ok('규칙 값이 정한 대로다', RULES.minViews === 1000 && RULES.minSec === 180 && RULES.dropShorts === true,
+    ok('규칙 값이 정한 대로다', RULES.minViews === 1000 && RULES.minSec === 120 && RULES.dropShorts === true,
       { minViews: RULES.minViews, minSec: RULES.minSec, dropShorts: RULES.dropShorts });
+    ok('보여 줄 개수가 6개다', V.TAKE === 6, { TAKE: V.TAKE });
+    ok('최신의 경계가 2달이다', V.RECENT_DAYS === 60, { RECENT_DAYS: V.RECENT_DAYS });
 
     const good = { title: '【バトオペ2】ドム解説', ch: 'x', views: 20000, sec: 500 };
     ok('멀쩡한 것은 통과한다', whyBlocked(good) === null, whyBlocked(good));
@@ -158,23 +163,92 @@ const ok = (label, good, extra) => {
       whyBlocked({ ...good, title: '【バトオペ2】ギードムくんの日常(スパガン編) #shorts', sec: 400 }) === 'shorts');
     ok('조회수가 모자라면 뺀다', whyBlocked({ ...good, views: 999 }) === 'views');
     ok('조회수가 딱 기준이면 넣는다', whyBlocked({ ...good, views: 1000 }) === null);
-    ok('3분 미만은 뺀다', whyBlocked({ ...good, sec: 179 }) === 'short');
-    ok('3분이면 넣는다', whyBlocked({ ...good, sec: 180 }) === null);
+    ok('2분 미만은 뺀다', whyBlocked({ ...good, sec: 119 }) === 'short');
+    ok('2분이면 넣는다', whyBlocked({ ...good, sec: 120 }) === null);
 
     /* 길이를 모르는 영상(라이브 등)은 **빼지 않는다.** 모른다고 버리면 멀쩡한 것을 잃는다. */
     ok('길이를 모르면 길이로 빼지 않는다', whyBlocked({ ...good, sec: 0 }) === null);
 
-    /* 채널 제외 — 지금 목록은 비어 있다. 비었다고 검사까지 비우면,
-       나중에 채널을 적었을 때 동작하는지 아무도 모른다. 값을 넣어 본다. */
+    /* 채널은 **ID 로** 가린다. 이름으로 가리면 사람이 이름을 바꾸는 순간 조용히 풀린다. */
     ok('채널 목록이 비어 있으면 아무도 안 막는다', whyBlocked(good, { blockChannels: [] }) === null);
-    ok('적어 둔 채널은 막는다', whyBlocked(good, { blockChannels: ['X'] }) === 'channel');
-    ok('채널 비교는 대소문자·공백을 안 따진다',
-      whyBlocked({ ...good, ch: '  오구라 / Kokura ' }, { blockChannels: ['오구라 / kokura'] }) === 'channel');
+    ok('적어 둔 채널은 막는다',
+      whyBlocked({ ...good, chId: 'UCj55SRv_sv3N8PDAgyXoJFA' }) === 'channel');
+    ok('제외 채널은 사용자가 지정한 그것이다',
+      RULES.blockChannels.length === 1 && RULES.blockChannels[0].handle === '@BATTOPE_school',
+      RULES.blockChannels);
+    /* 이름만 같고 ID 가 다르면 막히면 안 된다 — 같은 이름을 쓰는 다른 채널이 있을 수 있다. */
+    ok('이름이 같아도 ID 가 다르면 안 막는다',
+      whyBlocked({ ...good, ch: 'バトオペ バッジ取得講座', chId: 'UCdifferent0000000000000' }) === null);
+
+    ok('우대 채널은 사용자가 지정한 둘이다',
+      RULES.preferChannels.length === 2
+      && RULES.preferChannels.map(c => c.handle).join(',') === '@AkokuraSANKA,@ondoreyas',
+      RULES.preferChannels);
+    ok('우대 채널을 알아본다',
+      V.isPreferred({ chId: 'UClAFsLVoVO2_UH9z0vimajg' }) === true
+      && V.isPreferred({ chId: 'UCzzzz00000000000000000' }) === false);
 
     // 거르기가 실제로 목록에서 빠지는가 (규칙만 통과하고 목록엔 남는 일이 없게)
     const mixed = [good, { ...good, title: '【バトオペ2】ドム #shorts' }, { ...good, views: 10 }];
     ok('filterFor 가 규칙까지 건다', filterFor('ドム', mixed).length === 1,
       filterFor('ドム', mixed).map(v => v.title));
+  }
+
+  /* ── 8. 고르기 — 최신 자리 (사용자 지적: 밸런스 패치 직후 영상이 영영 안 올라온다) ──
+     조회수만 보고 자르면, 갓 올라온 영상은 2년치 인기 영상과 겨뤄 늘 진다.
+     정작 「지금 이 기체가 어떻게 바뀌었는가」를 말해 주는 것이 그 영상인데도. */
+  {
+    const { pickTop, isRecent } = V;
+    const NOW = Date.parse('2026-10-06T00:00:00Z');
+    const ago = d => new Date(NOW - d * 86400e3).toISOString();
+    const v = (id, views, days, extra = {}) => ({ id, views, at: ago(days), title: 't', ch: 'c', ...extra });
+
+    ok('2달 안이면 최신이다', isRecent(v('a', 1, 59), NOW) === true);
+    ok('2달이 지나면 최신이 아니다', isRecent(v('a', 1, 61), NOW) === false);
+
+    /* 인기 영상 6개(전부 1년 전)와 새 영상 2개(열흘 전, 조회수 낮음).
+       조회수로만 자르면 새 영상은 하나도 못 들어온다. */
+    const old6 = [1, 2, 3, 4, 5, 6].map(i => v('old' + i, 100000 - i, 365));
+    const new2 = [v('new1', 500, 10), v('new2', 400, 5)];
+    const got = pickTop([...old6, ...new2], { now: NOW });
+    ok('6개를 고른다', got.length === 6, got.map(x => x.id));
+    ok('최신 영상이 들어온다 (조회수로만 자르면 하나도 못 들어온다)',
+      got.filter(x => x.id.startsWith('new')).length === 2, got.map(x => x.id));
+    ok('나머지는 조회수 많은 것으로 채운다',
+      got.filter(x => x.id.startsWith('old')).length === 4, got.map(x => x.id));
+    ok('화면 순서는 조회수 순이다',
+      got.every((x, i) => i === 0 || got[i - 1].views >= x.views), got.map(x => x.views));
+
+    /* 갓 조정된 기체는 최신 자리를 한 칸 더 받는다 — 보험이다. */
+    const new3 = [...new2, v('new3', 300, 3)];
+    const plain = pickTop([...old6, ...new3], { now: NOW, patched: false });
+    const ins = pickTop([...old6, ...new3], { now: NOW, patched: true });
+    ok('보통 기체는 최신 2자리', plain.filter(x => x.id.startsWith('new')).length === 2, plain.map(x => x.id));
+    ok('조정된 기체는 최신 3자리', ins.filter(x => x.id.startsWith('new')).length === 3, ins.map(x => x.id));
+
+    /* 우대 채널은 **고를 때** 먼저 집는다. 조회수가 낮아도 자리를 얻는다. */
+    const PREF = 'UClAFsLVoVO2_UH9z0vimajg';   // オンドレヤス
+    const withPref = [...old6, v('pref', 50, 300, { chId: PREF })];
+    const p = pickTop(withPref, { now: NOW });
+    ok('우대 채널은 조회수가 낮아도 들어온다', p.some(x => x.id === 'pref'), p.map(x => x.id));
+
+    /* 최신 영상이 없으면 그 자리를 비우지 않는다 — 인기 영상으로 다 채운다. */
+    const noRecent = pickTop(old6, { now: NOW });
+    ok('최신이 없으면 자리를 비우지 않는다', noRecent.length === 6, noRecent.map(x => x.id));
+
+    // 후보가 모자라면 있는 만큼만. (빈 자리를 아무것으로 메우지 않는다)
+    ok('후보가 적으면 있는 만큼만', pickTop([v('x', 10, 1)], { now: NOW }).length === 1);
+    ok('후보가 없으면 빈 목록', pickTop([], { now: NOW }).length === 0);
+  }
+
+  /* ── 9. 밸런스 패치 기체 목록이 실려 있는가 (보험이 헛돌지 않게) ──
+     목록이 비면 pickTop 의 patched 가 늘 false 가 되어, 보험이 **조용히 꺼진다.** */
+  {
+    const dict = await import('file://' + path.join(ROOT, 'functions', 'lib', 'dict.js').replace(/\\/g, '/'));
+    ok('패치 기체 목록이 비어 있지 않다', dict.PATCHED && dict.PATCHED.size > 0,
+      { 기체: dict.PATCHED ? dict.PATCHED.size : 0, 날짜: dict.PATCH_DATE });
+    const unknown = [...(dict.PATCHED || [])].filter(n => !MS_BASE.has(n));
+    ok('패치 기체가 모두 아는 기체다', unknown.length === 0, unknown);
   }
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

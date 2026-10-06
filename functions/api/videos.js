@@ -13,19 +13,24 @@
 //     그날 남은 요청이 전부 죽는다. 우리가 세다 멈추면 「오늘은 여기까지」로 끝난다.
 import { json, bad, CORS } from '../lib/util.js';
 import { ensureSchema } from '../lib/schema.js';
-import { MS_BASE, queryOf, filterFor } from '../lib/videos.js';
+import { MS_BASE, queryOf, filterFor, pickTop, TAKE, RECENT_DAYS } from '../lib/videos.js';
+import { PATCHED } from '../lib/dict.js';
 
 /** 받아 둔 자료를 쓸 수 있는 기간. 유튜브 약관이 30일로 묶어 둔다 — 늘리면 안 된다. */
 const VIDEO_TTL = 30 * 86400e3;
-/** 화면에 보여 줄 개수 */
-const TAKE = 5;
-/** 최근 얼마나 된 영상까지 볼 것인가(사용자 결정: 1년) */
-const WITHIN = 365 * 86400e3;
-/** 하루에 부를 수 있는 기체 수. 100 이 한도라 조금 남겨 둔다 —
-    유튜브는 유닛을 다 쓰면 그날 남은 요청을 전부 거절한다. */
-const DAILY_CAP = 95;
+/** 어디까지 거슬러 볼 것인가 (사용자 결정: 2년) */
+const WITHIN = 730 * 86400e3;
+/* 하루 한도는 **유닛으로 센다.** 기체 수로 세면 한 기체에 드는 값이 바뀔 때마다
+   어긋난다 — 실제로 그랬다: 검색을 하나에서 둘로 늘려 101→201유닛이 됐는데 세는 쪽은
+   「기체 45마리」 그대로여서, 쓰지도 않은 예산을 남긴 채 먼저 멈췄다.
+   유튜브는 유닛을 다 쓰면 그날 남은 요청을 전부 거절하므로 우리가 먼저 멈추되,
+   멈추는 자리는 **실제로 쓴 만큼**이어야 한다. */
+const UNIT_SEARCH = 100;      // search.list 한 번
+const UNIT_VIDEOS = 1;        // videos.list 한 번 (50개까지 같은 값)
+const COST_PER_MS = UNIT_SEARCH * 2 + UNIT_VIDEOS;   // 창을 둘로 뒤진다
+const DAILY_UNITS = 9500;     // 무료 한도 10,000 에서 조금 남긴다
 /** 검색 한 번에 받아 볼 후보 수. 많이 받아도 유닛은 같고(100), 걸러낼 것이 많아
-    후보가 적으면 5개를 못 채운다 — 실측에서 1년 이내 19개 중 9개만 남았다. */
+    후보가 적으면 6개를 못 채운다 — 실측에서 1년 이내 19개 중 9개만 남았다. */
 const CANDIDATES = 25;
 
 export const onRequestOptions = () => new Response(null, { status: 204, headers: CORS });
@@ -48,15 +53,15 @@ function durText(sec) {
   return h ? h + ':' + p2(mi) + ':' + p2(s) : mi + ':' + p2(s);
 }
 
-/** 오늘 쓴 횟수를 하나 올린다. 한도를 넘으면 false — 부르지 않는다. */
-async function takeQuota(env) {
+/** 오늘 쓸 유닛을 미리 잡아 둔다. 한도를 넘으면 false — 부르지 않는다. */
+async function takeQuota(env, cost = COST_PER_MS) {
   const d = ptDay();
   const row = await env.DB.prepare('SELECT n FROM ytq WHERE day = ?').bind(d).first();
   const n = row ? Number(row.n) : 0;
-  if (n >= DAILY_CAP) return false;
+  if (n + cost > DAILY_UNITS) return false;
   await env.DB.prepare(
-    'INSERT INTO ytq (day, n) VALUES (?, 1) ON CONFLICT(day) DO UPDATE SET n = n + 1')
-    .bind(d).run();
+    'INSERT INTO ytq (day, n) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET n = n + excluded.n')
+    .bind(d, cost).run();
   return true;
 }
 
@@ -67,41 +72,53 @@ async function fetchFromYouTube(env, ms) {
      안 잘라 내서 40글자가 저장됐고, 유튜브는 「API key not valid」 라고만 답했다.
      넣는 쪽도 고쳤지만, 여기 한 줄이면 그런 일이 아예 안 통한다. */
   const key = String(env.YT_API_KEY || '').trim();
-  const since = new Date(Date.now() - WITHIN).toISOString();
   /* 검색어는 사용자가 정한 꼴이다 — 일본어, 게임 이름 + 기체명.
      괄호는 검색을 망치므로 queryOf 가 펴 준다(「［GAU装備］」 → 「 GAU」). */
   const q = 'バトオペ2 ' + queryOf(ms);
 
-  const sUrl = 'https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams({
-    part: 'snippet', type: 'video', q,
-    order: 'viewCount',              // 사용자 결정: 조회수 많은 순
-    publishedAfter: since,           // 사용자 결정: 1년 이내
-    /* 게임 카테고리(20)만. 건프라 제작·리뷰 영상이 **애초에 안 온다**(사용자 결정).
-       받아 온 뒤 거르는 것보다 낫다 — 후보 25칸을 쓸모없는 것에 안 뺏긴다.
-       대신 게임 카테고리로 안 올린 영상은 통째로 못 본다. 그래서 제목의 게임 낱말
-       검사(isGameVideo)를 지우지 않고 그대로 둔다 — 카테고리는 올린 사람이 고르는 것이라
-       믿을 수 있는 쪽이 아니다. */
-    videoCategoryId: '20',
-    maxResults: String(CANDIDATES),
-    relevanceLanguage: 'ja', regionCode: 'JP',
-    key
-  });
-  const sRes = await fetch(sUrl);
-  if (!sRes.ok) {
-    /* 왜 그냥 '실패' 로 뭉개지 않는가 — 키가 틀렸는지(API_KEY_INVALID), API 제한에
-       막혔는지(accessNotConfigured), 할당량을 넘겼는지(quotaExceeded)가 서로 다른 일이다.
-       뭉개 두면 「영상이 안 뜬다」만 남아 어디를 고쳐야 하는지 알 수가 없다. */
-    const body = await sRes.text().catch(() => '');
-    const reason = (body.match(/"reason"\s*:\s*"([^"]+)"/) || [])[1] || ('http' + sRes.status);
-    /* reason 만으로는 안 갈린다 — 키가 틀려도, 매개변수가 틀려도 badRequest 가 온다.
-       구글이 적어 보낸 말을 같이 들고 온다. 다만 **키가 섞여 나갈 틈을 막는다** —
-       지금 메시지에 키가 들어오지는 않지만, 들어오는 날 조용히 공개된다. */
-    const msg = String((body.match(/"message"\s*:\s*"([^"]+)"/) || [])[1] || '')
-      .replace(/AIza[0-9A-Za-z_\-]+/g, '(키)').slice(0, 160);
-    return { err: reason, msg };
-  }
-  const sJson = await sRes.json();
-  const ids = (sJson.items || []).map(it => it.id && it.id.videoId).filter(Boolean);
+  /** 창 하나를 뒤진다. 실패하면 {err}, 성공하면 {ids}. */
+  const search = async (sinceMs) => {
+    const url = 'https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams({
+      part: 'snippet', type: 'video', q,
+      order: 'viewCount',                                   // 사용자 결정: 조회수 위주
+      publishedAfter: new Date(Date.now() - sinceMs).toISOString(),
+      /* 게임 카테고리(20)만. 건프라 제작·리뷰 영상이 애초에 안 온다(사용자 결정).
+         다만 카테고리는 올린 사람이 고르는 것이라 믿을 수 있는 쪽이 아니다 —
+         제목의 게임 낱말 검사(isGameVideo)를 지우지 않고 그대로 둔다. */
+      videoCategoryId: '20',
+      maxResults: String(CANDIDATES),
+      relevanceLanguage: 'ja', regionCode: 'JP',
+      key
+    });
+    const res = await fetch(url);
+    if (!res.ok) {
+      /* 왜 그냥 '실패' 로 뭉개지 않는가 — 키가 틀렸는지(API_KEY_INVALID), API 제한에
+         막혔는지(accessNotConfigured), 할당량을 넘겼는지(quotaExceeded)가 서로 다른 일이다.
+         뭉개 두면 「영상이 안 뜬다」만 남아 어디를 고쳐야 하는지 알 수가 없다. */
+      const body = await res.text().catch(() => '');
+      const reason = (body.match(/"reason"\s*:\s*"([^"]+)"/) || [])[1] || ('http' + res.status);
+      /* reason 만으로는 안 갈린다 — 키가 틀려도, 매개변수가 틀려도 badRequest 가 온다.
+         구글이 적어 보낸 말을 같이 들고 온다. 다만 **키가 섞여 나갈 틈을 막는다** —
+         지금 메시지에 키가 들어오지는 않지만, 들어오는 날 조용히 공개된다. */
+      const msg = String((body.match(/"message"\s*:\s*"([^"]+)"/) || [])[1] || '')
+        .replace(/AIza[0-9A-Za-z_\-]+/g, '(키)').slice(0, 160);
+      return { err: reason, msg };
+    }
+    const j = await res.json();
+    return { ids: (j.items || []).map(it => it.id && it.id.videoId).filter(Boolean) };
+  };
+
+  /* **창을 둘로 나눠 뒤진다.** 2년치를 조회수 순으로만 보면 갓 올라온 영상이 영영 안 걸린다
+     — 밸런스 패치 직후 영상은 아직 조회수를 못 모았는데, 정작 지금 그 기체가 어떻게
+     바뀌었는지 말해 주는 것이 그 영상이다. 그래서 「2달 이내」를 따로 한 번 더 뒤진다.
+     검색 두 번이라 유닛이 200 든다(DAILY_CAP 이 그만큼 낮다). */
+  const [wide, recent] = await Promise.all([
+    search(WITHIN),                       // 2년 — 인기
+    search(RECENT_DAYS * 86400e3)         // 2달 — 최신
+  ]);
+  if (wide.err) return wide;              // 넓은 쪽이 실패하면 할 말이 없다
+  // 좁은 쪽만 실패하면 넓은 쪽으로라도 보여 준다 — 아무것도 안 보이는 것보다 낫다
+  const ids = [...new Set([...(wide.ids || []), ...((recent && recent.ids) || [])])];
   if (!ids.length) return { items: [] };
 
   /* 조회수는 search.list 가 주지 않는다 — videos.list 로 한 번 더 받는다.
@@ -119,6 +136,7 @@ async function fetchFromYouTube(env, ms) {
       id: v.id,
       title: (v.snippet && v.snippet.title) || '',
       ch: (v.snippet && v.snippet.channelTitle) || '',
+      chId: (v.snippet && v.snippet.channelId) || '',   // 제외·우대는 **ID 로** 가린다
       at: (v.snippet && v.snippet.publishedAt) || '',
       views: Number((v.statistics && v.statistics.viewCount) || 0),
       sec,                       // 규칙이 재는 값
@@ -172,9 +190,9 @@ export async function onRequestGet({ request, env }) {
 
   /* 이름 자 + 게임 낱말로 거른다. 여기가 「ドム 칸에 RFドム」·「아우슬라 칸에 GAU」·
      「건프라 영상」이 들어오던 자리다(tools/videos_check.js 가 지킨다). */
-  const picked = filterFor(ms, got.items)
-    .sort((a, b) => b.views - a.views)
-    .slice(0, TAKE);
+  /* 고를 때 **갓 조정된 기체인지**를 알려 준다. 그런 기체는 최신 자리를 한 칸 더 받는다
+     — 패치 직후 영상은 조회수가 아직 없어서, 안 떼어 두면 2년치 인기 영상에 밀린다. */
+  const picked = pickTop(filterFor(ms, got.items), { patched: PATCHED.has(ms) });
 
   /* 0개여도 적어 둔다 — 안 적으면 영상 없는 기체를 열 때마다 할당량을 태운다.
      그리고 0개일 때 본체 영상으로 채우지 않는다(사용자 결정 A). */

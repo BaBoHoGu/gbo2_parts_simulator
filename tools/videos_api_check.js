@@ -22,7 +22,13 @@ function fakeDB() {
       return null;
     },
     async run() {
-      if (/INSERT INTO ytq/.test(sql)) { const d = this.a[0]; ytq.set(d, (ytq.get(d) || 0) + 1); return; }
+      /* 진짜 질의는 `VALUES (?, ?) … SET n = n + excluded.n` 다 — **더하는 값이 인자로 온다.**
+         시늉이 +1 로 굳어 있으면 「유닛으로 센다」를 검사해도 늘 1 이 나와, 기체 수로
+         세던 옛 코드도 통과해 버린다. 시늉은 진짜를 따라가야 한다. */
+      if (/INSERT INTO ytq/.test(sql)) {
+        const d = this.a[0], add = Number(this.a[1] == null ? 1 : this.a[1]);
+        ytq.set(d, (ytq.get(d) || 0) + add); return;
+      }
       if (/INSERT INTO videos/.test(sql)) {
         videos.set(this.a[0], { data: this.a[1], n: this.a[2], at: this.a[3] }); return;
       }
@@ -44,7 +50,9 @@ const SEARCH_ITEMS = [
   // ↓ 쓸모 규칙에 걸려야 하는 것들 (사용자 결정: 1,000회 · 3분 · 쇼츠 제외)
   { id: 'fff', title: '【バトオペ2】ギードムくんの日常(スパガン編) #shorts', ch: 'x', views: 18360 },
   { id: 'ggg', title: '【バトオペ2】ドム ちょっとだけ', ch: 'x', views: 500 },
-  { id: 'hhh', title: '【バトオペ2】ドム 短いクリップ', ch: 'x', views: 50000, dur: 'PT2M30S' }
+  // 2분 하한에 걸리는 길이로 둔다. 하한을 2분으로 내렸을 때 2분 30초짜리가 정당하게
+  // 통과해 이 검사가 울었다 — 자가 맞고 시험 자료가 낡았던 경우다.
+  { id: 'hhh', title: '【バトオペ2】ドム 短いクリップ', ch: 'x', views: 50000, dur: 'PT1M30S' }
 ];
 
 function fakeFetch(calls) {
@@ -93,6 +101,15 @@ const call = (mod, env, ms) =>
     ok('1년 이내로 묶는다', calls[0].includes('publishedAfter'), calls[0].slice(0, 90));
     ok('조회수 순으로 요청한다', calls[0].includes('order=viewCount'), calls[0].slice(0, 90));
 
+    /* 할당량은 **유닛으로** 센다. 기체 수로 세면 한 기체에 드는 값이 바뀔 때 어긋난다 —
+       실제로 검색을 하나에서 둘로 늘렸을 때(101→201유닛) 세는 쪽이 「기체 수」 그대로여서,
+       쓰지도 않은 예산을 남긴 채 먼저 멈췄다. */
+    {
+      const day = Math.floor((Date.now() - 8 * 3600e3) / 86400e3);
+      const used = env.DB._ytq.get(day);
+      ok('한 기체에 201유닛을 잡아 둔다 (기체 수가 아니라 유닛)', used === 201, { 잡은값: used });
+    }
+
     // ③ 두 번째는 캐시에서 — 유튜브를 다시 부르지 않아야 한다 (할당량이 걸린 문제다)
     const before = calls.length;
     const r2 = await call(mod, env, 'ヘイズル・アウスラ');
@@ -114,6 +131,22 @@ const call = (mod, env, ms) =>
     ok('쇼츠·저조회수·짧은 것이 함수를 통과하지 못한다',
       !j3.videos.some(v => ['fff', 'ggg', 'hhh'].includes(v.id)), j3.videos.map(v => v.id));
     ok('게임 카테고리로 요청한다', calls[0].includes('videoCategoryId=20'), calls[0].slice(0, 120));
+
+    /* **창을 둘로 뒤지는가.** 2년치를 조회수 순으로만 보면 갓 올라온 영상이 영영 안 걸린다
+       — 사용자가 지적한 바로 그 문제다. 창이 하나로 되돌아가면 여기서 운다. */
+    const searches = calls.filter(c => c.includes('/search?'));
+    const afters = [...new Set(searches.map(c => (c.match(/publishedAfter=([^&]+)/) || [])[1]))];
+    ok('검색을 두 번 한다 (2년치 + 최근치)', searches.length >= 2, { 검색: searches.length });
+    ok('두 검색의 기간이 서로 다르다', afters.length >= 2, afters);
+    {
+      // 좁은 창이 두 달 안쪽인가 — 「2달 이내」가 사용자가 정한 값이다
+      /* 호출마다 밀리초가 달라 같은 창도 서로 다른 글자가 된다 — 앞뒤 두 개를 집으면
+         둘 다 좁은 창일 수 있다(실제로 [60,60,730,730] 이 나와 울었다). 최소·최대를 본다. */
+      const days = afters.map(a => (Date.now() - Date.parse(decodeURIComponent(a))) / 86400e3);
+      const lo = Math.round(Math.min(...days)), hi = Math.round(Math.max(...days));
+      ok('좁은 창이 두 달쯤이다', lo >= 55 && lo <= 65, { 좁은: lo, 넓은: hi });
+      ok('넓은 창이 두 해쯤이다', hi >= 700 && hi <= 760, { 좁은: lo, 넓은: hi });
+    }
     const before3 = calls.length;
     await call(mod, env, 'ドム');
     ok('0개든 아니든 두 번째는 캐시', calls.length === before3, { 추가호출: calls.length - before3 });
@@ -126,7 +159,7 @@ const call = (mod, env, ms) =>
     // ⑦ 하루 한도 — 넘으면 유튜브를 안 부르고 busy 로 답한다
     const env2 = { DB: fakeDB(), YT_API_KEY: 'dummy' };
     const day = Math.floor((Date.now() - 8 * 3600e3) / 86400e3);
-    env2.DB._ytq.set(day, 999);
+    env2.DB._ytq.set(day, 9500);          // 한도를 유닛으로 센다 (기체 수가 아니다)
     const n0 = calls.length;
     const r5 = await call(mod, env2, 'ドム');
     const j5 = await r5.json();
