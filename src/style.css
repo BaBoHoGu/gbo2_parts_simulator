@@ -3459,6 +3459,40 @@ body.info-open .sel-info { display: flex; }
 .mi-blist { max-height: 560px; overflow-y: auto; }
 .mi-blist .saved-card { margin: 0; }
 
+/* ---- 추천 영상 ----
+   칸 폭을 비율로 나누면 넓은 화면에서 제목이 한 줄에 다 들어가 밋밋해지고,
+   좁은 화면에서는 썸네일과 제목이 붙어 버린다. 최소 폭을 주고 auto-fill 로
+   접히게 둔다 — 1000px 에서 3열, 폰에서 1열이 된다(실측). */
+.mi-vids { grid-column: 1 / -1; align-self: start; }
+.mi-vlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 7px; }
+.mi-v {
+  display: flex; gap: 9px; align-items: flex-start; text-decoration: none; color: inherit;
+  background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 7px;
+  padding: 7px; min-width: 0;
+}
+.mi-v:hover { border-color: var(--accent); background: var(--panel-3); }
+.mi-v-th {
+  position: relative; flex: 0 0 108px; aspect-ratio: 16 / 9;
+  border-radius: 4px; overflow: hidden; background: #000;
+}
+.mi-v-th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mi-v-len {
+  position: absolute; right: 3px; bottom: 2px; background: rgba(0, 0, 0, .82);
+  color: #fff; font-size: var(--fs-3xs); padding: 0 3px; border-radius: 3px;
+}
+.mi-v-body { min-width: 0; flex: 1; }
+/* 제목은 두 줄까지. 유튜브 제목은 길어서 안 자르면 칸 높이가 제각각이 된다. */
+.mi-v-title {
+  font-size: var(--fs-sm); line-height: 1.33; color: var(--text);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.mi-v-meta {
+  font-size: var(--fs-2xs); color: var(--dim); margin-top: 4px;
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+.mi-v-ch { color: var(--muted); }
+.mi-v-dot { opacity: .5; }
+
 /* ---- 좁은 화면 ----
    1100px 아래로는 나란히 둘 폭이 없다. 오른쪽 칸이 목록 위를 덮게 하고
    기체를 고를 때만 연다(body.info-open). 닫기 버튼이 그때 나타난다. */
@@ -3492,6 +3526,7 @@ body.info-open .sel-info { display: flex; }
   .mi-cols > .mi-col:nth-child(1) > .panel { order: -1; }
   .mi-cols > .mi-col:nth-child(3) > .mi-fullst { order: 1; }
   .mi-builds { order: 2; }
+  .mi-vids { order: 3; }          /* 영상은 구성 다음 — 참고 자료라 맨 아래가 맞다 */
   /* 3/4 칸에 height 를 덮으면 가로·세로가 **둘 다 확정**돼 aspect-ratio 가 무시된다.
      그래서 전폭 1004×190 짜리 띠가 됐고, 일러스트는 cover 라 세로의 82% 가 잘려
      머리와 어깨만 남았다(390px 에서도 52%). 높이가 아니라 **폭**을 묶어 비율을 돌려준다. */

@@ -8878,6 +8878,7 @@
     renderInfoSkills(m);
     renderInfoFullst(m);
     renderInfoBuilds();
+    renderInfoVideos();
     fitInfoHeights();
   }
 
@@ -9307,6 +9308,75 @@
         }
       }));
     }
+  }
+
+  /* ===================== 추천 영상 =====================
+     유튜브에서 이 기체 영상을 받아 보여 준다. 서버(/api/videos)가 받아 걸러 둔 것을
+     그대로 그린다 — 키도, 거르는 자도 서버에 있다(functions/lib/videos.js).
+
+     절을 **기본으로 숨겨 둔다.** 이 앱은 file:// 로도 열리고 인터넷이 없을 수도 있다.
+     그때 「불러오지 못했습니다」가 남아 있으면 앱이 고장 난 것처럼 보인다 —
+     영상은 곁다리라 조용히 사라지는 쪽이 맞다.
+
+     영상이 0개인 기체도 있다. 그때 **본체 영상으로 채우지 않는다**(사용자 결정 A):
+     육전형 건담은 최근 1년 영상이 전부 ［WR装備］ 판인데, 거기에 WR 영상을 띄우면
+     사용자는 그것을 본체 영상으로 믿는다. 틀린 것보다 빈 것이 낫다. */
+
+  /** 「93134」 → 「9.3만회」. 유튜브와 같은 꼴로 읽히게. */
+  function viewsText(n) {
+    const v = Number(n) || 0;
+    if (v >= 100000000) return (v / 100000000).toFixed(1).replace(/\.0$/, '') + '억회';
+    if (v >= 10000) return (v / 10000).toFixed(1).replace(/\.0$/, '') + '만회';
+    return v.toLocaleString() + '회';
+  }
+
+  function renderInfoVideos() {
+    const panel = $('#infoVidPanel'), box = $('#infoVids'), cnt = $('#infoVidCnt');
+    if (!panel || !box || !infoMs) return;
+    const want = baseName(infoMs.MS名);
+    if (!S || !S.videos) { panel.hidden = true; return; }
+
+    S.videos(want).then(res => {
+      // 그 사이 다른 기체로 넘어갔으면 그리지 않는다 — 늦게 온 답이 새 화면을 덮는다
+      if (!infoMs || baseName(infoMs.MS名) !== want) return;
+      const list = (res && res.videos) || [];
+      /* 못 받았거나·꺼져 있거나·서버가 유튜브에 거절당했으면 절째로 숨긴다.
+         err 를 여기서 같이 숨기는 이유: 그때 빈 목록이 오는데, 그대로 그리면
+         「최근 1년 영상이 없습니다」가 뜬다 — **고장을 사실로 적어 버린다.**
+         실제로 키가 틀렸을 때 그렇게 보였다. 모르면 아무 말도 안 하는 게 맞다. */
+      if (!res || !res.ok || res.off || res.err) { panel.hidden = true; return; }
+      panel.hidden = false;
+      box.innerHTML = '';
+      // 개수는 **목록에서 뽑는다** — 손으로 적으면 거른 뒤의 수와 어긋난다
+      cnt.textContent = list.length ? list.length + '개' : '';
+      if (!list.length) {
+        box.append(el('div', 'detail-empty', res.busy
+          ? '오늘 받아 올 수 있는 만큼을 다 썼습니다 — 내일 다시 보입니다'
+          : '최근 1년 영상이 없습니다'));
+        return;
+      }
+      for (const v of list) {
+        const a = el('a', 'mi-v');
+        a.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(v.id);
+        a.target = '_blank'; a.rel = 'noopener';
+        const th = el('div', 'mi-v-th');
+        const img = el('img'); img.src = 'https://i.ytimg.com/vi/' + encodeURIComponent(v.id) + '/mqdefault.jpg';
+        img.alt = ''; img.loading = 'lazy';
+        th.append(img);
+        if (v.len) th.append(el('span', 'mi-v-len', v.len));
+        const body = el('div', 'mi-v-body');
+        body.append(el('div', 'mi-v-title', v.title || ''));
+        const meta = el('div', 'mi-v-meta');
+        meta.append(el('span', 'mi-v-ch', v.ch || ''));
+        meta.append(el('span', 'mi-v-dot', '·'), el('span', null, viewsText(v.views)));
+        // 올린 날짜는 서버가 ISO 로 준다 — 앱의 relTime 으로 적는다(한 자로 맞춘다)
+        const at = v.at ? Date.parse(v.at) : NaN;
+        if (!isNaN(at)) meta.append(el('span', 'mi-v-dot', '·'), el('span', null, relTime(at)));
+        body.append(meta);
+        a.append(th, body);
+        box.append(a);
+      }
+    }).catch(() => { panel.hidden = true; });
   }
 
   /**

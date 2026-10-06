@@ -320,6 +320,30 @@ async function vote(kind, target, dir) {
   return { ok: false, code: 'net', msg: '투표하지 못했습니다 — 잠시 후 다시 시도하세요' };
 }
 
-window.GBO2Share = { upload, list, readCache, CFG, adminLogin, adminLogout, isAdmin, remove, checkUpdate, votes, vote, deviceId };
+/* ---------- 추천 영상 ----------
+   서버가 유튜브에서 받아 걸러 둔 것을 그대로 받는다. 키는 서버에만 있다.
+
+   한 세션 안에서는 같은 기체를 다시 묻지 않는다 — ⓘ 창은 레벨을 오갈 때마다 다시
+   그려지는데, 그때마다 왕복하면 느려지기만 하고 서버 쪽 캐시는 어차피 30일짜리다.
+   (브라우저 저장소에 담지 않는 이유: 유튜브 약관이 받아 둔 자료를 30일로 묶는데,
+    저장소에 넣으면 그 기한을 우리가 지킬 수가 없다. 창을 닫으면 사라지는 쪽이 맞다.) */
+const vidMemo = new Map();
+async function videos(ms) {
+  const key = String(ms || '').replace(/_LV\d+$/i, '');
+  if (!key) return { ok: false, videos: [] };
+  if (vidMemo.has(key)) return vidMemo.get(key);
+  const r = await req(CFG.api + '/videos?ms=' + encodeURIComponent(key));
+  const out = (r.ok && r.json && r.json.ok)
+    ? { ok: true, videos: r.json.videos || [], off: !!r.json.off,
+        busy: !!r.json.busy, err: r.json.err || null }
+    : { ok: false, videos: [] };
+  /* 못 받은 것과 **서버가 유튜브에 거절당한 것**은 기억하지 않는다.
+     둘 다 잠깐일 수 있고, 기억해 두면 고친 뒤에도 창을 새로 열기 전까지 안 낫는다.
+     (키가 틀려 err 가 오던 때 실제로 겪었다 — 「영상 없음」이 세션 내내 붙어 있었다) */
+  if (out.ok && !out.err) vidMemo.set(key, out);
+  return out;
+}
+
+window.GBO2Share = { upload, list, readCache, CFG, adminLogin, adminLogout, isAdmin, remove, checkUpdate, votes, vote, deviceId, videos };
 
 })();

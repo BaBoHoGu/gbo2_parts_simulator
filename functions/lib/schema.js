@@ -28,7 +28,18 @@ const DDL = [
   `CREATE INDEX IF NOT EXISTS votes_dev ON votes (dev, kind, at)`,
   /* 비밀번호 시도 횟수 — 올린 사람이 스스로 지울 때 쓰는 비밀번호는 짧다(4자부터).
      막지 않으면 몇 초 만에 다 눌러 볼 수 있으므로 IP 해시별로 센다. */
-  `CREATE TABLE IF NOT EXISTS pwtry (who TEXT PRIMARY KEY, n INTEGER NOT NULL, at INTEGER NOT NULL)`
+  `CREATE TABLE IF NOT EXISTS pwtry (who TEXT PRIMARY KEY, n INTEGER NOT NULL, at INTEGER NOT NULL)`,
+  /* 추천 영상 캐시 — 기체 하나에 한 줄, 고른 영상 5개를 JSON 으로.
+     **캐시가 아니라 의무다.** 유튜브 약관이 받아 둔 자료를 30일 안에 새로 받거나
+     지우도록 묶어 둔다(util 의 VIDEO_TTL). 그래서 at 이 지나면 **내주지 않는다**.
+     영상이 0개인 기체도 적어 둔다 — 안 적으면 그 기체를 열 때마다 할당량을 태운다. */
+  `CREATE TABLE IF NOT EXISTS videos (
+     ms TEXT PRIMARY KEY, data TEXT NOT NULL, n INTEGER NOT NULL, at INTEGER NOT NULL)`,
+  /* 하루에 유튜브를 몇 번 불렀는가. 무료 한도가 하루 10,000유닛이고 한 기체에 101유닛이라
+     100번을 넘기면 그날 나머지가 통째로 막힌다 — 갤러리까지 같이 죽을 이유는 없으므로
+     우리 쪽에서 먼저 센다. day 는 KST 기준(dayOf)이 아니라 **태평양 기준**이다:
+     한도를 되돌리는 쪽이 구글이라 그 자정에 맞춰야 한다. */
+  `CREATE TABLE IF NOT EXISTS ytq (day INTEGER PRIMARY KEY, n INTEGER NOT NULL)`
 ];
 
 /* 나중에 늘어난 열. D1(SQLite)에는 ADD COLUMN IF NOT EXISTS 가 없어서, 이미 있으면
