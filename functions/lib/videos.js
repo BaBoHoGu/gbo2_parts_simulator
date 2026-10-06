@@ -130,6 +130,44 @@ export function isGameVideo(title, channel) {
   return GAME_WORD.test(String(title || '') + ' ' + String(channel || ''));
 }
 
+/* ===================== 걸러 내는 규칙 =====================
+   이름이 맞고 게임 영상이어도 **파츠 참고에 쓸모없는 것**이 섞인다. 실제로 도무 칸
+   3위가 「ギードムくんの日常(スパガン編) #shorts」 — 1분짜리 개그 쇼츠였다(1.8만회).
+   조회수만 보면 올라오지만 보고 배울 것이 없다.
+
+   값은 사용자가 정했다: 최소 1,000회 · 3분 하한. 한 군데 모아 둔다 —
+   바꿀 일이 생기면 여기만 고치면 되고, 자(tools/videos_check.js)도 이것을 읽는다. */
+export const RULES = {
+  minViews: 1000,     // 거의 안 본 영상은 뺀다
+  minSec: 180,        // 짧은 클립·쇼츠. 지금 뜨는 해설 영상은 8분대라 영향이 없다
+  dropShorts: true,   // 길이가 길어도 쇼츠로 올린 것이 있다
+  /* 제외할 채널. **이름을 그대로 적는다**(대소문자·앞뒤 공백은 안 따진다).
+     지금은 비어 있다 — 뺄 채널이 생기면 여기에 적으면 된다. */
+  blockChannels: []
+};
+
+/** 「#shorts」·「＃ショート」 꼴. 길이가 3분을 넘어도 쇼츠로 올린 것이 있다. */
+const SHORTS = /[#＃]\s*(shorts?|ショート)\b/i;
+
+/** 쓸모 규칙을 통과하는가. 통과 못 한 이유를 알고 싶으면 whyBlocked 를 쓴다. */
+export function passesRules(v, rules = RULES) {
+  return whyBlocked(v, rules) === null;
+}
+
+/** 막힌 이유 한 마디. 통과하면 null. (자에서 「왜 빠졌는지」를 집어 보려고 나눠 둔다) */
+export function whyBlocked(v, rules = RULES) {
+  const r = { ...RULES, ...(rules || {}) };
+  const ch = String(v && v.ch || '').trim().toLowerCase();
+  if (r.blockChannels && r.blockChannels.some(b => String(b).trim().toLowerCase() === ch)) return 'channel';
+  if (r.dropShorts && SHORTS.test(String(v && v.title || ''))) return 'shorts';
+  if (r.minViews > 0 && Number(v && v.views || 0) < r.minViews) return 'views';
+  /* 길이를 모르는 영상은 **빼지 않는다.** videos.list 가 재생 시간을 못 주는 경우가
+     있는데(라이브 등), 모른다고 버리면 멀쩡한 것을 잃는다. 아는 것만 잰다. */
+  const sec = Number(v && v.sec);
+  if (r.minSec > 0 && Number.isFinite(sec) && sec > 0 && sec < r.minSec) return 'short';
+  return null;
+}
+
 /**
  * 이 기체의 영상만 남긴다.
  *
@@ -137,6 +175,7 @@ export function isGameVideo(title, channel) {
  * 육전형 건담처럼 최근 1년 영상이 전부 WR 판인 기체가 실제로 있는데,
  * 거기에 WR 영상을 띄우면 사용자는 그것을 본체 영상으로 믿는다. 틀린 것보다 빈 것이 낫다.
  */
-export function filterFor(ms, items) {
-  return (items || []).filter(v => pickMs(v.title) === ms && isGameVideo(v.title, v.ch));
+export function filterFor(ms, items, rules = RULES) {
+  return (items || []).filter(v =>
+    pickMs(v.title) === ms && isGameVideo(v.title, v.ch) && passesRules(v, rules));
 }

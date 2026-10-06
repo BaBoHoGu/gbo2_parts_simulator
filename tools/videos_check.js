@@ -130,9 +130,11 @@ const ok = (label, good, extra) => {
   ok('두 기체가 같은 별명을 쓰지 않는다', clash.length === 0, clash.slice(0, 10));
 
   /* ── 6. 비어 있을 때 본체로 채우지 않는가 (사용자 결정 A) ──────── */
+  /* 조회수·길이를 채워 둔다 — 이 검사가 보려는 것은 **이름 가리기**지 쓸모 규칙이 아니다.
+     값을 비워 두면 규칙에 걸려 「A안이 동작한다」가 거짓으로 통과한다(실제로 그랬다). */
   const wrOnly = [
-    { title: '「バトオペ2」継続的な高火力投射!陸戦型ガンダム［WR装備］LV5!', ch: 'x' },
-    { title: '【バトオペ２】即ヨロケの数だけで何とかするWR軍団 陸戦型ガンダムWR', ch: 'x' }
+    { title: '「バトオペ2」継続的な高火力投射!陸戦型ガンダム［WR装備］LV5!', ch: 'x', views: 9000, sec: 500 },
+    { title: '【バトオペ２】即ヨロケの数だけで何とかするWR軍団 陸戦型ガンダムWR', ch: 'x', views: 9000, sec: 500 }
   ];
   ok('본체 칸은 변형 영상으로 채우지 않는다 (A안)',
     filterFor('陸戦型ガンダム', wrOnly).length === 0,
@@ -140,6 +142,40 @@ const ok = (label, good, extra) => {
   ok('변형 칸에는 제 영상이 들어온다',
     filterFor('陸戦型ガンダム［WR装備］', wrOnly).length === 2,
     filterFor('陸戦型ガンダム［WR装備］', wrOnly).map(v => v.title));
+
+  /* ── 7. 쓸모 규칙 (사용자 결정: 최소 1,000회 · 3분 하한 · 쇼츠 제외 · 채널 제외) ──
+     실제로 도무 칸 3위가 「ギードムくんの日常(スパガン編) #shorts」 였다 — 1분짜리
+     개그 쇼츠인데 1.8만회라 조회수만 보면 올라온다. */
+  {
+    const { RULES, whyBlocked } = V;
+    ok('규칙 값이 정한 대로다', RULES.minViews === 1000 && RULES.minSec === 180 && RULES.dropShorts === true,
+      { minViews: RULES.minViews, minSec: RULES.minSec, dropShorts: RULES.dropShorts });
+
+    const good = { title: '【バトオペ2】ドム解説', ch: 'x', views: 20000, sec: 500 };
+    ok('멀쩡한 것은 통과한다', whyBlocked(good) === null, whyBlocked(good));
+
+    ok('#shorts 는 길이와 무관하게 뺀다',
+      whyBlocked({ ...good, title: '【バトオペ2】ギードムくんの日常(スパガン編) #shorts', sec: 400 }) === 'shorts');
+    ok('조회수가 모자라면 뺀다', whyBlocked({ ...good, views: 999 }) === 'views');
+    ok('조회수가 딱 기준이면 넣는다', whyBlocked({ ...good, views: 1000 }) === null);
+    ok('3분 미만은 뺀다', whyBlocked({ ...good, sec: 179 }) === 'short');
+    ok('3분이면 넣는다', whyBlocked({ ...good, sec: 180 }) === null);
+
+    /* 길이를 모르는 영상(라이브 등)은 **빼지 않는다.** 모른다고 버리면 멀쩡한 것을 잃는다. */
+    ok('길이를 모르면 길이로 빼지 않는다', whyBlocked({ ...good, sec: 0 }) === null);
+
+    /* 채널 제외 — 지금 목록은 비어 있다. 비었다고 검사까지 비우면,
+       나중에 채널을 적었을 때 동작하는지 아무도 모른다. 값을 넣어 본다. */
+    ok('채널 목록이 비어 있으면 아무도 안 막는다', whyBlocked(good, { blockChannels: [] }) === null);
+    ok('적어 둔 채널은 막는다', whyBlocked(good, { blockChannels: ['X'] }) === 'channel');
+    ok('채널 비교는 대소문자·공백을 안 따진다',
+      whyBlocked({ ...good, ch: '  오구라 / Kokura ' }, { blockChannels: ['오구라 / kokura'] }) === 'channel');
+
+    // 거르기가 실제로 목록에서 빠지는가 (규칙만 통과하고 목록엔 남는 일이 없게)
+    const mixed = [good, { ...good, title: '【バトオペ2】ドム #shorts' }, { ...good, views: 10 }];
+    ok('filterFor 가 규칙까지 건다', filterFor('ドム', mixed).length === 1,
+      filterFor('ドム', mixed).map(v => v.title));
+  }
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);

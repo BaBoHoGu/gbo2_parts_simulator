@@ -40,7 +40,11 @@ const SEARCH_ITEMS = [
   // ↓ 아래 셋은 **들어오면 안 되는 것**이다
   { id: 'ccc', title: '【バトオペ２】射撃強化されたってことはそういうことゴリね？ヘイズル・アウスラ GAU【解説】', ch: 'トム肉', views: 11361 },
   { id: 'ddd', title: '【ガンプラ】ディテールはポイントを絞れ！【改造】MG ガンダムヘイズルアウスラ', ch: 'Chop', views: 12525 },
-  { id: 'eee', title: '『バトオペ２』ドム！最古参機が超強化で', ch: 'x', views: 168356 }
+  { id: 'eee', title: '『バトオペ２』ドム！最古参機が超強化で', ch: 'x', views: 168356 },
+  // ↓ 쓸모 규칙에 걸려야 하는 것들 (사용자 결정: 1,000회 · 3분 · 쇼츠 제외)
+  { id: 'fff', title: '【バトオペ2】ギードムくんの日常(スパガン編) #shorts', ch: 'x', views: 18360 },
+  { id: 'ggg', title: '【バトオペ2】ドム ちょっとだけ', ch: 'x', views: 500 },
+  { id: 'hhh', title: '【バトオペ2】ドム 短いクリップ', ch: 'x', views: 50000, dur: 'PT2M30S' }
 ];
 
 function fakeFetch(calls) {
@@ -54,7 +58,7 @@ function fakeFetch(calls) {
         id: v.id,
         snippet: { title: v.title, channelTitle: v.ch, publishedAt: '2026-09-28T00:00:00Z' },
         statistics: { viewCount: String(v.views) },
-        contentDetails: { duration: 'PT8M36S' } })) };
+        contentDetails: { duration: v.dur || 'PT8M36S' } })) };
     } };
   };
 }
@@ -104,7 +108,12 @@ const call = (mod, env, ms) =>
     // ⑤ 영상이 0개인 기체도 적어 둔다 (안 적으면 열 때마다 할당량을 태운다)
     const r3 = await call(mod, env, 'ドム');     // 시늉 결과에 ドム 영상이 하나 있다
     const j3 = await r3.json();
+    /* ドム 칸에는 ドム 영상만, 그리고 **쓸모 규칙에 걸리는 것은 빠진 채로**.
+       fff(쇼츠) · ggg(500회) · hhh(2분 30초) 는 전부 ドム 영상이지만 들어오면 안 된다. */
     ok('ドム 칸에는 ドム 영상만', j3.videos.every(v => v.id === 'eee'), j3.videos.map(v => v.id));
+    ok('쇼츠·저조회수·짧은 것이 함수를 통과하지 못한다',
+      !j3.videos.some(v => ['fff', 'ggg', 'hhh'].includes(v.id)), j3.videos.map(v => v.id));
+    ok('게임 카테고리로 요청한다', calls[0].includes('videoCategoryId=20'), calls[0].slice(0, 120));
     const before3 = calls.length;
     await call(mod, env, 'ドム');
     ok('0개든 아니든 두 번째는 캐시', calls.length === before3, { 추가호출: calls.length - before3 });

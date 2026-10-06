@@ -33,13 +33,18 @@ export const onRequestOptions = () => new Response(null, { status: 204, headers:
 /** 태평양 기준 '오늘' 번호. 유튜브 할당량이 그 자정에 되돌아간다(한국 시각이 아니다). */
 const ptDay = (ms = Date.now()) => Math.floor((ms - 8 * 3600e3) / 86400e3);
 
-/** 「PT8M7S」 → 「8:07」. 없으면 빈 글자. */
-function durOf(iso) {
+/** 「PT8M7S」 → 초. 못 읽으면 0 (0 은 「모른다」로 다룬다 — 규칙이 재지 않는다). */
+function durSec(iso) {
   const m = String(iso || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!m) return '';
-  const h = Number(m[1] || 0), mi = Number(m[2] || 0), s = Number(m[3] || 0);
-  if (!h && !mi && !s) return '';
+  if (!m) return 0;
+  return Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0);
+}
+
+/** 초 → 「8:07」. 0 이면 빈 글자(화면에 배지를 안 붙인다). */
+function durText(sec) {
+  if (!sec) return '';
   const p2 = n => String(n).padStart(2, '0');
+  const h = Math.floor(sec / 3600), mi = Math.floor((sec % 3600) / 60), s = sec % 60;
   return h ? h + ':' + p2(mi) + ':' + p2(s) : mi + ':' + p2(s);
 }
 
@@ -71,6 +76,12 @@ async function fetchFromYouTube(env, ms) {
     part: 'snippet', type: 'video', q,
     order: 'viewCount',              // 사용자 결정: 조회수 많은 순
     publishedAfter: since,           // 사용자 결정: 1년 이내
+    /* 게임 카테고리(20)만. 건프라 제작·리뷰 영상이 **애초에 안 온다**(사용자 결정).
+       받아 온 뒤 거르는 것보다 낫다 — 후보 25칸을 쓸모없는 것에 안 뺏긴다.
+       대신 게임 카테고리로 안 올린 영상은 통째로 못 본다. 그래서 제목의 게임 낱말
+       검사(isGameVideo)를 지우지 않고 그대로 둔다 — 카테고리는 올린 사람이 고르는 것이라
+       믿을 수 있는 쪽이 아니다. */
+    videoCategoryId: '20',
     maxResults: String(CANDIDATES),
     relevanceLanguage: 'ja', regionCode: 'JP',
     key
@@ -102,14 +113,18 @@ async function fetchFromYouTube(env, ms) {
   if (!vRes.ok) return { err: 'videos' + vRes.status };
   const vJson = await vRes.json();
 
-  const items = (vJson.items || []).map(v => ({
-    id: v.id,
-    title: (v.snippet && v.snippet.title) || '',
-    ch: (v.snippet && v.snippet.channelTitle) || '',
-    at: (v.snippet && v.snippet.publishedAt) || '',
-    views: Number((v.statistics && v.statistics.viewCount) || 0),
-    len: durOf(v.contentDetails && v.contentDetails.duration)
-  }));
+  const items = (vJson.items || []).map(v => {
+    const sec = durSec(v.contentDetails && v.contentDetails.duration);
+    return {
+      id: v.id,
+      title: (v.snippet && v.snippet.title) || '',
+      ch: (v.snippet && v.snippet.channelTitle) || '',
+      at: (v.snippet && v.snippet.publishedAt) || '',
+      views: Number((v.statistics && v.statistics.viewCount) || 0),
+      sec,                       // 규칙이 재는 값
+      len: durText(sec)          // 화면에 적는 값
+    };
+  });
   return { items };
 }
 
