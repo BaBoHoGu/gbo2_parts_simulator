@@ -97,7 +97,10 @@ const call = (mod, env, ms) =>
     ok('GAU 영상이 안 들어온다', !ids.includes('ccc'), ids);
     ok('건프라 영상이 안 들어온다', !ids.includes('ddd'), ids);
     ok('다른 기체(ドム) 영상이 안 들어온다', !ids.includes('eee'), ids);
-    ok('조회수 많은 순이다', ids[0] === 'bbb', ids);
+    /* 화면 차례는 **최신순**이다(사용자 결정). 받아 둔 것을 내줄 때도 다시 세우므로,
+       순서를 바꿔도 캐시를 버릴 필요가 없다 — 버리면 기체마다 202유닛이 다시 든다. */
+    ok('최신순으로 돌려준다', j1.videos.every((v, i) => i === 0 || Date.parse(j1.videos[i-1].at) >= Date.parse(v.at)),
+      j1.videos.map(v => v.at));
     ok('재생 시간을 읽는다', j1.videos[0].len === '8:36', j1.videos[0].len);
     ok('검색어에 게임 이름이 들어간다', calls[0].includes(encodeURIComponent('バトオペ2')), calls[0].slice(0, 90));
     ok('1년 이내로 묶는다', calls[0].includes('publishedAfter'), calls[0].slice(0, 90));
@@ -127,6 +130,23 @@ const call = (mod, env, ms) =>
     const j2 = await r2.json();
     ok('두 번째는 유튜브를 다시 안 부른다', calls.length === before, { 추가호출: calls.length - before });
     ok('캐시임을 밝힌다', j2.cached === true, j2);
+
+    /* 받아 둔 것을 **읽을 때도 다시 세우는가.** 순서를 바꾸기 전에 받아 둔 줄은 옛 차례로
+       저장돼 있다 — 읽을 때 안 세우면 그 기체만 옛 순서로 보이고, 그걸 고치려면 캐시를
+       통째로 버려야 한다(기체마다 202유닛). 일부러 어긋난 차례를 넣어 둔다. */
+    {
+      const env3 = { DB: fakeDB(), YT_API_KEY: 'dummy' };
+      const day = Math.floor((Date.now() - 8 * 3600e3) / 86400e3);
+      const stored = [
+        { id: 'a', title: 't', ch: 'c', views: 900, at: '2025-01-01T00:00:00Z', sec: 500 },
+        { id: 'b', title: 't', ch: 'c', views: 100, at: '2026-09-01T00:00:00Z', sec: 500 }
+      ];   // 조회수 차례로 저장돼 있다 (날짜로는 거꾸로)
+      env3.DB._videos.set('ドム', { data: JSON.stringify(stored), n: 2, at: Date.now() });
+      const rc = await call(mod, env3, 'ドム');
+      const jc = await rc.json();
+      ok('받아 둔 것도 최신순으로 내준다', jc.cached === true && jc.videos[0].id === 'b',
+        { 차례: jc.videos.map(v => v.id) });
+    }
 
     // ④ LV 이 붙어도 같은 칸을 쓴다
     const before2 = calls.length;

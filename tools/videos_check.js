@@ -224,8 +224,19 @@ const ok = (label, good, extra) => {
       got.filter(x => x.id.startsWith('new')).length === 2, got.map(x => x.id));
     ok('나머지는 조회수 많은 것으로 채운다',
       got.filter(x => x.id.startsWith('old')).length === 4, got.map(x => x.id));
-    ok('화면 순서는 조회수 순이다',
-      got.every((x, i) => i === 0 || got[i - 1].views >= x.views), got.map(x => x.views));
+    /* **고르는 기준과 보이는 순서는 다른 일이다.** 무엇을 보여 줄지는 조회수가 정하고,
+       어떤 차례로 보여 줄지는 날짜가 정한다(사용자 결정: 최신순). */
+    ok('화면 순서는 최신순이다',
+      got.every((x, i) => i === 0 || Date.parse(got[i - 1].at) >= Date.parse(x.at)),
+      got.map(x => x.at.slice(0, 10)));
+    ok('최신순이어도 고르기는 조회수가 정한다 (적은 것이 많은 것을 밀어내지 않는다)',
+      got.filter(x => x.id.startsWith('old')).map(x => x.views).every(v => v >= 99994),
+      got.filter(x => x.id.startsWith('old')).map(x => x.views));
+    /* 날짜를 모르는 영상이 섞여도 터지지 않고 맨 뒤로 간다. */
+    const withNoDate = pickTop([...old6, { id: 'nd', views: 777, at: '', title: 't', ch: 'c' }], { now: NOW });
+    ok('날짜를 모르는 영상은 맨 뒤로 간다',
+      withNoDate.length === 6 && (withNoDate[withNoDate.length - 1].id === 'nd' || !withNoDate.some(x => x.id === 'nd')),
+      withNoDate.map(x => x.id));
 
     /* 갓 조정된 기체는 최신 자리를 한 칸 더 받는다 — 보험이다. */
     const new3 = [...new2, v('new3', 300, 3)];

@@ -213,6 +213,24 @@ export const RECENT_DAYS = 60;      // 「최신」의 경계 (사용자 결정:
 const RECENT_SLOTS = 2;             // 보통 떼어 두는 최신 자리
 const RECENT_SLOTS_PATCHED = 3;     // 갓 조정된 기체는 한 칸 더
 
+/**
+ * 화면에 보일 차례 — **최신순**(사용자 결정).
+ *
+ * 고르는 기준과 보이는 순서는 다른 일이다. 무엇을 보여 줄지는 조회수가 정하고(pickTop),
+ * 어떤 차례로 보여 줄지는 날짜가 정한다. 막 올라온 영상이 맨 위에 와야
+ * 「지금 이 기체가 어떤가」가 먼저 읽힌다.
+ *
+ * **내줄 때마다 여기를 지난다.** 받아 둔 목록은 그때의 차례로 저장돼 있어서, 순서를 바꾸면
+ * 받아 둔 것이 옛 차례로 남는다. 읽을 때 다시 세우면 캐시를 버리지 않아도 된다
+ * (버리면 기체마다 202유닛씩 다시 든다).
+ *
+ * 날짜를 모르는 영상은 맨 뒤로 보내고 그들끼리는 조회수로 줄 세운다.
+ */
+export function byNewest(list) {
+  const at = v => { const t = Date.parse(String(v && v.at || '')); return Number.isFinite(t) ? t : -Infinity; };
+  return [...(list || [])].sort((a, b) => (at(b) - at(a)) || (Number(b.views || 0) - Number(a.views || 0)));
+}
+
 /** 올린 지 RECENT_DAYS 안인가 */
 export const isRecent = (v, now = Date.now()) => {
   const t = Date.parse(String(v && v.at || ''));
@@ -246,6 +264,5 @@ export function pickTop(list, { patched = false, now = Date.now(), take = TAKE, 
     if (used.has(v.id)) continue;
     out.push(v); used.add(v.id);
   }
-  // 화면에는 조회수 순으로 보인다 — 「조회수 많은 순」이라 적어 두었으니 그대로여야 한다
-  return out.sort((a, b) => Number(b.views || 0) - Number(a.views || 0));
+  return byNewest(out);
 }

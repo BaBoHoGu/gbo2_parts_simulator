@@ -14,7 +14,7 @@
 import { json, bad, CORS } from '../lib/util.js';
 import { ensureSchema } from '../lib/schema.js';
 import { MS_BASE, queryOf, filterFor, pickTop, TAKE, RECENT_DAYS,
-         pickMs, isGameVideo, whyBlocked } from '../lib/videos.js';
+         pickMs, isGameVideo, whyBlocked, byNewest } from '../lib/videos.js';
 import { PATCHED } from '../lib/dict.js';
 
 /** 받아 둔 자료를 쓸 수 있는 기간. 유튜브 약관이 30일로 묶어 둔다 — 늘리면 안 된다. */
@@ -185,7 +185,7 @@ export async function onRequestGet({ request, env }) {
 
   const row = await env.DB.prepare('SELECT data, at, diag FROM videos WHERE ms = ?').bind(ms).first();
   if (row && now - Number(row.at) < VIDEO_TTL) {
-    return json({ ok: true, ms, cached: true, at: Number(row.at), videos: JSON.parse(row.data),
+    return json({ ok: true, ms, cached: true, at: Number(row.at), videos: byNewest(JSON.parse(row.data)),
       ...(want.why && row.diag ? { diag: JSON.parse(row.diag) } : {}) });
   }
 
