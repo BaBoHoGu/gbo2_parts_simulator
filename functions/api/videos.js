@@ -13,7 +13,8 @@
 //     그날 남은 요청이 전부 죽는다. 우리가 세다 멈추면 「오늘은 여기까지」로 끝난다.
 import { json, bad, CORS } from '../lib/util.js';
 import { ensureSchema } from '../lib/schema.js';
-import { MS_BASE, queryOf, filterFor, pickTop, TAKE, RECENT_DAYS } from '../lib/videos.js';
+import { MS_BASE, queryOf, filterFor, pickTop, TAKE, RECENT_DAYS,
+         pickMs, isGameVideo, whyBlocked } from '../lib/videos.js';
 import { PATCHED } from '../lib/dict.js';
 
 /** 받아 둔 자료를 쓸 수 있는 기간. 유튜브 약관이 30일로 묶어 둔다 — 늘리면 안 된다. */
@@ -27,11 +28,15 @@ const WITHIN = 730 * 86400e3;
    멈추는 자리는 **실제로 쓴 만큼**이어야 한다. */
 const UNIT_SEARCH = 100;      // search.list 한 번
 const UNIT_VIDEOS = 1;        // videos.list 한 번 (50개까지 같은 값)
-const COST_PER_MS = UNIT_SEARCH * 2 + UNIT_VIDEOS;   // 창을 둘로 뒤진다
+/* 검색 둘(각 50개) + 상세 둘(50씩 끊어서). 상세는 1유닛씩이라 거의 공짜다. */
+const COST_PER_MS = UNIT_SEARCH * 2 + UNIT_VIDEOS * 2;
 const DAILY_UNITS = 9500;     // 무료 한도 10,000 에서 조금 남긴다
 /** 검색 한 번에 받아 볼 후보 수. 많이 받아도 유닛은 같고(100), 걸러낼 것이 많아
     후보가 적으면 6개를 못 채운다 — 실측에서 1년 이내 19개 중 9개만 남았다. */
-const CANDIDATES = 25;
+/* 50 이 상한이고, **25 를 받든 50 을 받든 유닛은 똑같이 100 이다.** 25 만 받고 있었는데
+   그래서 V2건담은 후보 안에 그 기체 영상이 2개밖에 안 들어왔다(나머지는 유튜브가 끌어온
+   다른 기체의 인기 영상). 공짜로 두 배를 받을 수 있는데 안 받고 있었던 것이다. */
+const CANDIDATES = 50;
 
 export const onRequestOptions = () => new Response(null, { status: 204, headers: CORS });
 
@@ -80,7 +85,11 @@ async function fetchFromYouTube(env, ms) {
   const search = async (sinceMs) => {
     const url = 'https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams({
       part: 'snippet', type: 'video', q,
-      order: 'viewCount',                                   // 사용자 결정: 조회수 위주
+      /* **관련도 순으로 받는다.** 조회수 순으로 받으면 「느슨하게 걸린 것 중 조회수 높은 것」
+         이 와서, 그 기체와 상관없는 인기 영상이 후보 25칸을 다 차지한다 — V2건담은 후보 47개
+         중 그 기체 영상이 **2개**뿐이었다(웹 검색 기본 정렬로는 20개 중 15개였다).
+         조회수 순서는 우리가 받아 온 뒤 직접 매긴다. API 정렬은 「어떤 25개를 받을지」만 정한다. */
+      order: 'relevance',
       publishedAfter: new Date(Date.now() - sinceMs).toISOString(),
       /* 게임 카테고리(videoCategoryId=20) 조건은 **뺐다**(사용자 결정).
          넣고 빼고 같은 6기체를 재 봤더니 결과가 한 글자도 다르지 않았다 — 건프라 영상은
@@ -123,15 +132,22 @@ async function fetchFromYouTube(env, ms) {
   if (!ids.length) return { items: [] };
 
   /* 조회수는 search.list 가 주지 않는다 — videos.list 로 한 번 더 받는다.
-     이쪽은 50개까지 1유닛이라 사실상 공짜다. 재생 시간도 여기서 온다. */
-  const vUrl = 'https://www.googleapis.com/youtube/v3/videos?' + new URLSearchParams({
-    part: 'snippet,statistics,contentDetails', id: ids.join(','), key
-  });
-  const vRes = await fetch(vUrl);
-  if (!vRes.ok) return { err: 'videos' + vRes.status };
-  const vJson = await vRes.json();
+     이쪽은 **한 번에 50개까지** 1유닛이다. 검색 둘에서 최대 100개가 오므로 50씩 끊는다.
+     안 끊으면 50을 넘긴 요청이 통째로 거절되어 영상이 하나도 안 뜬다. */
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
+  const raw = [];
+  for (const part of chunks) {
+    const vUrl = 'https://www.googleapis.com/youtube/v3/videos?' + new URLSearchParams({
+      part: 'snippet,statistics,contentDetails', id: part.join(','), key
+    });
+    const vRes = await fetch(vUrl);
+    if (!vRes.ok) return { err: 'videos' + vRes.status };
+    const vJson = await vRes.json();
+    raw.push(...(vJson.items || []));
+  }
 
-  const items = (vJson.items || []).map(v => {
+  const items = raw.map(v => {
     const sec = durSec(v.contentDetails && v.contentDetails.duration);
     return {
       id: v.id,
@@ -151,6 +167,9 @@ export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   // LV 은 떼고 본다 — 영상은 LV 별로 나뉘지 않는다
   const ms = String(url.searchParams.get('ms') || '').replace(/_LV\d+$/i, '').trim();
+  /* ?why=1 — 무엇을 왜 뺐는지 같이 돌려준다. **받아 둔 것을 읽기만 한다**(유튜브를 새로
+     부르지 않으므로 할당량을 못 태운다). 비밀이 아니라 우리가 고른 이유라 열어 둬도 된다. */
+  const want = { why: url.searchParams.get('why') === '1' };
 
   /* 아무 글자나 받으면 **우리 키로 유튜브를 아무렇게나 검색할 수 있는 창구**가 된다.
      아는 기체 이름만 받는다. 사전은 갤러리와 같은 것을 쓴다(두 벌을 두면 어긋난다). */
@@ -164,9 +183,10 @@ export async function onRequestGet({ request, env }) {
   await ensureSchema(env);
   const now = Date.now();
 
-  const row = await env.DB.prepare('SELECT data, at FROM videos WHERE ms = ?').bind(ms).first();
+  const row = await env.DB.prepare('SELECT data, at, diag FROM videos WHERE ms = ?').bind(ms).first();
   if (row && now - Number(row.at) < VIDEO_TTL) {
-    return json({ ok: true, ms, cached: true, at: Number(row.at), videos: JSON.parse(row.data) });
+    return json({ ok: true, ms, cached: true, at: Number(row.at), videos: JSON.parse(row.data),
+      ...(want.why && row.diag ? { diag: JSON.parse(row.diag) } : {}) });
   }
 
   if (!(await takeQuota(env))) {
@@ -195,12 +215,26 @@ export async function onRequestGet({ request, env }) {
      — 패치 직후 영상은 조회수가 아직 없어서, 안 떼어 두면 2년치 인기 영상에 밀린다. */
   const picked = pickTop(filterFor(ms, got.items), { patched: PATCHED.has(ms) });
 
+  /* **무엇을 왜 뺐는지** 같이 적어 둔다. 「왜 두 개뿐이지」를 나중에 물을 때,
+     이게 없으면 답하려고 할당량을 또 태워야 한다(실제로 V2건담에서 그 일이 있었다).
+     받아 온 김에 한 번 세는 것이라 값이 거의 안 든다. */
+  const diag = { cand: got.items.length, kept: picked.length, drop: [] };
+  for (const v of got.items) {
+    const who = pickMs(v.title);
+    const why = who !== ms ? ('이름→' + (who || '모름'))
+      : !isGameVideo(v.title, v.ch) ? '게임아님'
+      : whyBlocked(v);
+    if (why) diag.drop.push({ t: String(v.title).slice(0, 70), ch: v.ch, v: v.views, s: v.sec, why });
+  }
+  diag.drop = diag.drop.slice(0, 30);
+
   /* 0개여도 적어 둔다 — 안 적으면 영상 없는 기체를 열 때마다 할당량을 태운다.
      그리고 0개일 때 본체 영상으로 채우지 않는다(사용자 결정 A). */
   await env.DB.prepare(
-    `INSERT INTO videos (ms, data, n, at) VALUES (?,?,?,?)
-       ON CONFLICT(ms) DO UPDATE SET data = excluded.data, n = excluded.n, at = excluded.at`)
-    .bind(ms, JSON.stringify(picked), picked.length, now).run();
+    `INSERT INTO videos (ms, data, n, at, diag) VALUES (?,?,?,?,?)
+       ON CONFLICT(ms) DO UPDATE SET data = excluded.data, n = excluded.n,
+                                     at = excluded.at, diag = excluded.diag`)
+    .bind(ms, JSON.stringify(picked), picked.length, now, JSON.stringify(diag)).run();
 
-  return json({ ok: true, ms, at: now, videos: picked });
+  return json({ ok: true, ms, at: now, videos: picked, ...(want.why ? { diag } : {}) });
 }

@@ -48,7 +48,10 @@ const ALTERS = [
   'ALTER TABLE builds ADD COLUMN ip_head TEXT',
   /* 올린 사람이 스스로 내릴 때 쓰는 비밀번호. 원문이 아니라 해시만 둔다.
      이 열이 생기기 전에 올라온 구성은 NULL 이라 본인 삭제가 안 된다(관리자만 가능). */
-  'ALTER TABLE builds ADD COLUMN pw_hash TEXT'
+  'ALTER TABLE builds ADD COLUMN pw_hash TEXT',
+  /* 추천 영상이 **무엇을 왜 뺐는지**. 받아 올 때 같이 적어 둔다 —
+     나중에 「왜 두 개뿐이지」를 물을 때 할당량을 또 태우지 않고 답할 수 있다. */
+  'ALTER TABLE videos ADD COLUMN diag TEXT'
 ];
 
 export async function ensureSchema(env) {

@@ -101,7 +101,16 @@ const call = (mod, env, ms) =>
     ok('재생 시간을 읽는다', j1.videos[0].len === '8:36', j1.videos[0].len);
     ok('검색어에 게임 이름이 들어간다', calls[0].includes(encodeURIComponent('バトオペ2')), calls[0].slice(0, 90));
     ok('1년 이내로 묶는다', calls[0].includes('publishedAfter'), calls[0].slice(0, 90));
-    ok('조회수 순으로 요청한다', calls[0].includes('order=viewCount'), calls[0].slice(0, 90));
+    /* **후보를 50개 받는가.** 25 를 받든 50 을 받든 유닛은 똑같이 100 이다 — 25 만 받고
+       있어서 V2건담은 후보 안에 그 기체 영상이 2개밖에 안 들어왔다. 공짜인 것을 안 받고
+       있었던 셈이라, 25 로 되돌아가도 「영상이 적네」로만 보이고 아무도 모른다. */
+    ok('후보를 50개 받는다 (25든 50이든 유닛은 같다)', calls[0].includes('maxResults=50'), calls[0].slice(0, 90));
+    /* **관련도 순으로 받는다.** 조회수 순으로 받으면 「느슨하게 걸린 것 중 조회수 높은 것」
+       이 와서, 그 기체와 상관없는 인기 영상이 후보 칸을 다 차지한다 —
+       V2건담은 후보 47개 중 그 기체 영상이 2개뿐이었다(웹 검색 기본 정렬로는 20개 중 15개).
+       조회수 순서는 우리가 받아 온 뒤 직접 매긴다(videos_check 의 「화면 순서는 조회수 순」). */
+    ok('관련도 순으로 받는다 (조회수 순으로 받으면 후보가 남의 인기 영상으로 찬다)',
+      calls[0].includes('order=relevance'), calls[0].slice(0, 90));
 
     /* 할당량은 **유닛으로** 센다. 기체 수로 세면 한 기체에 드는 값이 바뀔 때 어긋난다 —
        실제로 검색을 하나에서 둘로 늘렸을 때(101→201유닛) 세는 쪽이 「기체 수」 그대로여서,
@@ -109,7 +118,7 @@ const call = (mod, env, ms) =>
     {
       const day = Math.floor((Date.now() - 8 * 3600e3) / 86400e3);
       const used = env.DB._ytq.get(day);
-      ok('한 기체에 201유닛을 잡아 둔다 (기체 수가 아니라 유닛)', used === 201, { 잡은값: used });
+      ok('한 기체에 202유닛을 잡아 둔다 (기체 수가 아니라 유닛)', used === 202, { 잡은값: used });
     }
 
     // ③ 두 번째는 캐시에서 — 유튜브를 다시 부르지 않아야 한다 (할당량이 걸린 문제다)
@@ -175,6 +184,34 @@ const call = (mod, env, ms) =>
     const r6 = await call(mod, { DB: fakeDB(), YT_API_KEY: 'dummy' }, 'ドム');
     const j6 = await r6.json();
     ok('거절 이유를 그대로 남긴다', j6.err === 'accessNotConfigured', j6);
+
+    /* ⑨ 상세 조회를 **50개씩 끊는가.** 검색을 둘(각 50) 하므로 최대 100개가 오는데,
+       videos.list 는 한 번에 50까지다. 안 끊으면 요청이 통째로 거절돼 **영상이 0개**가 된다
+       — 조용히 비는 종류의 고장이라 눈으로는 「영상이 없나 보다」로 보인다. */
+    {
+      const N = 60;
+      const many = Array.from({ length: N }, (_, i) => 'id' + i);
+      const seen = [];
+      globalThis.fetch = async (url) => {
+        const u = String(url);
+        if (u.includes('/search?')) {
+          return { ok: true, async json() { return { items: many.map(id => ({ id: { videoId: id } })) }; } };
+        }
+        const got = (u.match(/[?&]id=([^&]*)/) || [])[1] || '';
+        const list = decodeURIComponent(got).split(',').filter(Boolean);
+        seen.push(list.length);
+        if (list.length > 50) return { ok: false, status: 400, async text() { return '{"reason":"tooMany"}'; } };
+        return { ok: true, async json() {
+          return { items: list.map(id => ({ id,
+            snippet: { title: '【バトオペ2】ドム 解説 ' + id, channelTitle: 'c', publishedAt: '2026-09-28T00:00:00Z' },
+            statistics: { viewCount: '5000' }, contentDetails: { duration: 'PT9M0S' } })) }; } };
+      };
+      const r7 = await call(mod, { DB: fakeDB(), YT_API_KEY: 'dummy' }, 'ドム');
+      const j7 = await r7.json();
+      ok('상세 조회를 50개 이하로 끊는다', seen.length > 0 && seen.every(n => n <= 50), { 끊은크기: seen });
+      ok('끊어 받은 것이 전부 쓰인다', j7.diag == null || j7.videos.length === 6, { 개수: j7.videos.length });
+      ok('50을 넘겨 거절당하지 않았다', !j7.err, j7.err);
+    }
   } finally {
     globalThis.fetch = realFetch;
   }
