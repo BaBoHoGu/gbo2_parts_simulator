@@ -10,7 +10,11 @@
 <style>/*__CSS__*/
 /*__TOKEN_CSS__*/</style>
 </head>
-<body>
+<!-- 화면을 감추는 규칙은 body 의 view-* 클래스에 걸려 있다. JS 가 그 클래스를 붙이는데,
+     16.7MB 짜리 문서라 **콜드 스타트에서는 그 전에 한 번 그려진다** — 그때 여섯 화면이
+     통째로 쌓여 보였다(APK 를 완전히 끈 뒤 처음 열 때. 나갔다 들어오면 캐시가 더워져
+     안 보였다). 처음 상태를 여기 적어 둔다 — state.view 의 초기값과 같은 값이다. -->
+<body class="view-select">
 
 <div class="topbar">
   <div class="brand">

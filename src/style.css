@@ -168,6 +168,11 @@ body.view-gallery .screen:not(#screenGallery),
 body.view-token   .screen:not(#screenToken),
 body.view-plan    .screen:not(#screenPlan),
 body.view-codex   .screen:not(#screenCodex) { display: none; }
+/* **안전망.** 위 규칙은 전부 body 에 view-* 가 붙어야 돈다 — 안 붙어 있으면 여섯 화면이
+   통째로 쌓여 나온다(콜드 스타트에서 실제로 그랬다). index.html 이 처음부터
+   view-select 를 달고 있지만, 그 한 줄이 지워져도 화면이 무너지지는 않게 받쳐 둔다. */
+body:not(.view-select):not(.view-build):not(.view-gallery):not(.view-token):not(.view-plan):not(.view-codex)
+  .screen:not(#screenSelect) { display: none; }
 
 /* ---- ⑥ 강화 플랜 ---- */
 .screen-plan { display: flex; flex-direction: column; }
