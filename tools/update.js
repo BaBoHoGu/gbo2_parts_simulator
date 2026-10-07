@@ -426,16 +426,56 @@ async function detectPatch(msList) {
      「이번에 누가 조정됐는가」가 실행이 끝나는 순간 사라졌다. 추천 영상이 이 목록을
      보험으로 쓴다 — 갓 조정된 기체는 새 영상이 아직 조회수를 못 모았는데, 조회수만
      보면 그 영상이 영영 안 올라온다. 조정된 기체는 최신 영상 자리를 더 준다. */
-  if (patchNew && patch.date) {
-    const byId = new Map();
-    for (const m of local) {
-      const id = (String(m.wiki_url || '').match(/pages\/(\d+)/) || [])[1];
-      if (id) byId.set(id, String(m.MS名).replace(/_LV\d+$/, ''));
+  /* 보험은 밸런스 패치만이 아니다(사용자 요청). **새 영상이 조회수를 못 모은 기체**가
+     대상인데, 그런 일이 생기는 자리가 셋이다:
+       ① 밸런스 패치로 조정됨 — 오래된 인기 영상이 새 영상을 덮는다
+       ② LV 이 새로 붙음 — 예: 샤아 즈고크 LV2~4. 기체는 몇 해 묵어 인기 영상이
+          쌓여 있는데 새 LV 영상은 갓 올라와서, 조회수로는 절대 못 이긴다. ①과 같은 병이다
+       ③ 기체가 아예 새로 나옴 — 사실 이쪽은 보험이 거의 필요 없다. 영상이 전부 새것이라
+          조회수 순으로 뽑아도 어차피 다 최신이다. 그래도 넣어 둔다(해롭지 않다)
+     ①은 패치마다 통째로 갈리고, ②③은 날짜와 함께 쌓아 두었다가 오래된 것을 버린다. */
+  {
+    let pj = {}; try { pj = rdJson('data', 'patch.json') || {}; } catch { /* 처음일 수 있다 */ }
+
+    if (patchNew && patch.date) {
+      const byId = new Map();
+      for (const m of local) {
+        const id = (String(m.wiki_url || '').match(/pages\/(\d+)/) || [])[1];
+        if (id) byId.set(id, String(m.MS名).replace(/_LV\d+$/, ''));
+      }
+      pj.mechs = [...new Set((patch.ids || []).map(id => byId.get(id)).filter(Boolean))].sort();
+      pj.applied = patch.date;
+      pj.date = patch.date;
+      console.log(`  밸런스 패치 기체 ${pj.mechs.length}기를 기록했습니다 (추천 영상 보험용)`);
     }
-    const mechs = [...new Set((patch.ids || []).map(id => byId.get(id)).filter(Boolean))].sort();
-    fs.writeFileSync(PATCH_FILE,
-      JSON.stringify({ applied: patch.date, date: patch.date, mechs }, null, 1) + '\n');
-    console.log(`  밸런스 패치 기체 ${mechs.length}기를 기록했습니다 (추천 영상 보험용)`);
+
+    /* ②③ — 이번에 새로 들어온 항목을 가른다.
+       added 는 **_LV 가 붙은 항목 단위**다. 그 기체의 다른 LV 이 이미 있었으면
+       「LV 추가」, 하나도 없었으면 「신규 기체」다. */
+    const baseOf = n => String(n).replace(/_LV\d+$/, '');
+    const hadBase = new Set(local.map(m => baseOf(m.MS名)));
+    const today = new Date().toISOString().slice(0, 10);
+    const events = Array.isArray(pj.events) ? pj.events : [];
+    const seen = new Set(events.map(e => e && e.ms));
+    let nNew = 0, nLv = 0;
+    for (const b of [...new Set(added.map(m => baseOf(m.MS名)))]) {
+      const why = hadBase.has(b) ? 'newLv' : 'new';
+      why === 'new' ? nNew++ : nLv++;
+      // 같은 기체가 또 걸리면 날짜만 새로 쓴다 — 보험은 「언제 바뀌었나」가 전부다
+      if (seen.has(b)) { const e = events.find(x => x.ms === b); e.why = why; e.at = today; }
+      else { events.push({ ms: b, why, at: today }); seen.add(b); }
+    }
+    /* 90일 지난 것은 버린다. 보험은 「최근 2달 영상」에만 효과가 있어 저절로 식지만,
+       안 지우면 목록이 끝없이 길어진다. */
+    const cut = Date.now() - 90 * 86400e3;
+    pj.events = events
+      .filter(e => e && e.ms && Date.parse(e.at) >= cut)
+      .sort((a, b) => String(a.ms).localeCompare(String(b.ms)));
+
+    fs.writeFileSync(PATCH_FILE, JSON.stringify(pj, null, 1) + '\n');
+    if (nNew || nLv) {
+      console.log(`  보험 기록: 신규 기체 ${nNew}기 · LV 추가 ${nLv}기 (추천 영상용)`);
+    }
   }
 
   // 5) 마무리 리포트 — 새 기체 한글명은 사람이 확인해야 한다

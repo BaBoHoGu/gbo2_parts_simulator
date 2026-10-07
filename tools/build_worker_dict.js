@@ -28,19 +28,28 @@ exp.push('拡張スキル無し');   // EXPANSION_NONE
 const ticket = (rd('data', 'parts.recycle.json') || {}).ticket || {};
 const paid = parts.map(p => p.name).filter(n => ticket[n] == null);
 
-/* 마지막 밸런스 패치로 조정된 기체. 추천 영상이 **보험**으로 쓴다 —
-   갓 조정된 기체는 새 영상이 아직 조회수를 못 모아서, 조회수만 보면 영영 안 올라온다.
-   이 목록에 있는 기체는 최신 영상 자리를 더 준다.
-   (data/patch.json 은 update.js 가 패치를 감지할 때 적는다. 비어 있으면 보험이 없을 뿐
-    나머지는 그대로 돈다 — 그래서 없을 때도 터지지 않게 둔다) */
-let patch = { date: '', mechs: [] };
+/* **보험 대상 기체.** 추천 영상이 쓴다 — 새 영상이 아직 조회수를 못 모은 기체는
+   조회수로만 뽑으면 그 영상이 영영 안 올라온다. 이 목록에 있으면 최신 영상 자리를 더 준다.
+   세 갈래를 합친다(사용자 요청):
+     · 밸런스 패치로 조정된 기체 (patch.mechs — 패치마다 갈린다)
+     · LV 이 새로 붙은 기체   (events why=newLv — 샤아 즈고크 LV2~4 같은 경우)
+     · 새로 나온 기체         (events why=new)
+   data/patch.json 은 update.js 가 적는다. 비어 있으면 보험이 없을 뿐 나머지는 그대로
+   돈다 — 그래서 없을 때도 터지지 않게 둔다. */
+let patch = { date: '', mechs: [], events: [] };
 try { patch = rd('data', 'patch.json') || patch; } catch { /* 없을 수 있다 */ }
-const patched = Array.isArray(patch.mechs) ? patch.mechs : [];
+/* 누가 보험을 받는가는 tools/lib/insured.js 한 군데서 정한다 — 검사도 같은 것을 쓴다.
+   지금 자료에 없는 이름은 버린다(표기가 바뀐 옛 이름이 섞여 들어온 적이 있다). */
+const { insuredFrom } = require('./lib/insured.js');
+const ins = insuredFrom(patch, { live: new Set(msData.map(m => String(m.MS名).replace(/_LV\d+$/, ''))) });
+const patched = ins.list;
+const nLv = ins.newLv, nNew = ins.new;
 
 const out = `// 자동 생성 — tools/build_worker_dict.js. 손으로 고치지 말 것.
 // 기체 ${msData.length} · 파츠 ${parts.length} · 확장 ${exp.length} · 과금 파츠 ${paid.length}
 export const MS = new Set(${JSON.stringify(msData.map(m => m.MS名))});
-/** 마지막 밸런스 패치(${patch.date || '없음'})로 조정된 기체 ${patched.length}기 — LV 을 뗀 이름. */
+/** 추천 영상 보험 대상 ${patched.length}기 — LV 을 뗀 이름.
+ *  밸런스 패치(${patch.date || '없음'}) ${(patch.mechs || []).length}기 + LV 추가 ${nLv}기 + 신규 ${nNew}기. */
 export const PATCHED = new Set(${JSON.stringify(patched)});
 export const PATCH_DATE = ${JSON.stringify(String(patch.date || ''))};
 export const PARTS = new Set(${JSON.stringify(parts.map(p => p.name))});

@@ -249,14 +249,66 @@ const ok = (label, good, extra) => {
     ok('후보가 없으면 빈 목록', pickTop([], { now: NOW }).length === 0);
   }
 
-  /* ── 9. 밸런스 패치 기체 목록이 실려 있는가 (보험이 헛돌지 않게) ──
-     목록이 비면 pickTop 의 patched 가 늘 false 가 되어, 보험이 **조용히 꺼진다.** */
+  /* ── 9. 보험 목록 ────────────────────────────────────────────────
+     목록이 비면 pickTop 의 patched 가 늘 false 가 되어, 보험이 **조용히 꺼진다.**
+     보험은 세 갈래다(사용자 요청): 밸런스 패치 · LV 추가 · 신규 기체.
+     셋 중 하나라도 빠지면 그 갈래는 아무 일도 안 하는데 겉으로는 멀쩡해 보인다. */
   {
+    const fs2 = require('fs');
     const dict = await import('file://' + path.join(ROOT, 'functions', 'lib', 'dict.js').replace(/\\/g, '/'));
-    ok('패치 기체 목록이 비어 있지 않다', dict.PATCHED && dict.PATCHED.size > 0,
-      { 기체: dict.PATCHED ? dict.PATCHED.size : 0, 날짜: dict.PATCH_DATE });
-    const unknown = [...(dict.PATCHED || [])].filter(n => !MS_BASE.has(n));
-    ok('패치 기체가 모두 아는 기체다', unknown.length === 0, unknown);
+    const INS = dict.PATCHED || new Set();
+    ok('보험 목록이 비어 있지 않다', INS.size > 0, { 기체: INS.size, 패치날짜: dict.PATCH_DATE });
+
+    /* 지금 자료에 없는 이름이 섞이면 **아무 영상과도 안 맞아 조용히 아무 일도 안 한다.**
+       실제로 표기가 바뀐 옛 이름(ゲルググＲ 전각 · カプル（ＣＮ）)이 섞여 들어왔었다. */
+    const unknown = [...INS].filter(n => !MS_BASE.has(n));
+    ok('보험 기체가 모두 아는 기체다', unknown.length === 0, unknown);
+
+    let pj = {}; try { pj = JSON.parse(fs2.readFileSync(path.join(ROOT, 'data', 'patch.json'), 'utf8')); } catch { }
+    const ev = Array.isArray(pj.events) ? pj.events : [];
+    const byWhy = w => ev.filter(e => e && e.why === w);
+    ok('밸런스 패치 갈래가 실려 있다', (pj.mechs || []).length > 0, { 기체: (pj.mechs || []).length });
+    ok('LV 추가 갈래가 실려 있다', byWhy('newLv').length > 0, { 기체: byWhy('newLv').length });
+    ok('신규 기체 갈래가 실려 있다', byWhy('new').length > 0, { 기체: byWhy('new').length });
+
+    /* 세 갈래가 **합쳐져서** 올라왔는가. 합치는 걸 빼먹으면 밸런스 패치만 보험을 받고
+       LV 추가·신규는 목록에만 적힌 채 아무 효과가 없다 — 겉으로는 똑같이 보인다. */
+    const missed = ev.filter(e => e && MS_BASE.has(e.ms) && !INS.has(e.ms)).map(e => e.ms);
+    ok('목록의 기체가 모두 사전에 올라갔다', missed.length === 0, missed.slice(0, 8));
+
+    /* 날짜가 있어야 늙는다. 없으면 영영 보험을 받는다. */
+    const noDate = ev.filter(e => !e || !e.at || isNaN(Date.parse(e.at))).length;
+    ok('모든 사건에 날짜가 있다', noDate === 0, { 날짜없음: noDate });
+    const tooOld = ev.filter(e => e && Date.parse(e.at) < Date.now() - 90 * 86400e3).map(e => e.ms);
+    ok('90일 지난 사건은 안 남아 있다', tooOld.length === 0, tooOld.slice(0, 8));
+
+    /* 늙는 규칙 자체를 **꾸민 자료로** 잰다. 진짜 자료에는 지금 늙은 사건이 하나도 없어서,
+       규칙을 지워도 결과가 똑같다 — 심어 보니 안 울었다. 실제 자료가 없을 때는
+       자료를 지어서라도 규칙을 재야 한다. */
+    const { insuredFrom } = require(path.join(ROOT, 'tools', 'lib', 'insured.js'));
+    const NOW = Date.parse('2026-10-07T00:00:00Z');
+    const day = d => new Date(NOW - d * 86400e3).toISOString().slice(0, 10);
+    const fake = {
+      mechs: ['패치기체'],
+      events: [
+        { ms: '어제LV', why: 'newLv', at: day(1) },
+        { ms: '두달전신규', why: 'new', at: day(60) },
+        { ms: '넉달전LV', why: 'newLv', at: day(120) },   // 늙었다
+        { ms: '날짜없음', why: 'new', at: '' }             // 날짜가 깨졌다
+      ]
+    };
+    const r = insuredFrom(fake, { now: NOW });
+    ok('밸런스 패치 기체는 보험을 받는다', r.list.includes('패치기체'), r.list);
+    ok('어제 LV 이 붙은 기체는 보험을 받는다', r.list.includes('어제LV'), r.list);
+    ok('두 달 전 신규도 아직 받는다', r.list.includes('두달전신규'), r.list);
+    ok('넉 달 전 사건은 못 받는다 (늙는다)', !r.list.includes('넉달전LV'), r.list);
+    ok('날짜가 깨진 사건은 못 받는다', !r.list.includes('날짜없음'), r.list);
+    ok('갈래별 수를 센다', r.patch === 1 && r.newLv === 1 && r.new === 1,
+      { 패치: r.patch, LV추가: r.newLv, 신규: r.new });
+    /* 지금 자료에 없는 이름은 버린다 — live 를 주면 걸러야 한다. */
+    const r2 = insuredFrom(fake, { now: NOW, live: new Set(['어제LV']) });
+    ok('자료에 없는 이름은 버린다', r2.list.join(',') === '어제LV' && r2.dropped === 2,
+      { 남은것: r2.list, 버린수: r2.dropped });
   }
 
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
