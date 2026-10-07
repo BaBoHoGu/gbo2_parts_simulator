@@ -166,6 +166,14 @@ const ok = (label, good, extra) => {
     ok('2분 미만은 뺀다', whyBlocked({ ...good, sec: 119 }) === 'short');
     ok('2분이면 넣는다', whyBlocked({ ...good, sec: 120 }) === null);
 
+    /* 긴 생방송 — 도무 칸 2위가 7시간 54분짜리 참가형 방송이었다(사용자 지적). */
+    ok('상한이 60분이다', RULES.maxSec === 3600, { maxSec: RULES.maxSec });
+    ok('60분이면 넣는다', whyBlocked({ ...good, sec: 3600 }) === null);
+    ok('60분을 넘으면 뺀다', whyBlocked({ ...good, sec: 3601 }) === 'long');
+    ok('7시간짜리 생방송은 뺀다', whyBlocked({ ...good, sec: 7 * 3600 + 54 * 60 + 3 }) === 'long');
+    /* 54분짜리 참가형 해설은 남아야 한다 — 상한을 너무 조이면 긴 해설까지 사라진다. */
+    ok('54분짜리는 남는다', whyBlocked({ ...good, sec: 54 * 60 + 32 }) === null);
+
     /* 길이를 모르는 영상(라이브 등)은 **빼지 않는다.** 모른다고 버리면 멀쩡한 것을 잃는다. */
     ok('길이를 모르면 길이로 빼지 않는다', whyBlocked({ ...good, sec: 0 }) === null);
 

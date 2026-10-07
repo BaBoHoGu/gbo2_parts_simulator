@@ -140,6 +140,11 @@ export function isGameVideo(title, channel) {
 export const RULES = {
   minViews: 1000,     // 거의 안 본 영상은 뺀다
   minSec: 120,        // 짧은 클립·쇼츠 (사용자 결정: 2분)
+  /* 긴 생방송은 뺀다(사용자 결정: 60분). 도무 칸 2위가 **7시간 54분짜리 참가형 생방송**
+     이었다 — 조회수·길이 조건은 다 지나는데 파츠를 보려고 열 영상은 아니다.
+     해설 영상은 보통 8~17분이고, 가장 긴 것이 54분이었다(앗가이 참가형). 60분이면
+     해설은 다 남고 하루짜리 방송만 빠진다. */
+  maxSec: 3600,
   dropShorts: true,   // 길이가 길어도 쇼츠로 올린 것이 있다
   /* 채널은 **ID 로 맞춘다**(UC…). 이름으로 맞추면 사람이 이름을 바꾸는 순간 조용히 풀린다.
      핸들(@…)은 영상 자료에 안 들어 있어서 못 쓴다. 이름은 사람이 읽으라고 적어 둔다. */
@@ -178,7 +183,9 @@ export function whyBlocked(v, rules = RULES) {
   /* 길이를 모르는 영상은 **빼지 않는다.** videos.list 가 재생 시간을 못 주는 경우가
      있는데(라이브 등), 모른다고 버리면 멀쩡한 것을 잃는다. 아는 것만 잰다. */
   const sec = Number(v && v.sec);
-  if (r.minSec > 0 && Number.isFinite(sec) && sec > 0 && sec < r.minSec) return 'short';
+  const known = Number.isFinite(sec) && sec > 0;
+  if (r.minSec > 0 && known && sec < r.minSec) return 'short';
+  if (r.maxSec > 0 && known && sec > r.maxSec) return 'long';
   return null;
 }
 

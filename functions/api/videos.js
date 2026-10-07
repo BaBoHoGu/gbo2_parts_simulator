@@ -82,10 +82,11 @@ async function fetchFromYouTube(env, ms) {
       part: 'snippet', type: 'video', q,
       order: 'viewCount',                                   // 사용자 결정: 조회수 위주
       publishedAfter: new Date(Date.now() - sinceMs).toISOString(),
-      /* 게임 카테고리(20)만. 건프라 제작·리뷰 영상이 애초에 안 온다(사용자 결정).
-         다만 카테고리는 올린 사람이 고르는 것이라 믿을 수 있는 쪽이 아니다 —
-         제목의 게임 낱말 검사(isGameVideo)를 지우지 않고 그대로 둔다. */
-      videoCategoryId: '20',
+      /* 게임 카테고리(videoCategoryId=20) 조건은 **뺐다**(사용자 결정).
+         넣고 빼고 같은 6기체를 재 봤더니 결과가 한 글자도 다르지 않았다 — 건프라 영상은
+         이미 제목의 게임 낱말 검사(isGameVideo)가 막고 있었다. 득은 없는데,
+         올린 사람이 카테고리를 「게임」으로 안 고르면 멀쩡한 영상을 통째로 잃는다.
+         다시 넣고 싶어지면 그때 이 측정부터 다시 할 것. */
       maxResults: String(CANDIDATES),
       relevanceLanguage: 'ja', regionCode: 'JP',
       key

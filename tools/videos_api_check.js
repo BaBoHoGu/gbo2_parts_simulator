@@ -52,7 +52,9 @@ const SEARCH_ITEMS = [
   { id: 'ggg', title: '【バトオペ2】ドム ちょっとだけ', ch: 'x', views: 500 },
   // 2분 하한에 걸리는 길이로 둔다. 하한을 2분으로 내렸을 때 2분 30초짜리가 정당하게
   // 통과해 이 검사가 울었다 — 자가 맞고 시험 자료가 낡았던 경우다.
-  { id: 'hhh', title: '【バトオペ2】ドム 短いクリップ', ch: 'x', views: 50000, dur: 'PT1M30S' }
+  { id: 'hhh', title: '【バトオペ2】ドム 短いクリップ', ch: 'x', views: 50000, dur: 'PT1M30S' },
+  // 긴 참가형 생방송 — 조회수·길이 하한은 지나지만 파츠 참고용이 아니다(사용자 지적)
+  { id: 'iii', title: '【バトオペ2：参加型】なんかドムがかなりいい強化っぽいので', ch: 'x', views: 9947, dur: 'PT7H54M3S' }
 ];
 
 function fakeFetch(calls) {
@@ -128,9 +130,10 @@ const call = (mod, env, ms) =>
     /* ドム 칸에는 ドム 영상만, 그리고 **쓸모 규칙에 걸리는 것은 빠진 채로**.
        fff(쇼츠) · ggg(500회) · hhh(2분 30초) 는 전부 ドム 영상이지만 들어오면 안 된다. */
     ok('ドム 칸에는 ドム 영상만', j3.videos.every(v => v.id === 'eee'), j3.videos.map(v => v.id));
-    ok('쇼츠·저조회수·짧은 것이 함수를 통과하지 못한다',
-      !j3.videos.some(v => ['fff', 'ggg', 'hhh'].includes(v.id)), j3.videos.map(v => v.id));
-    ok('게임 카테고리로 요청한다', calls[0].includes('videoCategoryId=20'), calls[0].slice(0, 120));
+    ok('쇼츠·저조회수·짧은 것·긴 생방송이 함수를 통과하지 못한다',
+      !j3.videos.some(v => ['fff', 'ggg', 'hhh', 'iii'].includes(v.id)), j3.videos.map(v => v.id));
+    /* 게임 카테고리 조건은 뺐다(측정해 보니 득이 없었다) — 들어오면 되레 멀쩡한 것을 잃는다. */
+    ok('게임 카테고리로 좁히지 않는다', !calls[0].includes('videoCategoryId'), calls[0].slice(0, 120));
 
     /* **창을 둘로 뒤지는가.** 2년치를 조회수 순으로만 보면 갓 올라온 영상이 영영 안 걸린다
        — 사용자가 지적한 바로 그 문제다. 창이 하나로 되돌아가면 여기서 운다. */
