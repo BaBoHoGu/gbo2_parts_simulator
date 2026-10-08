@@ -664,6 +664,9 @@
     locked: new Set(),
     banned: new Set(),      // 기본 제외한 파츠 — 영구 저장, 우클릭·모달로 토글, 모든 기체 공통
     staggerOn: new Set(),   // 켜 둔 누적치(스태거) 스킬 이름 — 내구 지표·피탄 시뮬 공통
+    /* 「작전 개시 4분 경과」 — 그때 효과가 **바뀌는** 파츠를 어느 쪽으로 볼지.
+       거짓이면 초반(이동), 참이면 4분 뒤(보정). 기본은 거짓이다 — 경기는 거기서 시작한다. */
+    lateMode: false,
     // 켜 둔 스러스터 스킬 이름 — 상황 한정인 것만 여기 들어간다(상시는 늘 걸린다).
     thrusterOn: new Set(),
     // 무장 LV. null 이면 기체 LV 를 따라간다(게임의 기본이자 여태의 동작).
@@ -1058,7 +1061,7 @@
 
   const stats = (skill = skillStatBonus()) =>
     C.calcStats(state.ms, state.equipped, state.stage, state.expansion, partsByCat, fullst,
-      state.expLevel, state.form, skill, wantWeaponLv());
+      state.expLevel, state.form, skill, wantWeaponLv(), state.lateMode);
 
   /* ---------- 기체 목록 ---------- */
 
@@ -4467,7 +4470,10 @@
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       form: state.form,             // 변형 화면을 보고 있으면 변형 수치로 최적화한다
       weaponLv: wantWeaponLv(),     // 주무장 LV 도 화면과 같은 기준으로 (레벨링크 파츠 판정)
-      restarts: 1
+      restarts: 1,
+      /* 화면이 켜 둔 쪽으로 고른다 — 안 넘기면 고른 근거와 보이는 수치가 어긋난다
+         (주무장 LV·변형과 같은 이유다) */
+      lateMode: state.lateMode
     };
     /* 파생 지표 목표가 하나라도 있을 때만 계산 훅을 넘긴다 (없으면 오버헤드 0).
        점수의 실효 HP 축은 이 훅을 쓰지 않는다 — core 의 durabilityOf 로 공짜로 구한다.
@@ -4531,7 +4537,7 @@
         let bestAbs = -1e9;
         for (const e of expList) {
           if (isPer(e)) continue;
-          const st = C.calcStats(state.ms, base.parts, state.stage, e, partsByCat, fullst, expLevel, opts.form, opts.skill, opts.weaponLv);
+          const st = C.calcStats(state.ms, base.parts, state.stage, e, partsByCat, fullst, expLevel, opts.form, opts.skill, opts.weaponLv, state.lateMode);
           const a = absScore(st.total, obj.weights);
           if (a > bestAbs) { bestAbs = a; exp = e; }
         }
@@ -9701,10 +9707,27 @@
     updateSkillButton();
   }
 
+  /** 때가 되면 바뀌는 파츠가 달려 있는가 — 그때만 「4분 경과」 칸을 보인다.
+   *  안 달렸는데 보이면 아무 일도 안 하는 죽은 손잡이가 된다. */
+  function renderLateBox() {
+    const box = $('#lateBox'), chk = $('#lateChk'), lb = $('#lateLb');
+    if (!box || !chk) return;
+    const has = state.equipped.filter(p => C.MODE_PARTS && C.MODE_PARTS[p.name]);
+    box.hidden = !has.length;
+    // 파츠를 빼면 켜 둔 것도 되돌린다 — 안 그러면 안 보이는 체크가 수치를 바꾼다
+    if (!has.length) { if (state.lateMode) { state.lateMode = false; chk.checked = false; } return; }
+    chk.checked = !!state.lateMode;
+    // 칸 이름은 파츠가 적어 둔 말을 그대로 쓴다 (새 파츠가 생겨도 여기를 안 고치게)
+    if (lb) lb.textContent = C.MODE_PARTS[has[0].name].label;
+    box.title = has.map(p => T.partName(p.name)).join(' · ')
+      + ' — 켜면 그 시점의 효과로 바뀝니다(앞의 효과는 사라집니다)';
+  }
+
   function renderAll() {
     renderHero();
     renderFormSeg();
     renderSkillControls();
+    renderLateBox();
     renderLevelSwitch();
     // 기체 목록은 ① 선택 화면에서만 갱신 (파츠 장착 때마다 1,671기를 재정렬·재생성하지 않도록)
     if (state.view !== 'build') renderMsList();
@@ -9895,6 +9918,13 @@
       menu.hidden = !menu.hidden;
     };
     $('#skillMenu').onclick = ev => ev.stopPropagation();
+
+    /* 「4분 경과」 — 그때 효과가 **바뀌는** 파츠를 어느 쪽으로 볼지.
+       수치·자동 구성이 같은 값을 보므로 renderAll 로 통째로 다시 그린다. */
+    $('#lateChk').onchange = ev => {
+      state.lateMode = !!ev.target.checked;
+      renderAll();
+    };
     document.addEventListener('click', () => { $('#skillMenu').hidden = true; });
 
     // 사격 자세 — 선 자세 / 앉기·정지 / 엎드리기 중 하나. 스코프는 자세와 별개 토글.

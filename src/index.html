@@ -395,6 +395,11 @@
           </button>
           <div class="skill-menu" id="skillMenu" hidden></div>
         </span>
+        <!-- 때가 되면 **바뀌는** 파츠(의문의 전자 회로)가 달렸을 때만 보인다.
+             더해지는 것이 아니라 바뀌는 것이라, 켜면 앞의 효과가 사라진다. -->
+        <label class="late-box" id="lateBox" hidden title="작전 개시 4분 뒤의 효과로 계산합니다">
+          <input type="checkbox" id="lateChk"><span id="lateLb">4분 경과</span>
+        </label>
         <span class="right note"><span style="color:var(--ok)">초록</span>=파츠 · <span style="color:var(--skill)">보라</span>=스킬 · <span style="color:var(--skill2)">청록</span>=스킬 2개+ · <span class="over-tag">OVER</span>=상한 초과</span>
       </h2>
       <div class="stat-wrap">

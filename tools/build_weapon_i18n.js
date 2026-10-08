@@ -14,7 +14,15 @@ const I18N = path.join(ROOT, 'data', 'i18n');
 const readJson = p => JSON.parse(fs.readFileSync(p, 'utf8'));
 
 const weapons = readJson(path.join(ROOT, 'data', 'weapons.json'));
-const msDict = readJson(path.join(I18N, 'ms.json'));
+/* 기체명은 **수동 사전이 이기고, 없으면 자동 음차 사전**을 쓴다.
+   전에는 ms.json 만 봤다. 그래서 새 기체가 들어오면 그 기체 무장이 통째로 음역으로
+   떨어졌다 — キャノンガンダム用B・R 이 「캐논간 다무용 B·R」이 됐다(ガンダム 를
+   ガン+ダム 로 읽은 것이다). ms.auto.json 에는 이미 「캐논 건담」이 들어 있었는데
+   여기서 안 보고 있었을 뿐이다. 사람이 손볼 때까지 기다리지 않는다. */
+const msAuto = (() => {
+  try { return readJson(path.join(I18N, 'ms.auto.json')); } catch { return {}; }
+})();
+const msDict = Object.assign({}, msAuto, readJson(path.join(I18N, 'ms.json')));
 const terms = readJson(path.join(I18N, 'weapon_terms.json'));
 const { stripDisambig } = require('./lib/janame.js');
 const overridePath = path.join(I18N, 'weapons.override.json');

@@ -3874,3 +3874,18 @@ body.info-open .sel-info { display: flex; }
   left: 60px; background: inherit; justify-content: center;
   box-shadow: 10px 0 10px -8px rgba(0, 0, 0, .55);
 }
+
+/* ---- 「4분 경과」 전환 ----
+   때가 되면 **바뀌는** 파츠(의문의 전자 회로)가 달렸을 때만 보인다.
+   스킬 단추 바로 오른쪽에 둔다(사용자 지정 자리) — 같은 줄의 같은 무리로 읽히게 생김새를 맞춘다. */
+.late-box {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-left: 6px; padding: 3px 8px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
+  font-size: var(--fs-xs); font-weight: 400; color: var(--muted); cursor: pointer;
+}
+.late-box:hover { border-color: var(--accent); color: var(--text); }
+.late-box input { margin: 0; cursor: pointer; accent-color: var(--accent); }
+/* 켜 두면 수치가 통째로 달라진다 — 켜져 있다는 것이 한눈에 보여야 한다 */
+.late-box:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.late-box[hidden] { display: none; }

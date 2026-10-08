@@ -25,7 +25,10 @@ const STAT_LABEL = {
 const DEFAULT_LIMITS = {
   hp: Infinity, armorRange: 50, armorBeam: 50, armorMelee: 50,
   shoot: 100, meleeCorrection: 100, speed: 200,
-  highSpeedMovement: Infinity, thruster: 100,
+  /* 고속이동 상한 250 (사용자 보고). 전에는 Infinity 라 **아무리 올려도 안 잘렸다** —
+     소체 최댓값이 235 라 파츠를 얹으면 쉽게 넘는다. 확장 스킬이 더 올려 주는 몫은
+     아래 확장 처리(limits[k] += v)가 그대로 얹으므로 여기서는 통상치만 둔다. */
+  highSpeedMovement: 250, thruster: 100,
   turnPerformanceGround: Infinity, turnPerformanceSpace: Infinity
 };
 
@@ -280,6 +283,14 @@ const hasText = (s, subs) => !!s && subs.some(x => s.includes(x));
 /** 스피드·선회 상승 파츠와 배타인 파츠. */
 const SPEED_TURN_EXCLUSIVE = ['運動性能強化機構', 'コンポジットモーター'];
 
+/* 「なお、高速移動が上昇するパーツとの同時装備は行えない」 — **고속이동** 쪽 금지다.
+   스피드·선회 금지와 다른 줄이라 여태 아무도 안 보고 있었다: CP 내장 특수 구조재와
+   하로(V)가 같이 달렸다(사용자 보고). 하로는 고속이동 +3 이라 CP 쪽 규칙에 걸린다
+   — 하로의 규칙은 「스피드」라서 반대 방향으로는 안 걸린다. **한쪽만 적어 둔 금지**다.
+   이름으로 적는다(설명 정규식은 문구가 바뀌면 조용히 샌다). 대신 자가 설명에서
+   다시 뽑아 대조하므로, 새 파츠가 생기면 그때 운다. */
+const HIGHSPEED_EXCLUSIVE = ['CP内蔵特殊構造材'];
+
 /** `カテゴリ特攻プログラム_<속성>` — 이름의 속성과 기체 속성이 같아야 장착 가능. */
 const CATEGORY_PROGRAM = /^カテゴリ特攻プログラム_(.+)$/;
 
@@ -482,7 +493,35 @@ function calcSlots(ms, equipped, stage, fullstDefs) {
  *   예전 호출부(저장 구성·비교·최적화·원본 대조)는 이 값을 모르고, 게임에서도
  *   기본이 일치이므로 그 자리에서는 지금까지와 **한 글자도 달라지지 않는다**.
  */
-function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill, weaponLv) {
+/* ───────── 때가 되면 **바뀌는** 파츠 ─────────
+   「작전 개시로부터 4분 경과하면, … 효과로 바뀐다」 — **바뀌는** 것이지 더해지는 것이 아니다.
+   그런데 자료(parts.json)는 두 효과를 한 파츠에 다 싣고 있어서, 그대로 더하면 한 장이
+   두 장 몫을 한다. 실제로 자동 구성이 표본 18기 **전부**에서 이 파츠를 골랐다(사용자 보고).
+
+   자료는 생성물이라 고칠 수 없다. 여기서 **어느 쪽을 쓸지 골라** 나머지를 뗀다.
+   lateMode 가 거짓이면 초반(이동), 참이면 4분 뒤(보정)다 — 기본은 거짓이라
+   이 값을 안 넘기는 옛 호출부는 초반 효과로 돈다.
+
+   새로 생기면 여기에만 적으면 된다 — 화면도 자동 구성도 이 표를 본다. */
+const MODE_PARTS = {
+  '謎の電子回路_LV1': {
+    label: '4분 경과',
+    early: ['speed', 'turnPerformanceGround', 'turnPerformanceSpace', 'highSpeedMovement'],
+    late: ['shoot', 'melee']
+  }
+};
+
+/** 때가 되면 바뀌는 파츠를 **지금 쓰는 쪽만** 남긴 사본으로. 아니면 원래 것 그대로. */
+function applyPartMode(p, lateOn) {
+  const m = p && MODE_PARTS[p.name];
+  if (!m) return p;
+  const drop = lateOn ? m.early : m.late;
+  const q = { ...p };
+  for (const k of drop) delete q[k];
+  return q;
+}
+
+function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill, weaponLv, lateMode) {
   if (!ms) {
     const z = zeroStats();
     return {
@@ -515,7 +554,9 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   const attribute = ms.属性 || ms.カテゴリ || ms.category;
 
   /* --- 파츠 보너스 --- */
-  for (const p of equipped) {
+  for (const p0 of equipped) {
+    // 때가 되면 바뀌는 파츠는 **지금 쓰는 쪽만** 남겨 쓴다 (MODE_PARTS)
+    const p = applyPartMode(p0, lateMode);
     // 코넥팅 시스템 [강습Ⅰ/Ⅱ형]: 속성이 강습일 때만 붙는 추가 효과가 있다
     const connect = connectingKind(p.name);
     if (connect === '強襲I') {
@@ -738,6 +779,16 @@ function effectConflict(part, equipped) {
 
 const isExclusiveMover = p => !!(p && p.name && SPEED_TURN_EXCLUSIVE.some(n => p.name.includes(n)));
 
+/** 고속이동이 오르는 파츠인가 (ByLevel 꼴도 본다 — 레벨링크 파츠가 그 꼴이다) */
+const raisesHighSpeed = p =>
+  (typeof p.highSpeedMovement === 'number' && p.highSpeedMovement > 0) ||
+  (Array.isArray(p.highSpeedMovementByLevel)
+    && p.highSpeedMovementByLevel.some(v => typeof v === 'number' && v > 0));
+
+/** 「고속이동이 오르는 파츠와는 같이 못 단다」고 적힌 파츠인가 */
+const isHighSpeedExclusive = p =>
+  !!(p && p.name && HIGHSPEED_EXCLUSIVE.some(n => p.name.includes(n)));
+
 const raisesSpeed = p => {
   if (CONNECT_RAISES_SPEED.includes(connectingKind(p.name))) return true;
   return typeof p.speed === 'number' && p.speed > 0;
@@ -760,7 +811,16 @@ function conflictsWithMovement(part, equipped) {
   const hasTurn = equipped.some(e => raisesTurn(e) && !isExclusiveMover(e));
   const hasOtherExclusive = equipped.some(e => isExclusiveMover(e) && e.name !== part.name);
   const sameKind = part.kind && equipped.some(e => e.kind === part.kind && e.name !== part.name);
+  /* 고속이동 쪽 금지 — **한쪽만 적혀 있어도 둘 다 막는다.**
+     CP 내장 특수 구조재에만 적혀 있지만, 금지는 짝에 대한 것이라 어느 쪽을 먼저 달든 같아야 한다.
+     (하로(V)를 먼저 달고 CP 를 달 때도, 그 반대로도 막혀야 한다) */
+  const selfHsEx = isHighSpeedExclusive(part);
+  const selfHs = raisesHighSpeed(part);
+  const hasHsEx = equipped.some(e => isHighSpeedExclusive(e) && e.name !== part.name);
+  const hasHs = equipped.some(e => raisesHighSpeed(e) && e.name !== part.name);
   return !!(
+    (selfHsEx && hasHs) ||
+    (selfHs && hasHsEx) ||
     (selfSpeed && hasSpeed) ||
     ((selfSpeed || selfTurn) && hasExclusive && !selfExclusive) ||
     (selfExclusive && (hasSpeed || hasTurn)) ||
@@ -809,7 +869,7 @@ function checkEquip(part, ms, equipped, slots) {
 /* ---------- 내보내기 ---------- */
 
 const GBO2Core = {
-  STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL,
+  STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL, MODE_PARTS, applyPartMode, HIGHSPEED_EXCLUSIVE, SPEED_TURN_EXCLUSIVE, raisesHighSpeed,
   EXPANSION_SKILLS, EXPANSION_LABEL, EXPANSION_LEVELS, MAX_EXPANSION_LEVEL, MAX_PARTS,
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,

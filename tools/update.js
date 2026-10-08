@@ -404,6 +404,11 @@ async function detectPatch(msList) {
 
   // (e) 신규 기체·파츠를 온라인 번역으로 자동 한글화(실패 시 음차 폴백) 후 재빌드
   run('auto_translate.js');
+  /* 무장명 사전을 **한 번 더** 짠다. 무장명은 기체명을 부품으로 쓰는데(「<기체명>用 …」),
+     그 기체명이 방금 auto_translate 에서 생겼다. 위에서 한 번 짠 것은 새 기체를 모르는
+     사전으로 짠 것이라, 새 기체 무장이 음역으로 남는다(「캐논간 다무용 B·R」).
+     다시 짜는 값은 싸다 — 규칙만 돌리고 네트워크를 안 쓴다. */
+  run('build_weapon_i18n.js');
   run('translate_skills.js');   // 신규 스킬 효과·설명 온라인 번역(캐시 증분)
   run('translate_notes.js');    // 신규 무장 備考 온라인 번역(캐시 증분)
   // 공식 한글 사이트의 새 공지(10일치)로 우리 이름이 공식과 어긋나지 않는지 본다.
@@ -476,6 +481,13 @@ async function detectPatch(msList) {
     if (nNew || nLv) {
       console.log(`  보험 기록: 신규 기체 ${nNew}기 · LV 추가 ${nLv}기 (추천 영상용)`);
     }
+
+    /* 방금 적은 patch.json 을 서버(Cloudflare 함수)가 읽는 꼴로 옮긴다.
+       **이걸 부르는 곳이 여태 없었다.** patch.json 은 꼬박꼬박 갱신됐는데
+       functions/lib/dict.js 는 손으로 돌릴 때만 갱신돼서, 서버가 쓰는 보험 목록이
+       조용히 낡았다 — 목록에만 적힌 기체는 보험을 한 푼도 못 받는다.
+       겉으로는 영상이 나오니 아무도 모른다. videos_check 가 둘을 대조해 잡았다. */
+    run('build_worker_dict.js');
   }
 
   // 5) 마무리 리포트 — 새 기체 한글명은 사람이 확인해야 한다
