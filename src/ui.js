@@ -4657,13 +4657,21 @@
     }
     box.hidden = false;
     if (!rows.length) { box.append(el('div', 'diag-ok', '✓ 지정한 목표를 만족하는 후보를 찾았습니다.')); return; }
-    box.append(el('div', 'diag-head', '⚠ 아래 목표는 어떤 구성으로도 달성하지 못했습니다 — 도달 가능한 최댓값:'));
+    /* **「어떤 구성으로도 불가능하다」고 말하지 않는다.**
+       best 는 「이번에 찾은 후보 중 최고값」이지 상한이 아니다. 예전 문구는
+       「도달 가능한 최댓값 … (가용 파츠·이 기체 상한 한계)」라고 단정했는데,
+       실제로는 손으로 짜면 넘는 경우가 있었다(자쿠Ⅱ LV5 · 목표 HP 29,000 →
+       화면은 28,750 이 한계라 했지만 29,550 이 되는 구성이 있었다. 탐색이 못 찾았을 뿐이다).
+       모르는 것을 아는 것처럼 적으면 사용자가 **되는 일을 포기한다.** */
+    box.append(el('div', 'diag-head', '⚠ 아래 목표를 만족하는 구성을 찾지 못했습니다 — 찾은 것 중 가장 가까운 값:'));
     for (const { t, best } of rows) {
       const row = el('div', 'diag-row');
       row.append(el('span', 'diag-k', label(t.k)));
-      row.append(el('span', 'diag-msg', `목표 ${t.v} ${t.kind === 'min' ? '이상' : '이하'} → 최대 ${best.toLocaleString()} 까지 (가용 파츠·이 기체 상한 한계)`));
+      row.append(el('span', 'diag-msg', `목표 ${t.v} ${t.kind === 'min' ? '이상' : '이하'} → 찾은 최고 ${best.toLocaleString()}`));
       box.append(row);
     }
+    box.append(el('div', 'diag-note',
+      '※ 더 나은 구성이 있을 수도 있습니다 — 목표를 조금 낮추거나, 파츠를 잠그고 다시 돌려 보세요.'));
   }
 
   /** '왜 이 파츠?' — 각 파츠를 뺐을 때의 가중총점 하락(기여도)과 주요 상승 스탯. */

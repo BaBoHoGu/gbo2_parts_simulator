@@ -1337,6 +1337,8 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .diag-row { display: flex; gap: 8px; align-items: baseline; font-size: var(--fs-xs); padding: 2px 0; }
 .diag-k { color: var(--accent); font-weight: 700; min-width: 68px; }
 .diag-msg { color: var(--muted); }
+/* 「못 찾았다」와 「불가능하다」는 다른 말이다 — 그 차이를 적어 두는 줄 */
+.diag-note { color: var(--dim); font-size: var(--fs-2xs); margin-top: 5px; }
 
 /* 데이터 신선도 배지 */
 .data-fresh { font-size: var(--fs-xs); color: var(--dim); margin-left: 10px; }
