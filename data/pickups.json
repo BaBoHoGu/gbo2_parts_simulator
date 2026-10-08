@@ -1,6 +1,24 @@
 {
- "pickupsUpdated": "2026-10-06",
+ "pickupsUpdated": "2026-10-08",
  "pickups": [
+  {
+   "name": "캐논 건담",
+   "consoleStart": "2026-10-08",
+   "consoleEnd": "2026-10-15",
+   "start": "2026-12-10",
+   "end": "2026-12-17",
+   "tokens": 120,
+   "url": "https://bo2.ggame.jp/kr/info/?p=198628"
+  },
+  {
+   "name": "【복각】 유니콘 건담[각성]",
+   "consoleStart": "2026-10-08",
+   "consoleEnd": "2026-10-15",
+   "start": "2026-12-10",
+   "end": "2026-12-17",
+   "tokens": 285,
+   "url": "https://bo2.ggame.jp/kr/info/?p=198652"
+  },
   {
    "name": "걍 개량형",
    "consoleStart": "2026-10-01",
@@ -198,28 +216,17 @@
    "end": "2026-10-22",
    "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=194083"
-  },
-  {
-   "name": "고트라탄",
-   "consoleStart": "2026-08-06",
-   "consoleEnd": "2026-08-13",
-   "start": "2026-10-08",
-   "end": "2026-10-15",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=193878"
-  },
-  {
-   "name": "【8주년 대감사제】 제3탄",
-   "consoleStart": "2026-08-06",
-   "consoleEnd": "2026-08-13",
-   "start": "2026-10-08",
-   "end": "2026-10-15",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=193889"
   }
  ],
- "steamUpdated": "2026-10-06",
+ "steamUpdated": "2026-10-08",
  "steamNews": [
+  {
+   "name": "고트라탄",
+   "start": "2026-10-08",
+   "end": "2026-10-15",
+   "tokens": 120,
+   "url": "https://store.steampowered.com/news/app/1367080/view/698778060405605256?l=koreana"
+  },
   {
    "name": "제간[고기동 사양]",
    "start": "2026-09-24",
