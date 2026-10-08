@@ -246,21 +246,34 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
     if (useDef) value += wDef * (durMix(res.total, defShare) - baseDefMix) / UNIT.ehpSolid;
     if (useAtk) value += atkValue(res.total, set) - baseAtk;
     if (mobAlive) value += wMob * MOB_SCALE * (mobDist(res.total, set) / baseMob - 1);
-    // 하한 목표는 강한 페널티로 표현해 탐색이 충족 방향으로 흐르게 한다.
-    let penalty = 0;
+    /* 하한·상한 목표는 강한 페널티로 표현해 탐색이 충족 방향으로 흐르게 한다.
+
+       **거리로 잰다. 개수로 재지 않는다.** 전에는 못 맞춘 목표 하나마다 1000 을 더했는데,
+       그러면 「셋이 조금씩 모자람」이 「하나가 크게 모자람」보다 나빠 보인다. 실제로 그 때문에
+       길이 막혔다(사용자 보고, 드라이센 LV1 · 목표 내실 44/내빔 44/내격 70):
+         지금 것   48 / 50 / 46   → 미달 1건 ·  1000 + 960  = 1960
+         더 가까운 것 42 / 42 / 68 → 미달 3건 · 3000 + 240  = 3240  ← 더 나빠 보인다
+       뒤쪽이 답(44/44/70)에 훨씬 가까운데도 버려졌다. 거리로 재면 960 vs 240 이라 뒤집힌다.
+
+       평평한 값(FLAT)은 **한 번만** 쓴다 — 「하나라도 못 맞춘 것」이 「다 맞춘 것」보다
+       반드시 나쁘게 하려는 장치지, 못 맞춘 가짓수를 세려는 것이 아니다. */
+    const FLAT = 1000;        // 미달이 하나라도 있으면 붙는 문턱
+    const SCALE = 100;        // 미달 1단위(UNIT)당
+    const UNMET = 1000;       // 값을 못 구한 목표 — 아주 멀다고 친다
+    let shortSum = 0;
     for (const [k, target] of Object.entries(minimums || {})) {
       if (!target) continue;
-      if (unmet(k)) { penalty += 1000; continue; }       // 잴 수 없다 = 못 맞췄다
+      if (unmet(k)) { shortSum += UNMET; continue; }     // 잴 수 없다 = 못 맞췄다
       const short = target - valOf(k);
-      if (short > 0) penalty += 1000 + 100 * (short / (UNIT[k] || 1));
+      if (short > 0) shortSum += short / (UNIT[k] || 1);
     }
-    // 상한 목표 — 초과하면 하한과 대칭으로 페널티를 준다(그 스탯을 넘기지 않는 구성으로 흐르게).
     for (const [k, target] of Object.entries(maximums || {})) {
       if (target == null || target === '') continue;
-      if (unmet(k)) { penalty += 1000; continue; }       // 잴 수 없다 = 못 맞췄다
+      if (unmet(k)) { shortSum += UNMET; continue; }     // 잴 수 없다 = 못 맞췄다
       const over = valOf(k) - target;
-      if (over > 0) penalty += 1000 + 100 * (over / (UNIT[k] || 1));
+      if (over > 0) shortSum += over / (UNIT[k] || 1);
     }
+    const penalty = shortSum > 0 ? FLAT + SCALE * shortSum : 0;
     return { value: value - penalty, penalty, feasible: penalty === 0, stats: res };
   };
 }
@@ -418,10 +431,19 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
   const BEAM_WIDTH = opts.beamWidth || 16;
   const setKey = set => set.map(p => p.name).sort().join('|');
 
-  function beamSearch() {
-    const room = MAX_PARTS - locked.length;
-    if (room <= 0 || !candidates.length) return null;
-    let frontier = [{ set: locked.slice(), sc: evaluate(locked.slice()), k: setKey(locked) }];
+  /** 칸 사용량(근/중/원)을 바구니 열쇠로 — 같은 칸을 쓰는 것끼리만 겨루게 한다. */
+  const slotKey = set => {
+    let c = 0, m = 0, l = 0;
+    for (const p of set) { c += Number(p.close || 0); m += Number(p.mid || 0); l += Number(p.long || 0); }
+    return c + ',' + m + ',' + l;
+  };
+
+  function beamSearch(seed, width, perBucket, penaltyFirst) {
+    const start = (seed && seed.length ? seed : locked).slice();
+    const room = MAX_PARTS - start.length;
+    if (room < 0 || !candidates.length) return null;
+    if (!isValidSetWith(ms, start, cap)) return null;
+    let frontier = [{ set: start, sc: evaluate(start), k: setKey(start) }];
     let best = frontier[0];
     for (let depth = 0; depth < room; depth++) {
       const seen = new Set();
@@ -438,10 +460,42 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
         }
       }
       if (!next.length) break;
-      next.sort((a, b) => (b.sc.value - a.sc.value) || (a.k < b.k ? -1 : a.k > b.k ? 1 : 0));
+      /* **미달을 먼저 보는 줄 세우기**(씨앗 빔 전용).
+         섞인 점수로 줄 세우면 「가치는 낮지만 목표에 가까운」 조합이 밀려난다 —
+         상한에 막힌 목표는 그 길로만 뚫린다. 미달이 같을 때만 가치로 가른다.
+         (일반 빔은 그대로 가치 순이다 — 목표가 없을 때는 미달이 늘 0 이라 뜻이 없다) */
+      const cmp = penaltyFirst
+        ? (a, b) => (a.sc.penalty - b.sc.penalty) || (b.sc.value - a.sc.value)
+            || (a.k < b.k ? -1 : a.k > b.k ? 1 : 0)
+        : (a, b) => (b.sc.value - a.sc.value) || (a.k < b.k ? -1 : a.k > b.k ? 1 : 0);
+      next.sort(cmp);
       // 파츠가 적은 해가 최고일 수도 있다 — 깊이마다 최고를 따로 기억한다
-      if (next[0].sc.value > best.sc.value) best = next[0];
-      frontier = next.slice(0, BEAM_WIDTH);
+      const beats = penaltyFirst
+        ? (x, y) => x.sc.penalty < y.sc.penalty
+            || (x.sc.penalty === y.sc.penalty && x.sc.value > y.sc.value)
+        : (x, y) => x.sc.value > y.sc.value;
+      if (beats(next[0], best)) best = next[0];
+      /* **칸을 아낀 쪽을 살려 둔다.**
+         이건 배낭 문제다 — 칸을 싸게 쓰면 파츠를 더 넣을 수 있고, 그래야 답에 닿는다.
+         그냥 상위 N 만 남기면 「지금은 뒤처지지만 칸을 아껴 둔」 조합이 다 잘려 나간다.
+         실측(드라이센 LV1 · 목표 내실 44/내빔 44/내격 70, 손 구성은 닿는다):
+           그냥 폭 48        미달 2.4  (42/42/68)
+           칸별 1개 · 폭 100  미달 0.0  (44/44/70)  ✔  18,869회 · 1.1초
+         칸 조합이 수십 가지라 폭을 크게 잡아야 바구니마다 한 자리씩 돌아간다. */
+      if (perBucket > 0) {
+        const by = new Map();
+        const keep = [];
+        for (const st of next) {
+          const k = slotKey(st.set);
+          const n = (by.get(k) || 0);
+          if (n >= perBucket) continue;
+          by.set(k, n + 1);
+          keep.push(st);
+        }
+        frontier = keep.slice(0, width || BEAM_WIDTH);
+      } else {
+        frontier = next.slice(0, width || BEAM_WIDTH);
+      }
     }
     return best.set;
   }
@@ -460,7 +514,62 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
      등반으로는 **반경을 넓혀도 원리적으로 못 넘는다.** 처음부터 쌓는 빔만이 닿는다.
 
      feasBuild 는 그대로 둔다(뒤쪽 재시작이 쓴다) — 빔을 한 자리 더 얹는 것이다. */
-  const beamStart = beamSearch();
+  /* ── 상한에 막힌 목표 ──────────────────────────────────────────
+     내격투 보정처럼 **상한이 있는 스탯**은, 목표가 그 상한을 넘으면 상한을 올려 주는
+     파츠(新型耐格闘装甲 등 limitIncreases)가 **반드시** 있어야 한다. 그런데 그 파츠는
+     혼자 달면 이득이 **0** 이다 — 상한이 50인데 50을 못 넘는 동안에는 슬롯만 먹는다.
+     점수로 고르는 한 영원히 안 뽑힌다. 너비를 16→256 으로 올려도 안 뽑혔다(실측).
+
+     사용자 보고(2026-10-08, 드라이센 LV1 · 파츠확장[장갑] LV5 · 목표 내격투 70):
+       그냥          내격투 46 (상한 50 에 막힘)
+       손으로 짜면    내격투 70 (신형 내격투 장갑으로 상한 70)
+     그래서 **그 파츠를 넣은 채로** 빔을 한 번 더 돌린다. 목표가 상한을 넘을 때만이라
+     평소에는 한 푼도 더 들지 않는다. */
+  /* 재서 정했다 — 칸별 1개 · 폭 100 이 답에 닿는 가장 싼 설정이다.
+     칸별1·폭48 → 미달 2.4 / 칸별1·폭100 → 0.0(1.1초) / 칸별2·폭150 → 0.0(1.7초). */
+  const CAP_BEAM_WIDTH = 100;
+  const CAP_PER_BUCKET = 1;
+  const capSeeds = () => {
+    const mins = opts.minimums || {};
+    const want = Object.keys(mins).filter(k => mins[k]);
+    if (!want.length) return [];
+    let limits;
+    try {
+      limits = calcStats(ms, locked, stage, expansion, partsByCat, fullstDefs,
+        opts.expLevel, opts.form, opts.skill).currentLimits || {};
+    } catch (e) { return []; }
+    const need = want.filter(k => {
+      const capK = limits[k];
+      return typeof capK === 'number' && isFinite(capK) && Number(mins[k]) > capK;
+    });
+    if (!need.length) return [];
+    const risers = candidates.filter(p => p.limitIncreases
+      && need.some(k => Number(p.limitIncreases[k]) > 0));
+    if (!risers.length) return [];
+    /* 하나씩, 그리고 다 함께. 막힌 스탯이 여럿이면 각각의 파츠가 다 있어야 한다. */
+    const seeds = risers.map(p => locked.concat([p]));
+    if (risers.length > 1) seeds.push(locked.concat(risers));
+    return seeds.filter(sd => sd.length <= MAX_PARTS && isValidSetWith(ms, sd, cap));
+  };
+
+  let beamStart = beamSearch();
+  {
+    let bestSc = beamStart ? evaluate(beamStart) : null;
+    for (const sd of capSeeds()) {
+      /* **씨앗 빔만** 넓게 본다. 상한에 막힌 목표를 뚫으려면 당장 손해인 조합을 더 오래
+         들고 가야 한다 — 드라이센 사례에서 16 은 내격투 60, 48 은 68 이었다(96·192 는 68 그대로).
+         모든 목표 경우에 48 을 쓰면 자동 구성이 2.7배 느려진다(4.8초→12.9초, 실측).
+         상한에 막힌 때는 드물어, 그때만 값을 치른다. */
+      const got = beamSearch(sd, CAP_BEAM_WIDTH, CAP_PER_BUCKET, true);
+      if (!got) continue;
+      const sc = evaluate(got);
+      /* **미달이 적은 쪽을 먼저 본다.** 목표를 맞추는 것이 먼저다 —
+         사용자가 하한을 건 이유가 그것이다. 미달이 같을 때만 가치로 가른다. */
+      const better = bestSc == null || sc.penalty < bestSc.penalty
+        || (sc.penalty === bestSc.penalty && sc.value > bestSc.value);
+      if (better) { beamStart = got; bestSc = sc; }
+    }
+  }
 
   for (let r = 0; r < restarts; r++) {
     // --- 초기해 ---

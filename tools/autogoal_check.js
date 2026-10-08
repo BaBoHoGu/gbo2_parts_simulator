@@ -69,8 +69,15 @@ ok('목표를 달성했다고 답한다', r.feasible === true, { feasible: r.fea
 ok('실제로 목표를 넘겼다 (' + autoHp + ' ≥ ' + GOAL + ')', autoHp >= GOAL, { hp: autoHp });
 /* 손 구성에 **닿는지**까지 본다. 목표만 보면 29,000 을 간신히 넘는 답으로도 통과해,
    탐색이 다시 나빠져도 모른다. */
-ok('손 구성만큼 올린다 (' + autoHp + ' ≥ ' + manualHp + ')', autoHp >= manualHp,
-  { 자동: autoHp, 손: manualHp, 모자람: manualHp - autoHp });
+/* **점수로** 견준다. 원시 HP 로만 재면 틀린다 — 점수는 실효 HP(내성 반영)를 보므로,
+   목표를 넘긴 뒤에는 원시 HP 가 낮아도 더 튼튼한 구성이 정답일 수 있다. 자동 구성이
+   손으로 짠 것보다 **제 자로 재서** 못하면 그때가 문제다. */
+{
+  const sc = O.makeScorer(ms, opts, byCat, fullst);
+  const sa = sc(r.parts).value, sm = sc(manual).value;
+  ok('손으로 짠 것보다 점수가 낮지 않다', sa >= sm - 1e-6,
+    { 자동: Number(sa.toFixed(1)), 손: Number(sm.toFixed(1)), 자동HP: autoHp, 손HP: manualHp });
+}
 
 /* 빔 서치가 **목표가 있을 때도** 도는가 — 고친 그 한 줄이 되돌아가면 여기서 운다.
    값이 아니라 코드를 보는 검사라 약하지만, 위 검사와 짝이 되어 「왜」를 말해 준다. */
@@ -91,6 +98,59 @@ ok('손 구성만큼 올린다 (' + autoHp + ' ≥ ' + manualHp + ')', autoHp >=
     !ui.includes('어떤 구성으로도 달성하지 못했습니다'));
   ok('「가용 파츠·이 기체 상한 한계」라고 단정하지 않는다',
     !ui.includes('가용 파츠·이 기체 상한 한계'));
+}
+
+/* ── 상한에 막힌 목표 ────────────────────────────────────────────────
+   사용자 보고(2026-10-08, 드라이센 LV1 · 파츠확장[장갑] LV5 · 목표 내실 44/내빔 44/내격 70):
+   손으로 짜면 44/44/70 인데 자동 구성은 48/50/46 이었다.
+
+   내격투 상한은 50 이고 `新型耐格闘装甲` 가 70 으로 올린다. 그런데 그 파츠는 **혼자 달면
+   이득이 0** 이다 — 상한이 50 인데 50 을 못 넘는 동안에는 슬롯만 먹는다. 점수로 고르는 한
+   영원히 안 뽑힌다. 빔 너비를 16→256 으로 올려도 안 뽑혔다.
+
+   두 가지를 고쳐 길을 열었다:
+     ① 페널티를 **거리**로 잰다(개수가 아니라). 전에는 못 맞춘 목표마다 1000 을 더해
+        「셋이 조금씩 모자람」이 「하나가 크게 모자람」보다 나빠 보였다 — 답에 가까운 쪽이
+        버려졌다. 1960 vs 3240 이던 것이 960 vs 240 으로 뒤집힌다.
+     ② 목표가 상한을 넘으면 **그 상한 파츠를 넣은 채로** 빔을 한 번 더 돌린다.
+   결과: 내격투 46 → 68, 미달 9.6 → 2.4.
+
+   **아직 44/44/70 에는 못 닿는다.** 마지막 한 걸음이 「슬롯을 더 싸게 쓰는 3스왑」이라
+   등반으로는 못 넘는다. 그래서 이 검사는 「달성한다」가 아니라 **「상한 파츠를 쓰는가」와
+   「충분히 가까운가」**를 잰다. 되돌아가면 46 으로 떨어져 여기서 운다. */
+{
+  const ms2 = msAll.find(m => m.MS名 === 'ドライセン_LV1');
+  const EXP2 = 'パーツ拡張[装甲]';
+  const G2 = { armorRange: 44, armorBeam: 44, armorMelee: 70 };
+  const U2 = { armorRange: 2.5, armorBeam: 2.5, armorMelee: 2.5 };
+  ok('기체를 찾았다: ドライセン_LV1', !!ms2);
+  if (ms2) {
+    const r2 = O.optimize(ms2, { stage: 6, expansion: EXP2, expLevel: 5, restarts: 1,
+      weights: { armorRange: 1, armorBeam: 1, armorMelee: 1 }, minimums: G2 }, byCat, fullst);
+    const t2 = r2.stats ? r2.stats.total : {};
+    const sh = Object.keys(G2).reduce((a, k) => a + Math.max(0, G2[k] - (t2[k] || 0)) / U2[k], 0);
+
+    /* **상한을 실제로 넘겼는가.** 50 이하면 상한 파츠를 안 쓴 것이다 — 가장 확실한 신호다. */
+    ok('상한(50)을 넘겨 올린다 — 상한 파츠를 쓴다는 뜻',
+      (t2.armorMelee || 0) > 50, { 내격투: t2.armorMelee });
+    /* 전에는 9.6 이었다. 넉넉히 잡아 4.0 — 그보다 멀어지면 길이 다시 막힌 것이다. */
+    /* **달성한다.** 칸 바구니 빔 + 미달 우선 줄 세우기로 손 구성(44/44/70)에 닿았다.
+       전에는 9.6 → 2.4 → 0.0 으로 줄여 왔다. 느슨하게 두면 다시 2.4 로 물러나도 모른다. */
+    ok('목표를 달성한다고 답한다', r2.feasible === true, { feasible: r2.feasible });
+    ok('실제로 세 목표를 다 넘겼다 (미달 ' + sh.toFixed(1) + ')', sh === 0,
+      { 미달: Number(sh.toFixed(2)), 내실: t2.armorRange, 내빔: t2.armorBeam, 내격: t2.armorMelee });
+    console.log('  (참고) 드라이센 ' + t2.armorRange + '/' + t2.armorBeam + '/' + t2.armorMelee
+      + '  미달 ' + sh.toFixed(1) + '  (손 구성 44/44/70)');
+  }
+}
+
+/* 페널티가 **거리**로 재는가 — 개수로 되돌아가면 위 검사가 먼저 울겠지만,
+   왜 울었는지는 이 줄이 말해 준다. */
+{
+  const strip = s2 => s2.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
+  const src2 = strip(fs.readFileSync(path.join(ROOT, 'src', 'optimizer.js'), 'utf8'));
+  ok('미달 페널티를 목표 개수로 세지 않는다',
+    !/penalty \+= 1000 \+ 100 \* \(short/.test(src2));
 }
 
 console.log('  (참고) 자동 ' + autoHp + ' · 손 ' + manualHp + ' · 평가 '
