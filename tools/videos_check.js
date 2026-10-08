@@ -153,7 +153,7 @@ const ok = (label, good, extra) => {
     const { RULES, whyBlocked } = V;
     ok('규칙 값이 정한 대로다', RULES.minViews === 1000 && RULES.minSec === 120 && RULES.dropShorts === true,
       { minViews: RULES.minViews, minSec: RULES.minSec, dropShorts: RULES.dropShorts });
-    ok('보여 줄 개수가 6개다', V.TAKE === 6, { TAKE: V.TAKE });
+    ok('보여 줄 개수가 9개다', V.TAKE === 9, { TAKE: V.TAKE });
     ok('최신의 경계가 2달이다', V.RECENT_DAYS === 60, { RECENT_DAYS: V.RECENT_DAYS });
 
     const good = { title: '【バトオペ2】ドム解説', ch: 'x', views: 20000, sec: 500 };
@@ -214,46 +214,49 @@ const ok = (label, good, extra) => {
     ok('2달 안이면 최신이다', isRecent(v('a', 1, 59), NOW) === true);
     ok('2달이 지나면 최신이 아니다', isRecent(v('a', 1, 61), NOW) === false);
 
-    /* 인기 영상 6개(전부 1년 전)와 새 영상 2개(열흘 전, 조회수 낮음).
-       조회수로만 자르면 새 영상은 하나도 못 들어온다. */
-    const old6 = [1, 2, 3, 4, 5, 6].map(i => v('old' + i, 100000 - i, 365));
-    const new2 = [v('new1', 500, 10), v('new2', 400, 5)];
-    const got = pickTop([...old6, ...new2], { now: NOW });
-    ok('6개를 고른다', got.length === 6, got.map(x => x.id));
+    /* 인기 영상 12개(전부 1년 전)와 새 영상 5개(며칠 전, 조회수 낮음).
+       조회수로만 자르면 새 영상은 하나도 못 들어온다. 9칸이 되면서 자료도 그만큼 늘렸다 —
+       자료가 칸보다 적으면 「9개를 고른다」가 칸 때문인지 자료 때문인지 알 수 없다. */
+    const oldN = Array.from({ length: 12 }, (_, i) => v('old' + (i + 1), 100000 - i, 365));
+    const newN = [v('new1', 500, 10), v('new2', 400, 5), v('new3', 300, 3),
+                  v('new4', 250, 2), v('new5', 200, 1)];
+    const got = pickTop([...oldN, ...newN], { now: NOW });
+    ok('9개를 고른다', got.length === 9, got.map(x => x.id));
     ok('최신 영상이 들어온다 (조회수로만 자르면 하나도 못 들어온다)',
-      got.filter(x => x.id.startsWith('new')).length === 2, got.map(x => x.id));
+      got.filter(x => x.id.startsWith('new')).length === 4, got.map(x => x.id));
     ok('나머지는 조회수 많은 것으로 채운다',
-      got.filter(x => x.id.startsWith('old')).length === 4, got.map(x => x.id));
+      got.filter(x => x.id.startsWith('old')).length === 5, got.map(x => x.id));
     /* **고르는 기준과 보이는 순서는 다른 일이다.** 무엇을 보여 줄지는 조회수가 정하고,
        어떤 차례로 보여 줄지는 날짜가 정한다(사용자 결정: 최신순). */
     ok('화면 순서는 최신순이다',
       got.every((x, i) => i === 0 || Date.parse(got[i - 1].at) >= Date.parse(x.at)),
       got.map(x => x.at.slice(0, 10)));
     ok('최신순이어도 고르기는 조회수가 정한다 (적은 것이 많은 것을 밀어내지 않는다)',
-      got.filter(x => x.id.startsWith('old')).map(x => x.views).every(v => v >= 99994),
+      got.filter(x => x.id.startsWith('old')).map(x => x.views).every(n => n >= 100000 - 4),
       got.filter(x => x.id.startsWith('old')).map(x => x.views));
     /* 날짜를 모르는 영상이 섞여도 터지지 않고 맨 뒤로 간다. */
-    const withNoDate = pickTop([...old6, { id: 'nd', views: 777, at: '', title: 't', ch: 'c' }], { now: NOW });
+    const withNoDate = pickTop([...oldN, { id: 'nd', views: 777, at: '', title: 't', ch: 'c' }], { now: NOW });
     ok('날짜를 모르는 영상은 맨 뒤로 간다',
-      withNoDate.length === 6 && (withNoDate[withNoDate.length - 1].id === 'nd' || !withNoDate.some(x => x.id === 'nd')),
+      withNoDate.length === 9 && (withNoDate[withNoDate.length - 1].id === 'nd' || !withNoDate.some(x => x.id === 'nd')),
       withNoDate.map(x => x.id));
 
-    /* 갓 조정된 기체는 최신 자리를 한 칸 더 받는다 — 보험이다. */
-    const new3 = [...new2, v('new3', 300, 3)];
-    const plain = pickTop([...old6, ...new3], { now: NOW, patched: false });
-    const ins = pickTop([...old6, ...new3], { now: NOW, patched: true });
-    ok('보통 기체는 최신 2자리', plain.filter(x => x.id.startsWith('new')).length === 2, plain.map(x => x.id));
-    ok('조정된 기체는 최신 3자리', ins.filter(x => x.id.startsWith('new')).length === 3, ins.map(x => x.id));
+    /* 갓 조정된 기체는 최신 자리를 더 받는다 — 보험이다. 최신 후보를 6개 둬서
+       보통(4)과 조정(6)이 **둘 다 자리만큼 채워지는지** 본다. */
+    const new6 = [...newN, v('new6', 150, 1)];
+    const plain = pickTop([...oldN, ...new6], { now: NOW, patched: false });
+    const ins = pickTop([...oldN, ...new6], { now: NOW, patched: true });
+    ok('보통 기체는 최신 4자리', plain.filter(x => x.id.startsWith('new')).length === 4, plain.map(x => x.id));
+    ok('조정된 기체는 최신 6자리', ins.filter(x => x.id.startsWith('new')).length === 6, ins.map(x => x.id));
 
     /* 우대 채널은 **고를 때** 먼저 집는다. 조회수가 낮아도 자리를 얻는다. */
     const PREF = 'UClAFsLVoVO2_UH9z0vimajg';   // オンドレヤス
-    const withPref = [...old6, v('pref', 50, 300, { chId: PREF })];
+    const withPref = [...oldN, v('pref', 50, 300, { chId: PREF })];
     const p = pickTop(withPref, { now: NOW });
     ok('우대 채널은 조회수가 낮아도 들어온다', p.some(x => x.id === 'pref'), p.map(x => x.id));
 
     /* 최신 영상이 없으면 그 자리를 비우지 않는다 — 인기 영상으로 다 채운다. */
-    const noRecent = pickTop(old6, { now: NOW });
-    ok('최신이 없으면 자리를 비우지 않는다', noRecent.length === 6, noRecent.map(x => x.id));
+    const noRecent = pickTop(oldN, { now: NOW });
+    ok('최신이 없으면 자리를 비우지 않는다', noRecent.length === 9, noRecent.map(x => x.id));
 
     // 후보가 모자라면 있는 만큼만. (빈 자리를 아무것으로 메우지 않는다)
     ok('후보가 적으면 있는 만큼만', pickTop([v('x', 10, 1)], { now: NOW }).length === 1);

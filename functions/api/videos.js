@@ -14,7 +14,7 @@
 import { json, bad, CORS } from '../lib/util.js';
 import { ensureSchema } from '../lib/schema.js';
 import { MS_BASE, queryOf, filterFor, pickTop, TAKE, RECENT_DAYS,
-         pickMs, isGameVideo, whyBlocked, byNewest } from '../lib/videos.js';
+         pickMs, isGameVideo, whyBlocked, byNewest, isRecent, selectFor, RULES } from '../lib/videos.js';
 import { PATCHED } from '../lib/dict.js';
 
 /** 받아 둔 자료를 쓸 수 있는 기간. 유튜브 약관이 30일로 묶어 둔다 — 늘리면 안 된다. */
@@ -213,12 +213,27 @@ export async function onRequestGet({ request, env }) {
      「건프라 영상」이 들어오던 자리다(tools/videos_check.js 가 지킨다). */
   /* 고를 때 **갓 조정된 기체인지**를 알려 준다. 그런 기체는 최신 자리를 한 칸 더 받는다
      — 패치 직후 영상은 조회수가 아직 없어서, 안 떼어 두면 2년치 인기 영상에 밀린다. */
-  const picked = pickTop(filterFor(ms, got.items), { patched: PATCHED.has(ms) });
+  const sel = selectFor(ms, got.items, { patched: PATCHED.has(ms) });
+  const picked = sel.list;
 
   /* **무엇을 왜 뺐는지** 같이 적어 둔다. 「왜 두 개뿐이지」를 나중에 물을 때,
      이게 없으면 답하려고 할당량을 또 태워야 한다(실제로 V2건담에서 그 일이 있었다).
      받아 온 김에 한 번 세는 것이라 값이 거의 안 든다. */
-  const diag = { cand: got.items.length, kept: picked.length, drop: [] };
+  /* ok·recent 를 같이 센다 — 「최신이 적다」가 **자리가 모자라서인지 영상이 없어서인지**를
+     가른다. 자리를 늘려도 최신 후보가 그만큼 없으면 아무것도 안 달라지는데,
+     이게 없으면 그걸 모르고 자리만 계속 늘리게 된다. */
+  const passed = filterFor(ms, got.items,
+    sel.loosened ? { ...RULES, minViews: RULES.quietMinViews } : RULES);
+  const diag = {
+    cand: got.items.length,          // 받아 온 후보
+    ok: passed.length,               // 자를 다 지난 것
+    recent: passed.filter(v => isRecent(v)).length,   // 그중 최신(2달 이내)
+    kept: picked.length,             // 화면에 올린 것
+    /* 조회수 기준을 낮춰야 했는가 — 「조용한 기체」인지 한눈에 보인다 */
+    loosened: sel.loosened, strictOk: sel.strict,
+    keptRecent: picked.filter(v => isRecent(v)).length,
+    drop: []
+  };
   for (const v of got.items) {
     const who = pickMs(v.title);
     const why = who !== ms ? ('이름→' + (who || '모름'))

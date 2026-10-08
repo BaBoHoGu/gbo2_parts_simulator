@@ -49,7 +49,8 @@ const SEARCH_ITEMS = [
   { id: 'eee', title: '『バトオペ２』ドム！最古参機が超強化で', ch: 'x', views: 168356 },
   // ↓ 쓸모 규칙에 걸려야 하는 것들 (사용자 결정: 1,000회 · 3분 · 쇼츠 제외)
   { id: 'fff', title: '【バトオペ2】ギードムくんの日常(スパガン編) #shorts', ch: 'x', views: 18360 },
-  { id: 'ggg', title: '【バトオペ2】ドム ちょっとだけ', ch: 'x', views: 500 },
+  // 낮춘 기준(300회)에도 못 미치는 값으로 둔다 — 500 은 조용한 기체에서 **들어오는 게 맞다**
+  { id: 'ggg', title: '【バトオペ2】ドム ちょっとだけ', ch: 'x', views: 90 },
   // 2분 하한에 걸리는 길이로 둔다. 하한을 2분으로 내렸을 때 2분 30초짜리가 정당하게
   // 통과해 이 검사가 울었다 — 자가 맞고 시험 자료가 낡았던 경우다.
   { id: 'hhh', title: '【バトオペ2】ドム 短いクリップ', ch: 'x', views: 50000, dur: 'PT1M30S' },
@@ -162,6 +163,33 @@ const call = (mod, env, ms) =>
     ok('쇼츠·저조회수·짧은 것·긴 생방송이 함수를 통과하지 못한다',
       !j3.videos.some(v => ['fff', 'ggg', 'hhh', 'iii'].includes(v.id)), j3.videos.map(v => v.id));
     /* 게임 카테고리 조건은 뺐다(측정해 보니 득이 없었다) — 들어오면 되레 멀쩡한 것을 잃는다. */
+    /* **조용한 기체는 조회수 기준을 낮춘다**(사용자 결정). 9칸을 못 채울 때만이다 —
+       영상이 적은 기체는 조회수도 같이 적어서, 인기 기체에 맞춘 선을 그대로 대면
+       앗가이 7개·육전형 건담 1개처럼 칸이 빈 채 남는다. 낮춰도 안 늘면 그대로 둔다. */
+    {
+      const lib = await import(u('functions/lib/videos.js'));
+      const quiet = Array.from({ length: 4 }, (_, i) => ({
+        id: 'q' + i, title: '【バトオペ2】ドム 解説 ' + i, ch: 'c',
+        views: 500, sec: 600, at: '2026-09-28T00:00:00Z' }));
+      const r = lib.selectFor('ドム', quiet);
+      ok('칸이 비면 조회수 기준을 낮춘다', r.loosened === true && r.list.length === 4,
+        { 낮춤: r.loosened, 엄격: r.strict, 느슨: r.loose });
+
+      // 인기 기체(칸이 차는 경우)는 **손대지 않는다** — 낮추면 질 낮은 것이 섞인다
+      const many = Array.from({ length: 12 }, (_, i) => ({
+        id: 'm' + i, title: '【バトオペ2】ドム 解説 ' + i, ch: 'c',
+        views: 5000 + i, sec: 600, at: '2026-09-28T00:00:00Z' }));
+      const r2 = lib.selectFor('ドム', [...many, ...quiet]);
+      ok('칸이 차면 기준을 안 낮춘다', r2.loosened === false && r2.list.length === lib.TAKE,
+        { 낮춤: r2.loosened, 개수: r2.list.length });
+      ok('그때 낮은 조회수는 안 들어온다', !r2.list.some(v => v.id.startsWith('q')),
+        r2.list.map(v => v.id));
+
+      // 낮춘 기준에도 못 미치면 여전히 뺀다 — 아무거나 들이는 것이 아니다
+      const tooLow = quiet.map(v => ({ ...v, views: 90 }));
+      const r3 = lib.selectFor('ドム', tooLow);
+      ok('낮춘 기준에도 못 미치면 뺀다', r3.list.length === 0, r3.list.map(v => v.views));
+    }
     ok('게임 카테고리로 좁히지 않는다', !calls[0].includes('videoCategoryId'), calls[0].slice(0, 120));
 
     /* **창을 둘로 뒤지는가.** 2년치를 조회수 순으로만 보면 갓 올라온 영상이 영영 안 걸린다

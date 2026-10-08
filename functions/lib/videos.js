@@ -139,6 +139,11 @@ export function isGameVideo(title, channel) {
    바꿀 일이 생기면 여기만 고치면 되고, 자(tools/videos_check.js)도 이것을 읽는다. */
 export const RULES = {
   minViews: 1000,     // 거의 안 본 영상은 뺀다
+  /* **조용한 기체만** 쓰는 낮은 기준(사용자 결정). 1,000회로 거르면 9칸을 못 채우는 기체가
+     있다 — 앗가이 7개, 육전형 건담 1개. 영상이 적은 기체는 조회수도 같이 적어서,
+     인기 기체에 맞춘 선을 그대로 대면 「영상이 없는 기체」가 되어 버린다.
+     인기 기체는 1,000회로 충분히 채워지므로 **그쪽은 손대지 않는다.** */
+  quietMinViews: 300,
   minSec: 120,        // 짧은 클립·쇼츠 (사용자 결정: 2분)
   /* 긴 생방송은 뺀다(사용자 결정: 60분). 도무 칸 2위가 **7시간 54분짜리 참가형 생방송**
      이었다 — 조회수·길이 조건은 다 지나는데 파츠를 보려고 열 영상은 아니다.
@@ -208,10 +213,10 @@ export function filterFor(ms, items, rules = RULES) {
 
    그래서 **최신 자리를 따로 떼어 둔다.** 2달 이내 영상에 몇 칸을 미리 주고,
    나머지를 조회수로 채운다. 밸런스 패치로 조정된 기체(PATCHED)는 한 칸 더 준다 — 보험이다. */
-export const TAKE = 6;              // 화면에 보일 개수 (사용자 결정)
+export const TAKE = 9;              // 화면에 보일 개수 (사용자 결정)
 export const RECENT_DAYS = 60;      // 「최신」의 경계 (사용자 결정: 2달)
-const RECENT_SLOTS = 2;             // 보통 떼어 두는 최신 자리
-const RECENT_SLOTS_PATCHED = 3;     // 갓 조정된 기체는 한 칸 더
+const RECENT_SLOTS = 4;             // 보통 떼어 두는 최신 자리 (9칸 중)
+const RECENT_SLOTS_PATCHED = 6;     // 갓 조정된 기체는 더 준다 (9칸 중 셋의 둘)
 
 /**
  * 화면에 보일 차례 — **최신순**(사용자 결정).
@@ -243,6 +248,30 @@ export const isRecent = (v, now = Date.now()) => {
  * @param list     이미 filterFor 를 지난 영상들
  * @param patched  이 기체가 마지막 밸런스 패치로 조정됐는가
  */
+/**
+ * 이 기체의 영상을 거르고 고른다 — **한 번에 하는 자리.**
+ *
+ * 9칸을 못 채우면 조회수 기준만 낮춰 **한 번 더** 거른다(사용자 결정).
+ * 영상이 적은 기체는 조회수도 같이 적어서, 인기 기체에 맞춘 선을 그대로 대면
+ * 앗가이 7개·육전형 건담 1개처럼 칸이 빈 채 남는다. 낮춰도 안 늘면 그대로 둔다 —
+ * 낮추는 것이 목적이 아니라 **칸을 채우는 것**이 목적이다.
+ *
+ * 다른 조건(길이·쇼츠·채널·이름·게임 낱말)은 **그대로 둔다.** 조회수만 낮춘다.
+ *
+ * @returns {{ list:Array, loosened:boolean, strict:number, loose:number }}
+ */
+export function selectFor(ms, items, { patched = false, now = Date.now(), take = TAKE, rules = RULES } = {}) {
+  const r = { ...RULES, ...(rules || {}) };
+  const strict = filterFor(ms, items, r);
+  let passed = strict, loosened = false, loose = strict.length;
+  if (strict.length < take && r.quietMinViews > 0 && r.quietMinViews < r.minViews) {
+    const more = filterFor(ms, items, { ...r, minViews: r.quietMinViews });
+    loose = more.length;
+    if (more.length > strict.length) { passed = more; loosened = true; }
+  }
+  return { list: pickTop(passed, { patched, now, take, rules: r }), loosened, strict: strict.length, loose };
+}
+
 export function pickTop(list, { patched = false, now = Date.now(), take = TAKE, rules = RULES } = {}) {
   /* 우대 채널을 **먼저 집는다**(사용자 결정: 「가능하면 가져올 것」).
      순서를 바꾸는 것이 아니라 고를 때 우선권을 준다 — 화면은 끝에서 조회수 순으로 다시 세운다. */
