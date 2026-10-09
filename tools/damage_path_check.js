@@ -345,7 +345,17 @@ const check = (label, cond, extra) => {
   /* 그리고 **두 방향이 같은 수를 쓰는지**를 화면에서 본다. 파라스 아테네의 견부 빔포는
      「よろけ値：50% x2発 x5射」이고 발사는 「二発同時発射 … 最大5ヒット」다 —
      격파 줄의 「× N발 × M히트」와 경직 줄의 「1발=K히트」에서 N×M === K 여야 한다. */
-  const stagUi = await pg.evaluate(async () => {
+  /* 무장 이름은 **사전에서 읽어 온다.** 예전엔 「견부 빔포」라고 박아 두었는데,
+     사전을 공식 표기(肩部 = 어깨)로 고치자 자가 무장을 못 찾아 울었다 — 앱은 멀쩡했다.
+     일본어 이름은 위키가 쓰는 고정값이라 안 썩는다. 한국어는 사전이 정한다. */
+  const KO = (() => {
+    const w = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'weapons.json'), 'utf8'));
+    return ja => w[ja] || ja;
+  })();
+  const WEAP_STAG = KO('肩部ビーム砲');
+  const WEAP_SOLID = [KO('マシンキャノンx2'), KO('頭部バルカン砲x4')];
+
+  const stagUi = await pg.evaluate(async (WEAP) => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     document.querySelector('#pietanBtn').click(); await wait(600);
     const back = document.querySelector('.pietan-back');
@@ -358,7 +368,7 @@ const check = (label, cond, extra) => {
     if (!first) return '(적 없음)';
     first.click(); await wait(1100);
     const wrow = [...document.querySelectorAll('#pietanList > *')]
-      .find(x => /견부 빔포/.test(x.textContent));
+      .find(x => x.textContent.includes(WEAP));
     if (!wrow) return '(무장 없음)';
     wrow.click(); await wait(900);
     const m = {};
@@ -366,7 +376,7 @@ const check = (label, cond, extra) => {
       m[(x.querySelector('.pietan-mlb') || {}).textContent] = (x.querySelector('.pietan-mnote') || {}).textContent;
     }
     return m;
-  });
+  }, WEAP_STAG);
 
   /* ── 값이 있어도 **고를 수 없으면** 없는 것과 같다 ──
      갓 건담의 명경지수는 적 내격투를 10% 깎는데, 다른 수치가 하나도 없어 스킬 표에
@@ -419,8 +429,12 @@ const check = (label, cond, extra) => {
     check('켜면 격투 무장의 격파 발수가 준다',
       god && god.on && melee.every(k => god.on[k] < god.off[k]), JSON.stringify(god));
     // 범위를 안 지키면 실탄 무장도 같이 준다 — 여기가 진짜 검사다
+    /* 이 줄도 이름을 박아 두었다가 **없는 이름으로 undefined === undefined** 가 되어
+       헛되이 통과하고 있었다. 사전에서 읽고, 읽힌 무장이 있는지도 함께 본다. */
+    const solid = WEAP_SOLID.filter(k => god && god.off && god.off[k] != null);
+    check('실탄 무장을 실제로 읽었다', solid.length > 0, JSON.stringify({ 찾는이름: WEAP_SOLID, 읽은것: god && Object.keys(god.off || {}) }));
     check('실탄 무장은 그대로다 (범위를 지킨다)',
-      god && god.on && ['머신 캐논 x2', '두부 발칸 포 x4'].every(k => god.on[k] === god.off[k]),
+      solid.length > 0 && solid.every(k => god.on[k] === god.off[k]),
       JSON.stringify(god));
   }
 

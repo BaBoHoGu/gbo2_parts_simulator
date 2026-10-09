@@ -240,6 +240,11 @@ const html = read('src', 'index.html')
       history: fs.existsSync(path.join(ROOT, 'data', 'pickups.history.json'))
         ? JSON.parse(read('data', 'pickups.history.json')) : null
     })))
+  /* 게임 패치노트(밸런스 조정·추가 기체). 없으면 그 화면만 비고 나머지는 그대로 돈다 —
+     처음 받은 사람·오프라인 복구본에서 빌드가 멈추면 안 된다. */
+  .replace('/*__PATCHNOTES__*/', () => inline('GBO2_PATCHNOTES',
+    fs.existsSync(path.join(ROOT, 'data', 'patchnotes.json'))
+      ? JSON.parse(read('data', 'patchnotes.json')) : null))
   .replace('/*__CORE__*/', () => read('src', 'core.js'))
   .replace('/*__I18N__*/', () => read('src', 'i18n.js'))
   .replace('/*__OPT__*/', () => read('src', 'optimizer.js'))

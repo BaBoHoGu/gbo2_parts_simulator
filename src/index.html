@@ -45,6 +45,7 @@
 
   <!-- ── 오른쪽: 다녀오는 곳 ── -->
   <button id="galleryBtn" class="btn-ghost" title="다른 사람이 올린 구성을 둘러보고 그대로 가져옵니다">🌏 갤러리</button>
+  <button id="patchBtn" class="btn-ghost" title="게임 밸런스 조정·추가 기체를 패치 날짜별로 봅니다">📰 <span class="tb-lb">패치노트</span></button>
   <button id="codexBtn" class="btn-ghost" title="기체와 상관없이 스킬을 분류별로 모아 봅니다">📖 스킬 도감</button>
   <button id="tokenBtn" class="btn-ghost" title="토큰 수급·픽업 달성 계산기">🪙 토큰</button>
   <button id="planBtn" class="btn-ghost" title="어느 기체를 먼저 강화할지 순위를 매겨 둡니다">🔧 강화 플랜</button>
@@ -213,6 +214,51 @@
 
   </div>
   <div class="gallery-grid" id="galleryResults"></div>
+</section>
+
+<!-- ============================================================
+     게임 패치노트 화면 — **게임의** 밸런스 조정·추가 기체다.
+     이 앱이 바뀐 내역(기능 추가·버그 수정)이 아니다. 그쪽은 패치노트.md 다.
+
+     자료: data/patchnotes.json ← 공식 한국어 공지(bo2.ggame.jp/kr) 「유닛 관련 조정」.
+     공식 문구를 그대로 싣는다 — 번역·요약·보충을 하지 않는다. 공식이 수치를 생략한
+     항목은 생략된 채로 보인다(지어내면 원문의 값이 지워진다).
+     ============================================================ -->
+<section class="screen screen-patch" id="screenPatch">
+  <div class="select-head">
+    <div class="select-title">
+      <button id="patchBack" class="back-btn" title="돌아가기">‹ 돌아가기</button>
+      <h1>게임 패치노트</h1>
+      <span class="data-fresh" id="patchFresh"></span>
+    </div>
+    <!-- 밸런스 패치가 있는 날짜만 남기는 걸개. 제목 **아래** 줄에 둔다(사용자 지시) —
+         오른쪽 끝에 붙여 두니 제목과 멀어 무엇에 걸리는 걸개인지 읽히지 않았다. -->
+    <div class="pn-tools">
+      <button id="pnBalBtn" class="btn-ghost small" aria-pressed="false"
+        title="밸런스 조정이 있는 날짜만 봅니다">⚖ 밸런스 패치만</button>
+    </div>
+  </div>
+
+  <div class="pn-wrap" id="pnWrap">
+    <!-- 좌: 패치 날짜. 고른 것이 크게, 나머지는 작게 — 레일이 미끄러져 고른 칸이 가운데로 온다 -->
+    <div class="pn-railbox">
+      <div class="pn-rail" id="pnRail"></div>
+    </div>
+
+    <!-- 우: 위가 추가 기체, 아래가 밸런스 패치 기체 -->
+    <div class="pn-body" id="pnBody">
+      <section class="pn-block">
+        <h2 class="pn-h">추가 기체 <span class="pn-n" id="pnAddN"></span></h2>
+        <div class="pn-grid" id="pnAdded"></div>
+      </section>
+      <section class="pn-block">
+        <h2 class="pn-h">밸런스 패치 <span class="pn-n" id="pnAdjN"></span></h2>
+        <div class="pn-grid" id="pnAdjusted"></div>
+        <!-- 고른 기체의 변경 내역 — 공식 공지 원문 -->
+        <div class="pn-detail" id="pnDetail" hidden></div>
+      </section>
+    </div>
+  </div>
 </section>
 
 <!-- ⑤ 토큰 계산기 — 따로 만들어 쓰던 도구를 화면 하나로 들여왔다.
@@ -750,7 +796,8 @@
 <script>/*__WEAPONS__*/</script>
 <script>/*__SKILLS__*/</script>
 <script>/*__I18N_DATA__*/
-/*__PICKUPS__*/</script>
+/*__PICKUPS__*/
+/*__PATCHNOTES__*/</script>
 <script>/*__CORE__*/</script>
 <script>/*__I18N__*/</script>
 <script>/*__OPT__*/</script>

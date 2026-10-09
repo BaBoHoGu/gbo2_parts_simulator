@@ -1274,13 +1274,13 @@
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
     if (view === 'select' && changed) { renderMsList(); renderViewChips(); }
-    for (const v of ['select', 'build', 'gallery', 'codex', 'token', 'plan'])
+    for (const v of ['select', 'build', 'gallery', 'codex', 'token', 'plan', 'patch'])
       document.body.classList.toggle('view-' + v, view === v);
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
       li.classList.toggle('on', li.dataset.step === view));
     // 화면 전환 시 스크롤을 위로 되돌린다
     const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex'),
-      token: $('#screenToken'), plan: $('#screenPlan') }[view] || $('#screenSelect');
+      token: $('#screenToken'), plan: $('#screenPlan'), patch: $('#screenPatch') }[view] || $('#screenSelect');
     if (scr) scr.scrollTop = 0;
     window.scrollTo(0, 0);
     // 숨겨진 동안에는 크기를 잴 수 없으므로, 보이게 된 뒤 줄 맞춤을 다시 한다
@@ -6425,6 +6425,291 @@
     }
   }
 
+  /* ══════════════════════════════════════════════════════════════════
+     게임 패치노트 — **게임의** 밸런스 조정·추가 기체.
+     (이 앱이 바뀐 내역이 아니다. 그쪽은 패치노트.md 다)
+
+     자료는 data/patchnotes.json → GBO2_PATCHNOTES.
+     공식 한국어 공지의 문구를 **그대로** 보여 준다 — 번역·요약·보충을 하지 않는다.
+     공식이 수치를 생략한 항목(「비틀거림 축적치 상승」)은 생략된 채 보인다.
+     ══════════════════════════════════════════════════════════════════ */
+  const PN = (window.GBO2_PATCHNOTES && Array.isArray(window.GBO2_PATCHNOTES.patches))
+    ? window.GBO2_PATCHNOTES.patches : [];
+  let pnDate = null;        // 고른 패치 날짜
+  let pnPick = null;        // 고른 조정 기체(ko 이름)
+  let pnBalOnly = false;    // 밸런스 조정이 있는 날짜만 보기
+
+  const pnFind = d => PN.find(p => p.date === d) || null;
+
+  /** 지금 레일에 세울 날짜들 — 걸개가 켜져 있으면 조정이 있는 날만 */
+  const pnList = () => pnBalOnly ? PN.filter(p => (p.adjusted || []).length) : PN;
+
+  function openPatch(open) {
+    if (!open) { setView(AUX_BACK); return; }
+    if (!pnDate) { const L = pnList(); pnDate = L.length ? L[0].date : null; }   // 기본은 가장 최근
+    setView('patch');
+    renderPatch();
+  }
+
+  /** 걸개를 켜고 끈다. 지금 보던 날짜가 걸러지면 가장 가까운 날로 옮긴다 —
+      안 옮기면 오른쪽이 빈 채로 남아 「망가졌다」로 보인다. */
+  function pnSetBalOnly(on) {
+    pnBalOnly = !!on;
+    const b = $('#pnBalBtn');
+    if (b) { b.classList.toggle('on', pnBalOnly); b.setAttribute('aria-pressed', String(pnBalOnly)); }
+    const L = pnList();
+    if (!L.some(p => p.date === pnDate)) {
+      const near = L.slice().sort((x, y) =>
+        Math.abs(Date.parse(x.date) - Date.parse(pnDate)) - Math.abs(Date.parse(y.date) - Date.parse(pnDate)))[0];
+      pnDate = near ? near.date : (L[0] && L[0].date) || null;
+      pnPick = null;
+    }
+    renderPatch();
+  }
+
+  function renderPatch() {
+    const fresh = $('#patchFresh');
+    if (fresh) {
+      /* 어디서 온 자료인지 적는다. 비어 있을 때 「없다」와 「못 받았다」는 다른 말이다. */
+      fresh.textContent = PN.length
+        ? '공식 한국어 공지 기준 · 패치 ' + PN.length + '개'
+        : '패치노트 자료가 아직 없습니다 (업데이트를 한 번 돌리면 들어옵니다)';
+    }
+    renderPnRail();
+    renderPnBody();
+  }
+
+  /** 좌측 날짜 레일 — 고른 칸은 크게, 나머지는 작게. 레일이 미끄러져 고른 칸이 가운데로 온다. */
+  function renderPnRail() {
+    const rail = $('#pnRail'); if (!rail) return;
+    rail.innerHTML = '';
+    for (const p of pnList()) {
+      const on = p.date === pnDate;
+      const b = el('button', 'pn-date' + (on ? ' on' : ''));
+      const ymd = String(p.date).split('-');
+      b.append(el('span', 'pn-y', ymd[0]));
+      b.append(el('span', 'pn-md', ymd[1] + '.' + ymd[2]));
+      /* 작은 칸에도 규모를 적어 둔다 — 날짜만으론 어느 패치가 큰지 알 수 없다. */
+      /* 조정이 없는 주(신규·LV 추가만 있는 주)도 칸이 생긴다 — 0 을 적으면 읽기 나쁘다. */
+      const nAdj = (p.adjusted || []).length, nAdd = (p.added || []).length;
+      b.append(el('span', 'pn-cnt', [nAdj ? '조정 ' + nAdj : '', nAdd ? '추가 ' + nAdd : '']
+        .filter(Boolean).join(' · ') || '-'));
+      if (nAdj) b.classList.add('bal');   // 밸런스 패치가 있는 주는 눈에 띄게
+      b.title = p.date + (p.ver ? '  ver.' + p.ver : '');
+      b.onclick = () => {
+        /* 이미 고른 칸을 눌렀을 때도 **가운데로 되돌린다.** 휠로 훑다가 그 칸을 누르면
+           아무 일도 안 일어나 「눌러도 안 되네」가 된다(재서 봤다 — 320px 어긋나 있었다).
+           다시 그릴 일은 없으니 자리만 잡는다. */
+        if (pnDate === p.date) { pnPlaceRail(); return; }
+        pnDate = p.date;
+        pnPick = null;                 // 패치를 바꾸면 펼쳐 둔 내역을 닫는다
+        renderPatch();
+      };
+      rail.append(b);
+    }
+    pnPlaceRail();
+  }
+
+    /* 미끄러뜨리기 — 고른 칸을 레일 상자 가운데로 옮기되, **끝이 비지 않게 조른다.**
+       숨어 있는 동안에는 크기를 못 재므로(0 이 나온다) 다음 프레임에 잰다.
+
+       조르는 쪽을 골랐다. 조르지 않고 늘 가운데로 보냈더니 패치가 몇 개뿐일 때
+       레일 위가 통째로 비어 화면이 한쪽으로 쏠렸다(찍어서 봤다). 다 들어가는 동안에는
+       움직일 일이 없는 것이 맞고, 패치가 쌓여 넘치기 시작하면 그때부터 미끄러진다.
+       — 그래서 자도 **넘치는 높이로 줄여 놓고** 미끄러지는지 잰다. */
+  function pnPlaceRail() {
+    const rail = $('#pnRail'); if (!rail) return;
+    /* 고른 칸을 레일 상자 가운데로 가져온다.
+
+       **transform 이 아니라 스크롤로** 옮긴다. transform 으로 밀 때는 화면이 제자리에
+       박혀 있어, 아래쪽 패치를 보려면 날짜를 하나씩 눌러 가며 옮겨야 했다(사용자 지적).
+       스크롤로 두면 휠·드래그·터치로 **마음대로 훑고**, 누르면 가운데로 와 준다.
+
+       양 끝 여백은 그대로 둔다 — 첫 칸·끝 칸도 가운데에 설 수 있어야 한다.
+       숨어 있는 동안에는 크기를 못 재므로(0 이 나온다) 다음 프레임에 잰다. */
+    const place = (smooth) => {
+      const box = rail.parentElement;
+      const on = rail.querySelector('.pn-date.on');
+      if (!box || !on) return;
+      const wide = box.clientWidth > box.clientHeight;   // 좁은 화면에서는 가로 레일이다
+      const boxLen = wide ? box.clientWidth : box.clientHeight;
+      const onLen = wide ? on.offsetWidth : on.offsetHeight;
+      /* 여백은 **끝쪽에만** 둔다. 양쪽에 두었더니 첫 칸(= 열자마자 고르는 최신 패치)이
+         가운데로 내려가 레일 위가 통째로 비어 보였다(찍어서 봤다).
+         끝쪽만 두면 첫 칸은 맨 위에 서고, 마지막 칸도 가운데까지 올라올 수 있다. */
+      const pad = Math.max(0, Math.round((boxLen - onLen) / 2));
+      if (wide) { rail.style.paddingRight = pad + 'px'; rail.style.paddingLeft = '';
+        rail.style.paddingTop = ''; rail.style.paddingBottom = ''; }
+      else { rail.style.paddingBottom = pad + 'px'; rail.style.paddingTop = '';
+        rail.style.paddingLeft = ''; rail.style.paddingRight = ''; }
+      const to = Math.round((wide ? on.offsetLeft + on.offsetWidth / 2 - box.clientWidth / 2
+        : on.offsetTop + on.offsetHeight / 2 - box.clientHeight / 2));
+      const key = wide ? 'left' : 'top';
+      const opt = { behavior: smooth ? 'smooth' : 'auto' };
+      opt[key] = Math.max(0, to);
+      box.scrollTo(opt);
+      const span = wide ? box.scrollWidth - box.clientWidth : box.scrollHeight - box.clientHeight;
+      box.classList.toggle('over', span > 1);
+    };
+    requestAnimationFrame(() => { place(false); requestAnimationFrame(() => place(true)); });
+  }
+
+  function renderPnBody() {
+    const p = pnFind(pnDate);
+    const added = $('#pnAdded'), adj = $('#pnAdjusted');
+    if (!added || !adj) return;
+    added.innerHTML = ''; adj.innerHTML = '';
+    const addN = $('#pnAddN'), adjN = $('#pnAdjN');
+
+    const list = (p && p.added) || [];
+    if (addN) addN.textContent = list.length ? list.length + '기' : '';
+    if (!list.length) {
+      /* 왜 비었는지 적는다 — 「없음」으로만 두면 자료가 빠진 것과 구분이 안 된다.
+         추가 기체 기록은 우리가 미러를 대조해 쌓는 것이라, 쌓기 전 패치는 비어 있다. */
+      added.append(el('div', 'pn-empty', p
+        ? '이 패치 주기에 기록된 추가 기체가 없습니다 (기록을 쌓기 전 패치일 수 있습니다)'
+        : '패치를 고르세요'));
+    } else {
+      for (const a of list) added.append(pnMsCard(a.ms, a.why === 'newLv' ? 'LV 추가' : '신규', a.at));
+    }
+
+    const ads = (p && p.adjusted) || [];
+    if (adjN) adjN.textContent = ads.length ? ads.length + '기' : '';
+    if (!ads.length) adj.append(el('div', 'pn-empty', '조정된 기체가 없습니다'));
+    for (const a of ads) {
+      const c = pnMsCard(a.ms, '', '', a.ko);
+      c.classList.add('pick');
+      if (pnPick === a.ko) c.classList.add('on');
+      c.onclick = () => { pnPick = (pnPick === a.ko ? null : a.ko); renderPnBody(); };
+      adj.append(c);
+    }
+    renderPnDetail(p, ads);
+  }
+
+  /** 기체 카드 한 장. ms(일본어 줄기)가 없으면 공식 이름만 적는다. */
+  function pnMsCard(ms, badge, at, koFallback) {
+    const card = el('div', 'pn-card');
+    if (ms) card.append(img(msImg(ms + '_LV1'), 'ms', ms));
+    const info = el('div', 'pn-ci');
+    info.append(el('div', 'pn-nm', ms ? T.msName(ms) : (koFallback || '?')));
+    const meta = el('div', 'pn-meta');
+    if (badge) meta.append(el('span', 'pn-badge', badge));
+    if (at) meta.append(el('span', '', String(at).slice(5)));
+    if (meta.childNodes.length) info.append(meta);
+    card.append(info);
+    card.title = ms || koFallback || '';
+    return card;
+  }
+
+  /** 고른 기체의 변경 내역 — 공식 공지 원문 그대로 */
+  function renderPnDetail(p, ads) {
+    const box = $('#pnDetail'); if (!box) return;
+    const a = pnPick ? ads.find(x => x.ko === pnPick) : null;
+    if (!a) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.innerHTML = '';
+
+    const head = el('div', 'pn-dhead');
+    head.append(el('strong', '', a.ms ? T.msName(a.ms) : a.ko));
+    head.append(el('span', 'pn-dsrc', p.date + (p.ver ? ' · ver.' + p.ver : '') + ' · 공식 공지 원문'));
+    const close = el('button', 'pn-dclose', '✕');
+    close.title = '닫기';
+    close.onclick = () => { pnPick = null; renderPnBody(); };
+    head.append(close);
+    box.append(head);
+
+    for (const s of a.sections || []) {
+      /* 변형·변신 서브섹션은 같은 기체의 다른 모드다 — 제목을 그대로 보여 준다. */
+      if (s.isSub) box.append(el('div', 'pn-sub', s.header));
+      for (const r of s.rows || []) {
+        const row = el('div', 'pn-row');
+        const lb = el('div', 'pn-rl');
+        lb.append(el('span', 'pn-cat', r.category || '-'));
+        if (r.weapon) lb.append(el('span', 'pn-wp', r.weapon));
+        row.append(lb);
+        const ch = el('div', 'pn-rc');
+        (r.changes || []).forEach((line, i) => {
+          /* 【통상 사격】 같은 소제목은 글머리가 아니라 묶음 표시다 — 따로 보이게 한다. */
+          const ln = el('div', /^[【[]/.test(line) ? 'pn-ln head' : 'pn-ln', line);
+          /* 공식이 수치를 안 적은 줄에는 위키에서 찾은 값을 **따로 달아** 준다.
+             공식 문구 안에 끼워 넣지 않는다 — 어디까지가 공식인지 알 수 있어야 한다. */
+          const f = r.fill && r.fill[i];
+          if (f && f.from) {
+            const tag = el('span', 'pn-num');
+            tag.append(el('span', 'pn-nv', f.from));
+            tag.append(el('span', 'pn-na', '→'));
+            tag.append(el('span', 'pn-nv', f.to));
+            tag.title = '공식 공지에는 수치가 없어 위키 기록에서 가져왔습니다';
+            ln.append(tag);
+          }
+          ch.append(ln);
+          /* 「(더불어 상위 LV도 상승)」 — 공식은 대표 LV 하나만 적는다.
+             위키가 적어 둔 **LV 별 수치**를 그 줄 바로 아래에 작게 붙인다(사용자 지시). */
+          if (f && f.lv) {
+            const box2 = el('div', 'pn-lv');
+            for (const x of f.lv) {
+              const e2 = el('span', 'pn-lvi');
+              e2.append(el('span', 'pn-lvk', x.lv));
+              e2.append(el('span', 'pn-lvv', x.from + ' → ' + x.to));
+              box2.append(e2);
+            }
+            box2.title = '위키 기록의 LV 별 수치';
+            ch.append(box2);
+          }
+        });
+        row.append(ch);
+        box.append(row);
+      }
+    }
+    if ((a.intent || []).length) {
+      const d = el('details', 'pn-intent');
+      d.append(el('summary', '', '조정 의도 (공식)'));
+      for (const line of a.intent) d.append(el('div', 'pn-ln', line));
+      box.append(d);
+    }
+
+
+    /* 참조 데이터 — 공식이 「왜 바꿨나」의 근거로 붙이는 전적.
+       「조정 후」 행과 판정은 **한 달 뒤**(다음 밸런스 패치 때) 공식이 덧붙인다.
+       아직 안 붙은 패치는 그 행이 없다 — 없는 것을 지어내지 않고 그대로 비워 둔다. */
+    if (a.ref && (a.ref.rows || []).length) {
+      const d = el('details', 'pn-ref');
+      d.append(el('summary', '', '참조 데이터 (공식)'
+        + (a.ref.cost ? ' — COST ' + a.ref.cost : '')));
+      const t = el('table', 'pn-rt');
+      const hr = el('tr');
+      hr.append(el('th', '', ''));
+      for (const c of a.ref.cols || []) hr.append(el('th', '', c));
+      t.append(hr);
+      for (const r of a.ref.rows) {
+        const tr = el('tr');
+        if (/조정\s*후/.test(r.label)) tr.classList.add('after');
+        tr.append(el('th', '', r.label));
+        for (const v of r.values) tr.append(el('td', '', v));
+        t.append(tr);
+      }
+      d.append(t);
+      if (!a.ref.rows.some(r => /조정\s*후/.test(r.label)))
+        d.append(el('div', 'pn-note', '※ 「조정 후」 전적은 다음 밸런스 패치 때 공식이 덧붙입니다.'));
+      box.append(d);
+    }
+    /* 위키가 적어 둔 **LV 별 수치.** 공식은 「비틀거림 축적치 상승」처럼 얼마인지를
+       생략하고, LV 도 대표값 하나만 적는다. 위키는 LV1~4 를 다 적는다.
+       일본어 원문 그대로 둔다 — 번역해 옮기면 수치 옆 말이 어긋날 수 있고,
+       정작 필요한 숫자는 번역이 필요 없다. ▲▼ 는 위키가 단 표식이다. */
+    if ((a.wiki || []).length) {
+      const d = el('details', 'pn-wiki');
+      d.append(el('summary', '', '상세 수치 — 위키 기록 (일본어 원문)'));
+      for (const w of a.wiki) {
+        const ln = el('div', 'pn-wl d' + Math.min(3, w.depth), w.text);
+        if (w.buff === true) ln.classList.add('up');
+        if (w.buff === false) ln.classList.add('down');
+        d.append(ln);
+      }
+      box.append(d);
+    }
+  }
+
   function openCodex(open) {
     if (!open) { setView(AUX_BACK); return; }
     setView('codex');
@@ -10022,6 +10307,10 @@
         renderCodexChips(); renderCodexList(); renderCodexPane();
       };
     }
+    // 게임 패치노트 (전체 화면)
+    $('#patchBtn').onclick = () => openPatch(true);
+    $('#patchBack').onclick = () => openPatch(false);
+    $('#pnBalBtn').onclick = () => pnSetBalOnly(!pnBalOnly);
     $('#galleryBtn').onclick = () => openGallery(true);
     $('#galleryBack').onclick = () => openGallery(false);
     $('#galleryReload').onclick = () => { galleryList = []; loadGallery(); };
@@ -10231,6 +10520,9 @@
         applyViewMode();
         fitBuildBand(); fitWholeRows($('#partList'));
         markWeaponScroll();     // 가로↔세로 회전으로 넘침 여부가 바뀐다
+        /* 패치노트 레일도 다시 잰다. 안 하면 창을 줄여 넘치게 돼도 자리와 마스크가
+           옛 크기 그대로 남는다 — 폰을 돌리면 그대로 어긋난다(자가 잡았다). */
+        if (state.view === 'patch') pnPlaceRail();
       }, 120);
     });
 

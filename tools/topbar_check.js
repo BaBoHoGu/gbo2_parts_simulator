@@ -33,7 +33,7 @@ const ok = (label, cond, extra) => {
 // 파츠 화면에서 닿을 수 있어야 하는 것 전부 — 상단바에 있든 메뉴에 있든
 const MUST_REACH = ['#openAuto', '#pietanBtn', '#compareBtn', '#save', '#share', '#pngBtn',
   '#uploadBtn', '#load', '#importBtn', '#ownedBtn', '#updateBtn',
-  '#galleryBtn', '#codexBtn', '#tokenBtn'];
+  '#galleryBtn', '#patchBtn', '#codexBtn', '#tokenBtn'];
 
 (async () => {
   for (const w of [1920, 1500, 1280]) {
@@ -84,6 +84,29 @@ const MUST_REACH = ['#openAuto', '#pietanBtn', '#compareBtn', '#save', '#share',
       }, MUST_REACH);
       ok('감춘 버튼이 전부 메뉴에서 닿는다', reach.missing.length === 0, reach.missing.join(' '));
       ok('내보내기 메뉴가 비어 있지 않다', reach.menus.length >= 8, reach.menus.join(' · '));
+    }
+
+    /* 무엇을 접고 무엇을 남길지는 **사용자가 정했다**(2026-10-09):
+       패치노트는 어느 폭에서도 상단바에 남고, 토큰·강화 플랜이 「⋯」로 들어간다.
+       높이만 재면 「한 줄이면 뭘 접었든 통과」라 이 뜻이 안 지켜진다 — 따로 못 박는다. */
+    const fold = await pg.evaluate(async () => {
+      const vis = s => { const e = document.querySelector(s); return !!e && e.getBoundingClientRect().width > 0; };
+      document.querySelector('#topbarMore').click();
+      await new Promise(r => setTimeout(r, 250));
+      const m = document.querySelector('.more-menu');
+      const items = m ? [...m.querySelectorAll('.pm-t')].map(x => x.textContent.trim()) : [];
+      if (m) m.remove();
+      const label = s => (document.querySelector(s) || {}).textContent || '';
+      return { patch: vis('#patchBtn'), token: vis('#tokenBtn'), plan: vis('#planBtn'),
+        items, tokenLb: label('#tokenBtn').trim(), planLb: label('#planBtn').trim() };
+    });
+    ok(w + 'px 에서 패치노트는 상단바에 남는다', fold.patch === true, fold);
+    if (w <= 1399) {
+      ok(w + 'px 에서 토큰·강화 플랜은 ⋯ 로 들어간다',
+        fold.token === false && fold.plan === false, fold);
+      ok(w + 'px 에서 그 둘이 ⋯ 메뉴 안에 있다',
+        fold.items.includes(fold.tokenLb) && fold.items.includes(fold.planLb),
+        { 메뉴: fold.items, 찾던것: [fold.tokenLb, fold.planLb] });
     }
     await br.close();
   }
