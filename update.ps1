@@ -31,6 +31,35 @@ Set-Location -Path $PSScriptRoot
 
 # 더블클릭·"PowerShell에서 실행" 으로 열면 끝나는 순간 창이 닫혀 결과를 못 본다.
 # 그래서 마지막에 Enter 를 기다렸다가 닫는다. (비대화형 실행 시에는 그냥 지나간다)
+# ── 단계별 소요를 적어 둔다 ────────────────────────────────────────────────
+# 「배포가 오래 걸린다」에 짐작으로 답하지 않으려면, 어디서 쓰는지 로그에 남아야 한다.
+# 실측(2026-10-12): 검사가 전체의 대부분이다 — 52개 합 24~36분, 동시 4개로 6~9분.
+$script:StageMarks = @()
+$script:StageT0 = $null
+function Start-Stage([string]$name) {
+  Stop-Stage
+  $script:StageT0 = [datetime]::UtcNow
+  $script:StageName = $name
+}
+function Stop-Stage {
+  if ($null -eq $script:StageT0) { return }
+  $sec = [int]([datetime]::UtcNow - $script:StageT0).TotalSeconds
+  $script:StageMarks += [pscustomobject]@{ name = $script:StageName; sec = $sec }
+  $script:StageT0 = $null
+}
+function Show-Stages {
+  Stop-Stage
+  if (-not $script:StageMarks.Count) { return }
+  $tot = ($script:StageMarks | Measure-Object -Property sec -Sum).Sum
+  Write-Host ''
+  Write-Host '단계별 소요' -ForegroundColor Cyan
+  foreach ($m in $script:StageMarks) {
+    $pct = if ($tot -gt 0) { [int](100 * $m.sec / $tot) } else { 0 }
+    Write-Host ("  {0,-16} {1,5}초  {2,3}%" -f $m.name, $m.sec, $pct) -ForegroundColor DarkGray
+  }
+  Write-Host ("  {0,-16} {1,5}초" -f '합', $tot) -ForegroundColor DarkGray
+}
+
 function Close-Window([int]$code) {
   Write-Host ''
   # 더블클릭으로 연 창은 결과를 볼 새도 없이 닫히면 곤란해 Enter 를 기다린다.
@@ -694,12 +723,14 @@ if ($Rebuild) {
 # 마지막으로 받아 둔 일정이 그대로 실릴 뿐이고, 그 때문에 배포를 멈출 이유가 없다.
 if (-not $Rebuild -and -not $Check) {
   Write-Host ''
+  Start-Stage '픽업 수신'
   Write-Host '토큰 픽업 일정' -ForegroundColor Cyan
   try { & $node (Join-Path $PSScriptRoot 'tools\pickups.js') } catch {
     Write-Host "  건너뜀 — $($_.Exception.Message)" -ForegroundColor DarkGray
   }
 }
 
+Start-Stage $(if ($Rebuild) { '빌드' } else { '데이터 수신+빌드' })
 $code = 0
 try {
   & $node @nodeArgs
@@ -771,6 +802,7 @@ if (-not $Check) {
   if (-not $NoSmoke) {
     $gateArgs = @()
     if ($NoUiCheck -or -not ($Release -or $Publish -or $Site)) { $gateArgs += '--fast' }
+    Start-Stage '검사'
     Write-Host "`n검사 중…" -ForegroundColor Cyan
     $prevEap3 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     & $node (Join-Path $PSScriptRoot 'tools\gates.js') @gateArgs
@@ -800,6 +832,7 @@ if (-not $Check) {
 
   # -Release: 배포 ZIP 을 완전판 + 경량판 두 가지로 생성 (모바일-앱.apk 동봉)
   if ($Release) {
+    Start-Stage 'ZIP 생성'
     Write-Host "`n배포 패키지 생성 중… (완전판 + 경량판)" -ForegroundColor Cyan
     & $node (Join-Path $PSScriptRoot 'tools\build_release.js')
     if ($LASTEXITCODE -ne 0) { Write-Host '완전판 생성 실패 (위 로그 확인).' -ForegroundColor Red }
@@ -809,6 +842,7 @@ if (-not $Check) {
   # -Publish: 폰 자동 갱신용 데이터(OTA) + PC 배포본 ZIP 을 GitHub 에 올린다
   # 사전을 먼저 올린다. 순서가 반대면, OTA 를 받은 사람이 새 기체로 구성을 만들었는데
   # 사전이 아직 낡아서 업로드가 거부되는 창이 잠깐 생긴다.
+  Start-Stage '게시'
   if ($Publish) { Publish-Ota; Publish-Pc; Publish-Site; Publish-Commit }
   # -Site: 사이트 + 폰 OTA 만. **Publish-Pc 를 부르지 않는다** — ZIP 을 만들지도
   # 않았으므로, 부르면 지난번 ZIP 이 최신인 척 올라간다(그 함수는 release\ 의
@@ -816,4 +850,5 @@ if (-not $Check) {
   # 이미 폰에 깐 사람들이 데이터에서 멈추지 않게 한다.
   if ($Site) { Publish-Ota; Publish-Site; Publish-Commit }
 }
+Show-Stages
 Close-Window 0
