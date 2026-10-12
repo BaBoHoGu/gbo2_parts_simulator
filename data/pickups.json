@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-10-09",
+ "pickupsUpdated": "2026-10-12",
  "pickups": [
   {
    "name": "캐논 건담",
@@ -218,7 +218,7 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=194083"
   }
  ],
- "steamUpdated": "2026-10-09",
+ "steamUpdated": "2026-10-12",
  "steamNews": [
   {
    "name": "고트라탄",
@@ -254,27 +254,6 @@
    "end": "2026-09-24",
    "tokens": 180,
    "url": "https://store.steampowered.com/news/app/1367080/view/690894858003415053?l=koreana"
-  },
-  {
-   "name": "리그 콘티오",
-   "start": "2026-09-10",
-   "end": "2026-09-17",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/669502126020362443?l=koreana"
-  },
-  {
-   "name": "건담 하지로보시 LV1 & LV2",
-   "start": "2026-09-10",
-   "end": "2026-09-17",
-   "tokens": null,
-   "url": "https://store.steampowered.com/news/app/1367080/view/669502126020362443?l=koreana"
-  },
-  {
-   "name": "건담 하지로보시 LV2",
-   "start": "2026-09-10",
-   "end": "2026-09-17",
-   "tokens": 180,
-   "url": "https://store.steampowered.com/news/app/1367080/view/669502126020362443?l=koreana"
   }
  ]
 }
