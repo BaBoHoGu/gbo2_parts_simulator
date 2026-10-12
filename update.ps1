@@ -8,6 +8,9 @@
 #   .\update.ps1 -NoSmoke   배포 전 데이터·번역 점검을 건너뛴다(권장하지 않음)
 #   .\update.ps1 -Release   데이터+dist+APK 에 더해 배포 ZIP(모바일-앱.apk 동봉)까지 한 방에 생성
 #   .\update.ps1 -Publish   폰 OTA(data) + PC 배포본 ZIP 을 GitHub 에 올려 링크로 배포
+#   .\update.ps1 -Site      **사이트만** 운영한다 — 검사 + 사이트 게시 + 폰 OTA 만.
+#                            APK 빌드·PC ZIP 생성·ZIP 업로드를 모두 건너뛴다(사용자 지시 2026-10-12).
+#                            PC 판·APK 는 **말할 때만** 만든다 → 그때 -Release -Publish 를 쓴다.
 #   .\update.ps1 -SetSiteKey  Cloudflare 배포 자격 증명을 이 PC 에 등록 (최초 1회, 이후 자동)
 #   .\update.ps1 -SetSecret YT_API_KEY   Cloudflare 함수가 쓸 비밀값을 등록 (키는 저장소에 안 남는다)
 #
@@ -15,7 +18,7 @@
 # dist/gbo2-simulator.html 을 다시 만들고, 이어서 안드로이드 APK(dist/gbo2-simulator-debug.apk)
 # 도 같은 데이터로 자동 빌드합니다. node 가 있어야 하며, APK 는 JDK(또는 Android Studio JBR)가
 # 있을 때만 만들어집니다(없으면 웹만 갱신하고 건너뜁니다).
-param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$SetSiteKey, [string]$SetSecret)
+param([switch]$Check, [switch]$Rebuild, [switch]$NoApk, [switch]$NoUiCheck, [switch]$NoSmoke, [switch]$Release, [switch]$Publish, [switch]$Site, [switch]$SetSiteKey, [string]$SetSecret)
 
 $ErrorActionPreference = 'Stop'
 # 한글이 깨지지 않도록 콘솔 출력을 UTF-8 로 맞춘다.
@@ -666,7 +669,16 @@ function Test-DeployReady([string]$Root = $PSScriptRoot) {
     Write-Host '  (비대화형이라 그대로 진행합니다)' -ForegroundColor DarkGray
   }
 }
-if ($Publish) { Test-DeployReady }
+# -Site 는 **홀로 쓴다.** 같이 주면 무엇이 올라가는지 흐려진다 —
+# 특히 Publish-Pc 는 release\ 의 **가장 최근 ZIP** 을 다시 올려서, 낡은 ZIP 이
+# 최신인 척 올라갈 수 있다. 섞어 쓰지 못하게 여기서 막는다.
+if ($Site -and ($Release -or $Publish)) {
+  Write-Host "`n-Site 는 -Release/-Publish 와 함께 쓸 수 없습니다." -ForegroundColor Red
+  Write-Host '  사이트만:   .\update.ps1 -Site' -ForegroundColor Yellow
+  Write-Host '  PC·APK 까지: .\update.ps1 -Release -Publish' -ForegroundColor Yellow
+  Close-Window 1
+}
+if ($Publish -or $Site) { Test-DeployReady }
 
 # -Rebuild: 데이터 재수신 없이 build.js 만 실행 (psycommu.override.json 등 오버라이드 패치 적용)
 if ($Rebuild) {
@@ -736,7 +748,8 @@ if (-not $Check) {
   }
   Write-Host "`n최신 결과물: dist\gbo2-simulator.html (브라우저에서 새로고침 하세요)" -ForegroundColor Green
   # 데이터가 갱신됐으면 APK 도 함께 최신화 (‑NoApk 로 건너뛸 수 있음)
-  if (-not $NoApk) { Build-Apk }
+  # -Site 는 사이트만 운영하는 모드라 APK 를 아예 만들지 않는다.
+  if (-not $NoApk -and -not $Site) { Build-Apk }
   # APK 빌드가 실패했는데 그대로 진행하면, 배포본에 '지난번 APK' 가 동봉되고 GitHub 에도
   # 그게 올라간다. 실제로 그렇게 한 번 나갔다 - 실패하면 여기서 멈춘다.
   # 배포용이면 실제 Chrome 으로 화면을 훑어 회귀를 먼저 잡는다.
@@ -757,7 +770,7 @@ if (-not $Check) {
   # 검사가 하나도 안 도는 결과물을 쓰게 됐다는 뜻이다. --fast 는 Chrome 도 서버도 안 쓰고 14초다.
   if (-not $NoSmoke) {
     $gateArgs = @()
-    if ($NoUiCheck -or -not ($Release -or $Publish)) { $gateArgs += '--fast' }
+    if ($NoUiCheck -or -not ($Release -or $Publish -or $Site)) { $gateArgs += '--fast' }
     Write-Host "`n검사 중…" -ForegroundColor Cyan
     $prevEap3 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     & $node (Join-Path $PSScriptRoot 'tools\gates.js') @gateArgs
@@ -779,7 +792,7 @@ if (-not $Check) {
   # 패치노트 초안 — 이번 실행에서 **실제로 바뀐 것**만 적어 넣는다(사람이 쓴 절이 있으면 안 건드린다).
   # 여태 「오늘 항목이 없습니다」라고 경고만 하고 그대로 ZIP 에 넣어, 잊으면 새 배포본에
   # 낡은 안내문이 들어갔다. ZIP 을 만들기 **전**에 넣어야 배포본에 들어간다.
-  if ($Release -or $Publish) {
+  if ($Release -or $Publish -or $Site) {
     $prevEap5 = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     & $node (Join-Path $PSScriptRoot 'tools\patchnote_draft.js')
     $ErrorActionPreference = $prevEap5
@@ -797,5 +810,10 @@ if (-not $Check) {
   # 사전을 먼저 올린다. 순서가 반대면, OTA 를 받은 사람이 새 기체로 구성을 만들었는데
   # 사전이 아직 낡아서 업로드가 거부되는 창이 잠깐 생긴다.
   if ($Publish) { Publish-Ota; Publish-Pc; Publish-Site; Publish-Commit }
+  # -Site: 사이트 + 폰 OTA 만. **Publish-Pc 를 부르지 않는다** — ZIP 을 만들지도
+  # 않았으므로, 부르면 지난번 ZIP 이 최신인 척 올라간다(그 함수는 release\ 의
+  # 가장 최근 ZIP 을 집는다). OTA 는 계속 올린다(사용자 판정) —
+  # 이미 폰에 깐 사람들이 데이터에서 멈추지 않게 한다.
+  if ($Site) { Publish-Ota; Publish-Site; Publish-Commit }
 }
 Close-Window 0

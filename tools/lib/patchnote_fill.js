@@ -108,6 +108,16 @@ function buildIndex(lines) {
     const d = lines[i].depth;
     for (let k = i + 1; k < lines.length && lines[k].depth > d; k++)
       if (lines[k].text.includes('→')) return lines[k].text;
+    /* 위키가 들여쓰기를 한 단 빼먹어 값이 **형제 자리**에 놓인 곳이 있다. 실측
+       (2026-09-24 베르가 기로스[BV] 「シェルフ・ノズル制御機構」):
+           d1  高速移動開始時のスラスター消費量軽減効果上昇
+           d1  LV1：－30% → －45% LV2：－40% → －50%     ← 자식이어야 할 것이 형제로
+       자식만 보던 탓에 값이 비었고, 한국어 경로는 그 줄에 **기체의 スラスター 75→80** 을
+       붙였다(엉뚱한 수치). 같은 깊이의 **값 줄**까지 본다 — 항목 줄을 만나면 멈춘다. */
+    for (let k = i + 1; k < lines.length && lines[k].depth === d; k++) {
+      if (isMetric(lines[k].text)) break;
+      if (lines[k].text.includes('→')) return lines[k].text;
+    }
     return '';
   };
   const stack = [];            // depth → 무장 이름
@@ -157,21 +167,39 @@ function modeSegment(value, mode) {
 }
 
 /**
+ * 위키가 **같은 모드 표시를 두 번** 적은 값을 순서대로 가른다 — 앞이 비집속, 뒤가 집속.
+ * 그 순서는 공식 공지가 증언한다(위 `pickPair` 주석). 두 번일 때만 쓴다.
+ */
+function dupModeSegment(v, mode) {
+  const mark = /非集束/.test(v) ? '非集束' : '集束';
+  const i1 = v.indexOf(mark);
+  const i2 = v.indexOf(mark, i1 + mark.length);
+  if (i1 < 0 || i2 < 0) return null;
+  return mode === '集束' ? v.slice(i2) : v.slice(i1, i2);
+}
+
+/**
  * 모드에 맞는 구간에서 대표 수치쌍.
  * **모드가 있는데 그 구간이 없고 다른 모드 값만 있으면 null** — 엉뚱한 값을 붙이지 않는다.
  */
 function pickPair(value, mode) {
   if (mode) {
-    /* 위키가 모드 표시를 **잘못 적은** 값은 쓰지 않는다.
-       실제로 봤다: 「集束：9% → 8%　集束：80% → 70%」 — 앞의 것은 非集束 이어야 하는데
-       둘 다 集束 라고 적혀 있다. 그대로 쓰면 집속 줄에 **통상 값**이 붙는다(화면에서 잡았다).
-       한쪽 표시만 두 번 나오면 어느 쪽이 어느 쪽인지 알 수 없으므로 비운다 —
-       틀린 수치는 없는 것만 못하다. */
+    /* 위키가 모드 표시를 **잘못 적은** 값 — 한쪽 표시가 두 번 나온다.
+       실제로 봤다: 「集束：9% → 8%　集束：80% → 70%」 — 앞의 것은 非集束 이어야 한다.
+       한동안 비워 뒀지만, **순서는 공식이 증언한다**: 같은 무장(실루엣 건담 개량형용
+       헤비 머신건)의 공식 공지가 【通常射撃】에 「9%」→「8%」 라 적었다.
+       즉 앞이 비집속, 뒤가 집속이다(사용자 확인 2026-10-12). 순서대로 가른다. */
     const v = String(value || '');
     const nonFocus = (v.match(/非集束/g) || []).length;
     const focus = (v.match(/集束/g) || []).length - nonFocus;
-    if (focus > 1 && nonFocus === 0) return null;
-    if (nonFocus > 1 && focus === 0) return null;
+    if ((focus === 2 && nonFocus === 0) || (nonFocus === 2 && focus === 0)) {
+      const seg = dupModeSegment(v, mode);
+      const p = seg ? firstPair(seg) : null;
+      return p || null;
+    }
+    /* 세 번 이상이면 순서를 못 믿는다 — 비운다 */
+    if (focus > 2 && nonFocus === 0) return null;
+    if (nonFocus > 2 && focus === 0) return null;
     const seg = modeSegment(value, mode);
     if (seg) { const p = firstPair(seg); if (p) return p; }
     else if (/集束|非集束|通常/.test(String(value))) return null;
@@ -368,5 +396,6 @@ function fillSections(sections, wikiLines, jaToKo) {
 
 module.exports = {
   ATWIKI_KEY, buildIndex, firstPair, modeSegment, pickPair, koValue,
-  lookup, keyOf, fillSections, pairWeapons, lvBreakdown, HAS_NUM, isMetric, isContext, nrm, tailKey
+  lookup, keyOf, fillSections, pairWeapons, lvBreakdown, HAS_NUM, isMetric, isContext, nrm, tailKey,
+  dupModeSegment
 };

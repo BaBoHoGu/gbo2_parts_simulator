@@ -189,7 +189,18 @@ body:not(.view-select):not(.view-build):not(.view-gallery):not(.view-token):not(
 /* ---- ⑦ 게임 패치노트 ----
    좌: 패치 날짜 레일(고른 칸 크게 · 나머지 작게 · 미끄러져 가운데로)
    우: 위가 추가 기체, 아래가 밸런스 패치 기체 + 고른 기체의 변경 내역 */
-.screen-patch { display: flex; flex-direction: column; }
+/* 기체 정보 칸이 이 화면 **안에서** 뜬다 — 그 칸은 absolute 라 기준이 될 상자가 필요하다. */
+.screen-patch { display: flex; flex-direction: column; position: relative; }
+
+/* 패치노트에서 연 정보 칸. 날짜 레일은 가리지 않는다 — 어느 패치를 보던 중인지 남아야 한다. */
+body.pn-info .sel-info {
+  display: flex; left: 190px; right: 0; top: 0; bottom: 0; width: auto;
+  border-left: 1px solid var(--line); z-index: 60;
+}
+@media (max-width: 760px) {
+  /* 좁은 화면에서는 레일이 가로로 눕는다 — 왼쪽을 비워 둘 이유가 없다. */
+  body.pn-info .sel-info { left: 0; }
+}
 
 .pn-wrap {
   flex: 1; min-height: 0; display: grid;
@@ -206,9 +217,16 @@ body:not(.view-select):not(.view-build):not(.view-gallery):not(.view-token):not(
    다 들어가는 동안에는 내용만큼만 높아 위아래가 비지 않는다. */
 .pn-railbox {
   position: relative; overflow-y: auto; overflow-x: hidden; min-height: 0;
-  align-self: start; max-height: 100%; scrollbar-width: thin;
+  align-self: start; max-height: 100%;
   overscroll-behavior: contain;
+  /* 막대는 감추고 **굴리기는 그대로** 둔다(사용자 지시).
+     overflow 를 hidden 으로 바꾸면 휠까지 죽는다 — 막대만 안 보이게 해야 한다.
+     파이어폭스는 scrollbar-width, 크롬·웨브킷은 ::-webkit-scrollbar 로 감춘다.
+     막대가 없어지면 상자 안쪽 너비가 넓어지므로 칸 너비도 따라 넓어진다. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.pn-railbox::-webkit-scrollbar { width: 0; height: 0; }
 .pn-railbox.over::before, .pn-railbox.over::after {
   content: ''; position: absolute; left: 0; right: 0; height: 36px; z-index: 2;
   pointer-events: none;
@@ -3838,6 +3856,10 @@ body.info-open .sel-info { display: flex; }
 }
 .mi-wtag.t-stag { color: #e8c35a; background: rgba(232, 195, 90, .13); }
 .mi-wtag.t-stag2 { color: #f0907e; background: rgba(240, 144, 126, .13); }
+/* 조건부는 **늘 걸리는 것과 달리 보여야** 한다 — 같은 색이면 구별이 안 된다.
+   글자로도 「조건부 강경직」이라 적지만, 색까지 같으면 훑을 때 똑같아 보인다. */
+.mi-wtag.t-stag2.cond { color: #d8a08f; background: rgba(240, 144, 126, .08);
+  border: 1px dashed rgba(240, 144, 126, .45); }
 .mi-wtag.t-down { color: #f0907e; background: rgba(240, 144, 126, .2); }
 
 /* 누적치 내성 — 기본 → 최대. 최대는 조건이 붙은 스킬 하나를 켠 값이라

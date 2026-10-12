@@ -332,14 +332,59 @@ const ok = (label, cond, extra) => {
     offNames.every(n => !/커스텀 파츠|티켓|키트|리퀘스트/.test(n)),
     offNames.join(' / ') || '(없음)');
 
-  /* 벗어난 기체 경고는 **표 보기에서도** 보여야 한다 — 경고를 보기 뒤에 숨길 것이 아니다. */
-  await pg.evaluate(() => document.querySelector('#pickView button[data-v="table"]').click());
-  await sleep(600);
-  const offInTable = await pg.evaluate(() => {
-    const b = document.querySelector('#futureOff');
-    return !!b && b.getBoundingClientRect().height > 0;
+  /* 벗어난 기체 경고는 **표 보기에서도** 보여야 한다 — 경고를 보기 뒤에 숨길 것이 아니다.
+     ■ 전에는 **살아 있는 자료**에 기대어 「상자가 보이는가」만 봤다. 그래서 스팀 목록이
+       밀려 내려가 벗어난 품목이 0 이 된 날 배포가 멈췄다(2026-10-12). 비는 것이 **맞는
+       동작**이다 — `missedFromHistory` 는 스팀 목록이 안 닿는 옛날은 모른다고 비운다.
+       그러니 자가 **스스로 하나를 심어** 재야 한다. 자료가 어떻든 같은 답이 나온다.
+     심는 법: 같은 기체가 스팀에 **다른 날짜**로 나온 것처럼 만든다 — `splitPickups` 의
+     첫 가지(예상≠실제)가 걸린다. 자료를 받기 **전에** 가로채야 하므로,
+     window.GBO2_PICKUPS 에 setter 를 걸어 빌드가 심는 순간 한 건을 끼운다. */
+  const planted = await br.newPage();
+  await planted.setViewport({ width: 1500, height: 1100 });
+  await planted.evaluateOnNewDocument(() => {
+    let v;
+    Object.defineProperty(window, 'GBO2_PICKUPS', {
+      configurable: true,
+      get: () => v,
+      set: x => {
+        v = x;
+        try {
+          const p = (x && x.pickups) || [];
+          const mech = p.find(q => q && q.name && q.start);
+          if (!mech) return;
+          /* 예보의 날짜와 **다른** 날짜로 스팀에 나온 것처럼 */
+          x.steamNews = [{ name: mech.name, start: '2026-01-02', end: '2026-01-09',
+            tokens: 100, url: 'about:blank' }].concat(x.steamNews || []);
+          window.__심은기체 = mech.name;
+        } catch (e) { }
+      }
+    });
   });
-  ok('벗어남 경고는 표 보기에서도 보인다', offInTable);
+  await planted.goto(URL, { waitUntil: 'load', timeout: 180000 });
+  await sleep(2000);
+  const offInTable = await planted.evaluate(async () => {
+    const w = x => new Promise(r => setTimeout(r, x));
+    document.querySelector('#tokenBtn').click(); await w(1200);
+    const tb = document.querySelector('#pickView button[data-v="table"]');
+    if (tb) { tb.click(); await w(700); }
+    const b = document.querySelector('#futureOff');
+    const 이름 = [...document.querySelectorAll('.future-off-row .fo-nm')]
+      .map(e => (e.textContent || '').replace(/\s+/g, ''));
+    return { 심은기체: window.__심은기체 || null,
+      높이: b ? Math.round(b.getBoundingClientRect().height) : -1,
+      줄: document.querySelectorAll('.future-off-row').length,
+      이름, 보기: [...document.querySelectorAll('#pickView button')].map(x => x.dataset.v + (x.classList.contains('on') ? '(on)' : '')).join(' ') };
+  });
+  await planted.close();
+  /* **심은 그 기체**가 잡혀야 한다 — 줄 수만 세면 다른 경로(missedFromHistory)가
+     채운 것으로도 통과해, 「예상≠실제」 가지가 죽은 것을 못 잡는다(심어서 확인했다). */
+  const 심은 = String(offInTable.심은기체 || '').replace(/<[^>]*>/g, '').replace(/\s+/g, '');
+  ok('심은 **그 기체**가 벗어남으로 잡힌다 (예상≠실제 가지)',
+    !!심은 && (offInTable.이름 || []).some(n => n.indexOf(심은) >= 0 || 심은.indexOf(n) >= 0),
+    JSON.stringify(offInTable));
+  ok('벗어남 경고는 표 보기에서도 보인다',
+    offInTable.높이 > 0 && /table\(on\)/.test(offInTable.보기), JSON.stringify(offInTable));
   await pg.evaluate(() => document.querySelector('#pickView button[data-v="chart"]').click());
   await sleep(600);
 

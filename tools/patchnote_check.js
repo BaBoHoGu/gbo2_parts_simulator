@@ -309,9 +309,11 @@ if (!fs.existsSync(DATA)) {
       { 붙은줄: lvLines, 상위LV줄: lvWant });
     ok("LV 값이 둘 이상이고 숫자다", lvBad.length === 0, lvBad.slice(0, 4));
 
-    /* **틀린 채움 하나를 못 박는다.** 위키가 「集束：9%→8%　集束：80%→70%」처럼
-       모드 표시를 두 번 같게 적은 자료가 있다. 그대로 쓰면 집속 줄에 통상 값이 붙는다
-       — 화면에서 눈으로 잡았다. 다시 들어오면 여기서 운다. */
+    /* **값 하나를 못 박는다.** 위키가 「集束：9%→8%　集束：80%→70%」처럼 모드 표시를
+       두 번 같게 적은 자료가 있다. 한동안 **비워 뒀다**(어느 쪽인지 모른다고 보고).
+       그런데 **순서는 공식이 증언한다** — 같은 무장의 공식 공지가 【通常射撃】에
+       「9%」→「8%」 라 적었다. 즉 앞이 비집속, 뒤가 집속이다(사용자 확인 2026-10-12).
+       그래서 집속 줄은 **뒤의 80%→70%** 를 받아야 한다. 비면 여기서 운다. */
     const sg = ads.find(a => /실루엣 건담 개량형/.test(a.ko));
     if (sg) {
       let focusHeat = null;
@@ -323,7 +325,8 @@ if (!fs.existsSync(DATA)) {
           if (mode === '집속' && /히트율/.test(line)) focusHeat = (row.fill && row.fill[i]) || false;
         });
       }
-      ok('모드 표시가 어긋난 위키 값은 안 쓴다 (집속 히트율)', focusHeat === false || focusHeat === null,
+      ok('두 번 적힌 모드 값의 **뒤**를 집속으로 쓴다 (집속 히트율 80%→70%)',
+        !!(focusHeat && focusHeat.from === '80%' && focusHeat.to === '70%'),
         { 붙은값: focusHeat });
     }
 
@@ -369,9 +372,16 @@ if (!fs.existsSync(DATA)) {
     ok('찾는 모드가 없는 값은 안 쓴다',
       FILL.pickPair('集束：50% → 65%', '非集束') === null,
       FILL.pickPair('集束：50% → 65%', '非集束'));
-    ok('같은 모드 표시가 두 번이면 안 쓴다 (위키 오기)',
-      FILL.pickPair('集束：9% → 8% 集束：80% → 70%', '集束') === null,
-      FILL.pickPair('集束：9% → 8% 集束：80% → 70%', '集束'));
+    /* 같은 표시가 **두 번**이면 순서대로 가른다(앞=비집속, 뒤=집속).
+       **세 번 이상**이면 순서를 못 믿으니 비운다. */
+    ok('같은 모드 표시가 두 번이면 순서대로 가른다 (앞=비집속, 뒤=집속)',
+      JSON.stringify(FILL.pickPair('集束：9% → 8% 集束：80% → 70%', '集束')) === '["80%","70%"]'
+      && JSON.stringify(FILL.pickPair('集束：9% → 8% 集束：80% → 70%', '非集束')) === '["9%","8%"]',
+      [FILL.pickPair('集束：9% → 8% 集束：80% → 70%', '集束'),
+        FILL.pickPair('集束：9% → 8% 集束：80% → 70%', '非集束')]);
+    ok('세 번 이상이면 비운다 — 순서를 못 믿는다',
+      FILL.pickPair('集束：1% → 2% 集束：3% → 4% 集束：5% → 6%', '集束') === null,
+      FILL.pickPair('集束：1% → 2% 集束：3% → 4% 集束：5% → 6%', '集束'));
     ok('「秒」는 떼고 정수는 .0 으로 맞춘다',
       FILL.koValue('2秒') === '2.0' && FILL.koValue('225発/分') === '225발/분',
       [FILL.koValue('2秒'), FILL.koValue('225発/分')]);
@@ -614,9 +624,19 @@ if (!fs.existsSync(DATA)) {
       const b = document.querySelector("#pnRail").parentElement;
       const r = b.getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height / 2,
+        gutter: b.offsetWidth - b.clientWidth,
+        /* 헤드리스 크롬은 **오버레이 막대**를 써서, 막대를 되살려도 자리를 안 차지한다 —
+           자리만 재면 「막대를 도로 켰다」를 못 잡는다(심어서 확인했다).
+           감추라고 지정했는지도 계산된 값으로 함께 본다. */
+        hideStyle: getComputedStyle(b).scrollbarWidth,
         top: b.scrollTop, span: b.scrollHeight - b.clientHeight };
     });
     ok("레일에 굴릴 여지가 있다", seat.span > 20, seat);
+    /* 막대는 **감춰져 있어야** 한다 — 자리를 차지하면 칸이 좁아지고 보기에도 거슬린다.
+       「바깥 너비 − 안쪽 너비」가 0 이면 막대가 자리를 안 쓴다는 뜻이다.
+       이것만 재면 overflow 를 hidden 으로 바꿔도 통과하므로, 바로 아래 휠 검사와 짝이다. */
+    ok("스크롤 막대가 자리를 차지하지 않는다", seat.gutter === 0, { 막대자리: seat.gutter });
+    ok("스크롤 막대를 감추라고 지정돼 있다", seat.hideStyle === "none", { scrollbarWidth: seat.hideStyle });
     await pg.mouse.move(seat.x, seat.y);
     await pg.mouse.wheel({ deltaY: 300 });
     await sleep(600);
@@ -730,6 +750,85 @@ if (!fs.existsSync(DATA)) {
     ok("조정 없는 날에서 걸개를 켰다 (옮기기를 실제로 밟는다)", filt.startedOnAdd === true, filt);
     ok("걸러도 오른쪽이 비지 않는다 (가까운 조정 날로 옮긴다)", filt.adj > 0, filt);
     ok("걸개를 끄면 되돌아온다", filt.back === filt.n0, filt);
+
+    /* **추가 기체를 누르면 그 기체 정보가 뜬다.** 정보 칸은 기체 선택 화면에 붙어 있어서
+       그 화면으로 옮긴 뒤 열린다. 「열렸는가」만 보면 엉뚱한 기체가 떠도 통과하므로,
+       누른 이름이 패널 안에 있는지까지 본다. 가려진 것을 눌러도 click() 은 통하니
+       닿는지 먼저 보고 **진짜 마우스**로 누른다. */
+    const addDay = await pg.evaluate(async () => {
+      const items = [...document.querySelectorAll("#pnRail .pn-date")];
+      const t = items.find(e => /추가 [1-9]/.test(e.textContent));
+      if (!t) return null;
+      t.click();
+      await new Promise(r => setTimeout(r, 650));
+      return t.textContent.replace(/\s+/g, " ").trim();
+    });
+    ok("추가 기체가 있는 날짜를 찾았다", !!addDay, addDay);
+    const addHit = await pg.evaluate(() => {
+      const c = document.querySelector("#pnAdded .pn-card");
+      if (!c) return null;
+      c.scrollIntoView({ block: "center" });
+      const r = c.getBoundingClientRect();
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const top = document.elementFromPoint(x, y);
+      return { x, y, name: ((c.querySelector(".pn-nm") || {}).textContent || "").trim(),
+        reach: !!top && (top === c || c.contains(top)) };
+    });
+    ok("추가 기체 카드가 눌리는 자리에 있다", !!addHit && addHit.reach === true, addHit);
+    await pg.mouse.click(addHit.x, addHit.y);
+    await sleep(900);
+    const info = await pg.evaluate(() => {
+      const panel = document.querySelector("#selInfo");
+      const body = document.querySelector("#infoBody");
+      const q = panel.getBoundingClientRect();
+      const rail = document.querySelector("#pnRail").parentElement.getBoundingClientRect();
+      return {
+        at: panel.parentElement.id,
+        coversRail: q.left < rail.right - 2,
+        view: [...document.body.classList].filter(c => c.startsWith("view-")).join(","),
+        open: document.body.classList.contains("info-open"),
+        shown: !!body && !body.hidden && !!body.offsetParent,
+        text: (panel ? panel.textContent : "").replace(/\s+/g, " ").trim()
+      };
+    });
+    /* **패치노트 화면 안에서** 떠야 한다(사용자 지시) — 화면을 떠나면 보던 자리를 잃는다.
+       그 칸은 기체 선택 화면에 붙어 있어 요소를 옮겨 와야 한다. 옮겨졌는지까지 본다. */
+    ok("패치노트 화면을 떠나지 않는다", info.view === "view-patch", info);
+    ok("정보 칸이 패치 화면 안에 들어와 보인다",
+      info.open === true && info.shown === true && info.at === "screenPatch", info);
+    /* 날짜 레일은 가리지 않는다 — 어느 패치를 보던 중인지 남아야 한다. */
+    ok("정보 칸이 날짜 레일을 가리지 않는다", info.coversRail === false, info);
+    ok("누른 그 기체의 정보다", info.text.includes(addHit.name),
+      { 누른것: addHit.name, 본문앞: info.text.slice(0, 80) });
+
+    /* **닫아 둔다.** 정보 칸은 패치 화면을 덮으므로, 열어 둔 채 넘기면 뒤 검사가
+       조정 기체 카드를 못 누른다(실제로 12개가 그렇게 울었다).
+       닫으면 칸이 제자리로 돌아가는지도 함께 본다 — 안 돌아가면 기체 선택 화면이 망가진다. */
+    await pg.evaluate(() => document.querySelector('#infoClose').click());
+    await sleep(700);
+    const closed = await pg.evaluate(() => {
+      const p = document.querySelector('#selInfo');
+      return { at: p.parentElement.id || p.parentElement.className,
+        pnInfo: document.body.classList.contains('pn-info'),
+        infoOpen: document.body.classList.contains('info-open'),
+        cards: document.querySelectorAll('#pnAdjusted .pn-card, #pnAdded .pn-card').length };
+    });
+    ok('닫으면 정보 칸이 제자리로 돌아간다',
+      closed.at === 'sel-2col' && closed.pnInfo === false && closed.infoOpen === false, closed);
+
+    /* 패치노트로 돌아오면 **보던 날짜 그대로**여야 한다 — 처음으로 튕기면 다시 찾아야 한다. */
+    await pg.evaluate(() => document.querySelector("#patchBtn").click());
+    await sleep(900);
+    const backDay = await pg.evaluate(() =>
+      ((document.querySelector("#pnRail .pn-date.on") || {}).textContent || "").replace(/\s+/g, " ").trim());
+    ok("패치노트로 돌아오면 보던 날짜 그대로다", backDay === addDay, { 전: addDay, 후: backDay });
+    /* **상태를 되돌려 둔다.** 여기서 고른 날은 조정이 없을 수 있어, 뒤 검사가
+       조정 기체 카드를 못 찾고 터졌다(실제로 그랬다). 조정 있는 날로 옮겨 놓고 넘긴다. */
+    await pg.evaluate(async () => {
+      const t = [...document.querySelectorAll('#pnRail .pn-date')].find(e => /조정/.test(e.textContent));
+      if (t) { t.click(); await new Promise(r => setTimeout(r, 650)); }
+    });
+    await sleep(500);
     ok('그러려면 레일이 굴러간다 (scrollTop 이 바뀐다)',
       slid.transform !== before && slid.transform > 0,
       { 전: before, 후: slid.transform });
@@ -880,6 +979,84 @@ if (!fs.existsSync(DATA)) {
     }));
     ok('돌아가기가 패치노트 화면을 닫는다',
       back.patchShown === false && !/view-patch/.test(back.cls), back);
+
+    /* ── 패치노트에서 연 기체 정보 칸을 **제자리로 돌려놓는가** ─────────────
+       그 칸(#selInfo)은 패치노트에서 열 때 #screenPatch 안으로 옮겨진다. 되돌리지 않고
+       나가면 조상이 display:none 이라 **기체 선택 화면에서 정보 칸이 영영 안 열린다.**
+       실측으로 그랬다: 「‹ 돌아가기」 뒤 ⓘ 를 눌러도 폭 0 — 앱을 새로 켜야 살아났다.
+       화면을 눈으로 확인하는 자가 아니면 못 잡는 종류다. */
+    const home = await pg.evaluate(async () => {
+      const w = x => new Promise(r => setTimeout(r, x));
+      const P = () => document.querySelector('#selInfo').parentNode.id;
+      const 집 = P();                                  // 떠나기 전 제자리
+      document.querySelector('#patchBtn').click(); await w(900);
+      const card = document.querySelector('#pnAdded .pn-card.pick');
+      if (!card) return { err: '추가 기체 카드(.pick) 없음' };
+      card.click(); await w(600);
+      const 열림 = { 부모: P(), pnInfo: document.body.classList.contains('pn-info'),
+        폭: Math.round(document.querySelector('#selInfo').getBoundingClientRect().width) };
+      document.querySelector('#patchBack').click(); await w(800);
+      const 뒤 = { 부모: P(), pnInfo: document.body.classList.contains('pn-info'),
+        infoOpen: document.body.classList.contains('info-open') };
+      /* 선택 화면의 ⓘ 로 정보를 열어 본다 — **보여야** 한다 */
+      const ib = [...document.querySelectorAll('#msList .ms-card button')].find(b => /ms-info/.test(b.className));
+      let 다시 = null;
+      if (ib) { ib.click(); await w(800);
+        const el = document.querySelector('#selInfo');
+        다시 = { 부모: P(), 폭: Math.round(el.getBoundingClientRect().width) }; }
+      return { 집, 열림, 뒤, 다시 };
+    });
+    ok('패치노트 안에서 기체 정보 칸이 뜬다', !home.err && home.열림 && home.열림.폭 > 0
+      && home.열림.부모 === 'screenPatch' && home.열림.pnInfo === true, home.열림 || home);
+    ok('돌아가면 정보 칸이 **제자리로** 돌아간다',
+      !!home.뒤 && home.뒤.부모 === home.집 && home.뒤.pnInfo === false, { 집: home.집, 뒤: home.뒤 });
+    ok('그 뒤 기체 선택 화면의 ⓘ 가 **보인다** (죽지 않았다)',
+      !!home.다시 && home.다시.폭 > 0, home.다시);
+
+    /* 패치노트에 **머무는 동안**에는 되돌리지 않는다 — 📰 를 다시 눌러도
+       보던 정보 칸이 그대로 있어야 한다. 되돌리는 조건을 「화면을 떠날 때」로
+       좁힌 이유가 이것이다(안 좁히면 여기서 칸이 닫힌다). */
+    const stay = await pg.evaluate(async () => {
+      const w = x => new Promise(r => setTimeout(r, x));
+      if (document.body.classList.contains('info-open'))
+        { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await w(500); }
+      document.querySelector('#patchBtn').click(); await w(900);
+      const c = document.querySelector('#pnAdded .pn-card.pick');
+      if (!c) return { err: '추가 기체 카드 없음' };
+      c.click(); await w(600);
+      document.querySelector('#patchBtn').click(); await w(800);   // 다시 누른다
+      const el = document.querySelector('#selInfo');
+      return { 부모: el.parentNode.id, 폭: Math.round(el.getBoundingClientRect().width),
+        infoOpen: document.body.classList.contains('info-open') };
+    });
+    ok('📰 를 다시 눌러도 보던 정보 칸이 남는다',
+      !stay.err && stay.부모 === 'screenPatch' && stay.폭 > 0 && stay.infoOpen === true, stay);
+
+    /* ── 뒤로가기(Esc)로도 나갈 수 있는가 ─────────────────────────────
+       navBack 목록에 patch 가지가 **없었다** — 토큰 화면과 똑같은 함정을 다시 밟았다.
+       안드로이드에서는 return false 로 떨어져 앱이 닫힌다. */
+    const esc = await pg.evaluate(async () => {
+      const w = x => new Promise(r => setTimeout(r, x));
+      const V = () => (document.body.className.match(/view-[a-z]+/) || [])[0];
+      if (document.body.classList.contains('info-open'))
+        { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await w(500); }
+      document.querySelector('#patchBtn').click(); await w(900);
+      const 전 = V();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await w(700);
+      const 후 = V();
+      /* 정보 칸이 열려 있으면 Esc 는 **그것부터** 닫고 화면엔 남아야 한다 */
+      document.querySelector('#patchBtn').click(); await w(900);
+      const c = document.querySelector('#pnAdded .pn-card.pick');
+      if (c) { c.click(); await w(600); }
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await w(700);
+      const 정보닫힘 = { view: V(), infoOpen: document.body.classList.contains('info-open'),
+        부모: document.querySelector('#selInfo').parentNode.id };
+      return { 전, 후, 정보닫힘 };
+    });
+    ok('Esc 로 패치노트 화면을 나간다 (안드로이드 뒤로가기)',
+      esc.전 === 'view-patch' && esc.후 !== 'view-patch', esc);
+    ok('정보 칸이 열려 있으면 Esc 는 그것부터 닫는다 (화면엔 남는다)',
+      esc.정보닫힘.view === 'view-patch' && esc.정보닫힘.infoOpen === false, esc.정보닫힘);
 
     await br.close();
   }

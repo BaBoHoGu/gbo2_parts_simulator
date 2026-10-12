@@ -1270,6 +1270,13 @@
 
   function setView(view) {
     const changed = state.view !== view;
+    /* ■ 패치노트 화면을 **떠나면** 옮겨 둔 기체 정보 칸을 제자리로 되돌린다.
+       그 칸(#selInfo)은 패치노트에서 열 때 #screenPatch 안으로 옮겨진다. 되돌리지 않고
+       나가면 조상이 display:none 이라 **기체 선택 화면에서 정보 칸이 영영 안 열린다**
+       (실측: 「‹ 돌아가기」 뒤 ⓘ 를 눌러도 폭 0). 출구는 돌아가기·뒤로가기·스테퍼로
+       여럿이라 하나씩 적으면 또 빠뜨린다 — 모든 출구가 지나는 **여기 한 곳**에 둔다.
+       패치노트에 머무는 동안(📰 를 다시 누르는 것 포함)에는 건드리지 않는다. */
+    if (view !== 'patch' && pnInfoHome) closeInfo();
     state.view = view;
     // 선택 화면으로 "돌아올 때"만 목록을 갱신 (초기 렌더와 중복 실행하지 않는다)
     // 최근/즐겨찾기 칩의 개수 배지도 함께 갱신한다(방금 고른 기체가 최근에 반영되도록).
@@ -6441,6 +6448,43 @@
 
   const pnFind = d => PN.find(p => p.date === d) || null;
 
+  /* 기체 정보 칸을 **패치노트 화면 안에서** 띄운다(사용자 지시).
+
+     그 칸(#selInfo)은 기체 선택 화면에 붙어 있고, 안 보는 화면은 display:none 이라
+     그대로 두면 아무것도 안 보인다 — 조상이 none 이면 자식이 fixed 여도 안 그려진다.
+     그래서 **요소를 옮긴다.** 닫거나 파츠로 넘어갈 때 제자리에 되돌린다 —
+     안 되돌리면 기체 선택 화면의 정보 칸이 영영 사라진다. */
+  let pnInfoHome = null;        // 원래 있던 자리(되돌릴 때 쓴다)
+
+  function pnOpenInfo(m) {
+    const panel = $('#selInfo'), screen = $('#screenPatch');
+    if (!panel || !screen || !m) return;
+    if (!pnInfoHome) pnInfoHome = { parent: panel.parentNode, next: panel.nextSibling };
+    screen.appendChild(panel);
+    document.body.classList.add('pn-info');
+    openInfo(m);
+  }
+
+  /** 옮겨 둔 정보 칸을 제자리로. 옮긴 적이 없으면 아무 일도 안 한다. */
+  function pnRestoreInfo() {
+    if (!pnInfoHome) return;
+    const panel = $('#selInfo');
+    if (panel) pnInfoHome.parent.insertBefore(panel, pnInfoHome.next);
+    pnInfoHome = null;
+    document.body.classList.remove('pn-info');
+  }
+
+  /** 줄기 이름(ガブスレイ)으로 기체를 찾는다. **가장 낮은 LV** 을 고른다 —
+      정보 칸은 LV 하나를 받고, 목록에서도 낮은 LV 이 대표로 나온다. */
+  function pnFindMs(stem) {
+    if (!stem) return null;
+    const hit = msData.filter(m => String(m.MS名).replace(/_LV\d+$/, '') === stem);
+    if (!hit.length) return null;
+    return hit.sort((x, y) =>
+      (Number((String(x.MS名).match(/_LV(\d+)$/) || [])[1] || 0))
+      - (Number((String(y.MS名).match(/_LV(\d+)$/) || [])[1] || 0)))[0];
+  }
+
   /** 지금 레일에 세울 날짜들 — 걸개가 켜져 있으면 조정이 있는 날만 */
   const pnList = () => pnBalOnly ? PN.filter(p => (p.adjusted || []).length) : PN;
 
@@ -6570,7 +6614,19 @@
         ? '이 패치 주기에 기록된 추가 기체가 없습니다 (기록을 쌓기 전 패치일 수 있습니다)'
         : '패치를 고르세요'));
     } else {
-      for (const a of list) added.append(pnMsCard(a.ms, a.why === 'newLv' ? 'LV 추가' : '신규', a.at));
+      for (const a of list) {
+        const c = pnMsCard(a.ms, a.why === 'newLv' ? 'LV 추가' : '신규', a.at);
+        /* 누르면 **기체 정보**를 띄운다(사용자 지시). 정보 칸은 기체 선택 화면에 붙어 있어서
+           그 화면으로 옮긴 뒤 연다. 보던 패치 날짜는 그대로 남으므로, 「📰 패치노트」를
+           다시 누르면 같은 자리로 돌아온다. */
+        const m = pnFindMs(a.ms);
+        if (m) {
+          c.classList.add('pick');
+          c.title = T.msName(m.MS名) + ' 정보 보기';
+          c.onclick = () => pnOpenInfo(m);
+        }
+        added.append(c);
+      }
     }
 
     const ads = (p && p.adjusted) || [];
@@ -6699,9 +6755,13 @@
        정작 필요한 숫자는 번역이 필요 없다. ▲▼ 는 위키가 단 표식이다. */
     if ((a.wiki || []).length) {
       const d = el('details', 'pn-wiki');
-      d.append(el('summary', '', '상세 수치 — 위키 기록 (일본어 원문)'));
+      /* 한국어로 옮겨 적는다. 공식이 **안 적은 변화까지** 여기 들어 있다 —
+         공식 389개, 위키 423개(2026-10-10 실측). 옮기기 전에는 일본어라 접어 둘 수밖에 없었다. */
+      d.append(el('summary', '', '상세 수치 — 위키 기록'));
       for (const w of a.wiki) {
-        const ln = el('div', 'pn-wl d' + Math.min(3, w.depth), w.text);
+        const ln = el('div', 'pn-wl d' + Math.min(3, w.depth), w.ko || w.text);
+        /* 원문을 숨기지 않는다 — 옮긴 말이 미덥지 않을 때 확인할 길이 있어야 한다. */
+        if (w.ko && w.ko !== w.text) ln.title = w.text;
         if (w.buff === true) ln.classList.add('up');
         if (w.buff === false) ln.classList.add('down');
         d.append(ln);
@@ -7589,7 +7649,8 @@
       const note = (w.info && w.info['備考']) || '';
       const sTxt = String((w.mods && w.mods.stagger) || '') + ' ' + note;
       // 강경직 = 大よろけ / 強よろけ 유발 무장 (위키 표기). 일반 경직은 よろけ.
-      const react = /大よろけ|強よろけ/.test(sTxt) ? '강경직'
+      const s2 = stag2Of(sTxt);
+      const react = s2 ? (s2.cond ? '조건부 강경직' : '강경직')
         : /よろけ有|ひるみ有|転倒|ダウン/.test(sTxt) ? '경직' : null;
       // 격투 변형(기본/헤비어택 등)·방향별 배율(N격/횡격/하격…) — meleeDamage 의 ccd 로 적용
       const variants = (w.melee && w.melee.variants && w.melee.variants.length) ? w.melee.variants : null;
@@ -8170,7 +8231,7 @@
     const hd = el('div', 'pietan-rhd');
     hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
     hd.append(el('b', 'pietan-rnm', T.weaponName(w.name)));
-    if (w.react) hd.append(el('span', 'pietan-react' + (w.react === '강경직' ? ' strong' : ''), w.react));
+    if (w.react) hd.append(el('span', 'pietan-react' + (/강경직/.test(w.react) ? ' strong' : ''), w.react));
     // 상대 무장의 고정 피해·디버프 — 직격과 별개로 더 들어가는 몫
     if (inFx) {
       const c = el('span', 'w-fixed', '고정 ' + inFx.total.toLocaleString());
@@ -8300,7 +8361,7 @@
     }
     box.append(el('div', 'pietan-foot',
       '※ 공격 항 실피해식[Wp·Att·(방향)·Pr] + 방어 스킬 경감. 방어보정은 내구 지표(Def). 蓄積 경직은 일반 경직 기준(국부·시간 감쇠 미반영).'
-      + (w.react === '강경직' ? ' 이 무장은 직격 시 강경직(大よろけ).' : '')));
+      + (/강경직/.test(w.react) ? (' 이 무장은 직격 시 ' + w.react + '(大よろけ).') : '')));
   }
 
   /** 내 무장 → 상대 격파까지 발수 (TTK 역방향). 상대의 파츠·체크한 방어 스킬로 피해가 깎인다. */
@@ -9064,6 +9125,7 @@
   /** 기체 정보 칸을 닫는다. 고른 기체는 그대로 둔다 — 닫았다고 선택까지 풀면
    *  다시 열었을 때 빈 칸이 나와 당황스럽다. */
   function closeInfo() {
+    pnRestoreInfo();          // 패치노트에서 열었으면 칸을 제자리에 돌려놓는다
     document.body.classList.remove('info-open');
     infoMs = null;
     renderMsList();          // 카드 테두리도 같이 푼다
@@ -9113,6 +9175,7 @@
 
   /** 「파츠 고르기」 — 오른쪽 칸에서 보던 LV 그대로 파츠 화면으로 넘어간다. */
   function infoGoBuild() {
+    pnRestoreInfo();          // 화면을 떠나기 전에 칸을 제자리로
     if (!infoMs) return;
     selectMs(infoMs);
     setView('build');
@@ -9289,11 +9352,46 @@
    * 두 화면이 다른 말을 하지 않는다.
    * 강경직이 있으면 경직은 적지 않는다 — 둘 다 붙으면 줄만 길어진다.
    */
+  /**
+   * 이 무장이 **강경직**을 거는가, 그리고 그게 **조건부인가**.
+   *   null · { cond: false } · { cond: true }
+   *
+   * 備考 는 ` / ` 로 끊어 적는데, 조건과 효과가 **다른 조각**에 있을 수 있다:
+   *     … / 공격 대상이 공중에 있는 경우, 다음과 같은 효과를 발휘 / 강경직 있음 / …
+   * 조각 하나만 보면 「강경직 있음」이라 조건이 안 보인다(F89 가 그랬다).
+   * 그래서 앞 조각이 연 조건을 **물려받아** 본다.
+   *
+   * 한국어·일본어를 다 받는다 — 기체 정보는 한글 備考 를, 피탄 시뮬은 원문을 본다.
+   * DB 전체로는 148개 중 33개가 조건부다(집속 30 · 공중의 적 3, 2026-10-10 실측).
+   */
+  const STAG2 = /강경직|大よろけ|強よろけ/;
+  /** 뒤따르는 조각들에 걸리는 조건을 **여는** 조각 */
+  const STAG2_OPENS = /(?:경우|때|중|시|場合|時)\s*[,、]?\s*(?:다음과 같은|아래|以下の)\s*(?:효과|効果)/;
+  /** 조각 **자체**가 품은 조건 */
+  const STAG2_SELF = /집속|集束|발동\s*중|発動中|변형|変形|경우|場合|때|이상|중일/;
+  function stag2Of(text) {
+    const t = String(text || "");
+    if (!STAG2.test(t)) return null;
+    let open = false, found = false, cond = false;
+    for (const seg of t.split(/\s*\/\s*/)) {
+      if (STAG2_OPENS.test(seg)) { open = true; continue; }
+      if (!STAG2.test(seg)) continue;
+      found = true;
+      if (STAG2_SELF.test(seg) || open) cond = true;
+    }
+    /* 조각으로 안 끊긴 글(피탄 시뮬은 두 값을 이어 붙여 넘긴다)이면 통째로 본다. */
+    if (!found) return { cond: STAG2_SELF.test(t) };
+    return { cond };
+  }
+
   function weaponTagsOf(w) {
     const t = noteText((w.info && w.info['備考']) || '');
     if (!t) return [];
     const out = [];
-    if (/강경직/.test(t)) out.push({ t: '강경직', cls: 't-stag2' });
+    const s2 = stag2Of(t);
+    /* 조건부면 **조건부라고 적는다**(사용자 지시) — 그냥 「강경직」으로 두면
+       늘 강경직인 무장과 구별이 안 된다(F89·걍 개량형은 공중의 적에게만 걸린다). */
+    if (s2) out.push({ t: s2.cond ? '조건부 강경직' : '강경직', cls: 't-stag2' + (s2.cond ? ' cond' : '') });
     else if (/경직\s*있음|즉시\s*발사\s*경직|집속\s*시\s*경직/.test(t)) out.push({ t: '경직', cls: 't-stag' });
     if (/다운/.test(t)) out.push({ t: '다운', cls: 't-down' });
     return out;
@@ -10554,6 +10652,14 @@
       if (state.view === 'codex') { openCodex(false); return true; }
       if (state.view === 'gallery') { openGallery(false); return true; }
       if (state.view === 'plan') { openPlan(false); return true; }
+      /* 패치노트 화면도 **여기 없었다** — 토큰 화면과 똑같은 함정을 다시 밟았다(실측:
+         Esc 전후 모두 view-patch). 안드로이드에서는 return false 로 떨어져 앱이 닫힌다.
+         정보 칸이 열려 있으면 **그것부터** 닫는다 — 한 번에 화면까지 나가면
+         무엇이 닫힌 건지 알 수 없다. */
+      if (state.view === 'patch') {
+        if (document.body.classList.contains('info-open')) { closeInfo(); return true; }
+        openPatch(false); return true;
+      }
       /* 토큰 화면이 여기 **없었다** — 뒤로가기를 누르면 돌아가지 않고 앱이 닫혔다
          (돌아가는 길이 「‹ 돌아가기」 버튼 하나뿐이었다). 화면을 하나 더 붙이면서 같이 고친다. */
       if (state.view === 'token') { setView(AUX_BACK); return true; }

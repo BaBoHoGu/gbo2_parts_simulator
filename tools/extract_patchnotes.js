@@ -26,8 +26,12 @@ const { stripDisambig } = require('./lib/janame.js');
 const P = require('./lib/patchnote_parse.js');
 const W = require('./lib/wiki_history.js');
 const FILL = require('./lib/patchnote_fill.js');
+const JPF = require('./lib/patchnote_jp.js');
+const WTR = require('./lib/wiki_tr.js');
 
 const BASE = 'https://bo2.ggame.jp/kr/';
+/* 같은 공지의 **일본어판**. 위키 이력도 일본어라, 무장 이름을 번역하지 않고 맞댈 수 있다. */
+const JP_BASE = 'https://bo2.ggame.jp/jp/';
 const DEST = path.join(ROOT, 'data', 'patchnotes.json');
 const arg = k => (process.argv.find(a => a.startsWith('--' + k + '=')) || '').split('=')[1];
 const MONTHS = Number(arg('months')) || 6;
@@ -77,18 +81,21 @@ const NM = (() => {
   return ko => map.get(norm(ko)) || null;
 })();
 
-/** 공지 목록에서 「유닛 관련 조정」 글. 한 패치가 타입별로 여러 글일 수 있다(실측: 2026-05-28). */
-async function findNotices() {
+/** 공지 목록에서 「유닛 관련 조정」 글. 한 패치가 타입별로 여러 글일 수 있다(실측: 2026-05-28).
+ *  일본어판은 같은 틀에 제목만 다르다(실측: /jp/ 목록이 /kr/ 과 같은 HTML). */
+const TITLE = { kr: /유닛\s*(관련\s*)?조정/, jp: /ユニット\s*(関連の)?調整/ };
+async function findNotices(lang) {
+  const base = lang === 'jp' ? JP_BASE : BASE;
   const now = new Date();
   const seen = new Map();
   for (let i = 0; i < MONTHS; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const ym = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0');
-    const h = await fetchWikiUrl(BASE + 'info/?cat=0&m=' + ym);
+    const h = await fetchWikiUrl(base + 'info/?cat=0&m=' + ym);
     if (!h) { console.log('  ' + ym + ' 목록을 받지 못했습니다.'); continue; }
     for (const m of h.matchAll(/\?p=(\d+)[\s\S]{0,400}?class="date">([\d.]+)<[\s\S]{0,400}?class="titArticle">([\s\S]*?)<\/span>/g)) {
       const title = m[3].replace(/<[^>]+>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
-      if (!/유닛\s*(관련\s*)?조정/.test(title)) continue;
+      if (!TITLE[lang || 'kr'].test(title)) continue;
       if (m[2].replace(/\./g, '-') < SINCE) continue;
       if (!seen.has(m[1])) seen.set(m[1], { id: m[1], date: m[2].replace(/\./g, '-'), title });
     }
@@ -124,8 +131,47 @@ function realAddDate(ms, ourDate) {
 
 (async () => {
   console.log('■ 공식 한국어 패치노트를 확인합니다… (최근 ' + MONTHS + '개월)');
-  const notices = await findNotices();
+  const notices = await findNotices('kr');
   if (!notices.length) { console.log('  유닛 조정 공지를 찾지 못해 건너뜁니다.'); return; }
+
+  /* ── 같은 공지의 **일본어판**을 함께 받는다 ──────────────────────────
+     위키 이력은 일본어다. 한국어 공지와 맞대려면 무장 이름을 사전으로 옮겨야 하는데
+     그 사전에 없는 이름이 많아 거기서 막혔다(실측 112/166). 일본어판을 거치면
+     번역이 아니라 표기 통일만 남는다(159/166). 공식은 KR/JP 를 같은 틀로 찍어 내므로
+     `▼N機目▼` 순번으로 자리가 맞는다 — 기체·섹션·행·줄까지 실측으로 전부 1:1 이었다.
+     한 날짜에 글이 여러 개면 **번호 순서**로 짝짓고, 개수가 다르면 그 날짜는 쓰지 않는다. */
+  console.log('■ 같은 공지의 일본어판을 확인합니다…');
+  const jpNotices = await findNotices('jp');
+  const jpByDate = new Map();
+  for (const a of jpNotices) {
+    if (!jpByDate.has(a.date)) jpByDate.set(a.date, []);
+    jpByDate.get(a.date).push(a);
+  }
+  const krByDate = new Map();
+  for (const a of notices) {
+    if (!krByDate.has(a.date)) krByDate.set(a.date, []);
+    krByDate.get(a.date).push(a);
+  }
+  const jpOf = new Map();              // KR 글 id → JP 글 id
+  for (const [date, ks] of krByDate) {
+    const jsx = jpByDate.get(date) || [];
+    if (!jsx.length) { console.log('  · ' + date + ' 일본어판이 없습니다 — 한국어만으로 채웁니다.'); continue; }
+    if (jsx.length !== ks.length) { console.log('  ⚠ ' + date + ' 글 수가 다릅니다(KR ' + ks.length + ' / JP ' + jsx.length + ') — 이 날짜는 한국어만으로 채웁니다.'); continue; }
+    const kk = [...ks].sort((x, y) => Number(x.id) - Number(y.id));
+    const jj = [...jsx].sort((x, y) => Number(x.id) - Number(y.id));
+    for (let i = 0; i < kk.length; i++) jpOf.set(kk[i].id, jj[i].id);
+  }
+  const jpCache = new Map();
+  const jpSectionsOf = async (krId, idx) => {
+    const jid = jpOf.get(krId);
+    if (!jid) return null;
+    if (!jpCache.has(jid)) {
+      const h = await fetchWikiUrl(JP_BASE + 'info/?p=' + jid);
+      jpCache.set(jid, h && P.looksLikePatchnote(h) ? P.parseNotice(h) : null);
+    }
+    const arr = jpCache.get(jid);
+    return arr && arr[idx] ? arr[idx] : null;
+  };
 
   const byDate = new Map();   // date → { date, ver, articles[], adjusted[], added[] }
   const ent = d => {
@@ -136,6 +182,7 @@ function realAddDate(ms, ourDate) {
   const unmatched = [];
   let wikiHit = 0, wikiMiss = [];
   let fillOk = 0, fillTry = 0;
+  let jpUsed = 0; const jpSkip = [];
   for (const a of notices) {
     const html = await fetchWikiUrl(BASE + 'info/?p=' + a.id);
     if (!html) { console.log('  ⚠ p=' + a.id + ' 를 받지 못했습니다.'); continue; }
@@ -144,16 +191,33 @@ function realAddDate(ms, ourDate) {
     e.articles.push({ id: a.id, title: a.title });
     const ver = (html.match(/ver\.([\d.]+)/) || [])[1];
     if (ver && !e.ver) e.ver = ver;
-    for (const u of P.parseNotice(html)) {
+    const krUnits = P.parseNotice(html);
+    for (let ui = 0; ui < krUnits.length; ui++) {
+      const u = krUnits[ui];
       const ja = NM(u.name);
       if (!ja) unmatched.push(a.date + ' 「' + u.name + '」');
       /* 위키에서 **그 날짜의 조정 내역**을 가져온다 — 공식이 생략한 수치가 여기 있다. */
       const id = ja ? pageOf.get(ja) : null;
-      const wiki = id ? W.changesOn(id, a.date) : null;
+      /* 위키 이력을 한국어로 옮겨 함께 담는다. **공식 표기가 이긴다** —
+         사전에 없는 말은 원문 그대로 남는다(지어내지 않는다). */
+      const wiki = WTR.trLines(id ? W.changesOn(id, a.date) : null);
       if (wiki && wiki.length) wikiHit++; else if (ja) wikiMiss.push(a.date + ' ' + u.name);
       /* 공식이 **수치를 안 적은 줄**에 위키 값을 단다. 공식 문구는 그대로 두고
-         나란한 `fill` 배열에 담는다 — 화면에서 출처가 갈려 보이게 하려는 것이다. */
-      const f = FILL.fillSections(u.sections, wiki, jaToKo);
+         나란한 `fill` 배열에 담는다 — 화면에서 출처가 갈려 보이게 하려는 것이다.
+
+         ■ **일본어판을 거친다.** 둘 다 일본어라 무장 이름이 번역 없이 붙는다.
+           실측(2026-10-12, 3개 날짜 158줄): 한국어 경로 136 / 일본어 경로 154.
+           게다가 한국어 경로가 **틀리게 채운 자리 셋**을 바로잡는다 —
+           리미터 해제에 통상 값, 【헤비 어택】에 통상 격투 값(F89·기라 줄루).
+         ■ 자리가 어긋나면 손대지 않고 한국어 경로로 물러선다. 틀린 수치는 없는 것만 못하다. */
+      const jpUnit = await jpSectionsOf(a.id, ui);
+      let f = null;
+      if (jpUnit && wiki && wiki.length) {
+        const r = JPF.fillByJp(u.sections, jpUnit.sections, wiki);
+        if (r.skipped) jpSkip.push(a.date + ' ' + u.name);
+        else { f = r; jpUsed++; }
+      }
+      if (!f) f = FILL.fillSections(u.sections, wiki, jaToKo);
       fillOk += f.filled; fillTry += f.tried;
       e.adjusted.push({ ko: u.name, ms: ja, sections: f.sections, intent: u.intent, ref: u.ref, wiki });
     }
@@ -208,8 +272,17 @@ function realAddDate(ms, ourDate) {
   const tot = patches.flatMap(p => p.adjusted || []).length;
   console.log('\n  참조 데이터 ' + withRef + '/' + tot + '기 · 그중 「조정 후」까지 들어온 것 ' + withAfter + '기');
   console.log('  위키 수치 ' + wikiHit + '/' + tot + '기');
+  {
+    const all = patches.flatMap(p => (p.adjusted || []).flatMap(a => a.wiki || []));
+    const left = all.filter(x => WTR.hasJa(x.ko != null ? x.ko : x.text)).length;
+    console.log('  위키 이력 한글화 ' + (all.length - left) + '/' + all.length
+      + '  (' + (all.length ? ((all.length - left) / all.length * 100).toFixed(1) : 0) + '%)');
+    if (left) console.log('    남은 일본어 ' + left + '줄 — data/i18n/wiki_terms.json 에 용어를 더하세요');
+  }
   console.log('  공식이 생략한 수치를 위키에서 채운 줄 ' + fillOk + '/' + fillTry
     + '  (' + (fillTry ? (fillOk / fillTry * 100).toFixed(1) : 0) + '%)');
+  console.log('  그 가운데 일본어판을 거친 기체 ' + jpUsed + '기'
+    + (jpSkip.length ? ' · 자리가 어긋나 한국어로 물러선 기체 ' + jpSkip.length + '기: ' + jpSkip.join(', ') : ''));
   console.log('  추가 기체 날짜 — 위키 날짜로 고친 것 ' + fixed + '건 · 우리 날짜를 그대로 쓴 것 ' + kept + '건');
   if (wikiMiss.length) console.log('  위키 수치를 못 찾은 기체 (앞 6): ' + wikiMiss.slice(0, 6).join(' | '));
   if (unmatched.length) {

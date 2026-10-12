@@ -161,25 +161,34 @@ function translate(name) {
     .trim();
 }
 
-/* ---------- 실행 ---------- */
-const names = new Set();
-for (const page of Object.values(weapons)) for (const w of page.weapons) names.add(w.name);
+/* 규칙만 쓰고 싶은 곳이 있다(위키 이력 한글화). 내보내 두고,
+   **직접 돌렸을 때만** 사전을 다시 만든다 — require 가 파일을 덮으면 안 된다. */
+module.exports = { translate, translitKana };
 
-const dict = {};
-const leftover = [];
-for (const n of [...names].sort()) {
-  const ko = override[n] || translate(n);
-  dict[n] = ko;
-  if (/[ぁ-んァ-ヶ一-龯]/.test(ko)) leftover.push(n + ' → ' + ko);
+function main() {
+  /* ---------- 실행 ---------- */
+  const names = new Set();
+  for (const page of Object.values(weapons)) for (const w of page.weapons) names.add(w.name);
+
+  const dict = {};
+  const leftover = [];
+  for (const n of [...names].sort()) {
+    const ko = override[n] || translate(n);
+    dict[n] = ko;
+    if (/[ぁ-んァ-ヶ一-龯]/.test(ko)) leftover.push(n + ' → ' + ko);
+  }
+
+  const dest = path.join(I18N, 'weapons.json');
+  fs.writeFileSync(dest, JSON.stringify(dict, null, 1));
+
+  const done = names.size - leftover.length;
+  console.log(`무장명 ${names.size}종 → 한글 ${done}종 (${(done / names.size * 100).toFixed(1)}%)`);
+  console.log('→', path.relative(process.cwd(), dest), (fs.statSync(dest).size / 1024).toFixed(0) + 'KB');
+  if (leftover.length) {
+    console.log(`\n일본어가 남은 항목 ${leftover.length}건 (weapon_terms.json 에 용어를 더하면 줄어듭니다)`);
+    console.log('  ' + leftover.slice(0, 20).join('\n  '));
+  }
+
 }
 
-const dest = path.join(I18N, 'weapons.json');
-fs.writeFileSync(dest, JSON.stringify(dict, null, 1));
-
-const done = names.size - leftover.length;
-console.log(`무장명 ${names.size}종 → 한글 ${done}종 (${(done / names.size * 100).toFixed(1)}%)`);
-console.log('→', path.relative(process.cwd(), dest), (fs.statSync(dest).size / 1024).toFixed(0) + 'KB');
-if (leftover.length) {
-  console.log(`\n일본어가 남은 항목 ${leftover.length}건 (weapon_terms.json 에 용어를 더하면 줄어듭니다)`);
-  console.log('  ' + leftover.slice(0, 20).join('\n  '));
-}
+if (require.main === module) main();
