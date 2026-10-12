@@ -278,12 +278,36 @@ export function pickTop(list, { patched = false, now = Date.now(), take = TAKE, 
   const rank = (a, b) => (isPreferred(b, rules) - isPreferred(a, rules))
     || (Number(b.views || 0) - Number(a.views || 0));
 
+  /* ■ 최신 자리는 **새것 순**으로 채운다 (2026-10-12).
+     여태 최신 자리까지 **조회수 순**으로 채웠다. 그래서 「최신 자리」가 실은
+     「최신 중 조회수 높은 것」이었고, **갓 올라온 영상이 가장 먼저 잘렸다** —
+     보험이 노린 바로 그 영상이다. 보험(칸 4→6)은 그 순서를 고치지 않고
+     기회를 둘 더 준 것뿐이라, 보험이 끝나면 증상이 돌아왔다(사용자가 짚었다).
+
+     실측(2026-10-12, `?why=1` 로 받아 둔 것만 읽어 셈): 2026-09-24 조정된 12기의
+     최신 후보가 **평균 7.2개**, 그중 **10기가 4칸을 넘었다**. 즉 순서가 실제로 누군가를
+     잘라 내고 있었다. 조정 안 된 기체는 평균 0.4개라 이 변경이 **닿지 않는다** —
+     목록·날짜·TTL 없이도 변화가 조정된 기체에만 간다.
+
+     남은 칸(9−4=5)은 그대로 조회수 순이다. 「패치 영상 + 명작」이 같이 선다. */
+  const ts = v => { const t = Date.parse(String((v && v.at) || '')); return Number.isFinite(t) ? t : -Infinity; };
+  /* 뺄셈으로 비교하면 날짜를 모르는 둘끼리 NaN 이 나와 비교가 **일관되지 않는다**
+     (V8 의 sort 는 그때 무엇을 할지 정해 두지 않았다). 크기만 보고 -1/0/1 을 돌려준다.
+
+     **이 가드는 자가 못 지킨다.** 날짜를 모르는 영상은 `isRecent` 가 걸러 최신 자리에
+     애초에 들어가지 않으므로, 가드를 빼도 **결과가 안 바뀐다** — 되돌려 심어 봤더니
+     아무 검사도 울지 않았다. 그래도 둔다: 정해지지 않은 동작에 기대지 않으려는 것이다.
+     나중에 「검사가 안 울니 지워도 된다」고 보지 말 것. */
+  const byDate = (a, b) => { const x = ts(a), y = ts(b); return x === y ? 0 : (y > x ? 1 : -1); };
+  const rankRecent = (a, b) => (isPreferred(b, rules) - isPreferred(a, rules)) || byDate(a, b);
+
   const all = [...(list || [])].sort(rank);
+  const recentFirst = [...(list || [])].sort(rankRecent);
   const slots = Math.min(take, patched ? RECENT_SLOTS_PATCHED : RECENT_SLOTS);
 
   const out = [];
   const used = new Set();
-  for (const v of all) {                       // ① 최신 자리부터
+  for (const v of recentFirst) {               // ① 최신 자리부터 — **새것 순**
     if (out.length >= slots) break;
     if (!isRecent(v, now)) continue;
     out.push(v); used.add(v.id);
