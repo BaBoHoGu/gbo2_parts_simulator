@@ -113,13 +113,50 @@ function draft(c, nl) {
     ...facts(c), '', '---', ''].join(nl);
 }
 
-/** 오늘 절이 이미 있을 때 — 그 절 **끝에** 사실만 덧붙인다.
+/** 오늘 절이 이미 있고 **「데이터 갱신」 제목이 없을 때** — 그 절 끝에 사실만 덧붙인다.
  *  여태 「이미 있습니다」라며 아무것도 넣지 않았다. 사람 글을 덮지 않으려는 뜻은 맞지만,
  *  하루에 두 번 배포하면 **두 번째 실행의 변경이 조용히 사라졌다** — 실제로 2026-09-28
  *  두 번째 배포에서 위키 수치 수정(214→212발/분 등)이 한 줄도 남지 않았다.
  *  사람이 쓴 절을 건드리지 않으면서 기록은 남기려면, 끝에 붙이는 것이 답이다. */
 function addendum(c, nl) {
   return ['## 🔄 데이터 갱신 (덧붙임)', '', ...DRAFT_MARK, '', ...facts(c), ''].join(nl);
+}
+
+/**
+ * 오늘 절 안에 **이미 있는 「## 🔄 데이터 갱신」 목록 끝에** 줄만 더한다.
+ *
+ * 왜 — 하루에 세 번 배포한 날, 「데이터 갱신 (덧붙임)」 절이 **세 개** 쌓였다(2026-10-12).
+ * 매번 사람이 손으로 합쳤다. 절을 또 만들 이유가 없다 — 같은 제목이 이미 있으면 그 목록에 붙인다.
+ *
+ * **수를 합치지 않는다.** 실행마다 비교 기준(HEAD)이 달라 「5기」와 「3기」가 같은 기체를
+ * 두 번 셀 수 있다. 더하면 지어내는 것이 된다 — 줄을 나란히 남기고 사람이 판단하게 둔다.
+ * (실제로 그렇게 합쳐 「8기」라고 적었다가 되돌렸다.)
+ *
+ * 글자가 똑같은 줄은 더하지 않는다 — 같은 변경을 두 번 적을 이유가 없다.
+ * @returns 바뀐 글 전체, 또는 붙일 자리가 없으면 null
+ */
+function mergeIntoToday(note, c, nl) {
+  const lines = note.split(/\r?\n/);
+  const head = lines.findIndex(l => new RegExp('^_' + today + ' 업데이트').test(l));
+  if (head < 0) return null;
+  /* 절의 끝 — 다음 「---」 줄. 없으면 글 끝. */
+  let secEnd = lines.length;
+  for (let i = head + 1; i < lines.length; i++) if (lines[i].trim() === '---') { secEnd = i; break; }
+  /* 그 안의 「데이터 갱신」 제목 — 「(덧붙임)」 이 붙은 것도 받는다(옛 글과 섞여 있을 수 있다). */
+  let h = -1;
+  for (let i = head + 1; i < secEnd; i++) if (/^## .*데이터 갱신/.test(lines[i])) { h = i; break; }
+  if (h < 0) return null;
+  /* 그 제목의 목록 끝 — 다음 「## 」 제목 전까지. */
+  let listEnd = secEnd;
+  for (let i = h + 1; i < secEnd; i++) if (/^## /.test(lines[i])) { listEnd = i; break; }
+  /* 목록 끝의 빈 줄은 건너뛴다 — 줄은 마지막 글줄 **뒤**에 와야 한다. */
+  let at = listEnd;
+  while (at > h + 1 && lines[at - 1].trim() === '') at--;
+  const already = new Set(lines.slice(h + 1, listEnd).map(x => x.trim()));
+  const add = facts(c).filter(x => !already.has(x.trim()));
+  if (!add.length) return 'same';
+  lines.splice(at, 0, ...add);
+  return lines.join(nl);
 }
 
 const c = changes();
@@ -140,6 +177,20 @@ if (PRINT) { console.log(draft(c, nl)); process.exit(0); }
 // 사람이 이미 오늘 자 절을 써 뒀으면 그 글은 **건드리지 않고**, 절 끝에 덧붙인다.
 const todaySec = new RegExp('(^|\\r?\\n)_' + today + ' 업데이트[^\\r\\n]*(\\r?\\n)').exec(note);
 if (todaySec) {
+  /* ■ 같은 제목이 이미 있으면 **그 목록에 줄만 더한다** — 절을 또 만들지 않는다.
+     하루에 세 번 배포한 날 절이 세 개 쌓여 매번 손으로 합쳤다(2026-10-12). */
+  const merged = mergeIntoToday(note, c, nl);
+  if (merged === 'same') {
+    console.log(`패치노트 오늘(${today}) 절에 이미 같은 내용이 적혀 있어 그대로 둡니다.`);
+    process.exit(0);
+  }
+  if (merged) {
+    fs.writeFileSync(NOTE, merged);
+    console.log(`패치노트 오늘(${today}) 「데이터 갱신」 목록에 줄을 더했습니다 — `
+      + `기체 ${c.newMs.length} · 무장 ${c.weap.length} · 스킬 ${c.skill.length}`);
+    console.log('  (수를 합치지 않습니다 — 실행마다 기준이 달라 같은 기체를 두 번 셀 수 있습니다.)');
+    process.exit(0);
+  }
   const from = todaySec.index + todaySec[0].length;
   const end = /\r?\n---\r?\n/.exec(note.slice(from));
   const at = end ? from + end.index + (end[0].startsWith('\r') ? 2 : 1) : note.length;
