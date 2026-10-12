@@ -22,6 +22,7 @@ try {
 const CHROME = findChrome();
 if (!CHROME) { console.log('SKIP  Chrome 없음'); process.exit(0); }
 const URL = 'file:///' + path.join(ROOT, 'dist', 'gbo2-simulator.html').replace(/\\/g, '/').replace(/ /g, '%20');
+const WAIT = require('./lib/waits.js');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let pass = 0, fail = 0;
@@ -95,7 +96,11 @@ const targetName = dict[String(target.MS名).replace(/_LV\d+$/, '')] || String(t
 
   const readWhy = async () => {
     await pg.evaluate(() => document.querySelector('#runAuto').click());
-    await sleep(22000);
+    /* 자동 구성이 **끝났다는 신호**까지 기다린다 — 전에는 22초를 통째로 쉬었다.
+         #runAuto 의 disabled 는 결과를 다 그린 뒤 풀린다(src/ui.js runAuto 의 finally).
+         후보가 나타나기만 보면 중간 상태를 읽어 흔들릴 수 있어 둘을 같이 본다.
+         못 끝나면 같은 22초에 타임아웃하므로, 뒤따르는 검사는 전과 똑같이 걸린다. */
+    await WAIT.waitAutoDone(pg, 22000);
     return pg.evaluate(() => {
       const card = document.querySelector('#autoResults .auto-cand');
       if (!card) return null;

@@ -1,6 +1,6 @@
 // 검사를 **전부** 돌린다 — 배포가 이것 하나만 부르면 된다.
 //
-//   node tools/gates.js            전부 (동시 4개)
+//   node tools/gates.js            전부 (동시 6개)
 //   node tools/gates.js --jobs=1   하나씩 (로그를 순서대로 보고 싶을 때)
 //   node tools/gates.js --fast     Chrome 안 쓰는 것만 (몇 초)
 //
@@ -48,7 +48,16 @@ const isFast = f => {
 
 const ARG = process.argv.slice(2);
 const FAST = ARG.includes('--fast');
-const JOBS = Math.max(1, Number((ARG.find(a => a.startsWith('--jobs=')) || '').slice(7)) || 4);
+/* 기본 동시 실행 수. **재서 올렸다**(2026-10-12, 8코어/15.8GB 에서 전체 53개):
+     동시 6개 — 826초(13.8분) · 흔들려 혼자 다시 돈 검사 1개(smoke)
+     동시 6개 — 378초( 6.3분) · 흔들림 0개
+   넷에서 여섯으로 올리니 **절반 이하**가 되고 흔들림도 늘지 않았다.
+   4를 고른 까닭이 「넷을 넘기면 시간에 기대는 검사가 흔들린다」였는데, 실측은 반대였다 —
+   흔들린 검사를 **혼자 다시 돌리는** 비용(차례로 돈다)이 동시성보다 비쌌다.
+   검사 합이 1425~2135초인데 4로 나눈 값(356~534초)보다 826초가 나온 것도 그 꼬리 탓이다.
+   코어 수보다 작게 둔다 — 8개로 올리면 Chrome 과 노드가 코어를 다 먹어 되레 흔들린다.
+   흔들림이 돌아오면 `--jobs=4` 로 되돌려 확인할 수 있다. */
+const JOBS = Math.max(1, Number((ARG.find(a => a.startsWith('--jobs=')) || '').slice(7)) || 6);
 
 const all = fs.readdirSync(TOOLS)
   .filter(f => f.endsWith('.js'))
