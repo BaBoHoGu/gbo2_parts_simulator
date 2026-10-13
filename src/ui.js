@@ -10092,7 +10092,31 @@
   let viewMode = 'large';
   try { viewMode = localStorage.getItem(VIEW_KEY) || 'wide'; } catch (e) { viewMode = 'wide'; }
 
+  /* ---------- 좁은/낮은 화면 표시 ----------
+     이 조건이 CSS 안에 **21번** 똑같이 적혀 있었다 — 하나를 고치려면 스물한 군데를
+     같이 고쳐야 했고, 실제로 몇 군데는 빠진 채 달라져 있었다. 조건은 여기 한 곳에만 두고,
+     CSS 는 `:where(body.compact)` 로 받는다.
+
+     **:where() 를 쓰는 이유** — `body.compact .x` 로 쓰면 특이도가 (0,1,0) → (0,2,0) 으로
+     올라, 뒤에 오는 다른 규칙과의 승부가 조용히 뒤집힌다. :where() 는 특이도가 0 이라
+     `.x` 그대로여서 @media 안에 있던 때와 **똑같이** 겨룬다. (84장 사진으로 확인했다)
+
+     폰 「넓게 보기」는 768px 로 잡아 보여 주므로 max-width 로는 폰인지 알 수 없다 —
+     그래서 vm-wide 는 아래에서 따로 단다. compact 는 **실제 창 크기**를 본다. */
+  /* matchMedia 가 **없을 수도 있다** — 점검 도구의 jsdom 에는 없다. 그냥 부르면
+     이 줄에서 스크립트가 죽어 **앱이 통째로 안 그려진다**(smoke 가 그걸로 울었다).
+     없으면 표시를 안 달 뿐이다 — CSS 를 그리지 않는 자리라 그걸로 충분하다. */
+  const COMPACT_MQ = typeof window.matchMedia === 'function' ? window.matchMedia(
+    '(max-width: 700px), (max-height: 560px) and (pointer: coarse),'
+    + ' (max-height: 560px) and (max-width: 1100px)') : null;
+  const syncCompact = () => document.body.classList
+    .toggle('compact', !!(COMPACT_MQ && COMPACT_MQ.matches));
+  if (COMPACT_MQ && COMPACT_MQ.addEventListener) COMPACT_MQ.addEventListener('change', syncCompact);
+  else if (COMPACT_MQ && COMPACT_MQ.addListener) COMPACT_MQ.addListener(syncCompact);   // 옛 사파리
+  syncCompact();
+
   function applyViewMode() {
+    syncCompact();              // 회전·창 크기 변화가 여기를 지나간다
     const meta = document.querySelector('meta[name="viewport"]');
     if (!meta) return;
     const wide = isPhoneWidth() && viewMode === 'wide';
