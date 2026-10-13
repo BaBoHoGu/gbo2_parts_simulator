@@ -226,6 +226,8 @@ const html = read('src', 'index.html')
   .replace('/*__FAVICON__*/', () => 'data:image/png;base64,'
     + fs.readFileSync(path.join(ROOT, 'assets', 'favicon.png')).toString('base64'))
   .replace('/*__CSS__*/', () => read('src', 'style.css'))
+  /* 대결 시뮬 스타일 — 앱 토큰만 쓴다(새 색은 --d-me·--d-foe 둘). 본 CSS 뒤에 와야 이긴다. */
+  .replace('/*__DUEL_CSS__*/', () => read('src', 'duel.css'))
   .replace('/*__TOKEN_CSS__*/', () => read('src', 'token.css'))
   .replace('/*__BUILD__*/', () => inline('GBO2_BUILD', buildMeta))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills, recycle }))
@@ -253,6 +255,8 @@ const html = read('src', 'index.html')
   .replace('/*__UI__*/', () => read('src', 'ui.js'))
   // 토큰 계산기는 제 IIFE 로 돌아간다 — ui.js 와 변수를 나누지 않는다.
   .replace('/*__TOKEN__*/', () => read('src', 'token.js'))
+  /* 대결 시뮬 — ui.js·token.js 와 변수를 나누지 않는 제 IIFE. */
+  .replace('/*__DUEL__*/', () => read('src', 'duel.js'))
   .replace('/*__TOKEN_BODY__*/', () => read('src', 'token.body.html'));
 
 // 토큰 계산기 본문에 <script> 가 들어 있으면 계산기가 **두 벌** 돌아간다 —
@@ -265,7 +269,7 @@ if (/<script[\s>]/i.test(read('src', 'token.body.html').replace(/<!--[\s\S]*?-->
 }
 
 for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__SHARE__', '__UI__',
-  '__TOKEN_CSS__', '__TOKEN__', '__TOKEN_BODY__', '__PICKUPS__']) {
+  '__TOKEN_CSS__', '__TOKEN__', '__TOKEN_BODY__', '__PICKUPS__', '__DUEL_CSS__', '__DUEL__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 

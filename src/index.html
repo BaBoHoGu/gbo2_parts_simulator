@@ -8,6 +8,7 @@
      사이트에서 /favicon.ico 404 가 나고, 오프라인 단일 파일에는 실을 곳이 없다. -->
 <link rel="icon" href="/*__FAVICON__*/">
 <style>/*__CSS__*/
+/*__DUEL_CSS__*/
 /*__TOKEN_CSS__*/</style>
 </head>
 <!-- 화면을 감추는 규칙은 body 의 view-* 클래스에 걸려 있다. JS 가 그 클래스를 붙이는데,
@@ -804,6 +805,8 @@
 <script>/*__DAMAGE__*/</script>
 <script>/*__SHARE__*/</script>
 <script>/*__UI__*/
-/*__TOKEN__*/</script>
+/*__TOKEN__*/
+/* 대결 시뮬레이터 — 제 IIFE 로 돌고 전역은 GBO2Duel 하나. ui.js **뒤에** 와야 GBO2Core·GBO2Damage 를 찾는다. */
+/*__DUEL__*/</script>
 </body>
 </html>

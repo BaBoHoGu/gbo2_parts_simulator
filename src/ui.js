@@ -8525,6 +8525,56 @@
       + '내 위력은 파츠·스킬·상성 반영(국부보정 미반영). 전탄 명중 가정.'));
   }
 
+  /* ── 대결 시뮬레이터에 앱 함수를 이어 준다 ─────────────────────────
+     duel.js 는 **이 스크립트 뒤에** 실린다(index.html 의 __DUEL__). 그래서 지금은
+     window.GBO2Duel 이 아직 없다 — 한 틱 미뤄 등록한다. 미루지 않으면 조용히 안 걸리고,
+     시안의 간이판이 그대로 돌아 **수치가 옛 화면과 달라진다.**
+
+     시그니처는 전부 이 파일에서 확인했다(아래 주석의 반환 모양 참고).
+     옛 피탄 시뮬과 **같은 함수**를 쓰므로 두 화면이 같은 수를 말한다 —
+     실측으로 맞댔다: 사자비 LV2 → 자쿠Ⅱ LV5, B·샷 라이플 4,014(×9) · 5발. */
+  setTimeout(() => {
+    if (!window.GBO2Duel) return;
+    /* 접기 표시는 duel.js 가 버튼을 단 **뒤**에 붙여야 한다.(위 MOBILE_FOLD 와 짝)
+       setTimeout(0) 으로는 일렀다 — duel.js 는 DOMContentLoaded 에서 버튼을 달고,
+       이 파일이 먼저 실려 내 리스너가 먼저 돈다. `load` 는 그 뒤라 확실하다.
+       안 붙이면 폰 파츠 화면에서 상단바가 **두 줄(91px)** 이 된다(topbar_check 가 잡았다). */
+    window.addEventListener('load', () => {
+      const dBtn = document.getElementById('duelBtn');
+      if (dBtn) dBtn.classList.add('in-more');
+    }, { once: true });
+    window.GBO2Duel.use({
+      /* 방아쇠 한 번에 맞는 히트 수 — 무장표의 「전탄」과 같은 자. {nc,ch} 각각 null|{n}. */
+      hitsPerTrigger: (wp, charged) => {
+        const m = fireMult(wp.w);
+        const c = charged ? (m.ch || m.nc) : m.nc;
+        return (c && c.n) || 1;
+      },
+      /* 피해 경감 스킬 — 스킬 하나에 경감이 여럿이면 칩도 여럿.
+         `ko` 는 staggerSkillsOf 가 이미 번역해 준다(skTr 를 두 번 부르지 않는다).
+         form 은 옛 피탄 시뮬과 같게 'normal' 로 — 변신 기체의 변신 모드는 아직 안 고른다. */
+      defSkills: side => staggerSkillsOf(side.ms, msLevel(side.ms.MS名), 'normal')
+        .flatMap(sk => (sk.cuts || []).map((c, i) => ({
+          name: sk.name + (i ? '#' + i : ''), ko: sk.ko || sk.name,
+          scope: c.scope, pct: c.pct, always: sk.cond === '상시',
+          tag: '피해 −' + c.pct + '%' + (c.scope === 'all' ? ''
+            : ' (' + ({ solid: '실탄', beam: '빔', melee: '격투', shoot: '사격' }[c.scope] || c.scope) + ')')
+        }))),
+      /* 관통·폭풍 경감 — renderPietanOutgoing 이 넘기던 모양 그대로 */
+      extraCuts: (A, B, wp) => conditionalPartCuts(B.parts,
+        { name: wp.w.name, attr: wp.attr, type: wp.w.type, psycommu: !!wp.w.psycommu, note: wp.note }),
+      /* 소이 등 고정 피해 — 보정도 경감도 안 받는 몫 */
+      fixedDamage: (A, wp) => { const f = fixedDamageWithParts(wp.w, A.parts); return f ? f.total : 0; },
+      /* 왼쪽 = 지금 편집 중인 구성. setMs 가 파츠를 비우므로 **그 뒤에** 넣는다(순서 주의). */
+      seed: (left, setMs) => {
+        if (left.ms || !state.ms) return;
+        left.stage = state.stage;
+        setMs(left, state.ms);
+        left.parts = [...state.equipped];
+      }
+    });
+  }, 0);
+
   function openPietan(open) {
     if (open && !state.ms) { toast('먼저 기체를 선택하세요'); return; }
     const m = $('#pietanModal'), b = $('#pietanBack');
@@ -10804,7 +10854,10 @@
   const EXPORT_MENU = ['#save', '#share', '#pngBtn', '#uploadBtn'];
   const MORE_MENU = ['#load', '#importBtn', '#ownedBtn', '#updateBtn', '#viewModeBtn'];
   // 좁은 화면에서는 이것들도 「⋯」로 접는다 — 폰 상단바에 여덟 개는 못 선다
-  const MOBILE_FOLD = ['#compareBtn', '#galleryBtn', '#codexBtn', '#tokenBtn', '#planBtn'];
+  /* #duelBtn 은 duel.js 가 뒤에 다는 버튼이다. 목록에 안 넣었더니 폰 상단바가
+     **두 줄(91px)** 이 됐다 — topbar_check 가 잡았다. 메뉴는 누를 때 선택자를 다시 찾으므로
+     나중에 생기는 버튼도 여기 적어 두면 ⋯ 로 닿는다. */
+  const MOBILE_FOLD = ['#compareBtn', '#galleryBtn', '#codexBtn', '#tokenBtn', '#planBtn', '#duelBtn'];
 
   /** 원본 버튼들을 항목으로 하는 메뉴를 연다. 이미 열려 있으면 닫는다. */
   function openTopbarMenu(anchor, selectors) {
