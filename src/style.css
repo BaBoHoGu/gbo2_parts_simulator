@@ -1802,15 +1802,22 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   background: var(--panel);
   color: var(--muted);
   font-size: var(--fs-xs);
-  line-height: 1.5;
-  padding: 5px 14px;
+  /* 줄 간격·여백만 줄인다. 글자 크기는 더 안 줄인다 — 이미 --fs-xs 이고
+     폰 블록은 더 작게 두었다. 여기서 또 줄이면 「작은 글자 바닥 올리기」와
+     정면으로 어긋난다(고지는 안 읽히면 적어 둔 뜻이 없다). */
+  line-height: 1.4;
+  padding: 4px 14px;
   text-align: center;
 }
 .app-foot p { margin: 0; }
 /* 팬사이트 고지 — 출처 링크보다 먼저 눈에 들어와야 한다 */
 .app-foot .foot-rights { color: var(--fg, #c9cfda); }
 .app-foot .foot-rights b { color: var(--accent); font-weight: 700; }
-.app-foot .foot-copy { letter-spacing: .2px; margin: 1px 0 2px; }
+.app-foot .foot-copy { letter-spacing: .2px; margin: 0; }
+/* 「출처」 머리말 — 문단 하나를 없애고 링크 줄 앞에 붙였다. 링크와 같은 줄에 서되
+   눌리는 것이 아님이 보이게 색을 낮춘다. */
+.app-foot .foot-src-lb { color: var(--muted); opacity: .85; }
+.app-foot .foot-src-lb small { font-size: inherit; }
 .app-foot .foot-links {
   display: flex; flex-wrap: wrap; gap: 2px 14px;
   justify-content: center; margin-top: 2px;
