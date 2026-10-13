@@ -14,7 +14,13 @@ const clean = s => s.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '')
 
 const parseTable = html => parseGrid(html, clean);
 
-const MS = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
+/* 미러가 wiki_url 을 비워 보낸 기체는 override 에서 보정한다 — **이 한 줄이 없어서**
+   캐논 건담의 스킬이 통째로 안 뽑혔다(2026-10-13 사용자가 「웨폰퍼지가 안 뜬다」고 짚었다).
+   페이지 ID 가 안 잡히면 그 기체의 위키를 **아예 안 읽어** buff_skills 가 0개가 되고,
+   앱은 목록이 비면 스킬 칸을 통째로 숨긴다. 공용 함수가 이미 있었는데 여기만 안 불렀다. */
+const { applyWikiOverride } = require('./lib/msdata.js');
+const MS = applyWikiOverride(
+  JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')), ROOT);
 const I18N = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'ms.json'), 'utf8'));
 const SKILL = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'skills.json'), 'utf8'));
 // 수동 사전에 없는 스킬명은 MT 캐시(skill_text.json, MS 스킬 패널용)로 폴백한다.

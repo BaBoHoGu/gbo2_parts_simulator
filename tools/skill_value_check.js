@@ -104,5 +104,54 @@ const bad = SAMPLES.filter(([t, want]) => {
 ok('％가 붙은 값은 자릿수를 줄여서라도 읽지 않는다', bad.length === 0,
   bad.map(([t]) => t + ' → ' + JSON.stringify((RE.exec(t) || [])[0] || null)));
 
+/* ── 기체가 **통째로 빠지지 않았는가** ──────────────────────────────
+   값이 맞는지만 보고 있었다. 그런데 2026-10-13 사용자가 「캐논 건담의 웨폰퍼지가
+   스킬 적용에 안 뜬다」고 짚었다 — 값이 틀린 게 아니라 **그 기체가 표에 아예 없었다.**
+
+   까닭: `find_buff_skills.js` 가 `msData.json` 만 읽었는데, 갓 나온 기체는 미러가
+   `wiki_url` 을 비워 보내고 **`msData.override.json` 에만** 적힌다. 페이지 ID 가 안 잡히면
+   그 기체의 위키를 아예 안 읽어 스킬이 0개가 되고, 앱은 목록이 비면 스킬 칸을 **숨긴다.**
+   보정해 주는 공용 함수(`lib/msdata.js` 의 applyWikiOverride)가 이미 있었는데 안 불렀다.
+
+   그래서 **들어왔는지**를 따로 센다: 오버라이드에만 wiki_url 이 있고, 그 위키 페이지가
+   받아져 있으며, 거기 「射撃補正 ＋n」·「格闘補正 ＋n」이 적힌 기체는 skills.json 에 있어야 한다. */
+{
+  const ov = (() => { try { return J('msData.override.json'); } catch { return {}; } })();
+  const ms = J('msData.json');
+  const base = n => String(n).replace(/_LV\d+$/, '');
+  const WIKI = path.join(ROOT, 'raw', 'wiki');
+  const missing = [];
+  const seenMs = new Set();
+  for (const m of ms) {
+    const o = ov[m.MS名];
+    /* 오버라이드에만 있는 경우만 본다 — 미러에 이미 있으면 이 함정과 무관하다 */
+    if (!o || !o.wiki_url || m.wiki_url) continue;
+    const b = base(m.MS名);
+    if (seenMs.has(b)) continue;
+    seenMs.add(b);
+    const id = (String(o.wiki_url).match(/pages\/(\d+)/) || [])[1];
+    const f = id && path.join(WIKI, id + '.html');
+    if (!f || !fs.existsSync(f)) continue;              // 안 받아 둔 페이지는 셀 수 없다
+    const html = fs.readFileSync(f, 'utf8');
+    /* 보정 수치가 적힌 스킬이 있는가 — 있으면 표에 있어야 한다 */
+    if (!/(射撃補正|格闘補正)\s*[＋+]\s*\d/.test(html)) continue;
+    if (!skills[b] || !skills[b].length) missing.push(b + ' (page ' + id + ')');
+  }
+  ok('오버라이드에만 wiki_url 이 있는 기체도 스킬 표에 들어온다', missing.length === 0,
+    missing.slice(0, 5).join(' · '));
+}
+
+/* 사용자가 짚은 그 기체를 **글자로 못 박는다** — 되돌아가면 여기서 운다. */
+{
+  const cg = skills['キャノンガンダム'] || [];
+  const wp = cg.find(x => x.name === 'ウェポンパージ');
+  ok('캐논 건담에 웨폰 퍼지가 있다 (2026-10-13 사용자가 짚은 자리)', !!wp,
+    cg.map(x => x.name).join(' · ') || '(스킬 없음)');
+  ok('그 수치가 원문대로다 (사격 +10 · 격투 +35 · HP 60% 이하)',
+    !!(wp && wp.levels && wp.levels[0] && wp.levels[0].shoot === 10
+      && wp.levels[0].melee === 35 && wp.hp === 60),
+    wp ? JSON.stringify({ shoot: wp.levels[0].shoot, melee: wp.levels[0].melee, hp: wp.hp }) : '(없음)');
+}
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

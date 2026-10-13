@@ -14677,5 +14677,38 @@
     }
    ]
   }
+ ],
+ "キャノンガンダム": [
+  {
+   "name": "ウェポンパージ",
+   "nameKo": "웨폰 퍼지",
+   "forever": false,
+   "secs": null,
+   "hp": 60,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 35,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 20,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 20,
+     "hpUp": 0
+    }
+   ]
+  }
  ]
 }
