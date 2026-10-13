@@ -8533,6 +8533,7 @@
      시그니처는 전부 이 파일에서 확인했다(아래 주석의 반환 모양 참고).
      옛 피탄 시뮬과 **같은 함수**를 쓰므로 두 화면이 같은 수를 말한다 —
      실측으로 맞댔다: 사자비 LV2 → 자쿠Ⅱ LV5, B·샷 라이플 4,014(×9) · 5발. */
+  let duelSeedFp = null;   // 대결 왼쪽에 마지막으로 앉힌 앱 구성의 지문
   setTimeout(() => {
     if (!window.GBO2Duel) return;
     /* 접기 표시는 duel.js 가 버튼을 단 **뒤**에 붙여야 한다.(위 MOBILE_FOLD 와 짝)
@@ -8565,12 +8566,23 @@
         { name: wp.w.name, attr: wp.attr, type: wp.w.type, psycommu: !!wp.w.psycommu, note: wp.note }),
       /* 소이 등 고정 피해 — 보정도 경감도 안 받는 몫 */
       fixedDamage: (A, wp) => { const f = fixedDamageWithParts(wp.w, A.parts); return f ? f.total : 0; },
-      /* 왼쪽 = 지금 편집 중인 구성. setMs 가 파츠를 비우므로 **그 뒤에** 넣는다(순서 주의). */
-      seed: (left, setMs) => {
-        if (left.ms || !state.ms) return;
+      /* 왼쪽 = 지금 편집 중인 구성. setMs 가 파츠를 비우므로 **그 뒤에** 넣는다(순서 주의).
+         `left.ms 가 있으면 끝` 으로 두면 **처음 열 때 한 번만** 가져온다 — 대결을 먼저 열어
+         본 다음 파츠를 끼우고 다시 열면 왼쪽이 옛 구성 그대로였다(파츠 4개를 끼웠는데
+         대결은 3개로 셌다). 그래서 앱 구성의 지문을 적어 두고, **달라졌을 때만** 다시
+         앉힌다 — 같으면 대결 안에서 내가 손본 왼쪽을 덮지 않는다.
+         force 는 「⟳ 지금 편집 중인 구성 가져오기」 단추가 보내는 것으로, 지문을 무시한다. */
+      seed: (left, setMs, force) => {
+        if (!state.ms) return;
+        const fp = [state.ms.MS名, state.stage, state.expansion, state.expLevel,
+          state.equipped.map(p => p.name).join(',')].join('|');
+        if (left.ms && !force && fp === duelSeedFp) return;
+        duelSeedFp = fp;
         left.stage = state.stage;
         setMs(left, state.ms);
         left.parts = [...state.equipped];
+        left.exp = state.expansion;
+        left.expLv = state.expLevel;
       }
     });
   }, 0);

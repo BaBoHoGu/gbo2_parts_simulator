@@ -288,3 +288,12 @@ body.vm-wide .duel { inset: 0; border-radius: 0; border: none; }
 @media (prefers-reduced-motion: reduce) {
   .dc-hp .fill, .dc-hp .next { transition: none; }
 }
+
+/* 확장 스킬 — 이름이 길어 줄을 통째로 쓰게 두고(flex:1), LV 세그먼트는 다음 줄로 흐른다.
+   .ds-search 와 같은 생김새를 쓰되, 줄 안에서 늘어나야 하므로 width:100% 가 아니다. */
+.ds-exp {
+  flex: 1 1 180px; min-width: 150px; box-sizing: border-box;
+  background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px;
+}
+.ds-row .ds-search { flex: 1 1 180px; width: auto; }

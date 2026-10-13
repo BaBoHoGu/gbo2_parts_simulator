@@ -55,6 +55,7 @@
   /* ---------- 상태 ---------- */
   const mkSide = who => ({
     who, ms: null, stage: 6, parts: [],
+    exp: C.EXPANSION_NONE, expLv: C.MAX_EXPANSION_LEVEL,   // 확장 스킬 — 쪽마다 따로 고른다
     buffs: new Set(),      // 공격·스탯 버프 스킬 (GBO2_SKILLS)
     defs: new Set(),       // 피해 경감 스킬 (msSkills 설명문)
     wKey: null, mode: 'nc', posture: 'stand', scope: false, variant: 0, dir: 0,
@@ -148,8 +149,10 @@
   /* ---------- 스탯 ---------- */
   function statsOf(side) {
     if (!side.ms) return null;
-    const run = skill => C.calcStats(side.ms, side.parts, side.stage, C.EXPANSION_NONE, G.parts, G.fullst,
-      C.MAX_EXPANSION_LEVEL, null, skill, null).total;
+    /* 확장 스킬은 사격·격투 보정과 내성·상한을 올린다 — 「없음」으로 못 박아 두면
+       실제로 끼고 싸우는 구성과 다른 수가 나온다. 쪽마다 고른 것을 그대로 넘긴다. */
+    const run = skill => C.calcStats(side.ms, side.parts, side.stage, side.exp, G.parts, G.fullst,
+      side.expLv, null, skill, null).total;
     const bare = run(null);
     const sk = skillStatBonus(side, bare);
     return sk ? run(sk) : bare;
@@ -220,7 +223,7 @@
     defSkills: side => defSkillsDefault(side),
     extraCuts: () => [],
     fixedDamage: () => 0,
-    seed: (left, setMs) => seedDefault(left, setMs)
+    seed: (left, setMs, force) => seedDefault(left, setMs, force)
   };
 
   /* ---------- 한 방향의 계산 (공격 측 A → 대상 B) ---------- */
@@ -350,13 +353,7 @@
       fill();
       // 저장 구성 불러오기
       const builds = loadBuilds();
-      if (builds.length) {
-        const sel = el('select', 'ds-search');
-        sel.append(new Option('저장 구성에서 불러오기…', ''));
-        builds.forEach((bd, i) => sel.append(new Option(bd.name, String(i))));
-        sel.onchange = () => { if (sel.value !== '') applyBuild(side, builds[+sel.value]); };
-        pick.append(sel);
-      }
+      if (builds.length) pick.append(buildSelect(side, builds));
       pick.append(q, list);
       if (side.ms) pick.append(btn('d-btn', '취소', () => { side.pickMs = false; renderSide(side); }));
       b.append(pick);
@@ -395,7 +392,55 @@
     row.append(stSeg);
     row.append(btn('d-btn', '⇄ 기체 변경', () => { side.pickMs = true; renderSide(side); }));
     b.append(row);
+
+    /* 확장 스킬 — 앱의 파츠 화면과 같은 목록·같은 LV 범위. */
+    const exRow = el('div', 'ds-row');
+    exRow.append(el('span', 'lb', '확장'));
+    const exSel = el('select', 'ds-exp');
+    for (const k of C.EXPANSION_SKILLS) {
+      const o = new Option(C.EXPANSION_LABEL[k] || k, k);
+      if (k === side.exp) o.selected = true;
+      exSel.append(o);
+    }
+    exSel.onchange = () => { side.exp = exSel.value; changed(side); };
+    exRow.append(exSel);
+    if (side.exp !== C.EXPANSION_NONE) {
+      const exLv = el('div', 'seg');
+      for (let v = 1; v <= C.MAX_EXPANSION_LEVEL; v++) {
+        exLv.append(btn('seg-btn' + (side.expLv === v ? ' on' : ''), 'LV' + v,
+          () => { side.expLv = v; changed(side); }));
+      }
+      exRow.append(exLv);
+    }
+    b.append(exRow);
+
+    /* 저장 구성 — 기체를 고른 뒤에도 불러올 수 있어야 한다. 예전에는 이 줄이
+       「기체 고르기」 화면에만 있어서, 이미 기체가 앉은 쪽(특히 왼쪽)에서는
+       ⇄ 기체 변경을 거치지 않으면 저장한 파츠를 가져올 길이 없었다. */
+    const builds = loadBuilds();
+    if (builds.length) {
+      const ld = el('div', 'ds-row');
+      ld.append(el('span', 'lb', '저장'));
+      ld.append(buildSelect(side, builds));
+      b.append(ld);
+    }
+    if (side.who === 'L') {
+      const sync = el('div', 'ds-row');
+      sync.append(el('span', 'lb', ''));
+      sync.append(btn('d-btn', '⟳ 지금 편집 중인 구성 가져오기',
+        () => { HOOK.seed(side, setMs, true); renderAll(); }));
+      b.append(sync);
+    }
     return b;
+  }
+
+  /** 저장 구성 드롭다운 — 기체 고르기 화면과 기체가 앉은 화면이 같이 쓴다. */
+  function buildSelect(side, builds) {
+    const sel = el('select', 'ds-search');
+    sel.append(new Option('저장 구성에서 불러오기…', ''));
+    builds.forEach((bd, i) => sel.append(new Option(bd.name, String(i))));
+    sel.onchange = () => { if (sel.value !== '') applyBuild(side, builds[+sel.value]); };
+    return sel;
   }
 
   function partsBlock(side) {
@@ -707,6 +752,11 @@
     const wanted = (bd.parts || []).map(n => allParts.find(p => p.name === n)).filter(Boolean);
     setMs(side, ms);
     side.parts = keepEquippable(ms, wanted, side.stage);
+    /* 확장 스킬도 저장본에 들어 있다(앱 serialize 가 싣는다) — 파츠만 되살리고
+       확장을 「없음」으로 두면 저장한 구성과 다른 수가 나온다.
+       setMs **뒤에** 넣는다(setMs 가 쪽을 초기화한다). */
+    side.exp = C.EXPANSION_SKILLS.includes(bd.expansion) ? bd.expansion : C.EXPANSION_NONE;
+    side.expLv = Number(bd.expLevel) || C.MAX_EXPANSION_LEVEL;
     changed(side);
   }
   function changed(side) { renderSide(side); renderCenter(); }
@@ -715,8 +765,8 @@
   /** 지금 편집 중인 기체를 왼쪽에 앉힌다.
    *  ★ 시안에서는 앱 상태(state)를 못 읽어서 피탄 시뮬 제목줄로 기체 이름만 얻는다.
    *  본 적용 때는 state.ms · state.equipped · state.stage 를 그대로 넣는다. */
-  function seedDefault(left, setMs) {
-    if (left.ms) return;
+  function seedDefault(left, setMs, force) {
+    if (left.ms && !force) return;
     const pb = document.getElementById('pietanBtn');
     let name = (document.getElementById('pietanMsName') || {}).textContent || '';
     if (!name && pb) {
