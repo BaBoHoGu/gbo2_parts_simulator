@@ -169,6 +169,41 @@ async function runView(view) {
     await pg.goto(URL, { waitUntil: 'networkidle2', timeout: 90000 });
     for (let i = 0; i < 80 && !(await pg.$('.ms-card')); i++) await sleep(100);
     check(view.tag, '기체 목록이 그려짐', !!(await pg.$('.ms-card')));
+
+    /* ■ **그려진 것과 보이는 것은 다르다.**
+       가로 폰(844×390)에서 머리 57 + 필터 248 + 안내문 85 = 390px 이라 목록 몫이
+       남지 않았다 — 격자 시작 y=353 이 안내문 상단 y=305 **아래**였고, 목록 높이가
+       **-47px**, 안 가려진 카드가 **0장**이었다. 그런데 위 검사는 통과한다(카드는 있으니까).
+       스크린샷을 보고서야 찾았다. 그래서 「몇 장이 실제로 보이는가」를 센다.
+       같이 본다: 이름이 잘려 **어느 기체인지 못 읽는** 카드 수. 보여도 못 읽으면 못 고른다. */
+    {
+      const look = await pg.evaluate(() => {
+        const g = document.querySelector('#msList');
+        if (!g) return null;
+        const gb = g.getBoundingClientRect();
+        const foot = document.querySelector('.app-foot');
+        const fb = foot ? foot.getBoundingClientRect() : null;
+        /* 바닥에 깔린 안내문 위까지가 실제로 쓸 수 있는 높이다 */
+        const top = gb.top, bottom = fb && fb.top < innerHeight ? fb.top : innerHeight;
+        const cards = [...document.querySelectorAll('#msList .ms-card')];
+        const nms = [...document.querySelectorAll('#msList .ms-card .nm')];
+        return {
+          높이: Math.round(bottom - top),
+          보임: cards.filter(c => { const b = c.getBoundingClientRect();
+            return b.top >= top - 1 && b.bottom <= bottom + 1; }).length,
+          잘림: nms.filter(e => e.scrollWidth > e.clientWidth + 2
+            || e.scrollHeight > e.clientHeight + 2).length,
+          전체: nms.length
+        };
+      });
+      if (look) {
+        const okSee = check(view.tag, '기체 카드가 **실제로** 한 장 이상 보인다 (안내문에 안 가림)',
+          look.보임 >= 1, '쓸 수 있는 높이 ' + look.높이 + 'px · 보이는 카드 ' + look.보임 + '장');
+        const okNm = check(view.tag, '기체 이름이 잘리지 않는다 (두 줄까지 허용)',
+          look.잘림 === 0, '잘린 이름 ' + look.잘림 + '/' + look.전체);
+        if (!(okSee && okNm)) await shot(pg, view.tag + '_목록보임');
+      }
+    }
     await pg.addStyleTag({ content: INSET_CSS });     // ③ 검사를 위해 상단 인셋 강제
     await step(pg, view, '선택화면');
 
