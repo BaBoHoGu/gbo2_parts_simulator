@@ -149,24 +149,54 @@ const nameTokens = s => String(s).replace(/^.*用/, '')
 /**
  * 방향/연격 표의 열(무장 약칭)을 무장명에 맞춘다.
  * 열의 모든 토큰(괄호·xN 포함)이 무장명에 순서대로 있어야 그 열을 쓴다.
- *   ① 가장 구체적인(토큰 많은) 열 → ② 「本武器倍率」 → ③ 「標準倍率」
+ * 토큰은 **포함**으로 본다 — 위키 열은 「アロンダイト」처럼 무장명(アロンダイトビームソード)의
+ * 토큰 **앞부분만** 적는 일이 흔하다. 완전 일치로 보던 동안 그런 무장 34개가 열을 못 찾아
+ * 조용히 「標準倍率」(기체 공통값)로 떨어졌다 — 데스티니의 하격 315%(45%x7)가 130% 로 보였다.
+ *   ① 가장 구체적인(토큰 많은) 열 → ② 가장 **가려내는** 열 → ③ 「本武器倍率」 → ④ 「標準倍率」
  * 「ムラマサ[打突]」은 打突 토큰까지 있는 [타돌] 무장에만 걸리고, 민 무라마사는 「ムラマサ」에 걸린다.
+ *
+ * ②가 왜 '이름이 긴 열'이 아닌가: 「ビーム・ナギナタ［片刃］」는 「ナギナタ」와 「片刃」 둘 다
+ * 한 토큰으로 맞는다. 이름 길이로 끊으면 ナギナタ(4자)가 이겨 **［강화］와 ［편인］이 같은 열**을
+ * 쓰게 된다 — 그래서 片刃 열은 아무도 안 쓰고 남았다. 같은 페이지의 다른 격투 무장 이름에
+ * 덜 나오는 토큰이 그 무장을 가려내는 토큰이므로, 그쪽을 먼저 쓴다.
+ * (siblings = 그 페이지의 격투 무장 이름들. 없으면 예전처럼 이름 길이로 끊는다.)
  */
-function matchColumn(cols, wname) {
+function matchColumn(cols, wname, siblings) {
   const wt = nameTokens(wname);
-  let best = -1, bestScore = 0, bestLen = 0;
+  // 토큰이 형제 무장 이름 몇 개에 나오는가 — 적을수록 그 무장을 가려낸다
+  const sibTok = (siblings || []).filter(n => n !== wname).map(nameTokens);
+  const rarity = t => 1 + sibTok.filter(ts => ts.some(x => x.includes(t))).length;
+  let best = -1, bestScore = 0, bestRare = Infinity, bestLen = 0;
   for (let i = 1; i < cols.length; i++) {
     const c = cols[i];
     if (!c || c === '標準倍率' || OWN_COL.test(c)) continue;
     const ct = nameTokens(c);
     if (!ct.length) continue;
     let wi = 0, matched = 0;
-    for (const t of ct) { while (wi < wt.length && wt[wi] !== t) wi++; if (wi < wt.length) { matched++; wi++; } }
-    if (matched === ct.length && (matched > bestScore || (matched === bestScore && c.length > bestLen))) {
-      best = i; bestScore = matched; bestLen = c.length;
-    }
+    for (const t of ct) { while (wi < wt.length && !wt[wi].includes(t)) wi++; if (wi < wt.length) { matched++; wi++; } }
+    if (matched !== ct.length) continue;
+    const rare = Math.max(...ct.map(rarity));
+    const better = matched > bestScore
+      || (matched === bestScore && (rare < bestRare
+        || (rare === bestRare && c.length > bestLen)));
+    if (better) { best = i; bestScore = matched; bestRare = rare; bestLen = c.length; }
   }
   if (best >= 0) return best;
+  /* 토큰으로 못 찾았다. 여기서 바로 標準倍率 로 떨어지면 **기체 공통값**을 그 무장의 값으로
+     쓰게 된다. 위키가 「ガルバルディα用ビーム・サーベル」를 「αサーベル」처럼 줄여 적은 경우
+     토큰이 통째로 달라 안 걸리므로, 글자 순서(부분수열)로 한 번 더 본다.
+     標準倍率 로 떨어질 때만 쓰고, 긴 열부터 봐서 **딱 하나** 남을 때만 받는다 —
+     3084(高機動型Gαサーベル / αサーベル)처럼 둘 다 걸리면 더 긴 쪽이 그 무장이다. */
+  const nz = x => String(x).replace(/[・\s［］【】()（）]/g, '').replace(/×/g, 'x');
+  const sub = (need, hay) => { let i = 0; for (const ch of hay) { if (ch === need[i]) i++; if (i >= need.length) return true; } return false; };
+  const nw = nz(wname);
+  let pick = -1, pickLen = 0;
+  for (let i = 1; i < cols.length; i++) {
+    const c = cols[i];
+    if (!c || c === '標準倍率' || OWN_COL.test(c) || /ヘビーアタック/.test(c)) continue;
+    if (sub(nz(c), nw) && c.length > pickLen) { pick = i; pickLen = c.length; }
+  }
+  if (pick >= 0) return pick;
   const own = cols.findIndex(c => OWN_COL.test(c));
   return own >= 0 ? own : cols.indexOf('標準倍率');
 }
@@ -175,7 +205,10 @@ function matchColumn(cols, wname) {
 function parseMult(raw) {
   const s = String(raw || '').trim();
   if (!s || /連撃不可|不可|-|―|無/.test(s)) return null;
-  const multi = s.match(/\((\d+(?:\.\d+)?)\s*[%％]\s*[x×]\s*(\d+)\)/);
+  /* 닫는 괄호를 요구하면 「1750%(250%x7(3＋4))」처럼 **안에 괄호가 더 있는** 표기를 놓쳐
+     합계 1750% 를 1히트로 삼킨다. 히트 수는 피해 경감·「1HIT마다 추가 피해」에 그대로
+     걸리므로 1히트와 7히트는 다른 수가 된다. 그래서 닫는 괄호를 보지 않는다. */
+  const multi = s.match(/[(（](\d+(?:\.\d+)?)\s*[%％]\s*[x×ｘ]\s*(\d+)/);
   if (multi) return Array(Number(multi[2])).fill(Number(multi[1]) / 100);
   const one = s.match(/(\d+(?:\.\d+)?)\s*[%％]/);
   return one ? [Number(one[1]) / 100] : null;
@@ -193,7 +226,7 @@ function dirRows(grid, col) {
 
 /** 스킬 상태 라벨 한글화 (「最大出力（T）」→ 최대출력). */
 const STATE_KO = {
-  '最大出力': '최대출력', 'レイド中': '레이드 중', '覚醒': '각성', 'ハイパーモード': '하이퍼 모드',
+  '最大出力': '최대출력', '最大稼働': '최대가동', 'レイド中': '레이드 중', '覚醒': '각성', 'ハイパーモード': '하이퍼 모드',
   'トランザム': '트랜잠', 'バーサク': '버서크', 'MEPE': 'MEPE', 'サイコフレーム共振': '사이코프레임 공진'
 };
 const stateLabel = s => {
@@ -208,17 +241,21 @@ const stateLabel = s => {
  *   헤비어택   — 「ヘビーアタック」 열 (備考에 대응 표기가 있는 무장)
  *   <상태>     — 「<기본열>（상태）」 열 (스킬 발동 시)
  */
+/** 備考가 대응한다고 밝힌 스킬 이름들 — 「スキル「最大稼働（S）」対応」 → ['最大稼働（S）'] */
+const skillsInNote = note => [...String(note || '').matchAll(/スキル「([^」]+)」対応/g)].map(m => m[1]);
+
 function attachMeleeMods(weapons, grids) {
   const dir = findGrid(grids, '格闘方向');
   const combo = findGrid(grids, '連撃数');
   const melees = weapons.filter(w => w.type === 'melee');
   if (!dir && !combo) return;
+  const sibNames = melees.map(w => w.name);   // 가려내는 토큰을 고르는 데 쓴다
 
   // 각 무장의 기본 열 (상태 열은 무장명에 상태 토큰이 없어 여기 안 걸린다)
   const baseIdx = new Map();
   const isBaseName = new Set();
   if (dir) for (const w of melees) {
-    const ci = matchColumn(dir[0], w.name);
+    const ci = matchColumn(dir[0], w.name, sibNames);
     baseIdx.set(w, ci);
     const cn = dir[0][ci];
     if (cn && cn !== '標準倍率' && !OWN_COL.test(cn)) isBaseName.add(cn);
@@ -241,16 +278,28 @@ function attachMeleeMods(weapons, grids) {
           continue;
         }
         // 「<기본열>（상태）」 — 스킬 발동 상태
-        const m = c.match(/^(.*?)[（(]([^）)]+)[）)]\s*$/);
+        /* 괄호는 （）뿐 아니라 ［］도 쓴다 — 「ソードメイス［阿頼耶識］」가 그래서 빠져 있었다. */
+        const m = c.match(/^(.*?)[（(［【]([^）)］】]+)[）)］】]\s*$/);
         if (m && m[1] === bn) {
           const rows = dirRows(dir, i);
           if (rows.length) variants.push({ label: stateLabel(m[2]), direction: rows });
+          continue;
+        }
+        /* 열 이름이 **무장명 없이 스킬명만** 적힌 경우 — 「最大稼働（S）」.
+           위 가지는 「ザンバー（最大出力）」처럼 기본열 이름이 앞에 붙은 것만 받으므로
+           이쪽은 통째로 버려졌다(데스티니의 최대가동 하격 270% 가 없었다).
+           아무 열이나 받으면 다른 무장 것을 끌어오므로, **이 무장의 備考가
+           「스킬「<열 이름>」대응」이라고 말할 때만** 받는다 — 전수에서 이 조건에
+           걸리는 것은 그 무장의 상태 열뿐이었다(2026-10-13, 1건). */
+        if (skillsInNote(note).includes(c)) {
+          const rows = dirRows(dir, i);
+          if (rows.length) variants.push({ label: stateLabel(c), direction: rows });
         }
       }
     }
     let comboRows = null;
     if (combo) {
-      const ci = matchColumn(combo[0], w.name);
+      const ci = matchColumn(combo[0], w.name, sibNames);
       const rows = [];
       for (const r of combo.slice(1)) {
         const hits = parseMult(r[ci]);
