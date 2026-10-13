@@ -85,7 +85,10 @@
   // 속성 정렬 우선순위 — 강습 → 범용 → 지원
   const ATTR_ORDER = { '強襲': 0, '汎用': 1, '支援': 2 };
 
-  const msLevel = m => C.msLevel(m.MS名);
+  /* 기체 객체를 받는다. **이름을 넘겨도 받는다** — core 의 msLevel 은 이름을 받아서
+     두 꼴이 섞이는데, 이름을 넘기면 m.MS名 이 undefined 가 되어 조용히 1 을 돌려줬다.
+     그 바람에 대결의 방어 스킬·공중 격투 판정이 전 기체 LV1 로 계산됐다(게이트가 잡았다). */
+  const msLevel = m => C.msLevel(m && typeof m === 'object' ? m.MS名 : m);
   const msRarity = m => (m.レアリティ || '').length;   // ☆ 개수
   /** 표시용 LV 추출 — 접미사가 없는 파츠(이레귤러DBL 등)는 undefined. */
   const lvOf = name => (name.match(/_LV(\d+)/) || [])[1];
@@ -125,9 +128,14 @@
     if (/空中|落下|滑空|ジャンプ/.test(blob)) return '공중';
     if (/高速移動中|ブースト移動中/.test(blob)) return '이동중';
     if (/変形|フライトモード/.test(blob)) return '변형중';
-    // 실제 HP 조건은 「HP…以下」(예: 機体HPが 50%以下). 「機体HPへのダメージ」「HP回復」 같은
-    // 단순 HP 언급을 HP조건으로 오판하지 않도록 「以下」를 요구한다 (다목적 대형 바인더 등).
-    if (/HP[^。]{0,10}以下/.test(blob)) return 'HP조건';
+    /* 실제 HP 조건은 「HP…以下」(예: 機体HPが 50%以下). 「機体HPへのダメージ」「HP回復」 같은
+       단순 HP 언급을 HP조건으로 오판하지 않도록 **방향 어느 쪽이든 하나는** 요구한다
+       (다목적 대형 바인더 등).
+       以下 만 보다가 「HP…以上」을 쓰는 것들이 '상시' 로 새어 나갔다 — 사용자가 짚은
+       「보조 동력」이 그 자리다(「機体HPが 1000 以上の時に撃破されるダメージを受けると」).
+       조건부인데 상시로 잡히면 **늘 걸리는 값**이 되어, 나노라미네이트 아머의 피해 −30%
+       (HP 50% 以上 + 피격 2000 이하)가 내구 지표에 항상 들어가 있었다. 전수 10종. */
+    if (/HP[^。]{0,12}(以下|以上)/.test(blob)) return 'HP조건';
     if (/発動中|使用中|モード中|効果中|ハイパーモード/.test(blob)) return '발동중';
     if (/能力UP|NT-D|覚醒/.test(blob)) return '발동중';   // 「NT-D」·「覚醒」 상태 한정 효과
     return '상시';
@@ -3098,6 +3106,42 @@
    * 방향 피해 = 격투 피해(격투보정·파츠·스킬 반영)에 방향 배율(연타는 히트별)을 곱한 합.
    * 상태(기본/헤비어택/최대출력 등)가 여러 개면 각각 소제목을 달아 나눠 보여 준다.
    */
+  /* ---------- 공중 격투 제어 ----------
+     「空中格闘制御」 LV2 는 그 스킬로 하는 공중 격투의 **위력을 30% 올린다.**
+     이 값은 앱에 통째로 없었다 — 올리는 축이 威力(위력)인데 skills.json 에는 위력 축이
+     없어서, 스킬이 가진 수치가 전부 0 으로 담겨 목록에서 **버려졌다**(사용자 지적).
+
+     버프 스킬 체크박스로 넣지 않는다. 그 칸은 **기체 전체**에 걸리는 값을 위한 것이고,
+     이 효과는 ① 備考가 「スキル「空中格闘制御」対応」이라 밝힌 무장에만 ② 그 스킬로 하는
+     공중 격투에만 걸린다. 격투 무장 전부에 +30% 를 얹으면 피해가 통째로 거짓이 된다
+     (같은 함정을 적 내성 쪽에서 이미 밟았다 — FOE_SCOPE_MARK 주석).
+
+     원문이 두 갈래이고, **수치를 낼 수 있는 쪽이 다르다**(전수 60기):
+       ㉮ 「空中で下格闘攻撃を行うことができる」  53기 — 그 공격이 下格 이다 → 下格 배율로 낸다
+       ㉯ 「空中で連撃不能な特定の格闘攻撃」       7기 — 위키에 그 공격의 방향 배율이 없다
+     ㉯ 에 下格 배율을 갖다 쓰면 지어낸 수가 된다. 그쪽은 수치를 내지 않고 **그렇다고 적는다.** */
+  const AIR_SKILL = '空中格闘制御';
+  /** 그 기체·LV 의 공중 격투 위력 상승. {pct, dir:'下格'|null} · 없으면 null. */
+  function airMeleeOf(ms, lv, form) {
+    const on = ms || state.ms;
+    if (!on) return null;
+    const modes = skillModesFor(msSkillsData[baseName(on.MS名)] || [], form || state.form);
+    const cands = [];
+    for (const mo of modes) for (const k of (mo.skills || [])) if (k.name === AIR_SKILL) cands.push(k);
+    const sk = pickByMsLv(cands, lv || msLevel(on));
+    if (!sk) return null;
+    const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
+    const m = blob.match(/威力が\s*(\d+)\s*[%％]\s*上昇/);
+    if (!m) return null;                                     // LV1 에는 위력 상승이 없다
+    return { pct: Number(m[1]), dir: /下格闘攻撃を行う/.test(blob) ? '下格' : null };
+  }
+  /** 이 무장이 그 스킬에 대응하는가 — 備考가 그렇게 말할 때만 인정한다. */
+  const airMeleeWeapon = w =>
+    /スキル「空中格闘制御」対応/.test(String((w && w.info && w.info['備考']) || ''));
+  /** 올라간 위력. 위력은 게임에서 정수라 내림한다(게임의 반올림 방식은 확인할 수 없어,
+      라벨에 올라간 위력을 그대로 적어 가정이 보이게 한다). */
+  const airPower = (power, pct) => Math.floor(Number(power) * (1 + pct / 100));
+
   function meleeSection(w, power) {
     const r = stats();
     const corr = r.total.meleeCorrection;
@@ -3129,6 +3173,33 @@
         grid.append(line);
       }
       sec.append(grid);
+    }
+
+    /* 공중 격투 제어 LV2 — 대응 무장에만, 그리고 수치를 낼 수 있을 때만 한 줄 더. */
+    const air = airMeleeWeapon(w) ? airMeleeOf(state.ms, msLevel(state.ms), state.form) : null;
+    if (air) {
+      const v0 = variants[0];
+      const dd = air.dir && v0 && (v0.direction || []).find(d => d.label === air.dir);
+      if (dd) {
+        const ap = airPower(power, air.pct);
+        const grid = el('div', 'wd-grid');
+        const line = el('div', 'wd-row air-melee');
+        line.append(el('span', 'wd-k', '공중 ' + mLabel(air.dir)
+          + '  ' + jaUnits(dd.raw) + ' · 위력 +' + air.pct + '% (' + power.toLocaleString()
+          + '→' + ap.toLocaleString() + ')'));
+        const withSkill = D.applyDamagePct(D.meleeDamage(ap, corr, { ccd: dd.hits }), [pct, ...skPcts]);
+        const without = sk ? D.applyDamagePct(D.meleeDamage(ap, corrBare, { ccd: dd.hits }), pct) : withSkill;
+        const cell = el('span', 'wd-v');
+        cell.append(document.createTextNode(without.toLocaleString()));
+        if (withSkill !== without) cell.append(el('span', 's-gain' + skillCls(),
+          ' (+' + (withSkill - without).toLocaleString() + ')'));
+        line.append(cell);
+        grid.append(line);
+        sec.append(grid);
+      } else {
+        sec.append(el('div', 'wd-air-note', '공중 격투 제어 — 공중 격투는 위력 +' + air.pct
+          + '%. 위키에 그 공격의 방향 배율이 없어 피해는 내지 않습니다.'));
+      }
     }
 
     if (w.melee.combo) {
@@ -8554,7 +8625,7 @@
       /* 피해 경감 스킬 — 스킬 하나에 경감이 여럿이면 칩도 여럿.
          `ko` 는 staggerSkillsOf 가 이미 번역해 준다(skTr 를 두 번 부르지 않는다).
          form 은 옛 피탄 시뮬과 같게 'normal' 로 — 변신 기체의 변신 모드는 아직 안 고른다. */
-      defSkills: side => staggerSkillsOf(side.ms, msLevel(side.ms.MS名), 'normal')
+      defSkills: side => staggerSkillsOf(side.ms, msLevel(side.ms), 'normal')
         .flatMap(sk => (sk.cuts || []).map((c, i) => ({
           name: sk.name + (i ? '#' + i : ''), ko: sk.ko || sk.name,
           scope: c.scope, pct: c.pct, always: sk.cond === '상시',
@@ -8564,6 +8635,17 @@
       /* 관통·폭풍 경감 — renderPietanOutgoing 이 넘기던 모양 그대로 */
       extraCuts: (A, B, wp) => conditionalPartCuts(B.parts,
         { name: wp.w.name, attr: wp.attr, type: wp.w.type, psycommu: !!wp.w.psycommu, note: wp.note }),
+      /* 공중 격투 제어 — 판정은 **이 한 곳**(airMeleeOf)만 쓴다. 무장 상세의
+         「공중 하격」 줄과 대결의 🛩 단추가 같은 답을 보게 한다.
+         수치를 낼 수 없는 쪽(방향 배율이 위키에 없는 7기)은 null 을 돌려 단추가 안 나온다. */
+      airMelee: (side, wp) => {
+        if (!wp || !wp.melee || !airMeleeWeapon(wp.w)) return null;
+        const a = airMeleeOf(side.ms, msLevel(side.ms), 'normal');
+        if (!a || !a.dir) return null;
+        const has = (wp.variants || []).some(v => (v.direction || []).some(d => d.label === a.dir));
+        if (!has) return null;
+        return { pct: a.pct, dir: a.dir, power: p => airPower(p, a.pct) };
+      },
       /* 소이 등 고정 피해 — 보정도 경감도 안 받는 몫 */
       fixedDamage: (A, wp) => { const f = fixedDamageWithParts(wp.w, A.parts); return f ? f.total : 0; },
       /* 왼쪽 = 지금 편집 중인 구성. setMs 가 파츠를 비우므로 **그 뒤에** 넣는다(순서 주의).
@@ -11118,6 +11200,14 @@
     },
     thrusterSkillFx,
     thrusterMetrics,        // 파츠·스킬 경감이 겹치는 방식(곱)을 게이트에서 재려고
+    /* 방어 스킬의 발동 조건 라벨 — 조건부인 것이 '상시' 로 새면 늘 걸리는 값이 된다.
+       게이트가 스스로 원문을 읽어 맞대 보려고 연다(라벨만 보면 수에 안 먹히는 것을 놓친다). */
+    staggerSkillsOf,
+    /* 공중 격투 제어 — 대결 화면과 게이트가 **같은 판정**을 쓰게 한다.
+       두 군데에 두면 한쪽만 고쳐져 갈린다. */
+    airMeleeOf,
+    airMeleeWeapon,
+    airPower,
     // 주무장 LV 왕복 점검용 — 읽기만 한다
     weaponLv: () => state.weaponLv,
     encodeShare: () => encodeShare()

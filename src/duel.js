@@ -9,7 +9,8 @@
  *   HOOK.defSkills(side)              → 앱 staggerSkillsOf + activeStaggerMods 의 cuts
  *   HOOK.extraCuts(A, B, wp)          → 앱 conditionalPartCuts(B 파츠, 무장)  (관통·폭풍 경감)
  *   HOOK.fixedDamage(A, wp)           → 앱 fixedDamageWithParts(w, A 파츠).total  (소이 등)
- *   HOOK.seed(left, setMs)            → 앱 state.ms · state.equipped · state.stage 를 왼쪽에
+ *   HOOK.seed(left, setMs, force)     → 앱 state.ms · state.equipped · state.stage 를 왼쪽에
+ *   HOOK.airMelee(side, wp)           → 앱 airMeleeOf + airMeleeWeapon  (공중 격투 위력 상승)
  * ------------------------------------------------------------------ */
 (function () {
   'use strict';
@@ -59,6 +60,7 @@
     buffs: new Set(),      // 공격·스탯 버프 스킬 (GBO2_SKILLS)
     defs: new Set(),       // 피해 경감 스킬 (msSkills 설명문)
     wKey: null, mode: 'nc', posture: 'stand', scope: false, variant: 0, dir: 0,
+    air: false,            // 공중 격투 제어로 하는 공중 격투인가 (위력 상승)
     pickParts: false, pq: '', pcat: 'all', pickMs: false, mq: '',
     step: 1                // 이 쪽 무장으로 상대를 몇 발 맞혔는지 (게이지 미리보기)
   });
@@ -223,7 +225,10 @@
     defSkills: side => defSkillsDefault(side),
     extraCuts: () => [],
     fixedDamage: () => 0,
-    seed: (left, setMs, force) => seedDefault(left, setMs, force)
+    seed: (left, setMs, force) => seedDefault(left, setMs, force),
+    /* ★ 공중 격투 제어 — 판정이 원문(ms_skills)에 있어 바깥에서 읽을 수 없다.
+       간이판은 **없다고 답한다**. 지어내 답하면 앱과 다른 수가 나온다. */
+    airMelee: () => null
   };
 
   /* ---------- 한 방향의 계산 (공격 측 A → 대상 B) ---------- */
@@ -234,7 +239,11 @@
     const kind = wp.melee ? 'melee' : 'shoot';
     const mode = wp.melee ? 'nc' : (wp.modes.find(m => m.k === A.mode && m.ok) || wp.modes.find(m => m.ok) || { k: 'nc' }).k;
     const charged = mode !== 'nc';
-    const power = charged ? wp.charged : wp.power;
+    let power = charged ? wp.charged : wp.power;
+    /* 공중 격투 제어 — 그 스킬로 하는 공중 격투만 위력이 오른다. 방향도 그 공격으로 고정한다
+       (땅에서의 N격·횡격에 얹으면 거짓이 된다). 수치를 낼 수 있는 때만 앱이 답을 준다. */
+    const air = (A.air && wp.melee) ? HOOK.airMelee(A, wp) : null;
+    if (air) power = air.power(power);
     const corr = kind === 'melee' ? (sA.meleeCorrection || 0) : (sA.shoot || 0);
     const att = matchup(A.ms.属性, B.ms.属性);
 
@@ -250,8 +259,14 @@
     let ccd = [1], dirTxt = '';
     if (wp.variants) {
       const v = wp.variants[Math.min(A.variant, wp.variants.length - 1)];
-      const d = v.direction[Math.min(A.dir, v.direction.length - 1)];
-      if (d) { ccd = d.hits; dirTxt = (wp.variants.length > 1 ? v.label + ' ' : '') + dirLabel(d.label) + ' ' + d.raw; }
+      // 공중 격투는 원문이 가리키는 방향 하나로 고정된다 — 고른 방향을 쓰지 않는다
+      const d = air ? (v.direction || []).find(z => z.label === air.dir)
+        : v.direction[Math.min(A.dir, v.direction.length - 1)];
+      if (d) {
+        ccd = d.hits;
+        dirTxt = (wp.variants.length > 1 ? v.label + ' ' : '')
+          + (air ? '공중 ' : '') + dirLabel(d.label) + ' ' + d.raw;
+      }
     }
     const raw = kind === 'melee'
       ? D.meleeDamage(power, corr, { attr: att, ccd })
@@ -279,7 +294,7 @@
     const perHp = toHp(per);
     const shots = per > 0 ? Math.ceil(eff / per) : null;
     return { wp, mode, charged, power, corr, att, etcA, etcTxt, dirTxt, partPct, skPcts, factor, cuts,
-      hit, n, fixed, per, perHp, eff, hp, shots, foeCut, armor: tB[ARMOR[wp.attr]] || 0 };
+      hit, n, fixed, per, perHp, eff, hp, shots, air, foeCut, armor: tB[ARMOR[wp.attr]] || 0 };
   }
   const FOE_ARMOR_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を?\s*(\d+)\s*[%％]\s*減/;
   const DIR_KO = { 'N格': 'N격', '横格': '횡격', '下格': '하격', '前格': '전격', '後格': '후격', '空中格': '공중격' };
@@ -601,12 +616,29 @@
           cond.append(v);
         }
         const dirs = x.variants[Math.min(side.variant, x.variants.length - 1)].direction || [];
+        /* 공중 격투 제어 — 켜면 방향이 원문이 가리키는 하나로 고정되므로 방향 세그먼트를 잠근다.
+           대응 무장이 아니거나 수치를 낼 수 없는 기체(방향 배율이 위키에 없는 쪽)에서는
+           단추 자체가 안 나온다 — 눌러도 아무 일 없는 단추를 두지 않는다. */
+        const air = HOOK.airMelee(side, x);
         if (dirs.length > 1) {
           cond.append(el('span', 'lb', '방향'));
           const d = el('div', 'seg');
-          dirs.forEach((dd, i) => d.append(btn('seg-btn' + (i === side.dir ? ' on' : ''), dirLabel(dd.label) + ' ' + dd.raw, () => { side.dir = i; changed(side); })));
+          dirs.forEach((dd, i) => {
+            const bb = btn('seg-btn' + (!side.air && i === side.dir ? ' on' : ''),
+              dirLabel(dd.label) + ' ' + dd.raw, () => { side.dir = i; side.air = false; changed(side); });
+            if (side.air && air) { bb.disabled = true; bb.title = '공중 격투는 ' + dirLabel(air.dir) + ' 로 고정됩니다'; }
+            d.append(bb);
+          });
           cond.append(d);
         }
+        if (air) {
+          cond.append(el('span', 'lb', '공중'));
+          const aw = el('div');
+          aw.append(btn('d-btn' + (side.air ? ' on' : ''),
+            side.air ? '🛩 공중 격투 켬 (위력 +' + air.pct + '%)' : '🛩 공중 격투 (위력 +' + air.pct + '%)',
+            () => { side.air = !side.air; changed(side); }));
+          cond.append(aw);
+        } else if (side.air) { side.air = false; }
       }
       b.append(cond);
       if (!x.melee) b.append(el('div', 'ds-why', '자세·스코프는 사격 피해에 (1 + 보정) 으로 곱해집니다 — 앉아서 +5%, 엎드려서 +10%, 스코프 +5%.'));
@@ -693,6 +725,7 @@
     chip((r.wp.melee ? '격투' : '사격') + '보정 ' + Math.round(r.corr));
     for (const e of r.etcTxt) chip(e, 'up');
     if (r.dirTxt) chip(r.dirTxt);
+    if (r.air) chip('공중 격투 제어 위력 +' + r.air.pct + '%', 'up');
     if (r.fixed) chip('고정 피해 +' + fmt(r.fixed), 'up');
     chip('상성 ' + MATCH_TXT[r.att], r.att === 'advantage' ? 'up' : r.att === 'disadvantage' ? 'down' : '');
     if (r.partPct) chip('파츠 피해 +' + r.partPct + '%', 'up');
@@ -736,7 +769,7 @@
     side.ms = ms; side.pickMs = false; side.mq = '';
     side.parts = keepParts ? keepEquippable(ms, side.parts, side.stage) : [];
     side.buffs.clear(); side.defs.clear();
-    side.wKey = null; side.step = 1; side.pickParts = false;
+    side.wKey = null; side.step = 1; side.pickParts = false; side.air = false;
     // 주무장을 기본으로 골라 둔다 — 고르기 전 빈 화면을 줄인다
     const first = weaponsOf(side)[0];
     if (first) { side.wKey = first.key; const m = first.modes.find(x => x.ok); side.mode = m ? m.k : 'nc'; }

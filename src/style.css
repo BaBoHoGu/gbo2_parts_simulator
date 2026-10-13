@@ -4194,3 +4194,8 @@ body.info-open .sel-info { display: flex; }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; line-height: 1.25;
 }
+
+/* 공중 격투 제어 LV2 — 땅에서의 방향 배율과 섞이지 않게 한 칸 띄우고 테두리로 가른다.
+   수치를 못 내는 쪽(방향 배율이 위키에 없는 7기)은 줄 대신 안내문만 나온다. */
+.wd-row.air-melee { border-top: 1px dashed var(--line); padding-top: 5px; margin-top: 3px; }
+.wd-air-note { margin-top: 5px; font-size: 11px; color: var(--muted); line-height: 1.4; }
