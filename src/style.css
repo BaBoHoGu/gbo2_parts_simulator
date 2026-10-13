@@ -176,7 +176,6 @@ body.view-patch   .screen:not(#screenPatch) { display: none; }
 body:not(.view-select):not(.view-build):not(.view-gallery):not(.view-token):not(.view-plan):not(.view-codex):not(.view-patch)
   .screen:not(#screenSelect) { display: none; }
 
-
 /* 중간 폭(파츠 화면 상단바가 두 줄로 넘치는 자리)에서는 **토큰·강화 플랜**을 「⋯」로 접는다.
    재 보니 1280px 에서 버튼 하나만 늘어도 두 줄이 됐다(높이 56→99).
    접을 것을 패치노트로 잡았다가 사용자 지시로 바꿨다 — 패치노트는 늘 보이고,
@@ -357,7 +356,6 @@ body.pn-info .sel-info {
 
 /* 걸개가 켜지면 눌린 것처럼 보여야 한다 — 안 그러면 날짜가 왜 줄었는지 모른다 */
 #pnBalBtn.on { background: var(--accent); border-color: var(--accent); color: #241c00; font-weight: 700; }
-
 
 /* 밸런스 조정이 있는 주는 레일에서 눈에 띄게 — 대부분의 주는 기체 추가뿐이다 */
 .pn-date.bal .pn-md { color: var(--accent); }
@@ -1589,8 +1587,10 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
 }
 .auto-modal[hidden] { display: none; }
-/* [hidden] 은 어떤 미디어 규칙보다 세야 한다. 모바일 블록의 #pietanModal{display:flex}
-   가 id 특이도로 위 규칙을 이겨, 닫힌 피탄 모달이 앱 전체를 덮고 있었다. */
+/* [hidden] 은 어떤 미디어 규칙보다 세야 한다. 모바일 블록의 모달 규칙이
+   id 특이도(#…Modal{display:flex})로 위 규칙을 이겨, **닫힌 모달이 앱 전체를**
+   덮고 있었다. 그 모달(피탄 시뮬)은 2026-10-13 에 대결 시뮬로 합쳐 없앴지만,
+   같은 꼴이 다시 생기지 않게 이 한 줄은 남긴다 — ui_check 가 ① 로 재는 자리다. */
 .auto-modal[hidden] { display: none !important; }
 .am-head {
   display: flex; align-items: center; gap: 10px; padding: 12px 16px;
@@ -1661,32 +1661,6 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   color: #ff9a9a; font-size: var(--fs-md); font-weight: 600; text-align: center;
 }
 .incomplete-notice[hidden] { display: none; }
-
-/* 피탄 시뮬레이터 */
-.pietan-modal { width: min(760px, 94vw); }
-.pietan-dura { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 12px 16px 4px; }
-.pietan-dura-lb { font-size: var(--fs-sm); font-weight: 700; color: var(--muted); margin-right: 4px; }
-.pietan-dura-cell { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-md); }
-.pietan-dura-t { color: var(--muted); }
-.pietan-dura-v { font-weight: 700; font-variant-numeric: tabular-nums; }
-.pietan-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.pietan-dot.armorRange { background: #e0a03a; }
-.pietan-dot.armorBeam { background: #4aa3ff; }
-.pietan-dot.armorMelee { background: #e6604a; }
-.pietan-ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 16px 2px; }
-.pietan-corr { font-size: var(--fs-sm); color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
-.pietan-corr input { width: 62px; padding: 3px 6px; }
-.pietan-ctrl-lb { font-size: var(--fs-sm); color: var(--muted); margin-left: 2px; }
-/* 적 공격 스킬 체크박스 묶음 (결과 상단, 방어 스킬과 같은 stg-* 스타일 재사용) */
-.pietan-eskills { margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-.pietan-eskills .pietan-ctrl-lb { display: block; margin-bottom: 3px; color: var(--close); }
-.pietan-eskills .stg-chk input { accent-color: var(--close); }
-/* 적 선택 목록의 구분 라벨 (내 저장 구성 / 전체 기체) */
-.pietan-sec-lb { font-size: var(--fs-xs); font-weight: 700; color: var(--info); padding: 8px 4px 3px; border-top: 1px solid var(--line); margin-top: 2px; }
-.pietan-sec-lb:first-child { border-top: 0; margin-top: 0; }
-.pietan-ctrl .seg { display: inline-flex; }
-.pietan-stagger { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-.pietan-hint { padding: 2px 16px 0; color: var(--muted); font-size: var(--fs-sm); }
 /* 누적치 스킬 체크박스 (내구 지표 하단·피탄 시뮬 공통) */
 .stagger-row .dura-v { color: #e6b04a; }
 .stagger-detail { font-size: var(--fs-xs); color: var(--muted); margin-left: 8px; }
@@ -1703,74 +1677,6 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .stg-cond { font-size: var(--fs-3xs); color: var(--accent); background: rgba(255,201,60,.13); border-radius: 4px; padding: 0 4px; margin-left: 1px; }
 .w-dps { color: #ffcf5a; font-weight: 700; }
 .dura-row.stagger-row { flex-wrap: wrap; }
-.pietan-hint b { color: var(--text); }
-.pietan-modal #pietanQuery { margin: 8px 16px 4px; width: calc(100% - 32px); }
-.pietan-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 6px 16px 16px; min-height: 0; }
-.pietan-list { overflow-y: auto; max-height: 46vh; border: 1px solid var(--line); border-radius: 9px; }
-.pietan-row {
-  display: flex; align-items: center; gap: 8px; padding: 6px 9px; cursor: pointer;
-  font-size: var(--fs-sm); border-bottom: 1px solid var(--line);
-}
-.pietan-row:last-child { border-bottom: 0; }
-.pietan-row:hover { background: var(--panel-2); }
-.pietan-row.on { background: rgba(255, 201, 60, .18); }
-.pietan-row img { width: 26px; height: 26px; object-fit: contain; flex: none; border-radius: 4px; }
-.pietan-wn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pietan-mshead { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 1; }
-.pietan-back { font-size: var(--fs-sm); padding: 2px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); cursor: pointer; color: var(--text); }
-.pietan-back:hover { border-color: var(--accent); }
-.pietan-msnm { font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pietan-lvseg { margin: 7px 9px; }
-.pietan-msctx { font-size: var(--fs-sm); color: var(--muted); margin-top: -3px; }
-.pietan-wp { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 700; }
-.pietan-result {
-  border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: var(--panel-2);
-  display: flex; flex-direction: column; gap: 9px; align-self: start;
-}
-.pietan-empty { color: var(--muted); font-size: var(--fs-md); text-align: center; padding: 30px 8px; }
-.pietan-rhd { display: flex; align-items: center; gap: 7px; }
-.pietan-rnm { font-size: var(--fs-lg); }
-/* 강경직(大よろけ)/경직 리액션 칩 */
-.pietan-react { font-size: var(--fs-2xs); font-weight: 700; padding: 1px 7px; border-radius: 10px;
-  background: var(--panel-3); color: var(--muted); }
-.pietan-react.strong { background: #4a2530; color: var(--close); }
-/* 격투 방향 선택 */
-.pietan-dir { display: flex; align-items: center; gap: 8px; margin: 6px 0 2px; }
-.pietan-dirseg { flex-wrap: wrap; }
-.pietan-sub { color: var(--muted); font-size: var(--fs-sm); margin-top: -3px; }
-.pietan-metric {
-  display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 8px;
-  padding: 7px 0; border-top: 1px solid var(--line);
-}
-.pietan-metric.sub { padding: 2px 0; border-top: 0; opacity: .85; }
-.pietan-mlb { font-weight: 700; font-size: var(--fs-md); }
-.pietan-mv { font-size: var(--fs-3xl); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
-.pietan-metric.sub .pietan-mv { font-size: var(--fs-xl); }
-.pietan-mnote { font-size: var(--fs-xs); color: var(--muted); text-align: right; }
-.pietan-foot { font-size: var(--fs-2xs); color: var(--muted); line-height: 1.4; margin-top: 2px; }
-/* 내 무장 → 상대 격파 (TTK 역방향) */
-.pietan-out-lb { font-size: var(--fs-sm); font-weight: 700; color: var(--muted); margin: 10px 0 4px; padding-top: 8px; border-top: 1px solid var(--line); display: block; }
-.pietan-out-row { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; padding: 3px 0; }
-.pietan-out-nm { font-size: var(--fs-sm); color: var(--text); display: flex; align-items: center; min-width: 0; }
-/* 이름만 줄이고 꼬리표(집속·내성 감소)는 줄이지 않는다 */
-.pietan-out-tx { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pietan-pierce, .pietan-charge { flex: 0 0 auto; white-space: nowrap; }
-.pietan-out-dmg { font-size: var(--fs-xs); color: var(--dim); font-variant-numeric: tabular-nums; text-align: right; }
-/* 무장이 상대 내성을 깎는다는 표시 — 왜 이 무장만 발수가 적은지 밝힌다 */
-.pietan-pierce {
-  margin-left: 6px; padding: 1px 5px; border-radius: 4px;
-  font-size: var(--fs-2xs); font-style: normal; font-weight: 700;
-  color: var(--bg); background: var(--accent); vertical-align: 1px;
-}
-/* 집속 위력으로 센 줄 — 비집속 줄과 같은 눈금으로 읽히면 안 된다 */
-.pietan-charge {
-  margin-left: 6px; padding: 1px 5px; border-radius: 4px;
-  font-size: var(--fs-2xs); font-style: normal; font-weight: 700;
-  color: var(--mid); border: 1px solid var(--line); vertical-align: 1px;
-}
-.pietan-out-hits { font-size: var(--fs-md); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; min-width: 40px; }
-.pietan-more { padding: 8px; text-align: center; color: var(--muted); font-size: var(--fs-xs); }
-@media (max-width: 620px) { .pietan-cols { grid-template-columns: 1fr; } }
 
 /* 기본 파츠 설정 (기본 제외 파츠) */
 .owned-hint { padding: 10px 16px 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.5; }
@@ -2019,7 +1925,6 @@ input[type="search"], input[type="text"] { width: 100%; }
 
   /* 무장·피탄 행: 세로 탭 여백 확대 */
   .weapon, .weapon-head { padding-top: 5px; padding-bottom: 5px; }
-  .pietan-row { padding: 12px; }
 
   /* 자동 구성 드로어: 전체폭 + 입력 크게, 라벨 폭 확보 */
   .drawer { width: 100%; max-width: 100%; }
@@ -2030,11 +1935,11 @@ input[type="search"], input[type="text"] { width: 100%; }
   #runAuto { min-height: 46px; font-size: var(--fs-lg); }
 
   /* 모달·결과: 하단 시스템바 안전영역만큼 스크롤 여유 */
-  .auto-results, .compare-body, #savedResults, .pietan-cols { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .auto-results, .compare-body, #savedResults{ padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
   .am-head b { font-size: var(--fs-2xl); }
 
   /* 너무 작던 보조 텍스트 살짝 키움 */
-  .ms-card .meta, .ac-stat, .pietan-sub, .sc-tags { font-size: var(--fs-xs); }
+  .ms-card .meta, .ac-stat, .sc-tags { font-size: var(--fs-xs); }
 }
 
 /* ── 모바일: 상단 필터(보기·속성·코스트·레벨·등급)를 줄바꿈 대신 가로 슬라이드로 ──
@@ -2068,16 +1973,15 @@ body { font-variant-numeric: tabular-nums; }
 
 /* 짧은 제목/텍스트 줄바꿈 품질 — 고아 단어 방지, 제목은 균형 */
 h1, h2, h3 { text-wrap: balance; }
-.pt-nm, .ac-k, .wd-k, .d-eff-lb, .filter-lb, .empty-state, .detail-empty,
-.pietan-hint, .owned-hint, .why-cap, .diag-msg { text-wrap: pretty; }
+.pt-nm, .ac-k, .wd-k, .d-eff-lb, .filter-lb, .empty-state, .detail-empty, .owned-hint, .why-cap, .diag-msg { text-wrap: pretty; }
 
 /* 눌림 피드백 — 누르는 즉시 살짝 눌리는 느낌(애플: respond on press).
    transform 만 바뀌므로 GPU 친화적이고, 기존 border/background 전환은 유지한다. */
-button, .chip, .seg-btn, .ms-card, .part-tile, .auto-cand, .pietan-row, .ms-fav, .ac-thumb {
+button, .chip, .seg-btn, .ms-card, .part-tile, .auto-cand, .ms-fav, .ac-thumb {
   transition: transform .10s ease, border-color .12s, background .12s, box-shadow .14s, color .12s;
 }
 button:not(:disabled):active, .chip:active, .seg-btn:active, .ms-card:active,
-.part-tile:active, .auto-cand:active, .pietan-row:active, .ms-fav:active {
+.part-tile:active, .auto-cand:active, .ms-fav:active {
   transform: scale(.97);
 }
 
@@ -2090,7 +1994,7 @@ button:not(:disabled):active, .chip:active, .seg-btn:active, .ms-card:active,
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
   button:active, .chip:active, .seg-btn:active, .ms-card:active, .part-tile:active,
-  .auto-cand:active, .pietan-row:active, .ms-fav:active { transform: none; }
+  .auto-cand:active, .ms-fav:active { transform: none; }
 }
 
 /* ============================================================
@@ -2522,97 +2426,6 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
   .mskill-inline.sheet-open .mskill-body { max-height: none; overflow: visible; }
 }
 
-/* ── 모바일: 피탄 시뮬레이터 ─────────────────────────────────
-   세로에선 제목·닫기가 줄바꿈되고, 가로에선 헤더가 높이를 다 먹어 목록이 잘렸다.
-   전체 화면으로 띄우고 헤더는 고정, 목록·결과가 남은 높이를 나눠 갖게 한다. */
-@media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
-  #pietanModal {
-    top: 0; left: 0; transform: none;
-    width: 100%; max-width: none;
-    height: 100%; max-height: none;
-    border-radius: 0; border: 0;
-    display: flex; flex-direction: column;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  /* 제목 줄 — 줄바꿈 금지, 기체명은 남는 폭만큼만 */
-  #pietanModal .am-head { flex: 0 0 auto; flex-wrap: nowrap; gap: 8px; }
-  #pietanModal .am-head > b { white-space: nowrap; }
-  #pietanModal .am-head .am-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #pietanModal .am-head button { flex: 0 0 auto; white-space: nowrap; }
-  /* 긴 안내문은 좁은 화면에서 세로를 크게 먹는다 — 필요할 때만 보이게 접어 둔다 */
-  #pietanModal .pietan-hint { display: none; }
-  /* 폰 세로에서는 **모달 하나만** 스크롤한다.
-     예전에는 목록(297px)·결과(249px)·방어 스킬이 각자 스크롤을 갖고 있어, 844px 화면 안에
-     스크롤이 셋이었다 — 손가락이 무엇을 미는지 알 수 없고, 칸마다 몇 줄씩만 보였다.
-     머리줄만 붙여 두고(sticky) 나머지는 자연 높이로 쭉 세운다. */
-  #pietanModal { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  #pietanModal .am-head {
-    position: sticky; top: 0; z-index: 3;
-    background: var(--panel-2); border-bottom: 1px solid var(--line);
-  }
-  #pietanModal .pietan-cols {
-    flex: 0 0 auto; min-height: 0;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  #pietanModal .pietan-stagger { max-height: none; overflow: visible; }
-  #pietanModal .pietan-list,
-  #pietanModal .pietan-result { flex: 0 0 auto; min-height: 0; max-height: none; overflow: visible; }
-  /* 가로(낮은 높이)에선 상단 정보 블록을 더 줄인다 */
-  @media (max-height: 460px) {
-    #pietanModal .pietan-stagger { max-height: 84px; overflow-y: auto; }
-    #pietanModal .pietan-dura { font-size: var(--fs-sm); }
-  }
-}
-
-/* 가로로 눕힌 폰 — 폭은 700 을 넘지만 높이가 낮다. 위 모바일 규칙이 안 걸리므로 따로 준다. */
-@media (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
-  #pietanModal {
-    top: 0; left: 0; transform: none;
-    width: 100%; max-width: none;
-    height: 100%; max-height: none;
-    border-radius: 0; border: 0;
-    display: flex; flex-direction: column;
-  }
-  #pietanModal .am-head { flex: 0 0 auto; flex-wrap: nowrap; gap: 8px; }
-  #pietanModal .am-head > b { white-space: nowrap; }
-  #pietanModal .pietan-hint { display: none; }
-  /* 낮은 높이에선 상단 정보를 접고, 목록·결과를 좌우로 나눠 세로를 아낀다 */
-  #pietanModal .pietan-stagger { max-height: 70px; overflow-y: auto; }
-  #pietanModal .pietan-cols {
-    flex: 1 1 auto; min-height: 0;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  }
-  #pietanModal .pietan-list, #pietanModal .pietan-result { min-height: 0; overflow-y: auto; }
-}
-
-/* ── 피탄 시뮬: 세로가 길어져도 모달 밖으로 늘어지지 않게 (데스크톱) ──
-   .auto-modal 은 max-height:88vh 인데 안쪽에 스크롤 축이 없어, 결과가 길면
-   내용이 모달 아래로 삐져나갔다. 헤더·상단 정보는 고정하고 목록·결과가
-   남은 높이를 나눠 각자 스크롤하게 한다. */
-#pietanModal .am-head,
-#pietanModal .pietan-dura,
-#pietanModal .pietan-ctrl,
-#pietanModal .pietan-hint,
-#pietanModal #pietanQuery { flex: 0 0 auto; }
-/* 이 셋은 **넓은 화면 전용**이다. 미디어 쿼리 안에 있어도 이 줄이 뒤에 있으면 순서로 이겨,
-   폰 세로에서 「모달 하나만 스크롤」 규칙을 조용히 덮어 버린다(글자 크기 때 밟은 것과 같은 함정). */
-@media (min-width: 701px) {
-  #pietanModal .pietan-cols { flex: 1 1 auto; min-height: 0; overflow: hidden; }
-  #pietanModal .pietan-list { max-height: none; min-height: 0; }
-  #pietanModal .pietan-result { align-self: stretch; min-height: 0; overflow-y: auto; }
-}
-
-/* 방어 스킬 묶음 — 적 / 내 것을 두 줄로 쌓는다. 스킬이 많으면 이 영역만 스크롤. */
-.pietan-stagger { flex-basis: 100%; flex-direction: column; flex-wrap: nowrap; align-items: stretch;
-  gap: 2px; max-height: 24vh; overflow-y: auto; }
-.pietan-skgrp { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; flex: 0 0 auto; }
-/* 같은 안내문이 두 묶음에 겹쳐 나오지 않게 — 위쪽 것만 남긴다 */
-.pietan-skgrp + .pietan-skgrp .stg-hint { display: none; }
-.pietan-skgrp .pietan-ctrl-lb { flex-basis: 100%; margin: 3px 0 0; }
-.pietan-skgrp .stagger-skills { padding: 0; }
-.pietan-skgrp.enemy .pietan-ctrl-lb { color: var(--close); }
-.pietan-skgrp.enemy .stg-chk input { accent-color: var(--close); }
-
 /* ── 모바일 상단바: 보조 버튼을 「⋯」 메뉴로 ──
    9개를 가로 스크롤 스트립에 밀어 넣어 놓아, 폰에서 저장·비교·공유 따위가
    옆으로 밀려 보이지도 닿지도 않았다. */
@@ -2652,7 +2465,7 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
    작은 버튼들이 빠져 있었다 — 「전체 해제」 28px · 「‹ 기체 변경」 31px 등.
    폰에서 이들만 36px 로 맞춘다(칩 규칙은 기존 것을 그대로 둔다). */
 @media (max-width: 700px), (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
-  .btn-ghost, .btn-primary, .back-btn, .pietan-back, .png-menu-item { min-height: 36px; }
+  .btn-ghost, .btn-primary, .back-btn, .png-menu-item { min-height: 36px; }
   .stg-chk { min-height: 32px; }
 }
 @media (max-width: 700px) {
@@ -2786,18 +2599,7 @@ body.drawer-open .m-actionbar { display: none !important; }
 @media (max-height: 560px) and (min-width: 680px) and (max-width: 1100px) {
   .build-weapons.sheet-open > .panel > h2 { width: min(94vw, 760px); }
 }
-
-/* ── 고정 배치 오버레이의 안전 영역(상태바·노치) 회피 ──
-   body 에 준 padding 은 position:fixed 요소엔 안 걸린다. targetSdk 36 은 edge-to-edge 라
-   화면 맨 위가 '상태바 아래' 가 아니라 '상태바 뒤' 다 — 전체화면 피탄 모달·드로어의 머리가
-   상태바에 먹히고 있었다. (시트들은 이미 각자 처리돼 있었고 여기만 빠져 있었다) */
-#pietanModal { padding-top: env(safe-area-inset-top); }
 .drawer { padding-top: env(safe-area-inset-top); }
-/* 가운데 뜨는 모달은 안전 영역 '안'에서 가운데를 잡는다 */
-.auto-modal:not(#pietanModal) {
-  top: calc(50% + (env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 2);
-  max-height: min(88vh, calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px));
-}
 
 /* 자세·스코프 드롭다운 — 성능의 스킬 메뉴와 같은 모양 */
 /* body 로 띄우는 팝오버 — .skill-menu 의 absolute/top/left 를 덮는다 */
@@ -2810,15 +2612,6 @@ body.drawer-open .m-actionbar { display: none !important; }
 .thr-ohlong {
   font-size: var(--fs-2xs); font-weight: 700; color: var(--bad);
   background: rgba(230, 96, 74, .13); border-radius: 999px; padding: 1px 8px; margin-left: 4px;
-}
-
-/* 피탄 시뮬 — 실드로 막았을 때 깨는 데 걸리는 발수 */
-.pietan-out.has-shield .pietan-out-row { grid-template-columns: auto 1fr auto auto auto; }
-/* 실드를 무시하는 무장 — 「표기 없음」과 눈으로 갈리게 색을 달리한다 */
-.pietan-out-sh.ign { color: var(--accent); }
-.pietan-out-sh {
-  font-size: var(--fs-xs); font-weight: 700; color: var(--info);
-  font-variant-numeric: tabular-nums; text-align: right; min-width: 52px;
 }
 
 /* 실드 보정 칩 — 「실드로 막음」 을 켰을 때만 무장 이름 옆에 붙는다.
@@ -2860,15 +2653,6 @@ body.drawer-open .m-actionbar { display: none !important; }
   .png-preview { padding: 0 10px; }
   .png-hint { padding: 8px 10px 12px; }
 }
-
-
-
-/* 피탄 시뮬 — 「N발 버티기」 를 자동 구성 목표로 넘기는 줄 */
-.pietan-goal { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px;
-  padding-top: 6px; border-top: 1px dashed var(--line-soft); }
-.pietan-goal input { width: 58px; text-align: right; }
-.pietan-goal .btn-primary.small { padding: 3px 10px; font-size: var(--fs-sm); }
-.pietan-goal .pietan-mnote { flex: 1 1 100%; }
 
 /* ---- 공유 갤러리 화면 ----
    기체 선택 화면과 같은 뼈대(.select-head + 격자)를 쓴다. 카드는 저장 목록과 같은 것. */
@@ -2929,7 +2713,6 @@ body.drawer-open .m-actionbar { display: none !important; }
 .admin-foot { display: flex; align-items: center; gap: 8px; }
 .admin-foot .note { color: var(--bad); }
 #galleryAdmin.on { color: var(--ok); border-color: var(--ok); }
-
 
 /* ═══ [모바일 목록 개편 2026-09-10] 폰 세로: 파츠 목록을 2열 가로줄로 ═══
    4열 정사각은 그림·이름만 보여 줘, 칸 소모를 알려면 파츠마다 눌러야 했다.
@@ -2993,7 +2776,6 @@ body.drawer-open .m-actionbar { display: none !important; }
   .part-list .part-tile.on .pt-nm::after { content: none; }
   .part-list .part-tile.on .pt-slot::before { content: "✓ "; color: var(--ok); font-weight: 700; }
 }
-
 
 /* ═══ [태블릿 2단 배치 2026-09-10] ═══
    태블릿 세로는 지금까지 한 줄로 쌓여, 768x1024 에서 파츠 목록이 스크롤
@@ -3133,7 +2915,6 @@ body.drawer-open .m-actionbar { display: none !important; }
   .part-list .pt-why { grid-row: 5; font-size: var(--fs-3xs); line-height: 12px; }
 }
 
-
 /* ═══ [폰 큰 카드 2026-09-10] 폰 세로 목록을 태블릿과 같은 2열 큰 카드로 ═══
    앞서 한 번은 "스크롤 없이 한 화면"까지 밀어붙였다가 목록이 반 줄만 남아
    되돌렸다. 문제는 카드가 아니라 한 화면에 가둔 것이었다 —
@@ -3195,11 +2976,9 @@ body.drawer-open .m-actionbar { display: none !important; }
   .part-list .part-tile.on .pt-slot::before { content: none; }
 }
 
-
 /* 화면 모드 토글은 「⋯」 메뉴 항목의 원본일 뿐이라 상단바에는 그리지 않는다.
    (메뉴 생성기가 원본의 글자·설명을 읽고, 누르면 원본을 click 한다) */
 #viewModeBtn { display: none !important; }
-
 
 /* 방어 스킬 머리줄 — 눌러서 접었다 편다 (버튼이지만 기존 dura-row 모양을 지킨다) */
 .stg-head {
@@ -3223,7 +3002,6 @@ body.drawer-open .m-actionbar { display: none !important; }
    진다 — 접었는데 목록이 그대로 보였다. 명시해서 이긴다. */
 .stagger-skills[hidden] { display: none !important; }
 
-
 /* 스러스터 지표의 기준 표시(적성·강습) — 6.3초가 왜 7초와 다른지 화면에서 읽히게 */
 .thr-col {
   margin-left: 5px;
@@ -3235,7 +3013,6 @@ body.drawer-open .m-actionbar { display: none !important; }
   background: rgba(255, 202, 58, .12);
   border: 1px solid rgba(255, 202, 58, .3);
 }
-
 
 /* 업로드 폼 — 필수 표시와 무과금 체크 */
 .admin-body .req {
@@ -3273,10 +3050,8 @@ body.drawer-open .m-actionbar { display: none !important; }
   white-space: nowrap;
 }
 
-
 /* 작성자 뒤 IP 앞자리 — 이름보다 흐리게 둔다(이름이 주고, 이건 곁들이다) */
 .sc-ip { margin-left: 4px; color: var(--dim); font-variant-numeric: tabular-nums; }
-
 
 /* ============ ④ 스킬 도감 ============ */
 /* 좌: 스킬 목록 · 우: 설명과 보유 기체. 기체와 상관없이 위키 분류대로 모아 본다. */
@@ -3390,7 +3165,6 @@ body.drawer-open .m-actionbar { display: none !important; }
 .codex-paneback { display: none; }
 @media (max-width: 900px) { .codex-paneback { display: inline-block; margin-bottom: 8px; } }
 
-
 /* ============================================================
    HUD 형태 — 게임 내 Customize 화면의 '생김새'를 따온다.
    색은 건드리지 않는다. 우리 색은 뜻을 지고 있다
@@ -3431,7 +3205,6 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* 패널 머리글 — 게임처럼 얇은 밑줄을 깔아 구획을 분명히 한다 */
 .panel > h2 { border-bottom: 1px solid var(--line-soft); }
 
-
 /* 좁은 화면에서 푸터가 화면을 너무 먹지 않게 — 고지는 남기고 부피만 줄인다 */
 @media (max-width: 768px) {
   .app-foot { font-size: var(--fs-3xs); line-height: 1.35; padding: 4px 10px; }
@@ -3440,7 +3213,6 @@ body.drawer-open .m-actionbar { display: none !important; }
   .app-foot .foot-src, .app-foot .foot-img { display: none; }
   .app-foot .foot-links { gap: 1px 9px; margin-top: 1px; }
 }
-
 
 /* 위키 설명을 항목별 칩으로 — 「 / 」로 이어 붙이면 몇 개인지 안 세어진다 */
 .wd-note-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
@@ -3454,12 +3226,10 @@ body.drawer-open .m-actionbar { display: none !important; }
   white-space: normal;
 }
 
-
 /* 「600발/분」·「30%(65% x2)」 처럼 숫자+단위가 한 덩어리인 표기는
    중간에서 줄이 바뀌면 딴 뜻으로 읽힌다. 한글은 기본값이 아무 데서나
    끊기므로 낱말 단위로 끊게 한다. */
 .w-col, .w-dmg, .wd-chip, .wd-row, .codex-ms .co { word-break: keep-all; }
-
 
 /* 기체 요약의 추가 정보 — 출격 가능·환경 적성·격투 판정력 */
 .h-facts { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 4px; }
@@ -3486,7 +3256,6 @@ body.drawer-open .m-actionbar { display: none !important; }
 .h-facts .hf.on { border-color: var(--accent-dim); }
 .h-facts .hf.on b { color: var(--accent); }
 
-
 /* 위키 설명 칩 — 자주 찾는 항목은 색으로 구분한다. 목록이 길어 글자만으로는 안 보인다. */
 .wd-chip.wc-fire { color: var(--info); border-color: color-mix(in srgb, var(--info) 45%, var(--line)); }
 .wd-chip.wc-stag { color: var(--accent); border-color: var(--accent-dim); }
@@ -3495,7 +3264,6 @@ body.drawer-open .m-actionbar { display: none !important; }
 .wd-chip.wc-move { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
 /* 빨강 — 상대의 방어를 무시하거나 추가로 때리는 것 */
 .wd-chip.wc-pierce { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
-
 
 /* 무장 칸 접기 — 파츠를 고를 때는 무장 표가 자리만 차지한다 */
 .panel-fold {
@@ -3512,7 +3280,6 @@ body.drawer-open .m-actionbar { display: none !important; }
 /* 접었을 때 머리줄의 정렬·자세 같은 도구는 쓸 일이 없다 */
 .build-weapons .panel.folded .w-tools,
 .build-weapons .panel.folded #skillListBtn { display: none; }
-
 
 /* ============ ⑤ 기체 정보 ============
    따로 떨어진 화면이 아니라 **기체 선택 화면의 오른쪽 칸**이다.
@@ -3790,7 +3557,6 @@ body.info-open .sel-info { display: flex; }
   .mi-card h2 { font-size: var(--fs-2xl); }
 }
 
-
 /* ---- 추천 · 비추 ----
    갤러리 카드와 기체 정보가 같은 줄을 쓴다. 한도는 갈래마다 따로다
    (구성 하루 추천 5·비추 3, 기체도 따로 5·3). */
@@ -3846,7 +3612,6 @@ body.info-open .sel-info { display: flex; }
   font-size: var(--fs-3xs); color: var(--dim); white-space: nowrap;
   border: 1px solid var(--line); border-radius: 2px; padding: 0 4px;
 }
-
 
 /* 무장이 무엇을 거는가 — 경직·강경직·다운. 무장 상세의 칩과 같은 색을 쓴다.
    목록에서 「눕히는 무장」을 바로 찾는 것이 요점이라 글자는 최소로 줄인다. */
@@ -3924,7 +3689,6 @@ body.info-open .sel-info { display: flex; }
   .mi-sk { height: calc(var(--mi-h) * .45); overflow-y: auto; }
 }
 
-
 /* 누적치 스킬을 글자가 아니라 칩으로 */
 .mi-sg-by { display: flex; flex-wrap: wrap; gap: 3px; overflow: visible; }
 .mi-sg-chip {
@@ -3934,14 +3698,12 @@ body.info-open .sel-info { display: flex; }
 /* 변형에서 값이 달라지는 항목 */
 .mi-st.alt > b { color: var(--accent); }
 
-
 /* 집속해야 쏘는 무장 — 논차지 위력이 없어 「—」로 보이던 자리 */
 .mi-wchg {
   font-size: var(--fs-3xs); font-weight: 700; color: #8fc0ff; white-space: nowrap;
   background: rgba(120, 180, 255, .14); border-radius: 2px; padding: 1px 4px;
 }
 .mi-w b.charged { color: #8fc0ff; }
-
 
 /* ---- 스킬 분류 칩 ---- */
 .mi-skcats { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
@@ -3989,50 +3751,6 @@ body.info-open .sel-info { display: flex; }
 /* 무장 LV 칸 — 기체 LV 와 다를 때는 한눈에 보여야 한다(기본값이 아니라는 표시) */
 .wlv-seg .seg-btn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
 .wlv-seg .seg-btn:first-child.on { background: transparent; color: var(--text); border-color: var(--line); }
-
-/* 피탄 — 적 무장 목록 머리글. 값이 아니라 이름표라 눈에 덜 띄게 둔다. */
-.pietan-whead {
-  cursor: default; background: transparent;
-  color: var(--dim); font-size: var(--fs-3xs);
-  padding-top: 4px; padding-bottom: 4px;
-  border-bottom: 1px solid var(--line);
-}
-.pietan-whead:hover { background: transparent; }
-.pietan-whead .pietan-wn { font-weight: 700; }
-
-/* ---- 피탄: 상대 파츠 ----
-   저장 구성을 만들지 않고도 여기서 바로 끼운다. 내 구성과 같은 규칙으로 걸러 낸다. */
-.pietan-eparts { padding: 0 16px 6px; }
-.pietan-ep-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pietan-ep-slot { font-size: var(--fs-3xs); color: var(--dim); font-variant-numeric: tabular-nums; }
-.pietan-ep-add, .pietan-ep-clr { margin-left: 0; }
-.pietan-ep-clr { color: var(--muted); }
-.pietan-ep-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-.pietan-ep-none { font-size: var(--fs-3xs); color: var(--dim); }
-.pietan-ep-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: var(--fs-3xs); padding: 3px 8px; border-radius: 999px;
-  border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--text);
-  cursor: pointer;
-}
-.pietan-ep-chip:hover { border-color: var(--bad); color: var(--bad); }
-.pietan-ep-chip i { font-style: normal; color: var(--dim); font-size: var(--fs-3xs); }
-.pietan-ep-pick { margin-top: 6px; border: 1px solid var(--line); border-radius: 9px; padding: 7px; }
-.pietan-ep-q { width: 100%; }
-.pietan-ep-list { max-height: 30vh; overflow-y: auto; margin-top: 6px; }
-.pietan-ep-row {
-  display: flex; align-items: center; gap: 7px; width: 100%;
-  padding: 4px 6px; border: 0; background: transparent; color: var(--text);
-  font: inherit; text-align: left; cursor: pointer; border-radius: 5px;
-}
-.pietan-ep-row:hover { background: rgba(255, 255, 255, .06); }
-.pietan-ep-row img { width: 26px; height: 26px; border-radius: 3px; flex: 0 0 26px; }
-/* 못 끼우는 것은 숨기지 않고 **이유를 적는다** — 없으면 「왜 안 보이지」가 되고,
-   회색으로만 두면 「왜 안 눌리지」가 된다. */
-.pietan-ep-row.off { cursor: default; opacity: .55; }
-.pietan-ep-row.off:hover { background: transparent; }
-.pietan-ep-cost { font-size: var(--fs-3xs); color: var(--dim); white-space: nowrap; margin-left: auto; }
-.pietan-ep-no { font-size: var(--fs-3xs); color: var(--bad); white-space: nowrap; }
 
 /* ---- 계산에 반영되지 않는 파츠 효과 ----
    경고가 아니라 **사실 고지**다. 빨강으로 두면 「망가졌다」로 읽히므로 차분하게. */
@@ -4139,7 +3857,6 @@ body.info-open .sel-info { display: flex; }
 /* 켜 두면 수치가 통째로 달라진다 — 켜져 있다는 것이 한눈에 보여야 한다 */
 .late-box:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 .late-box[hidden] { display: none; }
-
 
 /* ======================================================================
    보기 편하게 — 재서 고친 것 (2026-10-13)

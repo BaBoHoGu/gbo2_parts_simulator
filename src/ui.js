@@ -719,11 +719,14 @@
    * (특히 피탄 시뮬의 「N발 버티기」는 실효 HP 를 큰 절댓값으로 박아 넣는다)
    * @returns {number} 지운 목표 수 — 알려 줄지 판단하는 데 쓴다
    */
+  /** 무장 표에 실드 보정 칩을 붙일지 — 대결 시뮬의 「🛡 실드로 막음」이 켜진 동안만. */
+  let showShieldMult = false;
+
   function clearTargets() {
     const n = Object.keys(state.minimums).length + Object.keys(state.maximums).length;
     state.minimums = {};
     state.maximums = {};
-    pietanGoalHits = 0;
+    goalHits = 0;
     goalWeapon = null;
     if (document.getElementById('autoGrid')) renderAutoGrid();
     return n;
@@ -2651,9 +2654,11 @@
         c.title = '이 무장이 거는 디버프 — 효과량이 위키에 수치로 없어 표시만 한다.';
         nmTop.append(c);
       }
-      // 실드 보정 — 피탄 시뮬의 「실드로 막음」 을 켰을 때만 붙인다.
-      // 표기가 아예 없는 무장(2,666종)엔 칩을 안 붙여 목록이 지저분해지지 않게 한다.
-      if (pietanShield) {
+      /* 실드 보정 — 「실드로 막음」 을 켠 동안만 붙인다(뜻은 그대로다).
+         스위치가 피탄 화면에서 **대결 화면**으로 옮겨졌으니 켜짐도 그쪽에서 받는다
+         (duel.js 가 토글할 때 HOOK.onShield 로 알려 준다).
+         표기가 아예 없는 무장(2,666종)엔 칩을 안 붙여 목록이 지저분해지지 않게 한다. */
+      if (showShieldMult) {
         const sm = D.shieldMultOf(w);
         if (sm) {
           const txt = sm.unknown ? '?' : (sm.nc === sm.ch ? sm.nc : sm.nc + '→' + sm.ch) + '배';
@@ -7336,7 +7341,7 @@
       // 4칸까지 폈다가 구성이 사라진 경우 — 넓힘·Δ 없음 표시를 되돌리지 않으면 그대로 남는다
       box.classList.remove('no-delta');
       const m0 = $('#compareModal'); if (m0) m0.classList.remove('wide');
-      box.append(el('div', 'pietan-empty', '비교할 두 구성을 선택하세요.'));
+      box.append(el('div', 'cmp-empty', '비교할 두 구성을 선택하세요.'));
       return;
     }
 
@@ -7537,31 +7542,19 @@
     else renderAll();   // 닫을 때 빌드 화면(회색·자동구성 후보)에 반영
   }
 
-  /* ---------- 피탄 시뮬레이터 (받는 피해 / 경직 저항) ---------- */
-  // 내구 지표(실효 HP)를 실전 감각으로 확장 — 적 무장 하나를 골라
-  //   격파까지 = 실효HP[속성] ÷ 무장 위력,  경직까지 = 임계 ÷ よろけ値
-  // 를 보여 준다. (1히트 근사 — 국부보정·경직값 시간 감쇠는 미반영)
-  // 속성 → 내성 스탯 키는 ARMOR_KEY 하나로 쓴다 (예전엔 여기 같은 표가 하나 더 있었다)
+  /* ---------- 피해·경직·실드 공용 조각 ----------
+     한때 「피탄 시뮬레이터」 화면이 혼자 쓰던 것들인데, 그 화면을 대결 시뮬로 합치면서
+     **판정과 문구만** 남겼다(2026-10-13). 화면을 그리는 코드는 여기 없다 —
+     대결 시뮬(duel.js)이 교체 지점으로 이 함수들을 받아 쓴다.
+     여기 둔 이유는 하나다: 같은 값을 두 군데서 세지 않는 것. */
+
   // 「이 무장 N발 버티기」 를 자동 구성 목표로 넘길 때 쓰는 축
-  const PIETAN_EHP = { solid: 'ehpSolid', beam: 'ehpBeam', melee: 'ehpMelee', shield: 'ehpMelee' };
+  const EHP_AXIS = { solid: 'ehpSolid', beam: 'ehpBeam', melee: 'ehpMelee', shield: 'ehpMelee' };
 
   // 목표 발수 (0 이면 '지금 버티는 발수 +1' 을 기본값으로 쓴다).
   // 무장·적 기체를 바꾸면 비운다 — 다른 무장에 치던 발수가 그대로 남아 있으면
   // 새 무장의 기본값(현재 +1)이 안 나온다.
-  let pietanGoalHits = 0;
-
-  /**
-   * 「이 무장 N발 버티기」 → 자동 구성 하한 목표.
-   * 필요한 실효 HP = 1발(전탄 명중) 피해 × N. 자동 구성의 ehp* 축이 같은 값을 재므로 그대로 넘긴다.
-   * (내구 지표 dur* 는 '내성' 단위라 HP 와 따로 놀아 발수 조건을 담지 못한다)
-   */
-  /* 대상 HP 에 따라 피해가 달라지면 「1발」이라는 값이 없다 — N 발을 실제로 쌓아 합을 낸다.
-     이 함수가 없던 때는 dmg × N 이라 레일건 같은 무장에서 목표가 작게 잡혔다. */
-  function pietanNeedEhp(I, dmg, n) {
-    if (!I || !I.hpBands) return dmg * n;
-    const r = I.stepHits(n);
-    return r.total || dmg * n;
-  }
+  let goalHits = 0;
 
   /**
    * 「이 무장 N발 버티기」 → 자동 구성 하한 목표. **피탄 시뮬과 대결 시뮬이 같이 쓴다.**
@@ -7579,15 +7572,15 @@
     wrap.append(el('span', 'goal-lb', '버티기 목표'));
     const inp = el('input');
     inp.type = 'number'; inp.min = '1'; inp.max = '99';
-    inp.value = String(pietanGoalHits || hits + 1);
-    inp.oninput = () => { pietanGoalHits = Math.max(1, Number(inp.value) || 1); note(); };
+    inp.value = String(goalHits || hits + 1);
+    inp.oninput = () => { goalHits = Math.max(1, Number(inp.value) || 1); note(); };
     wrap.append(inp);
     wrap.append(el('span', 'goal-lb', '발'));
 
     const btn = el('button', 'btn-primary small', '자동 구성 목표로');
     btn.onclick = () => {
       const n = Math.max(1, Number(inp.value) || hits + 1);
-      const key = PIETAN_EHP[w.attr] || 'ehpSolid';
+      const key = EHP_AXIS[w.attr] || 'ehpSolid';
       const need = needOf(n);
       state.minimums[key] = need;
       // 어느 무장 기준인지 기억한다 — 관통·폭풍 경감처럼 그 무장에만 걸리는 파츠 경감을
@@ -7618,52 +7611,6 @@
     note();
     wrap.append(nt);
     return wrap;
-  }
-
-  /** 피탄 시뮬에서 부르던 꼴 — 위 공용 줄에 얇게 얹는다. */
-  const pietanGoalRow = (w, dmg, hits, I) => goalRowFor({
-    w, dmg, hits,
-    needOf: n => pietanNeedEhp(I, dmg, n),
-    toHp: I && I.toHp, bands: I && I.hpBands,
-    after: () => openPietan(false)
-  });
-  let pietanMs = null;           // 선택한 적 기체 (LV 엔트리)
-  let pietanMsBase = '';         // 그 기체의 base 이름
-  let pietanMsLv = 1;            // 선택한 적 기체 LV
-  let pietanPick = null;         // 선택한 적 무장 (그 LV 기준 위력)
-  /* 적 공격보정은 **사격·격투 두 칸**이다. 쓰는 쪽은 고른 무장의 속성에 맞는 칸.
-     예전엔 한 칸이라 무장을 바꿀 때마다 같은 칸의 숫자가 사격↔격투로 갈아끼워졌다 —
-     둘을 같이 볼 수가 없었고, 한쪽을 손으로 고쳐 두면 다른 쪽까지 묶여 버렸다.
-     값을 가져오는 규칙은 그대로다: 기체·파츠에서 자동, 손으로 고치면 그 칸만 고정,
-     기체를 바꾸면 둘 다 풀린다. */
-  const PIETAN_CORR = { shoot: '#pietanCorrShoot', melee: '#pietanCorrMelee' };
-  let pietanCorr = { shoot: 0, melee: 0 };
-  let pietanCorrTouched = { shoot: false, melee: false };
-  let pietanAttr = 'same';       // 적의 속성 상성 (same|advantage|disadvantage)
-  let pietanAttrTouched = false; // 상성 수동 변경 여부 (그러면 기체 바꿔도 유지)
-  let pietanEnemySkills = new Set();  // 체크한 적 공격 스킬 이름들 (여러 개 조합 가능)
-  let pietanEnemyDef = new Set();     // 체크한 적 방어 스킬 이름들 — 내 무장의 피해를 깎는다
-  let pietanShield = false;           // 「실드로 막음」 — 실드 HP 로 받는 계산을 함께 보여 준다
-  /* 적의 세팅 — **여기 하나가 출처다.**
-     저장 구성을 고르면 여기에 부어 넣고(시작점), 그 뒤로는 화면에서 바로 고친다.
-     예전에는 「저장 구성일 때만 파츠가 있다」라, 상대 파츠를 보려면 먼저 저장해야 했다. */
-  let pietanEnemy = { parts: [], stage: 6, expansion: null, expLevel: null };
-  let pietanBuild = null;        // 어디서 온 세팅인지 이름표(저장 구성에서 왔으면 그 구성)
-  let pietanVariant = 0;         // 선택한 격투 변형 인덱스 (기본/헤비어택…)
-  let pietanDir = 0;             // 선택한 격투 방향 인덱스 (N격/횡격/하격…)
-
-  // 속성 상성 사이클: 범용(汎用) > 강습(強襲) > 지원(支援) > 범용
-  const ATTR_BEATS = { '汎用': '強襲', '強襲': '支援', '支援': '汎用' };
-  const pietanMatchup = (atkAttr, defAttr) =>       // 공격자→방어자 상성
-    ATTR_BEATS[atkAttr] === defAttr ? 'advantage' : ATTR_BEATS[defAttr] === atkAttr ? 'disadvantage' : 'same';
-  function syncPietanAttrSeg() {
-    const seg = $('#pietanAttr');
-    if (seg) [...seg.children].forEach(c => c.classList.toggle('on', c.dataset.a === pietanAttr));
-  }
-  function pietanAutoAttr() {                        // 적→나 상성 자동 (수동 변경 전까지)
-    if (pietanAttrTouched || !pietanMs || !state.ms) return;
-    pietanAttr = pietanMatchup(pietanMs.属性, state.ms.属性);
-    syncPietanAttrSeg();
   }
 
   /** 무장의 누적치(よろけ値) — 히트당 %와 1트리거 다발수(x7 등)를 읽는다.
@@ -7745,10 +7692,10 @@
     return { hits: n, perHit: per, value, note };
   }
 
-  const pietanPageId = ms => (String(ms && ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
+  const pageIdOf = ms => (String(ms && ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
 
   /** 무장 레벨을 적 기체 LV 에 맞춘다 (그보다 높은 레벨은 안 쓰고, 없으면 가진 최저). */
-  function pietanWeaponLv(w, msLv) {
+  function weaponLvForMs(w, msLv) {
     const lvs = Object.keys(w.levels || {}).map(Number).sort((a, b) => a - b);
     if (!lvs.length) return null;
     const fit = lvs.filter(l => l <= msLv);
@@ -7759,12 +7706,12 @@
   /** 이 기체가 든 실드 — 그 LV 의 シールドHP + 실드 보강재·커넥팅 파츠. 실드가 없으면 null.
    *  실드 HP 자체는 무장 표에서 이미 쓰던 계산(D.weaponModsOf().shieldHp)을 그대로 쓴다. */
   function shieldOf(ms, msLv, equipped, expansion, expLevel) {
-    const id = pietanPageId(ms), page = id && weaponData[id];
+    const id = pageIdOf(ms), page = id && weaponData[id];
     if (!page) return null;
     const sh = (page.weapons || []).find(w => w.type === 'shield'
       && Object.values(w.levels || {}).some(d => d && d.raw && d.raw['シールドHP']));
     if (!sh) return null;
-    const lvk = pietanWeaponLv(sh, msLv);
+    const lvk = weaponLvForMs(sh, msLv);
     const d = lvk && sh.levels[lvk];
     const base = Number(d && d.raw && d.raw['シールドHP']) || 0;
     if (!base) return null;
@@ -7781,708 +7728,6 @@
     return Math.floor(dmg * mult * (1 + (pct || 0) / 100));
   }
 
-  function enemyWeaponsOfMs(ms, msLv) {
-    const id = pietanPageId(ms), page = id && weaponData[id];
-    if (!page) return [];
-    const out = [];
-    for (const w of page.weapons || []) {
-      if (w.type === 'shield') continue;
-      const lvk = pietanWeaponLv(w, msLv);
-      const dd = lvk && w.levels[lvk];
-      const power = Number(dd && dd.power) || 0;
-      const charged = Number(dd && dd.powerCharged) || 0;
-      if (!power && !charged) continue;
-      const st = parseStagger(w);
-      const note = (w.info && w.info['備考']) || '';
-      const react = reactOf(w);
-      // 격투 변형(기본/헤비어택 등)·방향별 배율(N격/횡격/하격…) — meleeDamage 의 ccd 로 적용
-      const variants = (w.melee && w.melee.variants && w.melee.variants.length) ? w.melee.variants : null;
-      // note·psycommu·type 은 조건부 파츠 경감(관통 경감 장갑·폭풍 경감 장갑) 판정에 쓴다.
-      // mods 도 함께 넘긴다 — 고정 피해(소이)의 위키 실측값(mods.burnSoi)이 여기 들어 있다
-      out.push({ name: w.name, attr: weaponAttr(w), power, charged, stagger: st.pct, pellets: st.pellets, react, variants,
-        note, psycommu: !!w.psycommu, type: w.type, mods: w.mods });
-    }
-    return out;
-  }
-
-  /** 적 기체의 기본 공격보정(파츠 없음·강화6) — 무장 종류에 맞는 값을 공격보정에 자동 채운다. */
-  /** 적 총 스탯 — 저장 빌드면 그 파츠 반영, 아니면 기본(파츠 없음·강화6). */
-  function enemyStatsTotal() {
-    return enemyStats().total;
-  }
-  /** 적의 계산 결과. 렌더마다 calcStats 를 다시 돌리지 않게 캐시한다.
-   *  캐시 열쇠는 「기체 + 파츠 이름들 + 강화·확장」 — 이 중 하나만 바뀌어도 다시 센다. */
-  let pietanStatsCache = null;
-  function enemyStats() {
-    const key = (pietanMs ? pietanMs.MS名 : '') + '|' + pietanEnemy.parts.map(p => p.name).join(',')
-      + '|' + pietanEnemy.stage + '|' + pietanEnemy.expansion + '|' + pietanEnemy.expLevel;
-    if (pietanStatsCache && pietanStatsCache.key === key) return pietanStatsCache.r;
-    const r = C.calcStats(pietanMs, pietanEnemy.parts, pietanEnemy.stage,
-      pietanEnemy.expansion || C.EXPANSION_NONE, partsByCat, fullst,
-      pietanEnemy.expLevel || C.MAX_EXPANSION_LEVEL, null, null);
-    pietanStatsCache = { key, r };
-    return r;
-  }
-  /** 적이 낀 파츠. */
-  function enemyEquipped() { return pietanEnemy.parts; }
-
-  /** 그 기체·강화에서 **실제로 들어가는 것만** 순서대로 남긴다.
-   *  저장 구성을 불러올 때(statsForBuild)와 같은 방식이다 — 규칙을 두 벌로 두지 않는다. */
-  function keepEquippable(ms, wanted, stage) {
-    const out = [];
-    for (const pt of wanted)
-      if (C.checkEquip(pt, ms, out, C.calcSlots(ms, out, stage, fullst)).ok) out.push(pt);
-    return out;
-  }
-
-  /** 적에게 파츠를 끼울 수 있는지 — 내 구성과 **같은 규칙**을 쓴다(슬롯·중복·8개·카테고리). */
-  function enemyCanEquip(part) {
-    if (!pietanMs) return { ok: false, code: 'noms' };
-    return C.checkEquip(part, pietanMs, pietanEnemy.parts,
-      C.calcSlots(pietanMs, pietanEnemy.parts, pietanEnemy.stage, fullst));
-  }
-  /** 적 슬롯 사용량 — 화면에 「근 3/25」처럼 적는다. */
-  function enemySlots() {
-    return C.calcSlots(pietanMs, pietanEnemy.parts, pietanEnemy.stage, fullst);
-  }
-  function enemyBaseCorr() {
-    const t = enemyStatsTotal();
-    return { shoot: Math.round(t.shoot || 0), melee: Math.round(t.meleeCorrection || 0) };
-  }
-
-  /** 적 기체의 공격 버프 스킬 목록 (적 LV 기준, 공격 효과가 있는 것만). */
-  function enemyAttackSkillList() {
-    if (!pietanMs) return [];
-    const list = skillData[baseName(pietanMs.MS名)] || [];
-    const out = [];
-    for (const sk of list) {
-      const fit = (sk.levels || []).filter(l => pietanMsLv >= l.from && (l.to == null || pietanMsLv <= l.to));
-      const e = fit.length ? fit[fit.length - 1] : null;
-      if (!e) continue;
-      if (e.shoot || e.melee || e.shootPct || e.meleePct || e.dmgAny || e.dmgShoot || e.dmgMelee)
-        out.push({ name: sk.name, nameKo: sk.nameKo, e });
-    }
-    return out;
-  }
-
-  /** 체크한 적 공격 스킬들의 합산 효과 (그 무장 종류). 보정은 합, 피해%는 곱연산. */
-  function enemyAttackEffect(kind) {
-    const base = enemyBaseCorr(), baseC = kind === 'melee' ? base.melee : base.shoot;
-    const flat = kind === 'melee' ? 'melee' : 'shoot', pctKey = kind === 'melee' ? 'meleePct' : 'shootPct';
-    let corr = 0, mul = 1; const names = [];
-    for (const sk of enemyAttackSkillList()) {
-      if (!pietanEnemySkills.has(sk.name)) continue;
-      const e = sk.e;
-      corr += (e[flat] || 0) + Math.round(baseC * (e[pctKey] || 0) / 100);
-      const dp = (e.dmgAny || 0) + (kind === 'melee' ? (e.dmgMelee || 0) : (e.dmgShoot || 0));
-      if (dp) mul *= (1 + dp / 100);
-      names.push(sk.nameKo);
-    }
-    return { corr, mul, names };
-  }
-
-  /** 적 공격 스킬 체크박스 (방어 스킬과 같은 UI). 여러 개 조합 가능. */
-  function renderPietanEnemySkills(box) {
-    const list = enemyAttackSkillList();
-    if (!list.length) return;
-    const wrap = el('div', 'stagger-skills pietan-eskills');
-    wrap.append(el('span', 'pietan-ctrl-lb', '적 공격 스킬'));
-    for (const sk of list) {
-      const e = sk.e, tags = [];
-      if (e.shoot) tags.push('사격+' + e.shoot);
-      if (e.melee) tags.push('격투+' + e.melee);
-      if (e.shootPct) tags.push('사격+' + e.shootPct + '%');
-      if (e.meleePct) tags.push('격투+' + e.meleePct + '%');
-      // else 로 묶으면 안 된다 — enemyAttackEffect 는 dmgAny 와 dmgShoot/dmgMelee 를 **더하는데**,
-      // 배지는 앞의 것 하나만 보여 주어 표기와 계산이 갈렸다. (내 기체 쪽 skillSummary 는 셋 다 적는다)
-      if (e.dmgAny) tags.push('피해+' + e.dmgAny + '%');
-      if (e.dmgShoot) tags.push('사격피해+' + e.dmgShoot + '%');
-      if (e.dmgMelee) tags.push('격투피해+' + e.dmgMelee + '%');
-      const lab = el('label', 'stg-chk' + (pietanEnemySkills.has(sk.name) ? ' on' : ''));
-      const cb = el('input'); cb.type = 'checkbox'; cb.checked = pietanEnemySkills.has(sk.name);
-      cb.onchange = () => { cb.checked ? pietanEnemySkills.add(sk.name) : pietanEnemySkills.delete(sk.name); renderPietanResult(); };
-      lab.append(cb, el('span', 'stg-nm', sk.nameKo), el('span', 'stg-tag', tags.join(' · ')));
-      wrap.append(lab);
-    }
-    box.append(wrap);
-  }
-  /**
-   * 적 공격보정을 적 기체 수치에서 채운다. **파츠·강화 단계가 반영된 총합**이다
-   * (enemyBaseCorr → enemyStatsTotal → calcStats).
-   *
-   * 무장을 아직 안 골랐으면 **사격보정**을 기본으로 보여 준다 — 무장을 고르면 그 속성
-   * 기준으로 바뀐다(격투 무장이면 격투보정). 예전에는 무장이 없으면 아무것도 안 해서
-   * 기체를 바꿔도 칸에 앞 기체 숫자가 남았다.
-   */
-  function pietanAutoCorr() {
-    if (!pietanMs) return;
-    const c = enemyBaseCorr();
-    for (const k of ['shoot', 'melee']) {
-      if (pietanCorrTouched[k]) continue;   // 손으로 만진 칸만 고정 (기체를 바꾸면 풀린다)
-      pietanCorr[k] = c[k];
-      const inp = $(PIETAN_CORR[k]); if (inp) inp.value = pietanCorr[k];
-    }
-  }
-
-  /** 안내문 — 아직 아무것도 안 골랐을 때만 띄운다.
-   *  고른 뒤에도 남겨 두면 두 줄이 늘 자리를 먹는데, 그때는 이미 다 아는 말이다. */
-  function renderPietanHint() {
-    const h = document.getElementById('pietanHint');
-    if (h) h.hidden = !!pietanMs;
-  }
-
-  function renderPietanDura() {
-    const box = $('#pietanDura'); if (!box) return;
-    const r = stats();
-    box.innerHTML = '';
-    /* **HP 를 맨 앞에 둔다.** 내구 지표만 늘어놓으니 사용자가 제 HP 와 견주다 헷갈렸다
-       (「1발 20,134 인데 내 HP 는 24,000?」). 기준이 되는 HP 를 먼저 보여 주고,
-       그 뒤에 속성별 내구 지표를 「○○ 내구 지표」로 이름까지 붙여 적는다. */
-    const hpCell = el('span', 'pietan-dura-cell pietan-dura-hp');
-    hpCell.append(el('span', 'pietan-dura-t', 'HP'));
-    hpCell.append(el('span', 'pietan-dura-v', Math.round(r.total.hp || 0).toLocaleString()));
-    hpCell.title = '기체 HP — 아래 「격파까지」의 피해도 이 눈금으로 적습니다';
-    box.append(hpCell);
-    // 성능표와 같은 계산을 쓴다 — 예전엔 경감을 빼고 그려서, 같은 이름의 지표가
-    // 성능 24,572 · 여기 22,115 로 갈렸다(격파 발수는 피해 쪽에서 경감해 맞았지만 표시가 달랐다).
-    const cuts = damageCutsOf(state.equipped, { skillMs: state.ms });
-    for (const [dattr, , lb] of DURA_ATTRS) {
-      const cell = el('span', 'pietan-dura-cell');
-      cell.append(el('i', 'pietan-dot ' + ARMOR_KEY[dattr]));
-      cell.append(el('span', 'pietan-dura-t', lb + ' 내구 지표'));
-      cell.append(el('span', 'pietan-dura-v', enduranceOf(r.total, dattr, cuts).toLocaleString()));
-      cell.title = lb + ' 공격을 기준으로 실제로 버티는 총량 (HP ÷ (1 − 내성) ÷ 피해경감)';
-      box.append(cell);
-    }
-    // 전제를 여기 적는다 — 이게 아래 모든 수치의 뜻을 정하는데, 예전에는 결과 맨 아래
-    // 회색 작은 글씨라 제일 안 보였다.
-    const basis = pietanBasisNote();
-    if (basis) {
-      const b = el('span', 'pietan-basis' + (basis.on ? ' on' : ''), basis.text);
-      b.title = basis.title;
-      box.append(b);
-    }
-  }
-
-  function selectPietanMs(base) {
-    const arr = msByBase.get(base) || [];
-    pietanMsBase = base;
-    pietanMs = arr[arr.length - 1] || null;      // 기본은 최고 LV
-    pietanMsLv = pietanMs ? msLevel(pietanMs) : 1;
-    pietanPick = null;
-    pietanBuild = null;                           // 어디서 온 것도 아니다
-    pietanEnemy = { parts: [], stage: 6, expansion: null, expLevel: null };
-    pietanCorrTouched = { shoot: false, melee: false };   // 새 기체는 두 칸 다 자동
-    pietanAttrTouched = false; pietanAutoAttr();  // 상성도 다시 자동
-    pietanEnemySkills.clear(); pietanEnemyDef.clear();
-    pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
-    pietanRedrawAll();
-  }
-
-  /** 적을 내 저장 빌드(파츠 적용)로 선택. */
-  function selectPietanBuild(bld) {
-    const ms = msData.find(m => m.MS名 === bld.ms);
-    if (!ms) { toast('이 구성의 기체를 찾을 수 없습니다'); return; }
-    pietanMs = ms; pietanMsBase = baseName(ms.MS名); pietanMsLv = msLevel(ms);
-    // 저장 구성은 시작점이다 — 부어 넣은 뒤로는 화면에서 바로 고칠 수 있다.
-    const bs = statsForBuild(bld);
-    pietanEnemy = bs
-      ? { parts: [...bs.equipped], stage: bs.stage, expansion: bs.expansion, expLevel: bs.expLevel }
-      : { parts: [], stage: 6, expansion: null, expLevel: null };
-    pietanBuild = bld; pietanPick = null;
-    pietanCorrTouched = { shoot: false, melee: false };
-    pietanAttrTouched = false; pietanAutoAttr();
-    pietanEnemySkills.clear(); pietanEnemyDef.clear();
-    pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0;
-    pietanRedrawAll();
-  }
-
-  function renderPietanLeft() {
-    const box = $('#pietanList'); if (!box) return;
-    const qEl = $('#pietanQuery');
-    box.innerHTML = '';
-
-    if (!pietanMs) {                              // ── 적 기체 고르기 ──
-      qEl.hidden = false;
-      const q = (qEl.value || '').trim().toLowerCase();
-      // 내 저장 구성(파츠 반영) — 검색어 없을 때 상단에 먼저
-      const builds = !q ? loadBuilds() : [];
-      if (builds.length) {
-        box.append(el('div', 'pietan-sec-lb', '내 저장 구성 (파츠 반영)'));
-        for (const bld of builds) {
-          const ms = msData.find(m => m.MS名 === bld.ms); if (!ms) continue;
-          const row = el('div', 'pietan-row');
-          row.append(img(msImg(ms.MS名), 'ms', bld.ms));
-          row.append(el('span', 'pietan-wn', bld.name + ' — ' + T.msName(ms.MS名).replace(/\s*LV\d+$/, '')));
-          row.onclick = () => selectPietanBuild(bld);
-          box.append(row);
-        }
-        box.append(el('div', 'pietan-sec-lb', '전체 기체'));
-      }
-      let rows = [...msByBase.entries()].map(([base, arr]) => ({ base, rep: arr[arr.length - 1] }));
-      if (q) rows = rows.filter(r => (T.msName(r.rep.MS名) + ' ' + r.rep.MS名).toLowerCase().includes(q));
-      const CAP = 140;
-      for (const r of rows.slice(0, CAP)) {
-        const row = el('div', 'pietan-row');
-        row.append(img(msImg(r.rep.MS名), 'ms', r.base));
-        row.append(el('span', 'pietan-wn', T.msName(r.rep.MS名).replace(/\s*LV\d+$/, '')));
-        row.onclick = () => selectPietanMs(r.base);
-        box.append(row);
-      }
-      if (!rows.length) box.append(el('div', 'empty-state', '검색 결과가 없습니다.'));
-      else if (rows.length > CAP) box.append(el('div', 'pietan-more', `+${rows.length - CAP}기 — 검색으로 좁히세요`));
-      return;
-    }
-
-    // ── 고른 기체: 뒤로 + LV + 그 기체의 무장 ──
-    qEl.hidden = true;
-    const hd = el('div', 'pietan-mshead');
-    const back = el('button', 'pietan-back', '‹ 다른 기체');
-    back.onclick = () => {
-      pietanMs = null; pietanPick = null;
-      // 상대 파츠도 같이 치운다 — 안 그러면 기체 목록으로 돌아왔는데 앞 상대의 파츠가
-      // 화면에 그대로 남는다(칸을 다시 그리지 않아 숨겨지지도 않았다).
-      pietanEnemy = { parts: [], stage: 6, expansion: null, expLevel: null };
-      pietanBuild = null;
-      pietanRedrawAll();
-    };
-    hd.append(back);
-    hd.append(el('b', 'pietan-msnm', T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')));
-    box.append(hd);
-
-    const arr = msByBase.get(pietanMsBase) || [pietanMs];
-    if (arr.length > 1) {
-      const seg = el('div', 'seg pietan-lvseg');
-      for (const m of arr) {
-        const lv = msLevel(m);
-        const b = el('button', 'seg-btn' + (m === pietanMs ? ' on' : ''), 'LV' + lv);
-        b.onclick = () => {
-          pietanMs = m; pietanMsLv = lv; pietanPick = null; pietanGoalHits = 0; pietanEnemyDef.clear();
-          // LV 이 바뀌면 슬롯 칸수가 달라진다. 그대로 두면 「원 12/6」처럼 **게임에 없는
-          // 구성**으로 수치가 나온다. 내 구성 쪽(switchLevel)이 장착을 비우는 것과 같은 이유다.
-          // 다만 통째로 버리지 않고, 새 LV 에서도 들어가는 것만 순서대로 남긴다.
-          pietanEnemy.parts = keepEquippable(m, pietanEnemy.parts, pietanEnemy.stage);
-          pietanRedrawAll();
-        };
-        seg.append(b);
-      }
-      box.append(seg);
-    }
-
-    const wl = enemyWeaponsOfMs(pietanMs, pietanMsLv);
-    // 머리글을 단다 — 오른쪽 칸에도 「발」이 있는데 **뜻이 반대**다(저쪽은 내가 격파하는 발수).
-    // 숫자만 두면 같은 화면의 두 '발' 이 무엇인지 구분되지 않는다.
-    if (wl.length && state.ms) {
-      const hrow = el('div', 'pietan-row pietan-whead');
-      hrow.append(el('span', 'w-type', ''));
-      hrow.append(el('span', 'pietan-wn', '적 무장'));
-      hrow.append(el('span', 'pietan-wp', '위력'));
-      hrow.append(el('span', 'pietan-wh', '내가 버팀'));
-      box.append(hrow);
-    }
-    // 무장마다 「내가 몇 발 버티는지」를 목록에서 바로 보여 준다.
-    // 예전에는 위력만 적어 두어, 무엇이 제일 위험한지 알려면 하나씩 눌러 봐야 했다 —
-    // 화면은 이미 내 내구를 알고 있으니 여기서 답하는 것이 맞다.
-    const canHits = !!state.ms;
-    for (const w of wl) {
-      const row = el('div', 'pietan-row' + (pietanPick && pietanPick.name === w.name ? ' on' : ''));
-      row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
-      row.append(el('span', 'pietan-wn', T.weaponName(w.name)));
-      row.append(el('span', 'pietan-wp', (w.power || w.charged).toLocaleString()));
-      if (canHits) {
-        let inc = null;
-        try { inc = pietanIncoming(w, 0, 0); } catch (e) { inc = null; }
-        const n = inc && inc.hits;
-        const c = el('span', 'pietan-wh' + (n != null && n <= 3 ? ' hot' : ''), n != null ? n + '발' : '—');
-        c.title = n != null
-          ? '이 무장에 ' + n + '발까지 버팁니다 (전탄 명중 가정)'
-            + (inc.stagN ? '\n경직까지 ' + inc.stagN + '발' : '')
-          : '피해를 낼 수 없는 무장입니다';
-        row.append(c);
-      }
-      row.onclick = () => { pietanPick = w; pietanVariant = 0; pietanDir = 0; pietanGoalHits = 0; pietanAutoCorr(); renderPietanLeft(); renderPietanResult(); };
-      box.append(row);
-    }
-    if (!wl.length) box.append(el('div', 'empty-state', '이 기체의 무장 정보가 없습니다.'));
-  }
-
-  /* 적 파츠 고르기 팝업이 열려 있는가 + 검색어. 모달 안의 작은 칸이라 상태는 여기 둔다. */
-  let pietanPartOpen = false, pietanPartQ = '';
-
-  /** 「상대 파츠」 칸 — 낀 파츠 칩 + 슬롯 + 고르기. */
-  function renderPietanEparts() {
-    const box = $('#pietanEparts'); if (!box) return;
-    box.innerHTML = '';
-    if (!pietanMs) { box.hidden = true; return; }
-    box.hidden = false;
-
-    const head = el('div', 'pietan-ep-head');
-    head.append(el('span', 'pietan-ctrl-lb', '상대 파츠'));
-    const sl = enemySlots();
-    // 슬롯을 적어 둔다 — 안 적으면 「왜 이 파츠가 안 들어가지」를 알 수 없다.
-    const slot = el('span', 'pietan-ep-slot',
-      `근 ${sl.close}/${sl.maxClose} · 중 ${sl.mid}/${sl.maxMid} · 원 ${sl.long}/${sl.maxLong}`);
-    slot.title = '강화 ' + (STAGE_LABEL[pietanEnemy.stage] || pietanEnemy.stage) + ' 기준입니다.';
-    head.append(slot);
-    const add = el('button', 'tool-btn pietan-ep-add', pietanPartOpen ? '✕ 닫기' : '+ 파츠');
-    add.type = 'button';
-    add.onclick = () => { pietanPartOpen = !pietanPartOpen; renderPietanEparts(); };
-    head.append(add);
-    if (pietanEnemy.parts.length) {
-      const clr = el('button', 'tool-btn pietan-ep-clr', '전체 해제');
-      clr.type = 'button';
-      clr.onclick = () => { pietanEnemy.parts = []; pietanRedrawAll(); };
-      head.append(clr);
-    }
-    box.append(head);
-
-    const chips = el('div', 'pietan-ep-chips');
-    if (!pietanEnemy.parts.length) {
-      chips.append(el('span', 'pietan-ep-none', '없음 — 기본(파츠 없음) 기준으로 계산합니다'));
-    }
-    for (const pt of pietanEnemy.parts) {
-      const c = el('button', 'pietan-ep-chip', T.partName(pt.name));
-      c.type = 'button';
-      c.title = '눌러서 뺍니다';
-      c.append(el('i', '', '✕'));
-      c.onclick = () => {
-        pietanEnemy.parts = pietanEnemy.parts.filter(x => x.name !== pt.name);
-        pietanRedrawAll();
-      };
-      chips.append(c);
-    }
-    box.append(chips);
-
-    if (!pietanPartOpen) return;
-    const pick = el('div', 'pietan-ep-pick');
-    const q = el('input', 'pietan-ep-q');
-    q.type = 'search'; q.placeholder = '파츠 검색 (이름 / 효과)'; q.value = pietanPartQ;
-    q.oninput = () => { pietanPartQ = q.value; renderPietanEpartList(list); };
-    pick.append(q);
-    const list = el('div', 'pietan-ep-list');
-    pick.append(list);
-    box.append(pick);
-    renderPietanEpartList(list);
-    setTimeout(() => q.focus(), 20);
-  }
-
-  /** 고르기 목록. 못 끼우는 파츠는 **숨기지 않고 이유를 적는다** —
-   *  없으면 「왜 안 보이지」가 되고, 회색으로 두면 「왜 안 눌리지」가 된다. */
-  function renderPietanEpartList(list) {
-    list.innerHTML = '';
-    const q = pietanPartQ.trim().toLowerCase();
-    const all = Object.values(partsByCat).flat();
-    let rows = all;
-    if (q) rows = rows.filter(pt => matches(searchIndex(T.partName(pt.name) + ' ' + pt.name
-      + ' ' + T.partDesc(pt.name, pt.description)), q));
-    const CAP = 60;
-    let n = 0;
-    for (const pt of rows) {
-      if (n >= CAP) break;
-      const can = enemyCanEquip(pt);
-      const row = el('button', 'pietan-ep-row' + (can.ok ? '' : ' off'));
-      row.type = 'button';
-      row.append(img(partImg(pt.name), 'part', pt.name));
-      row.append(el('span', 'pietan-wn', T.partName(pt.name)));
-      row.append(el('span', 'pietan-ep-cost', `근${pt.close || 0} 중${pt.mid || 0} 원${pt.long || 0}`));
-      if (!can.ok) row.append(el('span', 'pietan-ep-no', reasonText(can)));   // 내 구성과 같은 문구 표를 쓴다
-      else row.onclick = () => {
-        pietanEnemy.parts = [...pietanEnemy.parts, pt];
-        pietanRedrawAll();
-      };
-      list.append(row);
-      n++;
-    }
-    if (!n) list.append(el('div', 'empty-state', '검색 결과가 없습니다.'));
-    else if (rows.length > CAP) list.append(el('div', 'pietan-more', `+${rows.length - CAP}개 — 검색으로 좁히세요`));
-  }
-
-  /** 적 세팅이 바뀌면 화면 전체를 다시 그린다 — 수치·목록·전제 배지가 모두 달라진다. */
-  function pietanRedrawAll() {
-    /* 적 설정이 바뀔 때마다 공격보정을 다시 맞춘다. 기체 변경·파츠 추가/제거·전체 해제·
-       LV 변경·저장 구성 불러오기가 **전부 여기를 지나가므로** 한 곳에서 처리한다.
-       예전에는 무장을 고를 때만 채워서, 기체를 바꿔도 칸에 앞 기체 숫자가 남아 있었고
-       (실측: 자쿠Ⅱ 19 → 구프로 바꿔도 19) 파츠를 끼워도 보정이 안 따라왔다.
-       손으로 고친 값은 pietanAutoCorr 안에서 지켜 준다. */
-    pietanAutoCorr();
-    renderPietanHint(); renderPietanDura(); renderPietanEparts();
-    renderPietanChecks(); renderPietanLeft(); renderPietanResult();
-  }
-
-  function renderPietanChecks() {
-    const box = $('#pietanStagger'); if (!box) return;
-    box.innerHTML = '';
-    const redraw = () => { renderPietanChecks(); renderPietanResult(); };
-    const grp = (cls, label, cl) => {
-      if (!cl.count) return;
-      const g = el('div', 'pietan-skgrp' + (cls ? ' ' + cls : ''));
-      g.append(el('span', 'pietan-ctrl-lb', label), cl.wrap);
-      box.append(g);
-    };
-    // 적 방어 스킬이 위 — 내 무장 피해를 깎는다. 내 방어 스킬은 아래(받는 피해).
-    if (pietanMs) grp('enemy', '적 방어 스킬', staggerCheckList(pietanMs, pietanMsLv, redraw, pietanEnemyDef, 'normal'));
-    if (state.ms) grp('', '내 방어 스킬', staggerCheckList(state.ms, msLevel(state.ms), redraw));
-  }
-
-  function renderPietanResult() {
-    const box = $('#pietanResult'); if (!box) return;
-    box.innerHTML = '';
-    if (pietanMs) renderPietanEnemySkills(box);                      // 적 공격 스킬 체크(조합)
-    if (pietanPick) renderPietanIncoming(box);                       // 상대 무장 → 나
-    else if (!pietanMs) {
-      // 기체조차 안 골랐으면 안내가 필요하다. 폰은 목록이 **위**에 있어 「왼쪽」이 거짓말이다.
-      box.append(el('div', 'pietan-empty',
-        (matchMedia('(max-width: 700px)').matches ? '위에서' : '왼쪽에서') + ' 적 기체를 선택하세요.'));
-    }
-    // 무장을 안 골랐을 때는 빈 상자를 두지 않는다 — 그 아래 「내 무장 → 적 격파」가 이미
-    // 답을 들고 있는데, 130px 짜리 안내판이 그것을 아래로 밀어내고 있었다.
-    if (pietanMs && state.ms) renderPietanOutgoing(box);             // 내 무장 → 상대 (TTK 역방향)
-  }
-
-  /**
-   * 상대 무장 하나가 나에게 주는 몫을 통째로 계산한다.
-   *
-   * 목록(왼쪽)과 상세(오른쪽)가 **같은 함수**를 쓴다. 목록에 발 수를 적으려고 계산을
-   * 한 벌 더 쓰면 언젠가 어긋난다 — 이 화면에서 이미 한 번 물렸다(같은 '발' 이 한쪽은
-   * 1히트, 한쪽은 전탄이었다).
-   *
-   * @param {object} w  적 무장
-   * @param {number} [vIdx] 격투 변형 index (기본: 지금 고른 것)
-   * @param {number} [dIdx] 격투 방향 index (기본: 지금 고른 것)
-   */
-  /** 지금 이 화면이 어느 전제로 계산하고 있는가 — 한 줄로. 수치의 뜻을 정하는 말이라
-   *  맨 아래 회색 주석이 아니라 내구 지표 옆에 둔다. */
-  function pietanBasisNote() {
-    if (!pietanMs) return null;
-    const NL = String.fromCharCode(10);
-    const n = pietanEnemy.parts.length;
-    return n
-      ? { on: true, text: '상대 파츠 ' + n + '개',
-          title: '상대 파츠를 양방향으로 반영합니다 — 내구·공격보정·피해경감·특공.'
-            + (pietanBuild ? NL + '「' + pietanBuild.name + '」 에서 가져왔습니다.' : '') }
-      : { on: false, text: '상대 파츠 없음',
-          title: '상대는 기본(파츠 없음·강화6) 기준입니다.' + NL
-            + '아래 「상대 파츠」 에서 끼우면 바로 반영됩니다.' };
-  }
-
-  function pietanIncoming(w, vIdx, dIdx) {
-    const r = stats();
-    const key = ARMOR_KEY[w.attr] || 'armorRange';
-    const eff = durabilityOf(r.total, key);                        // 실효 HP (방어 = Def 반영)
-    const stg = activeStaggerMods(state.ms, state.ms ? msLevel(state.ms) : 1);   // 내 누적치 스킬
-    const condCuts = conditionalPartCuts(state.equipped, w);   // 이 무장에만 걸리는 파츠 경감(관통·폭풍)
-    const dmgFactor = staggerDmgFactor([...partDamageCuts(state.equipped, msLevel(state.ms)), ...condCuts,
-      ...boostBufferCuts(stg.cuts, state.equipped)], w.attr);   // 파츠+조건부 파츠+방어 스킬 피해 경감
-    const isMelee = w.attr === 'melee';
-    // 격투 변형(기본/헤비어택)·방향(N격/횡격/하격) — 무장 데이터의 방향별 배율(ccd)을 적용한다.
-    const variants = isMelee && w.variants && w.variants.length ? w.variants : null;
-    let vi = vIdx == null ? pietanVariant : vIdx;
-    if (variants && vi >= variants.length) vi = 0;
-    const dirs = variants ? variants[vi].direction : null;
-    let di = dIdx == null ? pietanDir : dIdx;
-    if (dirs && di >= dirs.length) di = 0;
-    const meleeCcd = dirs && dirs[di] ? dirs[di].hits : [1];
-    // 체크한 적 공격 스킬 반영 — 보정 합·피해% 곱
-    const eatk = enemyAttackEffect(isMelee ? 'melee' : 'shoot');
-    // 고른 무장의 속성에 맞는 칸을 쓴다
-    const eCorr = (isMelee ? pietanCorr.melee : pietanCorr.shoot) + eatk.corr;
-    const eMul = eatk.mul;
-    // 적이 낀 파츠 — 상성 우위 배율(카테고리 특공)과 与ダメージ% 는 내 파츠와 같은 규칙으로 건다.
-    const eEq = enemyEquipped();
-    const eKind = isMelee ? 'melee' : 'shoot';
-    const eAttrBonus = attrBonusOf(eEq, pietanAttr);
-    const ePartPct = pietanMs ? D.damagePctFor(D.weaponModsOf(eEq, pietanMsLv, pietanMs.属性), w, eKind) : 0;
-    // 1히트 피해 = 공격 항 [Wp・{Att・ETCa}・(CCd)・Pr] × 피해% × 방어 스킬 피해 경감 (방어보정은 실효 HP).
-    const perHit = (base, ccd) => base > 0
-      ? Math.floor(D.applyDamagePct(isMelee
-        ? D.meleeDamage(base, eCorr, { attr: pietanAttr, attrBonus: eAttrBonus, ccd: ccd || [1] })
-        : D.shootingDamage(base, eCorr, { attr: pietanAttr, attrBonus: eAttrBonus }), ePartPct) * eMul * dmgFactor)
-      : 0;
-    // 동시발사·산탄은 방아쇠 한 번에 여러 발이 맞는다. 1히트만 세면 「격파까지 N발」이
-    // 실은 N '히트' 라, 산탄 무장 앞에서 실제보다 훨씬 버티는 것처럼 보였다
-    // (누적치에 ×배수가 붙은 무장이 883/3,779종). 아래 경직 줄은 이미 발 수로 환산하고 있어
-    // 같은 화면의 두 '발' 이 서로 다른 뜻이기도 했다.
-    // 무장 표의 '전탄'·내 무장→적 쪽과 같은 fireMult 를 써서 기준을 하나로 맞춘다.
-    const eMult = fireMult({ type: w.type, info: { '備考': w.note || '' } });
-    const nNc = (eMult.nc && eMult.nc.n) || 1;
-    const nCh = (eMult.ch && eMult.ch.n) || nNc;
-    const oneHit = perHit(w.power || w.charged, meleeCcd);
-    // 고정 피해(소이)는 위력과 별개로 더 들어간다. 내 무장→적(아래)은 이미 더하고 있는데
-    // 받는 쪽만 빼 두어, 같은 모달에서 방향마다 규칙이 달랐다. 히트 수가 범위인 경우는
-    // 적은 쪽을 써서 과대평가하지 않는다(내 무장 쪽과 같은 규칙).
-    // 보정을 안 받는 고정값이라 위 피해 경감(dmgFactor)은 걸지 않는다 — 이 역시 내 무장 쪽과 같다.
-    const inFx = fixedDamageWithParts({ info: { '備考': w.note || '' }, mods: w.mods }, eEq);
-    const fxAdd = inFx ? inFx.total : 0;
-    const dmg = oneHit * nNc + fxAdd;            // 방아쇠 한 번(전탄 명중) 피해
-
-    /* 대상 HP 에 따라 커지는 추가 피해(레일건［최대출력］ 등) — **구간을 따라가며** 센다.
-       나눗셈 한 번으로는 못 센다: 첫 발은 +100%인데 HP 가 깎이면 +50% → +20% → 0 으로 내려간다.
-       「첫 발만」으로 어림잡는 것도 재 봤는데 10발 → 9발이 될 뿐 실제(8발)와 또 어긋났다.
-       비율은 실효 HP 위에서 본다 — 실효 HP 와 피해가 같은 자이므로 실제 HP 비율과 같다.
-       고정 추가분은 소이 고정 피해(fxAdd)와 같은 규칙으로 다룬다(같은 성질을 다르게 셀 이유가 없다). */
-    const hpB = D.hpBonusOf(w.note || '');
-    const hpBands = (hpB && !hpB.unknown) ? hpB.bands : null;
-    const hpUnknown = (hpB && hpB.unknown) ? hpB.why : null;
-    /* 구간을 따라가는 셈은 **damage.js 하나**에 둔다 — 대결 시뮬도 같은 함수를 쓴다.
-       두 군데에 두면 한쪽만 고쳐져 같은 무장이 화면마다 다른 발수를 말한다. */
-    const bandArgs = { eff, oneHit, mult: nNc, fixed: fxAdd, bands: hpBands };
-    const dmgAt = left => D.hpBandSteps(bandArgs).dmgAt(left);
-    const stepHits = targetHits => {
-      const r = D.hpBandSteps({ ...bandArgs, targetHits });
-      return { n: r.n, total: r.total };
-    };
-    const hits = dmg > 0 ? (hpBands ? stepHits(null).n : Math.ceil(eff / dmg)) : null;
-    // 사격의 powerCharged = 집속 (멜리 헤비어택은 위 변형으로 처리)
-    const chgOne = (!isMelee && w.charged && w.charged !== w.power) ? perHit(w.charged, [1]) : 0;
-    const chgDmg = chgOne ? chgOne * nCh + fxAdd : 0;
-    const chgHits = chgDmg > 0 ? Math.ceil(eff / chgDmg) : null;
-    // 경직 = 임계 ÷ 히트당 누적치. 감소 스킬은 감소 큰 순으로 하나씩 곱하고 매번 소수점 이하 내림.
-    const perHitStagger = w.stagger > 0 ? staggerPerHit(w.stagger, stg.mults) : 0;
-    const stagN = perHitStagger > 0 ? Math.ceil(stg.threshold / perHitStagger) : null;
-    return { eff, stg, isMelee, variants, dirs, vi, di, meleeCcd, eatk, eCorr, eMul, eEq,
-      eAttrBonus, ePartPct, nNc, nCh, oneHit, inFx, fxAdd, dmg, hits, chgOne, chgDmg, chgHits,
-      condCuts, dmgFactor, eMult, perHitStagger, stagN,
-      hpBands, hpUnknown, dmgAt, stepHits,
-      /* 화면에 적을 때 쓰는 **기체 HP 눈금**.
-         셈은 실효 HP(내구 지표) 위에서 한다 — 그래야 「내성이 높을수록 한 대가 덜 아프다」가
-         나눗셈 한 번으로 풀린다. 그런데 그 숫자를 그대로 보여 주니 사용자가 제 HP 와
-         견주다 헷갈렸다(「1발 20,134 인데 내 HP 는 24,000?」).
-         실효 HP = HP ÷ (1 − 내성) 이므로 HP/실효 를 곱하면 **실제로 깎이는 양**이 된다. */
-      myHp: Math.round(r.total.hp || 0),
-      toHp: v => Math.round(v * (eff > 0 ? (r.total.hp || 0) / eff : 1)) };
-  }
-
-  /** 상대 무장 → 나 (받는 피해·격파·경직). */
-  function renderPietanIncoming(box) {
-    const w = pietanPick;
-    const I = pietanIncoming(w);
-    // 화면에 근거를 적을 때 계산 안의 값이 그대로 필요하다 — 다시 세지 말고 받아 쓴다.
-    const { eff, stg, isMelee, variants, dirs, meleeCcd, eatk, eCorr, eMul, eEq, eAttrBonus,
-      ePartPct, nNc, nCh, oneHit, inFx, fxAdd, dmg, hits, chgOne, chgDmg, chgHits,
-      condCuts, dmgFactor, eMult, perHitStagger, stagN, hpBands, hpUnknown } = I;
-    pietanVariant = I.vi; pietanDir = I.di;   // 범위를 벗어난 선택은 계산이 0 으로 되돌린다
-
-    const hd = el('div', 'pietan-rhd');
-    hd.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
-    hd.append(el('b', 'pietan-rnm', T.weaponName(w.name)));
-    if (w.react) hd.append(el('span', 'pietan-react' + (/강경직/.test(w.react) ? ' strong' : ''), w.react));
-    // 상대 무장의 고정 피해·디버프 — 직격과 별개로 더 들어가는 몫
-    if (inFx) {
-      const c = el('span', 'w-fixed', '고정 ' + inFx.total.toLocaleString());
-      c.title = `직격과 별도로 고정 피해 ${inFx.total.toLocaleString()} (${inFx.per}×${inFx.hits}히트)\n`
-        + '보정을 받지 않는 고정값이며, 아래 격파 수에 포함돼 있다.'
-        + (inFx.ranged ? '\n※ 히트 수가 범위라 적은 쪽(안전한 쪽)을 썼다.' : '');
-      hd.append(c);
-    }
-    for (const d of debuffsOf({ info: { '備考': w.note } })) hd.append(el('span', 'w-debuff', d));
-    box.append(hd);
-    if (pietanMs) box.append(el('div', 'pietan-msctx',
-      `${T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '')} · LV${pietanMsLv}`
-      + (pietanEnemy.parts.length ? ' · 상대 파츠 ' + pietanEnemy.parts.length + '개' : '')
-      + (eAttrBonus !== (D.ATTR_BONUS[pietanAttr] || 0) ? ' · 적 카테고리 특공' : '')
-      + (ePartPct ? ` · 적 파츠 피해 +${ePartPct}%` : '')
-      + ` · 공격보정 ${eCorr}`
-      + (eatk.names.length ? ` (적 스킬 ${eatk.names.length}개${eatk.mul > 1 ? ` · 피해 ×${+eatk.mul.toFixed(3)}` : ''})` : '')));
-    box.append(el('div', 'pietan-sub',
-      `위력 ${(w.power || w.charged).toLocaleString()}${chgDmg ? ` · 집속 ${w.charged.toLocaleString()}` : ''}`
-      + ` · 누적 ${w.stagger ? w.stagger + '%' : '—'}${w.pellets > 1 ? ` ×${w.pellets}` : ''}`));
-
-    // 격투 변형(기본/헤비어택) · 방향(N격/횡격/하격) 선택 (멜리 무장)
-    const segCtrl = (label, items, cur, onPick) => {
-      const wrap = el('div', 'pietan-dir');
-      wrap.append(el('span', 'pietan-ctrl-lb', label));
-      const seg = el('div', 'seg pietan-dirseg');
-      items.forEach((it, i) => {
-        const b = el('button', 'seg-btn' + (i === cur ? ' on' : ''), it.text);
-        if (it.title) b.title = it.title;
-        b.onclick = () => onPick(i);
-        seg.append(b);
-      });
-      wrap.append(seg);
-      box.append(wrap);
-    };
-    if (variants && variants.length > 1) {
-      segCtrl('격투 종류', variants.map(v => ({ text: v.label })), pietanVariant,
-        i => { pietanVariant = i; pietanDir = 0; renderPietanResult(); });
-    }
-    if (dirs && dirs.length > 1) {
-      segCtrl('격투 방향', dirs.map(d => ({ text: mLabel(d.label), title: '방향 배율 ' + d.raw })), pietanDir,
-        i => { pietanDir = i; renderPietanResult(); });
-    }
-
-    const metric = (lb, val, note, cls) => {
-      const m = el('div', 'pietan-metric' + (cls ? ' ' + cls : ''));
-      m.append(el('span', 'pietan-mlb', lb));
-      m.append(el('span', 'pietan-mv', val));
-      m.append(el('span', 'pietan-mnote', note));
-      return m;
-    };
-    // 조건부 파츠 경감은 이 무장이라서 걸린 것이라 따로 이름을 밝혀 준다
-    const condTxt = condCuts.length ? ' · ' + [...new Set(condCuts.map(c => c.label + ' -' + c.pct + '%'))].join(' · ') : '';
-    const cutTxt = dmgFactor < 1 ? ` · 경감 ×${+dmgFactor.toFixed(3)}${condTxt}` : '';
-    const varTxt = variants && variants.length > 1 ? `${variants[pietanVariant].label} ` : '';
-    const dirTxt = dirs ? ` · ${varTxt}${mLabel(dirs[pietanDir].label)} ${dirs[pietanDir].raw}` : '';
-    // 전탄 배수가 있으면 '1발' 이 몇 히트인지 함께 밝힌다(무장 표의 '전탄' 표기와 같은 뜻)
-    /* HP 눈금으로 바꿀 때 **조각마다 따로 반올림하면 산수가 안 맞는다** —
-       1발 271 인데 1히트 136 × 2발 = 272 가 나왔다(검사가 잡았다).
-       그래서 조각을 먼저 반올림하고, 합계는 그 조각들을 더해서 만든다. */
-    const oneHitHp = I.toHp(oneHit);
-    const fxHp = I.toHp(fxAdd);
-    const dmgHp = oneHitHp * nNc + fxHp;
-    const nTxt = nNc > 1 ? ` (1발 = ${oneHitHp.toLocaleString()} × ${eMult.nc.label})` : '';
-    const fxTxt = fxAdd ? ` + 고정 ${fxHp.toLocaleString()}` : '';
-    /* 대상 HP 에 따라 피해가 달라지는 무장은 「÷ 1발」이 거짓말이 된다 — 발마다 값이 다르다.
-       그래서 근거를 **발마다** 적는다. 셈에 못 넣는 무장(값이 원문에 없거나 스킬 조건)은
-       숫자를 지어내지 않고 그 사실을 적는다 — 파츠 쪽 UNMODELLED_FX 와 같은 원칙이다. */
-    const hpWhy = hpBandWhy({ eff, bands: hpBands, dmgAt: I.dmgAt, toHp: I.toHp, hits });
-    box.append(metric('격파까지', hits != null ? hits + '발' : '—',
-      /* **기체 HP 로 적는다.** 셈은 실효 HP(내구 지표) 위에서 하지만, 그 숫자를 그대로
-         보여 주니 제 HP 와 견주다 헷갈린다는 말이 나왔다 — 「1발 20,134 인데 내 HP 는 24,000?」.
-         여기 적히는 값은 **실제로 HP 바에서 깎이는 양**이다(내성을 이미 뺀 값).
-         내구 지표는 모달 맨 윗줄에 그대로 있다. */
-      hpBands
-        ? `HP ${I.myHp.toLocaleString()} — 대상 HP 에 따라 피해가 달라집니다${hpWhy}`
-        : `HP ${I.myHp.toLocaleString()} ÷ 1발 ${dmgHp.toLocaleString()}${nTxt}${fxTxt}${dirTxt}${cutTxt}`));
-    /* 실효 HP(내구 지표)는 **화면에서 뺐지만** 자동 구성이 쓰는 눈금이라 어딘가에는 있어야 한다.
-       글로 적으면 HP 와 숫자가 둘이 되어 다시 헷갈리므로 툴팁으로만 남긴다. */
-    /* eff 는 HP ÷ (1 − 내성) 까지만이다 — 피해경감은 피해 쪽(dmgFactor)에 걸려 있다.
-       자동 구성의 ehp* 축은 **경감까지 접은** 값을 쓰므로 여기서 나눠 준다.
-       (처음에 eff 를 그대로 적었다가 34,315 vs 42,894 로 어긋나 검사가 잡았다) */
-    const killRow = box.lastElementChild;
-    const effWeapon = Math.round(eff / (dmgFactor || 1));
-    if (killRow) killRow.title = '실효 HP ' + effWeapon.toLocaleString()
-      + ' — HP ÷ (1 − 내성) ÷ 피해경감. 자동 구성의 「실효 HP」 목표가 쓰는 눈금입니다.';
-    if (hpUnknown) {
-      const u = hpUnknownNote(hpUnknown);
-      box.append(metric(u.label, u.value, u.note, 'sub pietan-unmod'));
-    }
-    // 여기서 나온 「몇 발 버티나」 를 그대로 자동 구성 목표로 넘긴다.
-    // 이게 없으면 사용자가 실효 HP 를 손으로 계산해 목표 칸에 옮겨 적어야 했다 —
-    // 관통·폭풍 경감 장갑 같은 조건부 파츠는 이 목표를 걸어야 비로소 제값으로 뽑힌다.
-    if (hits != null && dmg > 0) box.append(pietanGoalRow(w, dmg, hits, I));
-    if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
-    // 문구는 staggerBox 한 곳에서 만든다 — 대결 시뮬과 같은 말을 하게 한다
-    const sb = staggerBox({ pct: w.stagger, pellets: w.pellets }, stg);
-    box.append(metric('경직까지', sb.value, sb.note));
-    // 실드로 받으면 기체 HP 피해를 막고 실드 HP 가 대신 깎인다(위키 83).
-    if (pietanShield) {
-      const mine = shieldOf(state.ms, msLevel(state.ms), state.equipped, state.expansion, state.expLevel);
-      const sm = D.shieldMultOf({ info: { '備考': w.note || '' } });
-      const eShPct = D.shieldDmgPctOf(eEq, w.attr);  // 실드 피해 증가는 때리는 쪽(적) 파츠 몫
-      const sHit = mine && shieldHit(dmg, sm, false, eShPct);
-      if (!mine) box.append(metric('실드로 막으면', '—', '내 기체엔 실드가 없다', 'sub'));
-      else if (sHit == null) box.append(metric('실드로 막으면', '—',
-        sm && sm.unknown ? '이 무장의 실드 보정이 위키 미확인(？倍)' : '이 무장엔 실드 보정 표기가 없다', 'sub'));
-      else box.append(metric('실드로 막으면', Math.ceil(mine.hp / sHit) + '발',
-        `${mine.name} HP ${mine.hp.toLocaleString()}` + (mine.bonus ? ` (+${mine.bonus.toLocaleString()})` : '')
-        + ` ÷ 1히트 ${sHit.toLocaleString()} (피해 ${dmg.toLocaleString()} × 보정 ${sm.nc}배`        + (eShPct ? ` × 적 파츠 +${eShPct}%` : '') + ')', 'sub'));
-    }
-    box.append(el('div', 'pietan-foot',
-      '※ 공격 항 실피해식[Wp·Att·(방향)·Pr] + 방어 스킬 경감. 방어보정은 내구 지표(Def). 蓄積 경직은 일반 경직 기준(국부·시간 감쇠 미반영).'
-      + (/강경직/.test(w.react) ? (' 이 무장은 직격 시 ' + w.react + '(大よろけ).') : '')));
-  }
-
-  /** 내 무장 → 상대 격파까지 발수 (TTK 역방향). 상대의 파츠·체크한 방어 스킬로 피해가 깎인다. */
   /* 무장 **자체**가 상대 내성을 깎는다 — 「対象の耐ビーム補正を30%減でダメージ計算」.
      전수로 35 무장(33 기체)이고, 여태 계산 어디에도 안 들어갔다(사용자 지적).
 
@@ -8525,132 +7770,6 @@
     return m ? Number(m[2]) : 0;
   }
 
-  function renderPietanOutgoing(box) {
-    const enemyTot = enemyStatsTotal();
-    const outAttr = pietanMatchup(state.ms.属性, pietanMs.属性);   // 내→적 상성 (자동)
-    const r = stats();
-    const corr = { shooting: r.total.shoot, melee: r.total.meleeCorrection };
-    const wm = D.weaponModsOf(state.equipped, msLevel(state.ms), state.ms.属性, state.expansion);
-    const eEq = enemyEquipped();                                   // 적이 낀 파츠
-    const eStg = activeStaggerMods(pietanMs, pietanMsLv, pietanEnemyDef, 'normal');   // 체크한 적 방어 스킬
-    const eShield = pietanShield ? shieldOf(pietanMs, pietanMsLv, eEq) : null;
-
-    const eCuts = [...partDamageCuts(eEq, pietanMsLv),             // 적 파츠의 % 피해 경감
-      ...boostBufferCuts(eStg.cuts, eEq)];                         // 적 방어 스킬(신형 완충재 강화 포함)
-    const rows = [];
-    for (const w of msWeapons()) {
-      if (w.type === 'shield') continue;
-      const lv = weaponLevel(w), d = lv ? w.levels[lv] : null;
-      if (!d) continue;
-      /* 집속 **필수** 무장은 비집속 위력이 아예 없다(power = null). `!d.power` 로 걸러 내니
-         103 종이 이 목록에서 통째로 빠져 있었다 — GP02[BB]의 「射撃出力リミッター解除」(4500)
-         처럼 그 기체의 주력기가 격파 목록에 없었다. 비집속이 없는 것은 집속 위력으로 센다.
-         비집속과 집속을 **둘 다** 가진 무장은 예전처럼 비집속만 보여 준다(여기서는 늘리지 않는다). */
-      const chargeOnly = !d.power && d.powerCharged != null;
-      const basePower = d.power || (chargeOnly ? d.powerCharged : 0);
-      if (!basePower) continue;
-      const attr = weaponAttr(w);
-      const aKey = ARMOR_KEY[attr] || 'armorRange';
-      // 무장이 적 내성을 깎으면 **그 무장에 한해** 깎인 내성으로 내구를 낸다.
-      /* 무장 몫과 스킬 몫이 겹치면 **곱한다.** 원문에 겹침 규칙이 없어 둘 중 하나를 골라야
-         하는데, 둘 다 「보정값의 N% 상태」라는 말이라 비율끼리 곱하는 쪽이 글에 맞는다.
-         더하는 쪽보다 적이 더 단단해지므로(0.6×0.85 = 0.51 > 1−0.55) 부풀지도 않는다. */
-      const wCut = weaponFoeArmorCut(w);
-      const sCut = skillFoeArmorCut(attr);
-      const keep = (1 - wCut / 100) * (1 - sCut / 100);
-      const foeCut = Math.round((1 - keep) * 1000) / 10;
-      const eTot = foeCut
-        ? { ...enemyTot, [aKey]: (enemyTot[aKey] || 0) * keep }
-        : enemyTot;
-      const enemyEff = durabilityOf(eTot, aKey);
-      // 조건부 파츠 경감(관통·폭풍)은 무장의 備考 를 보므로 피탄 쪽과 같은 모양으로 맞춰 넘긴다.
-      const wc = { name: w.name, attr, type: w.type, psycommu: !!w.psycommu, note: (w.info && w.info['備考']) || '' };
-      const eFactor = staggerDmgFactor([...eCuts, ...conditionalPartCuts(eEq, wc)], attr);
-      const kind = (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shoot';
-      const a = kind === 'melee' ? corr.melee : corr.shooting;
-      // 카테고리 특공 프로그램은 상성 우위 배율 자체를 130%→140% 로 올린다
-      const aBonus = attrBonusOf(state.equipped, outAttr);
-      const raw = w.type === 'melee'
-        ? D.meleeDamage(basePower, a, { attr: outAttr, attrBonus: aBonus })
-        : D.shootingDamage(basePower, a, { attr: outAttr, attrBonus: aBonus });
-      const dmg = Math.floor(D.applyDamagePct(raw, [D.damagePctFor(wm, w, kind), ...skillDmgPctList(kind)]) * eFactor);
-      const mult = fireMult(w);
-      // 집속으로 세는 무장은 동시발사 배수도 집속 쪽을 써야 한다
-      const nMult = chargeOnly ? mult.ch : mult.nc;
-      const n = (nMult && nMult.n) || 1;
-      let per = dmg * n;                            // 전탄(동시발사) 1트리거 피해
-      // 소이 등 고정 피해는 위력과 **별개로** 더 들어간다. 이걸 빼면 격파수가 실제보다
-      // 많게 나온다. 히트 수가 범위인 경우는 적은 쪽을 써서 과대평가하지 않는다.
-      const fxHit = fixedDamageWithParts(w, state.equipped);
-      if (fxHit) per += fxHit.total;
-      // 실드로 막는 상대라면 실드부터 깨야 한다 — 같은 무장이라도 실드 보정이 5배까지 갈린다.
-      let shHits = undefined, shNote = '';
-      if (pietanShield && eShield && weaponIgnoresShield(w, chargeOnly)) {
-        // 실드를 안 깨고 바로 기체를 때린다 — 발수를 세는 것이 뜻이 없다
-        shHits = null; shNote = '실드 무시';
-      } else if (pietanShield && eShield) {
-        const sm = D.shieldMultOf(w);
-        const sHit = shieldHit(dmg, sm, chargeOnly, D.shieldDmgPctOf(state.equipped, attr));
-        // 같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다.
-        if (sHit == null) { shHits = null; shNote = sm && sm.unknown ? '보정 불명' : '표기 없음'; }
-        else shHits = Math.ceil(eShield.hp / (sHit * n));
-      }
-      rows.push({ name: T.weaponName(w.name), attr, per, n, shHits, shNote, foeCut, chargeOnly,
-        hits: per > 0 ? Math.ceil(enemyEff / per) : null });
-    }
-    if (!rows.length) return;
-    rows.sort((x, y) => (x.hits || 1e9) - (y.hits || 1e9));
-
-    box.append(el('div', 'pietan-out-lb', '내 무장 → ' + T.msName(pietanMs.MS名).replace(/\s*LV\d+$/, '') + ' 격파'
-      + (eShield ? ` (실드 ${eShield.name} HP ${eShield.hp.toLocaleString()})` : '')));
-    const tbl = el('div', 'pietan-out' + (eShield ? ' has-shield' : ''));
-    for (const w of rows) {
-      const row = el('div', 'pietan-out-row');
-      row.append(el('span', 'w-type type-' + w.attr, ATTR_LABEL[w.attr]));
-      /* 이름은 길면 줄이되 **꼬리표는 안 줄인다.** 한 칸에 몰아넣었더니 꼬리표가 둘 붙는
-         무장(트윈 새틀라이트 캐논: 집속 + 내빔 −40%)에서 꼬리표가 잘려 「집속…」이 됐다. */
-      const nm = el('span', 'pietan-out-nm');
-      nm.append(el('span', 'pietan-out-tx', w.name));
-      // 집속 위력으로 센 줄은 그렇다고 밝힌다 — 비집속 줄과 같은 눈금으로 읽히면 안 된다
-      if (w.chargeOnly) {
-        const c = el('i', 'pietan-charge', '집속');
-        c.title = '비집속 위력이 없는 무장이라 집속 위력으로 셉니다';
-        nm.append(c);
-      }
-      // 왜 이 무장만 발수가 적은지 밝힌다. 칸(그리드 열)을 늘리지 않으려고 이름 안에 붙인다.
-      if (w.foeCut) {
-        const tag = el('i', 'pietan-pierce', '내' + ATTR_LABEL[w.attr] + ' −' + w.foeCut + '%');
-        tag.title = '이 무장은 상대 내' + ATTR_LABEL[w.attr] + ' 보정을 '
-          + w.foeCut + '% 깎은 값으로 계산합니다 (보정값의 '
-          + (100 - w.foeCut) + '% 상태)';
-        nm.append(tag);
-      }
-      row.append(nm);
-      row.append(el('span', 'pietan-out-dmg', w.per.toLocaleString() + (w.n > 1 ? ' (×' + w.n + ')' : '')));
-      if (w.shHits !== undefined) {
-        const sh = el('span', 'pietan-out-sh' + (w.shNote === '실드 무시' ? ' ign' : ''),
-          w.shHits != null ? '실드 ' + w.shHits + '발' : w.shNote);
-        if (w.shNote === '실드 무시') sh.title = '이 무장은 상대 실드를 무시하고 기체를 바로 때립니다';
-        row.append(sh);
-      }
-      row.append(el('span', 'pietan-out-hits', w.hits != null ? w.hits + '발' : '—'));
-      tbl.append(row);
-    }
-    box.append(tbl);
-    // 상대 파츠 전제는 위 내구 지표 줄의 배지가 말한다 — 같은 말을 두 곳에 두지 않는다.
-    box.append(el('div', 'pietan-foot',
-      '※ 체크한 적 방어 스킬만큼 내 피해가 깎인다. '
-      + '내 위력은 파츠·스킬·상성 반영(국부보정 미반영). 전탄 명중 가정.'));
-  }
-
-  /* ── 대결 시뮬레이터에 앱 함수를 이어 준다 ─────────────────────────
-     duel.js 는 **이 스크립트 뒤에** 실린다(index.html 의 __DUEL__). 그래서 지금은
-     window.GBO2Duel 이 아직 없다 — 한 틱 미뤄 등록한다. 미루지 않으면 조용히 안 걸리고,
-     시안의 간이판이 그대로 돌아 **수치가 옛 화면과 달라진다.**
-
-     시그니처는 전부 이 파일에서 확인했다(아래 주석의 반환 모양 참고).
-     옛 피탄 시뮬과 **같은 함수**를 쓰므로 두 화면이 같은 수를 말한다 —
-     실측으로 맞댔다: 사자비 LV2 → 자쿠Ⅱ LV5, B·샷 라이플 4,014(×9) · 5발. */
   let duelSeedFp = null;   // 대결 왼쪽에 마지막으로 앉힌 앱 구성의 지문
   setTimeout(() => {
     if (!window.GBO2Duel) return;
@@ -8704,6 +7823,9 @@
         const cuts = damageCutsOf(side.parts, { lv: msLevel(side.ms), skillMs: side.ms, skills: side.defs });
         return { attr, ko: lb, value: enduranceOf(st, attr, cuts), cut: cutPctOf(cuts, attr) };
       }),
+      /* 대결에서 「실드로 막음」을 켜면 무장 표의 🛡 보정 칩도 같이 켠다.
+         스위치가 그 화면으로 옮겨졌으니 켜짐도 그쪽에서 받는다. */
+      onShield: on => { showShieldMult = !!on; renderWeapons(); },
       /* 🛡 그 쪽이 든 실드와 HP. shieldOf 는 피탄 시뮬이 쓰던 그 함수다. */
       shield: side => shieldOf(side.ms, msLevel(side.ms), side.parts, side.exp, side.expLv),
       /* 무장 하나가 실드에 주는 한 히트 피해. 「실드 무시」는 발수를 세는 뜻이 없어 why 로 답한다.
@@ -8771,22 +7893,6 @@
       }
     });
   }, 0);
-
-  function openPietan(open) {
-    if (open && !state.ms) { toast('먼저 기체를 선택하세요'); return; }
-    const m = $('#pietanModal'), b = $('#pietanBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
-    if (open) {
-      $('#pietanMsName').textContent = T.msName(state.ms.MS名);
-      for (const k of ['shoot', 'melee']) {
-        const inp = $(PIETAN_CORR[k]); if (inp) inp.value = pietanCorr[k];
-      }
-      pietanAutoAttr();                 // 내 기체 기준 상성 재계산(수동 변경 전까지)
-      syncPietanAttrSeg();
-      pietanRedrawAll();
-    }
-  }
 
   /* ---------- 기체 스킬 목록 (무장 헤더 '스킬' 버튼) ---------- */
   const SKILL_MODE_KO = { '通常時': '통상', '変形時': '변형', '変身時': '변신', 'システム発動中': '시스템 발동 중', '飛行時': '비행', '': '통상' };
@@ -10821,33 +9927,6 @@
     $('#pngClose').onclick = () => openPngModal(false);
     $('#pngModalBack').onclick = () => openPngModal(false);
 
-    // 피탄 시뮬레이터 — 적 무장에 몇 발 버티는지 / 몇 발에 다운되는지
-    $('#pietanBtn').onclick = () => openPietan(true);
-    $('#pietanClose').onclick = () => openPietan(false);
-    $('#pietanBack').onclick = () => openPietan(false);
-    $('#pietanQuery').oninput = () => renderPietanLeft();
-    for (const k of ['shoot', 'melee']) {
-      const inp = $(PIETAN_CORR[k]);
-      if (!inp) continue;
-      inp.oninput = () => {
-        pietanCorr[k] = Math.max(0, Number(inp.value) || 0);
-        pietanCorrTouched[k] = true;        // 만진 칸만 고정된다
-        renderPietanResult();
-      };
-    }
-    $('#pietanShield').onclick = () => {
-      pietanShield = !pietanShield;
-      $('#pietanShield').classList.toggle('on', pietanShield);
-      renderWeapons();          // 무장 표의 실드 보정 칩도 같이 켜고 끈다
-      renderPietanResult();
-    };
-    $('#pietanAttr').onclick = ev => {
-      const b = ev.target.closest('[data-a]'); if (!b) return;
-      pietanAttr = b.dataset.a; pietanAttrTouched = true;   // 수동 지정 — 기체 바꿔도 유지
-      [...$('#pietanAttr').children].forEach(c => c.classList.toggle('on', c === b));
-      renderPietanResult();
-    };
-
     // 기본 파츠 설정 — 기본 제외 파츠 관리 (영구 저장, 우클릭과 동일 세트)
     $('#ownedBtn').onclick = () => openOwnedModal(true);
     $('#ownedModalClose').onclick = () => openOwnedModal(false);
@@ -10917,7 +9996,11 @@
       /* 토큰 화면이 여기 **없었다** — 뒤로가기를 누르면 돌아가지 않고 앱이 닫혔다
          (돌아가는 길이 「‹ 돌아가기」 버튼 하나뿐이었다). 화면을 하나 더 붙이면서 같이 고친다. */
       if (state.view === 'token') { setView(AUX_BACK); return true; }
-      if (!$('#pietanModal').hidden) { openPietan(false); return true; }
+      /* 대결 시뮬 — 피탄 시뮬이 있던 자리. 창은 duel.js 가 만들므로 없을 수도 있다. */
+      {
+        const d = document.getElementById('duelModal');
+        if (d && !d.hidden) { window.GBO2Duel.close(); return true; }
+      }
       if (!$('#compareModal').hidden) { openCompareModal(false); return true; }
       if (!$('#ownedModal').hidden) { openOwnedModal(false); return true; }
       if (!$('#savedModal').hidden) { openSavedModal(false); return true; }

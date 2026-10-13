@@ -36,7 +36,6 @@
 
   <!-- ── 왼쪽: 이 구성에 하는 일 ── -->
   <button id="openAuto" class="btn-primary step-only">⚡ 자동 구성</button>
-  <button id="pietanBtn" class="btn-ghost step-only" title="현재 구성이 적 무장에 몇 발 버티는지 · 몇 발에 다운되는지">🛡 피탄 시뮬</button>
   <button id="compareBtn" class="btn-ghost step-only" title="두 구성의 스탯·내구를 나란히 비교">⚖ 비교</button>
   <!-- 저장·공유·이미지·올리기는 전부 「이 구성을 밖으로」 하나다. 버튼 넷이 뜻 하나를
        나눠 갖고 있어 묶는다. 메뉴 항목은 아래 원본 버튼을 그대로 누른다. -->
@@ -729,40 +728,6 @@
   </div>
   <div class="png-preview" id="pngPreview"></div>
   <div class="png-hint">저장하면 기기의 <b>다운로드</b> 폴더에 들어갑니다. 복사는 채팅창에 바로 붙여넣을 때 쓰세요.</div>
-</div>
-
-<div class="auto-modal-back" id="pietanBack" hidden></div>
-<div class="auto-modal pietan-modal" id="pietanModal" hidden role="dialog" aria-label="피탄 시뮬레이터">
-  <div class="am-head">
-    <b>🛡 피탄 시뮬레이터</b>
-    <span class="am-note" id="pietanMsName"></span>
-    <span class="grow"></span>
-    <button id="pietanClose" class="btn-ghost">닫기</button>
-  </div>
-  <div class="pietan-dura" id="pietanDura"></div>
-  <div class="pietan-ctrl">
-    <!-- 적 공격보정은 사격·격투가 따로다. 쓰는 쪽은 고른 무장의 속성에 맞는 칸이다. -->
-    <label class="pietan-corr">적 사격보정 <input type="number" id="pietanCorrShoot" value="0" min="0" max="300" step="1"></label>
-    <label class="pietan-corr">격투보정 <input type="number" id="pietanCorrMelee" value="0" min="0" max="300" step="1"></label>
-    <span class="pietan-ctrl-lb">상성(적→나)</span>
-    <div class="seg" id="pietanAttr">
-      <button class="seg-btn" data-a="disadvantage">적 불리</button>
-      <button class="seg-btn on" data-a="same">동일</button>
-      <button class="seg-btn" data-a="advantage">적 유리</button>
-    </div>
-    <button type="button" class="tool-btn" id="pietanShield" title="실드로 받으면 기체 HP 대신 실드 HP 가 깎인다 — 무장마다 실드 보정이 0.1~2.0배로 크게 갈린다">🛡 실드로 막음</button>
-    <!-- 상대 파츠 — 저장 구성을 만들지 않고도 여기서 바로 끼운다.
-         내 구성과 같은 규칙(슬롯·중복·8개·카테고리)으로 걸러 낸다. -->
-    <div class="pietan-eparts" id="pietanEparts"></div>
-    <div class="pietan-stagger" id="pietanStagger"></div>
-  </div>
-  <!-- 안내문은 아직 아무것도 안 골랐을 때만 띄운다(renderPietanHint). 고른 뒤에는 다 아는 말이라 자리만 먹었다. -->
-  <div class="pietan-hint" id="pietanHint"><b>적 기체</b>(또는 내 저장 구성)를 고른 뒤 <b>무장</b>을 선택하면 <b>격파·경직</b> 수를 계산합니다. 상성은 자동(범용&gt;강습&gt;지원&gt;범용), 공격보정은 처음 자동 뒤 고정.</div>
-  <input type="search" id="pietanQuery" placeholder="적 기체 검색 (자쿠 / ザク / 건담…)">
-  <div class="pietan-cols">
-    <div class="pietan-list" id="pietanList"></div>
-    <div class="pietan-result" id="pietanResult"></div>
-  </div>
 </div>
 
 <div class="toast" id="toast"></div>

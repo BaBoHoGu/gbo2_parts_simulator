@@ -13,13 +13,14 @@
  *   HOOK.airMelee(side, wp)           → 앱 airMeleeOf + airMeleeWeapon  (공중 격투 위력 상승)
  *   HOOK.durability(side, st)         → 앱 enduranceOf + damageCutsOf  (속성별 내구 지표)
  *   HOOK.shield(side)                 → 앱 shieldOf        (그 쪽이 든 실드와 HP)
+ *   HOOK.onShield(on)                 → 앱이 무장 표의 실드 보정 칩을 켜고 끈다
  *   HOOK.shieldHit(wp, dmg, charged, atkParts) → 앱 shieldHit + weaponIgnoresShield
  *   HOOK.bandWhy(info)                → 앱 hpBandWhy      (구간 무장의 발마다 피해)
  *   HOOK.bandUnknown(why)             → 앱 hpUnknownNote  (셈에 못 넣은 구간을 밝힌다)
  *   HOOK.foeArmorCut(side, wp)        → 앱 weaponFoeArmorCut + foeArmorCutOf  (적 내성 깎기)
  *   HOOK.react(wp)                    → 앱 reactOf         (강경직 / 조건부 강경직 / 경직)
  *   HOOK.stagger(side, wp)            → 앱 parseStagger + activeStaggerMods  (경직까지 히트)
- *   HOOK.goalRow(info)                → 앱 pietanGoalRow   (N발 버티기 → 자동 구성 목표)
+ *   HOOK.goalRow(info)                → 앱 goalRowFor      (N발 버티기 → 자동 구성 목표)
  * ------------------------------------------------------------------ */
 (function () {
   'use strict';
@@ -243,6 +244,7 @@
        안 걸렸으면 그 칸이 안 나올 뿐이고, 나온 수는 늘 앱의 수다. */
     durability: () => null,
     shield: () => null,
+    onShield: () => {},
     shieldHit: () => null,
     bandWhy: () => '',
     bandUnknown: () => null,
@@ -360,7 +362,7 @@
 
   function build() {
     /* id 를 붙인다 — 점검 도구가 이 창을 집을 손잡이가 필요하고(안전영역 CSS·열고 닫기),
-       피탄 시뮬의 #pietanModal / #pietanBack / #pietanClose 와 짝이 맞아야 자를 옮길 수 있다. */
+       이름은 지워진 피탄 시뮬의 #pietanModal / #pietanBack / #pietanClose 와 짝을 맞춘 것이다. */
     back = el('div', 'duel-back'); back.id = 'duelBack'; back.hidden = true; back.onclick = () => open(false);
     root = el('section', 'duel'); root.id = 'duelModal'; root.hidden = true;
     root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', '대결 시뮬레이터');
@@ -546,7 +548,13 @@
       sw.append(btn('d-btn' + (side.shieldOn ? ' on' : ''),
         (side.shieldOn ? '🛡 실드로 막음 켬' : '🛡 실드로 막음')
         + ' — ' + sh.name + ' HP ' + fmt(sh.hp),
-        () => { side.shieldOn = !side.shieldOn; changed(side); }));
+        () => {
+          side.shieldOn = !side.shieldOn;
+          /* 무장 표의 🛡 보정 칩도 같이 켜고 끈다 — 피탄 시뮬에서 그랬던 대로.
+             양쪽 중 한 쪽이라도 켜져 있으면 켠 것으로 본다. */
+          HOOK.onShield(S.L.shieldOn || S.R.shieldOn);
+          changed(side);
+        }));
       shRow.append(sw);
       b.append(shRow);
     } else if (side.shieldOn) { side.shieldOn = false; }
@@ -997,21 +1005,12 @@
   function changed(side) { renderSide(side); renderCenter(); }
   function renderAll() { renderSide(S.L); renderSide(S.R); renderCenter(); }
 
-  /** 지금 편집 중인 기체를 왼쪽에 앉힌다.
-   *  ★ 시안에서는 앱 상태(state)를 못 읽어서 피탄 시뮬 제목줄로 기체 이름만 얻는다.
-   *  본 적용 때는 state.ms · state.equipped · state.stage 를 그대로 넣는다. */
-  function seedDefault(left, setMs, force) {
-    if (left.ms && !force) return;
-    const pb = document.getElementById('pietanBtn');
-    let name = (document.getElementById('pietanMsName') || {}).textContent || '';
-    if (!name && pb) {
-      pb.click();
-      name = (document.getElementById('pietanMsName') || {}).textContent || '';
-      const close = document.getElementById('pietanClose'); if (close) close.click();
-    }
-    const ms = name && G.msData.find(m => T.msName(m.MS名) === name.trim());
-    if (ms) setMs(left, ms);
-  }
+  /** 지금 편집 중인 기체를 왼쪽에 앉힌다 — **앱이 끼워 주는 것이 본판**이다.
+   *  시안 때는 앱 상태(state)를 못 읽어 피탄 시뮬 제목줄에서 기체 이름을 훔쳐 왔는데,
+   *  그 화면이 없어졌다(2026-10-13). 이름을 다른 데서 긁어 오는 길을 새로 만들지 않는다 —
+   *  지어낸 값으로 왼쪽을 앉히면 **앱 구성과 다른 수**가 나오고, 그게 더 나쁘다.
+   *  앱이 교체 지점을 안 끼웠으면 왼쪽을 비워 두고 사용자가 고르게 한다. */
+  function seedDefault() { /* 앱(ui.js)이 use({ seed }) 로 끼운다 */ }
 
   /* 폰 「넓게 보기」는 768px 을 기기 폭으로 줄여 보여 준다 — 그대로 두면 이 창의 글자가 절반이 된다.
      viewport 를 바꾸면 앱이 resize 때 되돌리므로, 창에만 zoom 을 걸어 기기 폭만큼으로 키운다.
@@ -1033,7 +1032,10 @@
   }
 
   function mountButton() {
-    const ref = document.getElementById('pietanBtn');
+    /* 상단바의 ⚖ 비교 옆에 둔다 — 전에는 🛡 피탄 시뮬 옆이었는데 그 단추가 없어졌다.
+       못 찾으면 body 에 붙는데, 그러면 상단바 밖에 떠서 눌릴 자리가 이상해진다.
+       그래서 topbar_check 의 MUST_REACH 가 #duelBtn 을 지킨다. */
+    const ref = document.getElementById('compareBtn');
     const b = btn('btn-ghost', '⚔ 대결', () => open(true));
     b.id = 'duelBtn';
     b.title = '나와 상대를 좌우에 두고, 무장·사격 조건별로 서로의 체력이 얼마나 깎이는지 봅니다 (개편 시안)';
