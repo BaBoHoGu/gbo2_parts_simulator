@@ -480,8 +480,46 @@ function hpBandAt(bands, ratioPct) {
   return null;
 }
 
+/**
+ * 대상 HP 에 따라 피해가 달라지는 무장(레일건［최대출력］ 등)을 **구간을 따라가며** 센다.
+ * 나눗셈 한 번으로는 못 센다: 첫 발은 +100%인데 HP 가 깎이면 +50% → +20% → 0 으로 내려간다.
+ * (「첫 발만」으로 어림잡는 것도 재 봤는데 10발 → 9발이 될 뿐 실제(8발)와 또 어긋났다.)
+ *
+ * 비율은 **실효 HP 위에서** 본다 — 실효 HP 와 피해가 같은 자이므로 실제 HP 비율과 같다.
+ * 구간 추가분은 고정 피해(소이)와 같은 규칙으로 다룬다.
+ *
+ * 피탄 시뮬과 대결 시뮬이 **같은 자**를 쓰도록 여기 둔다 — 두 군데에 두면 한쪽만
+ * 고쳐져 같은 무장이 화면마다 다른 발수를 말한다(backlog 「같은 값을 두 군데서 세지 말 것」).
+ *
+ * @param {number} eff        실효 HP (내구 지표)
+ * @param {number} oneHit     1히트 피해 (구간 보정 전)
+ * @param {number} mult       방아쇠 한 번에 맞는 히트 수 (동시발사·연속발사)
+ * @param {number} fixed      보정을 안 받는 고정 피해 (소이 등)
+ * @param {?Array} bands      hpBonusOf(...).bands · 없으면 구간 없음
+ * @param {?number} targetHits  N 발까지만 쌓고 싶을 때 (목표 계산). null 이면 격파까지.
+ * @returns {{n:?number, total:number, dmgAt:function}}  n = 방아쇠 수(못 깎으면 null)
+ */
+function hpBandSteps({ eff, oneHit, mult, fixed, bands, targetHits }) {
+  const m = mult || 1, fx = fixed || 0;
+  const flat = oneHit * m + fx;
+  /** 남은 실효 HP 가 left 일 때의 방아쇠 한 번 피해. */
+  const dmgAt = left => {
+    if (!bands || !bands.length || !(eff > 0)) return flat;
+    const b = hpBandAt(bands, left / eff * 100);
+    if (!b) return flat;
+    return Math.floor(oneHit * (1 + (b.pct || 0) / 100) + (b.flat || 0)) * m + fx;
+  };
+  let left = eff, n = 0, total = 0;
+  while (n < 200 && (targetHits != null ? n < targetHits : left > 0)) {
+    const d = dmgAt(left);
+    if (!(d > 0)) return { n: null, total, dmgAt };
+    left -= d; total += d; n++;
+  }
+  return { n, total, dmgAt };
+}
+
 const GBO2Damage = {
-  hpBonusOf, hpBandAt,
+  hpBonusOf, hpBandAt, hpBandSteps,
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag,

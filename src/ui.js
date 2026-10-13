@@ -7563,7 +7563,18 @@
     return r.total || dmg * n;
   }
 
-  function pietanGoalRow(w, dmg, hits, I) {
+  /**
+   * 「이 무장 N발 버티기」 → 자동 구성 하한 목표. **피탄 시뮬과 대결 시뮬이 같이 쓴다.**
+   * 두 군데에 두면 한쪽만 고쳐져 같은 무장이 화면마다 다른 목표를 건다.
+   *   w       {name, attr}  어느 무장 기준인가
+   *   dmg     한 방아쇠(전탄 명중) 피해 — 실효 HP 눈금
+   *   hits    지금 버티는 발수 (기본값은 +1)
+   *   needOf  n 발 버티는 데 드는 실효 HP (구간 무장은 쌓아서 센다)
+   *   toHp    실효 HP → 기체 HP 눈금
+   *   bands   대상 HP 구간이 있는 무장인가 (문구만 달라진다)
+   *   after   목표를 건 뒤 이 화면을 닫는 법
+   */
+  function goalRowFor({ w, dmg, hits, needOf, toHp, bands, after }) {
     const wrap = el('div', 'pietan-goal');
     wrap.append(el('span', 'pietan-ctrl-lb', '버티기 목표'));
     const inp = el('input');
@@ -7577,7 +7588,7 @@
     btn.onclick = () => {
       const n = Math.max(1, Number(inp.value) || hits + 1);
       const key = PIETAN_EHP[w.attr] || 'ehpSolid';
-      const need = pietanNeedEhp(I, dmg, n);
+      const need = needOf(n);
       state.minimums[key] = need;
       // 어느 무장 기준인지 기억한다 — 관통·폭풍 경감처럼 그 무장에만 걸리는 파츠 경감을
       // 자동 구성도 같은 조건으로 재야 사용자가 본 숫자와 자를 맞출 수 있다.
@@ -7585,7 +7596,7 @@
       // 손으로 목표 칸을 채운 것과 같은 취급 — 자동 구성이 「내 가중치」 를 1순위로 쓰게 한다
       state.weightsTouched = true;
       renderAutoGrid();
-      openPietan(false);
+      if (after) after();
       openDrawer(true);
       toast(`${DERIVED_LABEL[key]} 하한 ${need.toLocaleString()} 으로 걸었습니다 — ${T.weaponName(w.name)} ${n}발 버티기`);
     };
@@ -7594,20 +7605,28 @@
     const nt = el('span', 'pietan-mnote');
     const note = () => {
       const n = Math.max(1, Number(inp.value) || hits + 1);
-      const need = pietanNeedEhp(I, dmg, n);
+      const need = needOf(n);
       /* **HP 눈금으로 적는다** — 위 「격파까지」와 같은 자라야 둘을 견줄 수 있다.
          다만 자동 구성에 거는 값은 **실효 HP 그대로**다(그쪽 목표 칸이 실효 HP 축이라서).
          숫자가 둘이면 헷갈리므로, 실제로 걸리는 값은 뒤에 작게 밝혀 둔다. */
-      const needHp = I && I.toHp ? I.toHp(need) : need;
+      const needHp = toHp ? toHp(need) : need;
       nt.textContent = '필요 HP ' + needHp.toLocaleString()
-        + (I && I.hpBands ? ' (' + n + '발 누적 — 발마다 피해가 다릅니다)'
-          : ' (1발 ' + (I && I.toHp ? I.toHp(dmg) : dmg).toLocaleString() + ' × ' + n + ')')
+        + (bands ? ' (' + n + '발 누적 — 발마다 피해가 다릅니다)'
+          : ' (1발 ' + (toHp ? toHp(dmg) : dmg).toLocaleString() + ' × ' + n + ')')
         + ' · 자동 구성에는 실효 HP ' + need.toLocaleString() + ' 로 걸립니다';
     };
     note();
     wrap.append(nt);
     return wrap;
   }
+
+  /** 피탄 시뮬에서 부르던 꼴 — 위 공용 줄에 얇게 얹는다. */
+  const pietanGoalRow = (w, dmg, hits, I) => goalRowFor({
+    w, dmg, hits,
+    needOf: n => pietanNeedEhp(I, dmg, n),
+    toHp: I && I.toHp, bands: I && I.hpBands,
+    after: () => openPietan(false)
+  });
   let pietanMs = null;           // 선택한 적 기체 (LV 엔트리)
   let pietanMsBase = '';         // 그 기체의 base 이름
   let pietanMsLv = 1;            // 선택한 적 기체 LV
@@ -7667,6 +7686,28 @@
     let pellets = 1;
     for (const m of bare.matchAll(/[x×]\s*(\d+)/g)) pellets *= Number(m[1]);
     return { pct: pm ? Number(pm[1]) : 0, pellets: pellets || 1 };
+  }
+
+  /**
+   * 「경직까지」 한 칸 — **히트 수**로 센다. 피탄 시뮬과 대결 시뮬이 같이 쓴다.
+   * 「발」로 적으면 같은 화면의 두 '발'(격파 발수 / 경직 발수)이 서로 다른 뜻이 되어,
+   * 산탄 무장 앞에서 실제보다 훨씬 버티는 것처럼 읽힌다. 그래서 히트로 적고,
+   * 1발이 여러 히트인 무장만 뒤에 「→ 약 N발」을 덧붙인다.
+   *   st   parseStagger(w)  {pct, pellets}
+   *   mods activeStaggerMods(...)  {threshold, mults}
+   */
+  function staggerBox(st, mods) {
+    const per = st.pct > 0 ? staggerPerHit(st.pct, mods.mults) : 0;
+    const n = per > 0 ? Math.ceil(mods.threshold / per) : null;
+    // 감소 스킬을 감소 큰 순으로 하나씩 곱하며 매번 내림한 과정 표기 (6% ×0.8 ×0.5 내림)
+    const stepTxt = mods.mults.length ? ` (${st.pct}%${mods.mults.map(m => ' ×' + m).join('')} 내림)` : '';
+    // n==null 은 "정보 없음"이 아니라 경직이 안 되는 경우다 — 누적치 0% 이거나 스킬 감소로 0.
+    const value = n != null ? n + '히트' : (st.pct > 0 ? '경직 안 됨' : '—');
+    const note = n != null
+      ? `임계 ${mods.threshold}% ÷ 히트당 ${per}%${stepTxt}`
+        + (st.pellets > 1 ? ` · 1발=${st.pellets}히트 → 약 ${Math.ceil(n / st.pellets)}발` : '')
+      : (st.pct > 0 ? `누적치 ${st.pct}%${stepTxt} → 0 — 이 무장으론 경직 안 됨` : '누적치 0% (경직값 없음)');
+    return { hits: n, perHit: per, value, note };
   }
 
   const pietanPageId = ms => (String(ms && ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
@@ -8251,22 +8292,13 @@
     const hpB = D.hpBonusOf(w.note || '');
     const hpBands = (hpB && !hpB.unknown) ? hpB.bands : null;
     const hpUnknown = (hpB && hpB.unknown) ? hpB.why : null;
-    /** n 번째(0부터) 방아쇠에서, 남은 실효 HP 가 left 일 때의 피해. */
-    const dmgAt = (left) => {
-      if (!hpBands || !(eff > 0)) return dmg;
-      const b = D.hpBandAt(hpBands, left / eff * 100);
-      if (!b) return dmg;
-      return Math.floor(oneHit * (1 + (b.pct || 0) / 100) + (b.flat || 0)) * nNc + fxAdd;
-    };
-    /** 실효 HP 를 다 깎는 데 드는 방아쇠 수와, 그때까지의 누적 피해. */
-    const stepHits = (targetHits) => {
-      let left = eff, n = 0, total = 0;
-      while (n < 200 && (targetHits != null ? n < targetHits : left > 0)) {
-        const d = dmgAt(left);
-        if (!(d > 0)) return { n: null, total };
-        left -= d; total += d; n++;
-      }
-      return { n, total };
+    /* 구간을 따라가는 셈은 **damage.js 하나**에 둔다 — 대결 시뮬도 같은 함수를 쓴다.
+       두 군데에 두면 한쪽만 고쳐져 같은 무장이 화면마다 다른 발수를 말한다. */
+    const bandArgs = { eff, oneHit, mult: nNc, fixed: fxAdd, bands: hpBands };
+    const dmgAt = left => D.hpBandSteps(bandArgs).dmgAt(left);
+    const stepHits = targetHits => {
+      const r = D.hpBandSteps({ ...bandArgs, targetHits });
+      return { n: r.n, total: r.total };
     };
     const hits = dmg > 0 ? (hpBands ? stepHits(null).n : Math.ceil(eff / dmg)) : null;
     // 사격의 powerCharged = 집속 (멜리 헤비어택은 위 변형으로 처리)
@@ -8409,14 +8441,9 @@
     // 관통·폭풍 경감 장갑 같은 조건부 파츠는 이 목표를 걸어야 비로소 제값으로 뽑힌다.
     if (hits != null && dmg > 0) box.append(pietanGoalRow(w, dmg, hits, I));
     if (chgHits != null) box.append(metric('집속 시', chgHits + '발', `÷ ${chgDmg.toLocaleString()}`, 'sub'));
-    // 감소 스킬을 감소 큰 순으로 하나씩 곱하며 매번 내림한 과정 표기 (6% ×0.8 ×0.5 내림)
-    const stepTxt = stg.mults.length ? ` (${w.stagger}%${stg.mults.map(m => ' ×' + m).join('')} 내림)` : '';
-    // stagN==null 은 "정보 없음"이 아니라 경직이 안 되는 경우다 — 무장 누적치 0% 이거나 스킬 감소로 0.
-    const stagVal = stagN != null ? stagN + '히트' : (w.stagger > 0 ? '경직 안 됨' : '—');
-    const stagNote = stagN != null
-      ? `임계 ${stg.threshold}% ÷ 히트당 ${perHitStagger}%${stepTxt}` + (w.pellets > 1 ? ` · 1발=${w.pellets}히트 → 약 ${Math.ceil(stagN / w.pellets)}발` : '')
-      : (w.stagger > 0 ? `누적치 ${w.stagger}%${stepTxt} → 0 — 이 무장으론 경직 안 됨` : '누적치 0% (경직값 없음)');
-    box.append(metric('경직까지', stagVal, stagNote));
+    // 문구는 staggerBox 한 곳에서 만든다 — 대결 시뮬과 같은 말을 하게 한다
+    const sb = staggerBox({ pct: w.stagger, pellets: w.pellets }, stg);
+    box.append(metric('경직까지', sb.value, sb.note));
     // 실드로 받으면 기체 HP 피해를 막고 실드 HP 가 대신 깎인다(위키 83).
     if (pietanShield) {
       const mine = shieldOf(state.ms, msLevel(state.ms), state.equipped, state.expansion, state.expLevel);
@@ -8648,6 +8675,33 @@
       },
       /* 소이 등 고정 피해 — 보정도 경감도 안 받는 몫 */
       fixedDamage: (A, wp) => { const f = fixedDamageWithParts(wp.w, A.parts); return f ? f.total : 0; },
+      /* 🛡 그 쪽이 든 실드와 HP. shieldOf 는 피탄 시뮬이 쓰던 그 함수다. */
+      shield: side => shieldOf(side.ms, msLevel(side.ms), side.parts, side.exp, side.expLv),
+      /* 무장 하나가 실드에 주는 한 히트 피해. 「실드 무시」는 발수를 세는 뜻이 없어 why 로 답한다.
+         같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다. */
+      shieldHit: (wp, dmg, charged, atkParts) => {
+        if (weaponIgnoresShield(wp.w, charged)) return { hit: null, why: '실드 무시' };
+        const sm = D.shieldMultOf(wp.w);
+        const h = shieldHit(dmg, sm, charged, D.shieldDmgPctOf(atkParts || [], wp.attr));
+        if (h == null) return { hit: null, why: sm && sm.unknown ? '보정 불명' : '표기 없음' };
+        return { hit: h };
+      },
+      /* 경직까지 몇 발 — 누적치 임계 ÷ 히트당 누적치.
+         감소 스킬은 감소가 큰 것부터 하나씩 곱하고 매번 내림한다(staggerPerHit).
+         맞는 쪽이 켠 방어 스킬(side.defs)을 그대로 쓴다 — 화면의 체크와 같은 자. */
+      stagger: (side, wp) => {
+        const st = parseStagger(wp.w);
+        const mods = activeStaggerMods(side.ms, msLevel(side.ms), side.defs, 'normal');
+        return staggerBox(st, mods);
+      },
+      /* 「이 무장 N발 버티기 → 자동 구성 목표로」.
+         목표 칸·자동 구성·토스트가 전부 앱 안쪽이라 **줄 자체**를 앱이 만든다.
+         피탄 시뮬이 쓰던 goalRowFor 를 그대로 부른다 — 자가 하나다. */
+      goalRow: info => goalRowFor({
+        w: { name: info.name, attr: info.attr },
+        dmg: info.per, hits: info.hits, needOf: info.needOf,
+        toHp: info.toHp, bands: info.bands, after: info.close
+      }),
       /* 왼쪽 = 지금 편집 중인 구성. setMs 가 파츠를 비우므로 **그 뒤에** 넣는다(순서 주의).
          `left.ms 가 있으면 끝` 으로 두면 **처음 열 때 한 번만** 가져온다 — 대결을 먼저 열어
          본 다음 파츠를 끼우고 다시 열면 왼쪽이 옛 구성 그대로였다(파츠 4개를 끼웠는데

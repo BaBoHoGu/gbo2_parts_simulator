@@ -11,6 +11,10 @@
  *   HOOK.fixedDamage(A, wp)           → 앱 fixedDamageWithParts(w, A 파츠).total  (소이 등)
  *   HOOK.seed(left, setMs, force)     → 앱 state.ms · state.equipped · state.stage 를 왼쪽에
  *   HOOK.airMelee(side, wp)           → 앱 airMeleeOf + airMeleeWeapon  (공중 격투 위력 상승)
+ *   HOOK.shield(side)                 → 앱 shieldOf        (그 쪽이 든 실드와 HP)
+ *   HOOK.shieldHit(wp, dmg, charged, atkParts) → 앱 shieldHit + weaponIgnoresShield
+ *   HOOK.stagger(side, wp)            → 앱 parseStagger + activeStaggerMods  (경직까지 히트)
+ *   HOOK.goalRow(info)                → 앱 pietanGoalRow   (N발 버티기 → 자동 구성 목표)
  * ------------------------------------------------------------------ */
 (function () {
   'use strict';
@@ -61,6 +65,7 @@
     defs: new Set(),       // 피해 경감 스킬 (msSkills 설명문)
     wKey: null, mode: 'nc', posture: 'stand', scope: false, variant: 0, dir: 0,
     air: false,            // 공중 격투 제어로 하는 공중 격투인가 (위력 상승)
+    shieldOn: false,       // 이 쪽이 실드로 막는가 (맞는 쪽에 걸린다)
     pickParts: false, pq: '', pcat: 'all', pickMs: false, mq: '',
     step: 1                // 이 쪽 무장으로 상대를 몇 발 맞혔는지 (게이지 미리보기)
   });
@@ -226,6 +231,12 @@
     extraCuts: () => [],
     fixedDamage: () => 0,
     seed: (left, setMs, force) => seedDefault(left, setMs, force),
+    /* ★ 아래 넷은 **앱 안쪽 판정**이라 간이판을 두지 않는다. 지어내면 두 번째 자가 된다 —
+       안 걸렸으면 그 칸이 안 나올 뿐이고, 나온 수는 늘 앱의 수다. */
+    shield: () => null,
+    shieldHit: () => null,
+    stagger: () => null,
+    goalRow: () => null,
     /* ★ 공중 격투 제어 — 판정이 원문(ms_skills)에 있어 바깥에서 읽을 수 없다.
        간이판은 **없다고 답한다**. 지어내 답하면 앱과 다른 수가 나온다. */
     airMelee: () => null
@@ -292,9 +303,32 @@
     const hp = Math.round(sB.hp || 0);
     const toHp = v => Math.round(v * (eff > 0 ? hp / eff : 1));
     const perHp = toHp(per);
-    const shots = per > 0 ? Math.ceil(eff / per) : null;
+    /* 대상 HP 에 따라 커지는 추가 피해(레일건［최대출력］ 등) — 구간을 따라가며 센다.
+       셈은 damage.js 에 한 벌만 둔다(피탄 시뮬과 같은 함수). */
+    const hpB = D.hpBonusOf(wp.note || '');
+    const bands = (hpB && !hpB.unknown) ? hpB.bands : null;
+    const bandWhy = (hpB && hpB.unknown) ? hpB.why : null;
+    const step = D.hpBandSteps({ eff, oneHit: hit, mult: n, fixed, bands });
+    const shots = bands ? step.n : (per > 0 ? Math.ceil(eff / per) : null);
+
+    /* 실드로 막음 — 같은 무장이라도 실드 보정이 5배까지 갈린다. 판정은 앱이 한다. */
+    let shield = null;
+    if (B.shieldOn) {
+      const sh = HOOK.shield(B);
+      if (sh) {
+        const r = HOOK.shieldHit(wp, hit, charged, A.parts);
+        shield = r && r.hit != null
+          ? { ...sh, hits: Math.ceil(sh.hp / (r.hit * n)), per: r.hit * n, note: '' }
+          : { ...sh, hits: null, per: 0, note: (r && r.why) || '표기 없음' };
+      }
+    }
+
+    /* 경직까지 몇 발 — 누적치 임계 ÷ 히트당 누적치. 감소 스킬 적용은 앱이 한다. */
+    const stg = HOOK.stagger(B, wp);
+
     return { wp, mode, charged, power, corr, att, etcA, etcTxt, dirTxt, partPct, skPcts, factor, cuts,
-      hit, n, fixed, per, perHp, eff, hp, shots, air, foeCut, armor: tB[ARMOR[wp.attr]] || 0 };
+      hit, n, fixed, per, perHp, eff, hp, shots, air, shield, stg, bands, bandWhy, step, toHp,
+      foeCut, armor: tB[ARMOR[wp.attr]] || 0 };
   }
   const FOE_ARMOR_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を?\s*(\d+)\s*[%％]\s*減/;
   const DIR_KO = { 'N格': 'N격', '横格': '횡격', '下格': '하격', '前格': '전격', '後格': '후격', '空中格': '공중격' };
@@ -391,6 +425,20 @@
     top.append(im, info);
     b.append(top);
 
+    /* 내구 지표 — 「HP ÷ (1 − 내성)」. 속성마다 한 대가 얼마나 아픈지의 기준이고,
+       아래 격파 발수가 이 값을 쓴다. 기준이 보이지 않으면 발수만 보고 왜 그런지 알 수 없다.
+       식은 core 의 durabilityOf 하나뿐이다 — 화면과 자동 구성이 같은 자를 쓴다. */
+    const dura = el('div', 'ds-dura');
+    dura.append(el('span', 'lb', '내구'));
+    for (const [k, ko] of [['armorRange', '실탄'], ['armorBeam', '빔'], ['armorMelee', '격투']]) {
+      const cell = el('span', 'ds-dcell');
+      cell.append(el('i', null, ko), el('b', null, fmt(C.durabilityOf(st, k))));
+      cell.title = ko + ' 내구 지표 = HP ' + fmt(st.hp) + ' ÷ (1 − 내' + ko + ' '
+        + Math.round(st[k] || 0) + ')';
+      dura.append(cell);
+    }
+    b.append(dura);
+
     const row = el('div', 'ds-row');
     row.append(el('span', 'lb', 'LV'));
     const lvSeg = el('div', 'seg');
@@ -428,6 +476,21 @@
       exRow.append(exLv);
     }
     b.append(exRow);
+
+    /* 🛡 실드로 막음 — 이 쪽이 맞을 때, 실드 HP 로 먼저 받는 계산을 함께 본다.
+       실드가 없는 기체에서는 단추 자체가 안 나온다(눌러도 아무 일 없는 단추를 두지 않는다). */
+    const sh = HOOK.shield(side);
+    if (sh) {
+      const shRow = el('div', 'ds-row');
+      shRow.append(el('span', 'lb', '실드'));
+      const sw = el('div');
+      sw.append(btn('d-btn' + (side.shieldOn ? ' on' : ''),
+        (side.shieldOn ? '🛡 실드로 막음 켬' : '🛡 실드로 막음')
+        + ' — ' + sh.name + ' HP ' + fmt(sh.hp),
+        () => { side.shieldOn = !side.shieldOn; changed(side); }));
+      shRow.append(sw);
+      b.append(shRow);
+    } else if (side.shieldOn) { side.shieldOn = false; }
 
     /* 저장 구성 — 기체를 고른 뒤에도 불러올 수 있어야 한다. 예전에는 이 줄이
        「기체 고르기」 화면에만 있어서, 이미 기체가 앉은 쪽(특히 왼쪽)에서는
@@ -696,8 +759,37 @@
     sub.append('1발 ', el('b', null, fmt(r.perHp)), ' HP (', el('b', null, pct.toFixed(1) + '%'), ')');
     if (r.n > 1) sub.append(el('br'), '= ' + fmt(Math.round(r.perHp / r.n)) + ' × ' + r.n + '히트');
     sub.append(el('br'), '대상 HP ', el('b', null, fmt(r.hp)), ' · 내' + ATTR_KO[r.wp.attr] + ' ' + Math.round(r.armor) + (r.foeCut ? ' (−' + r.foeCut + '%)' : ''));
+    sub.append(el('br'), '내구 지표 ', el('b', null, fmt(r.eff)));
+    if (r.bands) sub.append(el('br'), '※ 대상 HP 구간마다 피해가 달라 발수를 쌓아 셌습니다');
+    else if (r.bandWhy) sub.append(el('br'), '※ ' + r.bandWhy);
     main.append(kill, sub);
     c.append(main);
+
+    /* 🛡 실드로 막으면 — 실드부터 깨야 하는 경우. 「실드 무시」 무장은 그렇게 적는다. */
+    if (r.shield) {
+      const sr = el('div', 'dc-shield');
+      sr.append(el('span', 'lb', '🛡 ' + r.shield.name));
+      if (r.shield.hits != null) {
+        sr.append(el('b', null, r.shield.hits + '발'));
+        sr.append(el('small', null, '실드 HP ' + fmt(r.shield.hp)
+          + (r.shield.bonus ? ' (+' + fmt(r.shield.bonus) + ')' : '')
+          + ' ÷ 한 방아쇠 ' + fmt(r.shield.per)));
+      } else {
+        sr.append(el('b', null, '—'));
+        sr.append(el('small', null, r.shield.note));
+      }
+      c.append(sr);
+    }
+
+    /* 경직까지 몇 발 — 누적치 임계 ÷ 히트당 누적치. */
+    if (r.stg) {
+      const st = el('div', 'dc-stag');
+      st.append(el('span', 'lb', '경직까지'));
+      // **히트 수**다 — 「발」로 적으면 위 격파 발수와 뜻이 섞인다(앱의 staggerBox 가 문구를 정한다)
+      st.append(el('b', null, r.stg.value));
+      st.append(el('small', null, r.stg.note));
+      c.append(st);
+    }
 
     const k = Math.max(0, Math.min(A.step, r.shots || 0));
     c.append(gauge(r.hp, r.perHp, k, r.shots || 0));
@@ -733,6 +825,22 @@
     if (r.foeCut) chip('상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '% (무장 효과)', 'up');
     if (r.factor < 1) chip('상대 경감 ×' + (+r.factor.toFixed(3)), 'down');
     c.append(chips);
+
+    /* 「이 무장 N발 버티기 → 자동 구성 목표로」.
+       맞는 쪽이 **내 구성(왼쪽)** 일 때만 뜻이 있다 — 목표는 내 파츠를 고르는 자다.
+       줄 자체는 앱이 만든다(목표 칸·자동 구성·토스트가 전부 앱 안쪽이다). */
+    if (B.who === 'L' && r.shots != null) {
+      /* N 발 버티는 데 드는 실효 HP. 구간 무장은 **쌓아서** 센다 —
+         dmg × N 으로 어림하면 레일건 같은 무장에서 목표가 작게 잡힌다. */
+      const needOf = n => r.bands
+        ? D.hpBandSteps({ eff: r.eff, oneHit: r.hit, mult: r.n, fixed: r.fixed,
+            bands: r.bands, targetHits: n }).total
+        : r.per * n;
+      const g = HOOK.goalRow({ side: B, attacker: A, wp: r.wp, attr: r.wp.attr,
+        name: r.wp.w.name, per: r.per, hits: r.shots, eff: r.eff, toHp: r.toHp,
+        bands: r.bands, needOf, close: () => open(false) });
+      if (g) c.append(g);
+    }
     return c;
   }
 

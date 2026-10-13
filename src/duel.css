@@ -297,3 +297,18 @@ body.vm-wide .duel { inset: 0; border-radius: 0; border: none; }
   border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px;
 }
 .ds-row .ds-search { flex: 1 1 180px; width: auto; }
+
+/* 내구 지표 — 쪽 패널. 세 속성을 한 줄에, 기준값이라 작게. */
+.ds-dura { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; }
+.ds-dura .lb { font-size: 12px; color: var(--muted); min-width: 34px; }
+.ds-dcell { display: inline-flex; align-items: baseline; gap: 4px; font-size: 11px; color: var(--muted); }
+.ds-dcell b { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* 실드로 막으면 / 경직까지 — 중앙 카드의 보조 줄. 격파 발수(큰 수)와 섞이지 않게 가른다. */
+.dc-shield, .dc-stag {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+  margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line-soft);
+}
+.dc-shield .lb, .dc-stag .lb { font-size: 12px; color: var(--muted); }
+.dc-shield b, .dc-stag b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.dc-shield small, .dc-stag small { font-size: 11px; color: var(--muted); flex: 1 1 100%; }
