@@ -4199,3 +4199,12 @@ body.info-open .sel-info { display: flex; }
    수치를 못 내는 쪽(방향 배율이 위키에 없는 7기)은 줄 대신 안내문만 나온다. */
 .wd-row.air-melee { border-top: 1px dashed var(--line); padding-top: 5px; margin-top: 3px; }
 .wd-air-note { margin-top: 5px; font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* 「이 무장 N발 버티기 → 자동 구성 목표로」 — 대결 시뮬의 중앙 카드에 붙는다.
+   피탄 시뮬에서 옮겨 온 줄이라 생김새는 그대로 두고 이름만 옮겼다. */
+.goal-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+  margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--line-soft); }
+.goal-row input { width: 54px; text-align: right; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 13px; }
+.goal-lb { font-size: var(--fs-sm); color: var(--muted); margin-left: 2px; }
+.goal-note { font-size: var(--fs-xs); color: var(--muted); flex: 1 1 100%; }

@@ -141,36 +141,20 @@ ok('집속이 아닌 조건부가 셋이고 그 안에 F89·걍 개량형이 있
     ok('늘 강경직인 무장은 그냥 「강경직」이다',
       !!zaku && zaku.tags.length > 0 && zaku.cond === 0 && zaku.tags.every(t => t === '강경직'), zaku);
 
-    /* 피탄 시뮬도 **같은 말**을 해야 한다. 기체 정보만 보면 이쪽을 옛 판정으로
-       되돌려도 안 운다 — 실제로 심어서 확인했다. 두 화면이 갈리면 어느 쪽이 맞는지 모른다. */
-    const pietan = await pg.evaluate(async () => {
-      document.querySelector('#pietanBtn').click();
-      await new Promise(r => setTimeout(r, 700));
-      const back = document.querySelector('.pietan-back');
-      if (back) { back.click(); await new Promise(r => setTimeout(r, 400)); }
-      const q = document.querySelector('#pietanQuery');
-      if (!q) return null;
-      q.value = 'F89'; q.dispatchEvent(new Event('input', { bubbles: true }));
-      await new Promise(r => setTimeout(r, 800));
-      const first = [...document.querySelectorAll('#pietanList > *')]
-        .find(x => !/다른 기체|검색 결과/.test(x.textContent));
-      if (!first) return null;
-      first.click();
-      await new Promise(r => setTimeout(r, 1100));
-      /* 무장 줄을 **한 번 더 눌러야** 반응 표가 뜬다 — 목록에는 안 그려진다(재서 봤다). */
-      const row = [...document.querySelectorAll('#pietanList > *')]
-        .find(x => /A 라이플|A·라이플/.test(x.textContent));
-      if (!row) return null;
-      row.click();
-      await new Promise(r => setTimeout(r, 900));
-      return [...document.querySelectorAll('.pietan-react')]
-        .map(e => e.textContent.replace(/\s+/g, ' ').trim());
-    });
-    ok('피탄 시뮬도 무장 반응을 적는다', Array.isArray(pietan) && pietan.length > 0, pietan);
+    /* 대결 시뮬도 **같은 말**을 해야 한다. 기체 정보만 보면 이쪽을 옛 판정으로
+       되돌려도 안 운다 — 실제로 심어서 확인했다. 두 화면이 갈리면 어느 쪽이 맞는지 모른다.
+       (피탄 시뮬이 있던 자리) */
+    const DG = require('./lib/duelgate.js');
+    const f89d = await DG.measure(pg, { me: 'F89', foe: 'ザクⅡ', weapon: 'ライフル' });
+    const react = f89d.오류 ? null : await pg.evaluate(() =>
+      [...document.querySelectorAll('#duelModal .dc-react')]
+        .map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+    ok('대결 시뮬도 무장 반응을 적는다', Array.isArray(react) && react.length > 0,
+      { 무장: f89d.무장, 반응: react, 오류: f89d.오류 });
     /* F89 의 A·라이플은 공중의 적에게만 강경직이다 — 여기서도 조건부라고 적혀야 한다. */
-    ok('피탄 시뮬도 조건부는 조건부라고 적는다',
-      Array.isArray(pietan) && pietan.includes('조건부 강경직'),
-      pietan);
+    ok('대결 시뮬도 조건부는 조건부라고 적는다',
+      Array.isArray(react) && react.includes('조건부 강경직'),
+      { 무장: f89d.무장, 반응: react });
     await br.close();
   }
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

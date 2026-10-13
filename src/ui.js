@@ -7575,14 +7575,14 @@
    *   after   목표를 건 뒤 이 화면을 닫는 법
    */
   function goalRowFor({ w, dmg, hits, needOf, toHp, bands, after }) {
-    const wrap = el('div', 'pietan-goal');
-    wrap.append(el('span', 'pietan-ctrl-lb', '버티기 목표'));
+    const wrap = el('div', 'goal-row');
+    wrap.append(el('span', 'goal-lb', '버티기 목표'));
     const inp = el('input');
     inp.type = 'number'; inp.min = '1'; inp.max = '99';
     inp.value = String(pietanGoalHits || hits + 1);
     inp.oninput = () => { pietanGoalHits = Math.max(1, Number(inp.value) || 1); note(); };
     wrap.append(inp);
-    wrap.append(el('span', 'pietan-ctrl-lb', '발'));
+    wrap.append(el('span', 'goal-lb', '발'));
 
     const btn = el('button', 'btn-primary small', '자동 구성 목표로');
     btn.onclick = () => {
@@ -7602,7 +7602,7 @@
     };
     wrap.append(btn);
 
-    const nt = el('span', 'pietan-mnote');
+    const nt = el('span', 'goal-note');
     const note = () => {
       const n = Math.max(1, Number(inp.value) || hits + 1);
       const need = needOf(n);
@@ -7689,6 +7689,41 @@
   }
 
   /**
+   * 대상 HP 구간 무장의 **발마다 피해** 내역 — 「1발 100%→5,868 / 2발 76%→…」.
+   * 「÷ 1발」은 구간 무장에서 거짓말이 된다(발마다 값이 다르다). 그래서 발마다 적는다.
+   * **피탄 시뮬과 대결 시뮬이 같이 쓴다** — 한쪽만 안 적으면 그 화면은 발수의 근거가 없다.
+   *   eff   실효 HP · bands  hpBonusOf(...).bands · dmgAt(left)  남은 실효 HP 에서의 피해
+   *   toHp  실효 HP → 기체 HP 눈금 · hits  격파 발수
+   */
+  function hpBandWhy({ eff, bands, dmgAt, toHp, hits }) {
+    if (!bands || hits == null) return '';
+    const out = []; let left = eff;
+    for (let i = 0; i < hits && i < 12; i++) {
+      const d = dmgAt(left);
+      out.push(`${i + 1}발 ${Math.round(left / eff * 100)}%→${(toHp ? toHp(d) : d).toLocaleString()}`);
+      left -= d;
+    }
+    return ' · ' + out.join(' / ');
+  }
+
+  /** 구간을 **셈에 못 넣은** 무장에 붙이는 말. 숫자를 지어내지 않고 사실과 **어느 쪽으로
+   *  틀리는지**를 적는다(파츠 쪽 UNMODELLED_FX 와 같은 원칙). 두 화면이 같이 쓴다. */
+  const hpUnknownNote = why => ({ label: '※ 반영하지 않은 효과', value: '대상 HP 비례 추가 피해',
+    note: why + ' — 실제로는 이 계산보다 더 아픕니다.' });
+
+  /** 이 무장이 일으키는 반응 — '강경직' / '조건부 강경직' / '경직' / null.
+   *  강경직 = 大よろけ / 強よろけ 유발 무장(위키 표기). 일반 경직은 よろけ.
+   *  **피탄 시뮬과 대결 시뮬이 같이 쓴다** — 두 군데에 두면 한 화면만 옛 판정으로
+   *  되돌아가도 아무도 안 운다(심어서 확인한 자리다). */
+  function reactOf(w) {
+    const note = (w && w.info && w.info['備考']) || '';
+    const sTxt = String((w && w.mods && w.mods.stagger) || '') + ' ' + note;
+    const s2 = stag2Of(sTxt);
+    return s2 ? (s2.cond ? '조건부 강경직' : '강경직')
+      : /よろけ有|ひるみ有|転倒|ダウン/.test(sTxt) ? '경직' : null;
+  }
+
+  /**
    * 「경직까지」 한 칸 — **히트 수**로 센다. 피탄 시뮬과 대결 시뮬이 같이 쓴다.
    * 「발」로 적으면 같은 화면의 두 '발'(격파 발수 / 경직 발수)이 서로 다른 뜻이 되어,
    * 산탄 무장 앞에서 실제보다 훨씬 버티는 것처럼 읽힌다. 그래서 히트로 적고,
@@ -7759,11 +7794,7 @@
       if (!power && !charged) continue;
       const st = parseStagger(w);
       const note = (w.info && w.info['備考']) || '';
-      const sTxt = String((w.mods && w.mods.stagger) || '') + ' ' + note;
-      // 강경직 = 大よろけ / 強よろけ 유발 무장 (위키 표기). 일반 경직은 よろけ.
-      const s2 = stag2Of(sTxt);
-      const react = s2 ? (s2.cond ? '조건부 강경직' : '강경직')
-        : /よろけ有|ひるみ有|転倒|ダウン/.test(sTxt) ? '경직' : null;
+      const react = reactOf(w);
       // 격투 변형(기본/헤비어택 등)·방향별 배율(N격/횡격/하격…) — meleeDamage 의 ccd 로 적용
       const variants = (w.melee && w.melee.variants && w.melee.variants.length) ? w.melee.variants : null;
       // note·psycommu·type 은 조건부 파츠 경감(관통 경감 장갑·폭풍 경감 장갑) 판정에 쓴다.
@@ -8403,18 +8434,7 @@
     /* 대상 HP 에 따라 피해가 달라지는 무장은 「÷ 1발」이 거짓말이 된다 — 발마다 값이 다르다.
        그래서 근거를 **발마다** 적는다. 셈에 못 넣는 무장(값이 원문에 없거나 스킬 조건)은
        숫자를 지어내지 않고 그 사실을 적는다 — 파츠 쪽 UNMODELLED_FX 와 같은 원칙이다. */
-    const hpWhy = hpBands && hits != null
-      ? (() => {
-        const out = []; let left = eff;
-        for (let i = 0; i < hits && i < 12; i++) {
-          const b = D.hpBandAt(hpBands, left / eff * 100);
-          const d = I.dmgAt(left);
-          out.push(`${i + 1}발 ${Math.round(left / eff * 100)}%→${I.toHp(d).toLocaleString()}`);
-          left -= d;
-        }
-        return ' · ' + out.join(' / ');
-      })()
-      : '';
+    const hpWhy = hpBandWhy({ eff, bands: hpBands, dmgAt: I.dmgAt, toHp: I.toHp, hits });
     box.append(metric('격파까지', hits != null ? hits + '발' : '—',
       /* **기체 HP 로 적는다.** 셈은 실효 HP(내구 지표) 위에서 하지만, 그 숫자를 그대로
          보여 주니 제 HP 와 견주다 헷갈린다는 말이 나왔다 — 「1발 20,134 인데 내 HP 는 24,000?」.
@@ -8433,8 +8453,8 @@
     if (killRow) killRow.title = '실효 HP ' + effWeapon.toLocaleString()
       + ' — HP ÷ (1 − 내성) ÷ 피해경감. 자동 구성의 「실효 HP」 목표가 쓰는 눈금입니다.';
     if (hpUnknown) {
-      box.append(metric('※ 반영하지 않은 효과', '대상 HP 비례 추가 피해',
-        hpUnknown + ' — 실제로는 이 계산보다 더 아픕니다.', 'sub pietan-unmod'));
+      const u = hpUnknownNote(hpUnknown);
+      box.append(metric(u.label, u.value, u.note, 'sub pietan-unmod'));
     }
     // 여기서 나온 「몇 발 버티나」 를 그대로 자동 구성 목표로 넘긴다.
     // 이게 없으면 사용자가 실효 HP 를 손으로 계산해 목표 칸에 옮겨 적어야 했다 —
@@ -8675,6 +8695,15 @@
       },
       /* 소이 등 고정 피해 — 보정도 경감도 안 받는 몫 */
       fixedDamage: (A, wp) => { const f = fixedDamageWithParts(wp.w, A.parts); return f ? f.total : 0; },
+      /* 내구 지표 — 성능표와 **같은 함수**로 센다. durabilityOf 만 쓰면 파츠 피해 경감이
+         빠져 같은 이름의 지표가 두 화면에서 갈린다(성능 24,572 · 여기 22,115 — 예전에
+         피탄 시뮬이 그래서 틀렸고, 옮기면서 내가 같은 것을 다시 냈다. consistency_check 가 잡았다).
+         방어 스킬은 그 쪽이 켠 것(side.defs)을 그대로 본다 — 화면의 체크와 같은 자. */
+      /* st 는 대결이 센 그 쪽 스탯(스킬 버프까지 반영) — 스탯을 두 번 세지 않는다. */
+      durability: (side, st) => DURA_ATTRS.map(([attr, , lb]) => {
+        const cuts = damageCutsOf(side.parts, { lv: msLevel(side.ms), skillMs: side.ms, skills: side.defs });
+        return { attr, ko: lb, value: enduranceOf(st, attr, cuts), cut: cutPctOf(cuts, attr) };
+      }),
       /* 🛡 그 쪽이 든 실드와 HP. shieldOf 는 피탄 시뮬이 쓰던 그 함수다. */
       shield: side => shieldOf(side.ms, msLevel(side.ms), side.parts, side.exp, side.expLv),
       /* 무장 하나가 실드에 주는 한 히트 피해. 「실드 무시」는 발수를 세는 뜻이 없어 why 로 답한다.
@@ -8689,6 +8718,21 @@
       /* 경직까지 몇 발 — 누적치 임계 ÷ 히트당 누적치.
          감소 스킬은 감소가 큰 것부터 하나씩 곱하고 매번 내림한다(staggerPerHit).
          맞는 쪽이 켠 방어 스킬(side.defs)을 그대로 쓴다 — 화면의 체크와 같은 자. */
+      /** 구간 무장의 발마다 피해 내역 — 발수의 근거다. 문구는 앱이 정한다. */
+      bandWhy: info => hpBandWhy(info),
+      /** 구간을 셈에 못 넣었을 때 붙이는 말 — 두 화면이 같은 문장을 쓴다. */
+      bandUnknown: why => hpUnknownNote(why),
+      /* 적 내성을 깎는 몫 — **무장과 스킬 둘 다**. 여럿이면 곱한다(빼지 않는다).
+         대결은 여태 무장 것만 셌다 — 스킬이 깎는 몫(롱 레인지 어댑터·명경지수 등)이
+         통째로 빠져 있었고 damage_path_check 가 잡았다. 판정·식은 앱 한 곳만 쓴다. */
+      foeArmorCut: (side, wp) => {
+        const wCut = weaponFoeArmorCut(wp.w);
+        const sCut = foeArmorCutOf([...side.buffs], wp.attr, side.ms, 'normal');
+        const keep = (1 - wCut / 100) * (1 - sCut / 100);
+        return { wCut, sCut, cut: Math.round((1 - keep) * 1000) / 10, keep };
+      },
+      /** 무장이 일으키는 반응 — 두 화면이 같은 말을 하게 앱이 정한다. */
+      react: wp => reactOf(wp.w),
       stagger: (side, wp) => {
         const st = parseStagger(wp.w);
         const mods = activeStaggerMods(side.ms, msLevel(side.ms), side.defs, 'normal');
@@ -8698,7 +8742,12 @@
          목표 칸·자동 구성·토스트가 전부 앱 안쪽이라 **줄 자체**를 앱이 만든다.
          피탄 시뮬이 쓰던 goalRowFor 를 그대로 부른다 — 자가 하나다. */
       goalRow: info => goalRowFor({
-        w: { name: info.name, attr: info.attr },
+        /* 무장을 **통째로** 넘긴다. goalWeapon 은 자동 구성이 조건부 파츠 경감
+           (관통·폭풍)을 다시 재는 데 쓰는데, 그 판정이 note·psycommu·type 을 본다.
+           이름과 속성만 넘기면 자동 구성이 그 경감을 못 세어, 사용자가 본 실효 HP 와
+           목표가 갈린다 — 실제로 34,315 vs 42,894 로 어긋났고 goalcond_check 가 잡았다. */
+        w: { name: info.name, attr: info.attr, note: info.note,
+          psycommu: info.psycommu, type: info.type, mods: info.mods },
         dmg: info.per, hits: info.hits, needOf: info.needOf,
         toHp: info.toHp, bands: info.bands, after: info.close
       }),
@@ -10123,15 +10172,19 @@
   }
 
   /** 발동시킨 스킬들이 이 무장 속성의 적 내성을 몇 % 깎는가. 없으면 0. */
-  function skillFoeArmorCut(attr) {
+  /** 켠 스킬들이 **적 내성을 몇 % 깎는가.** 여럿이면 곱한다(빼지 않는다 —
+   *  「N%減」은 보정값의 (100−N)% 상태라는 뜻이다).
+   *  이름 목록·기체·모드를 받아 **대결 시뮬도 같은 함수를 쓴다** — 두 벌로 두면 갈린다. */
+  function foeArmorCutOf(names, attr, ms, form) {
     let keep = 1;                     // 남는 비율 — 여럿이면 곱한다
-    for (const sk of activeSkills()) {
-      const f = foeArmorOf(sk.name);
+    for (const n of names || []) {
+      const f = foeArmorOf(n, ms, form);
       if (!f || !f.scope || !f.scope.includes(attr)) continue;
       for (const x of f.list) if (x.ax === attr) keep *= 1 - x.pct / 100;
     }
     return Math.round((1 - keep) * 1000) / 10;
   }
+  const skillFoeArmorCut = attr => foeArmorCutOf(activeSkills().map(s => s.name), attr);
 
   function skillSummary(sk) {
     const e = skillLevel(sk) || {};
@@ -10506,7 +10559,10 @@
       state.lateMode = !!ev.target.checked;
       renderAll();
     };
-    document.addEventListener('click', () => { $('#skillMenu').hidden = true; });
+    /* 전역 클릭마다 이 메뉴를 닫는다 — **없을 수도 있다고** 보고 건드린다.
+       무조건 건드리면 그 요소가 사라진 순간부터 페이지의 모든 클릭이 터진다
+       (점검 도구가 메뉴를 지웠다가 그 꼴을 봤다). */
+    document.addEventListener('click', () => { const m = $('#skillMenu'); if (m) m.hidden = true; });
 
     // 사격 자세 — 선 자세 / 앉기·정지 / 엎드리기 중 하나. 스코프는 자세와 별개 토글.
     const sortSeg = $('#weaponSort');

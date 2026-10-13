@@ -94,64 +94,52 @@ ok('구간 경계가 맞는다 (100→100 · 99.9→50 · 70→50 · 69→20 · 
   await sleep(900);
   await pg.evaluate(() => document.querySelector('#msList .ms-card').click());
   await sleep(1300);
-  await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-  await sleep(1500);
-
-  /* 적 기체를 바꿀 때는 모달을 **닫았다 연다.** 「‹ 다른 기체」로 되돌리는 길도 있지만,
-     무장 목록이 떠 있는 상태에 기대는 것이라 검사가 화면 상태에 끌려다닌다. */
-  const pickEnemy = async (koName) => {
-    await pg.evaluate(() => document.querySelector('#pietanClose').click());
-    await sleep(500);
-    await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-    await sleep(1200);
-    /* 모달을 다시 열어도 **고른 적 기체는 남아** 무장 목록이 떠 있다 — 검색은 기체 목록에만
-       걸리므로 먼저 「‹ 다른 기체」로 되돌린다. (이걸 안 해서 검사가 두 번 헛돌았다) */
-    await pg.evaluate(() => {
-      // 「‹ 다른 기체」는 머리 **행 안의 버튼**이다 — 행을 누르면 아무 일도 안 일어난다
-      const row = [...document.querySelectorAll('#pietanList > *')].find(e => /다른 기체/.test(e.textContent));
-      if (!row) return;
-      (row.querySelector('button') || row).click();
-    });
-    await sleep(700);
-    await pg.evaluate(t => {
-      const q = document.querySelector('#pietanQuery');
-      q.value = t; q.dispatchEvent(new Event('input', { bubbles: true }));
-    }, koName);
-    await sleep(1200);
-    return pg.evaluate(t => {
-      const items = [...document.querySelectorAll('#pietanList > *')];
-      const e = items.find(x => x.textContent.indexOf(t) >= 0);
-      if (!e) return { ok: false, 찾던이름: t, 목록: items.map(x => x.textContent.replace(/\s+/g, ' ').trim().slice(0, 30)).slice(0, 6) };
-      e.click();
-      return { ok: true };
-    }, koName);
+  const DG = require('./lib/duelgate.js');
+  /* 적 기체·무장을 **대결 시뮬**에서 고른다(피탄 시뮬이 있던 자리).
+     읽는 값은 화면 글자가 아니라 attack() 이 내놓는 것 — 글자는 바뀌어도 뜻은 안 바뀐다.
+     다만 「발마다의 피해」와 「※ 반영하지 않은 효과」는 **화면에 적혔는지**가 요점이라
+     거기만 글자로 읽는다. 맞는 쪽은 앱에서 고른 건담 Ez8(me: null)이다. */
+  let cur = null, curFoe = null;
+  const pickEnemy = async (jpName) => { cur = null; curFoe = jpName; return { ok: true }; };
+  const pickWeapon = async (re) => {
+    const r = await DG.measure(pg, { me: null, foe: curFoe, from: 'R', weapon: re });
+    cur = r.오류 ? null : r;
+    return !r.오류;
   };
-  const pickWeapon = (re) => pg.evaluate(src => {
-    const rx = new RegExp(src);
-    const e = [...document.querySelectorAll('#pietanList > *')].find(x => rx.test(x.textContent));
-    if (!e) return false;
-    e.click();
-    return true;
-  }, re);
-  const readResult = () => pg.evaluate(() => {
-    const ms = [...document.querySelectorAll('#pietanModal .pietan-metric')];
-    const get = lb => {
-      const m = ms.find(x => (x.querySelector('.pietan-mlb') || {}).textContent === lb);
-      return m ? { v: m.querySelector('.pietan-mv').textContent.trim(),
-        note: m.querySelector('.pietan-mnote').textContent.trim() } : null;
+  const pickWeaponExact = async (nm) => {
+    const r = await DG.measure(pg, { me: null, foe: curFoe, from: 'R', weaponExact: nm });
+    cur = r.오류 ? null : r;
+    return !r.오류;
+  };
+  const foeWeapons = () => DG.weaponsOf(pg, { me: null, foe: curFoe, from: 'R' });
+  const readResult = async () => {
+    if (!cur) return { kill: null, unmod: null, goal: '' };
+    const dom = await pg.evaluate(sel => {
+      const c = document.querySelector(sel);
+      const u = c && c.querySelector('.dc-unmod');
+      return {
+        sub: c ? ((c.querySelector('.dc-sub') || {}).textContent || '') : '',
+        unmodV: u ? ((u.querySelector('b') || {}).textContent || '') : '',
+        unmodN: u ? ((u.querySelector('small') || {}).textContent || '') : '',
+        goal: ((document.querySelector('#duelModal .goal-row .goal-note') || {}).textContent || '')
+      };
+    }, cur.카드);
+    const sq = x => String(x).split(/\s+/).join(' ').trim();
+    return {
+      kill: { v: cur.발수 == null ? '—' : cur.발수 + '발', note: sq(dom.sub) },
+      unmod: dom.unmodV ? { v: sq(dom.unmodV), note: sq(dom.unmodN) } : null,
+      goal: sq(dom.goal)
     };
-    return { kill: get('격파까지'), unmod: get('※ 반영하지 않은 효과'),
-      goal: (document.querySelector('.pietan-goal .pietan-mnote') || {}).textContent || '' };
-  });
+  };
 
   // ── 셀 수 있는 쪽 — 레일건[최대출력]
   const msName = m => dict[String(m.MS名).replace(/_LV\d+$/, '')] || String(m.MS名);
   const railMs = msData.find(m => /アトラスガンダム（BC）/.test(m.MS名));
   ok('레일건을 가진 기체를 찾았다', !!railMs, railMs && railMs.MS名);
-  const pe1 = await pickEnemy(msName(railMs));
+  const pe1 = await pickEnemy(railMs.MS名);
   ok('적 기체를 골랐다', pe1.ok, pe1);
   await sleep(1300);
-  ok('레일건[최대출력] 을 골랐다', await pickWeapon('최대\\s*출력'));
+  ok('레일건[최대출력] 을 골랐다', await pickWeapon('最大出力'));
   await sleep(1300);
   const rr = await readResult();
   ok('격파까지가 나온다', !!rr.kill, rr);
@@ -172,13 +160,20 @@ ok('구간 경계가 맞는다 (100→100 · 99.9→50 · 70→50 · 69→20 · 
   /* **기체 HP 눈금으로 적는가.** 내구 지표로 적었더니 사용자가 제 HP 와 견주다 헷갈렸다.
      그래서 ① 글에 「내구」가 없고 ② 적힌 HP 가 그 기체의 실제 HP 이며
      ③ 실효 HP 는 title 에만 남아 있는지 본다(자동 구성이 그 눈금을 쓰므로 사라지면 안 된다). */
-  const hpInfo = await pg.evaluate(() => {
-    const row = [...document.querySelectorAll('#pietanModal .pietan-metric')]
-      .find(x => (x.querySelector('.pietan-mlb') || {}).textContent === '격파까지');
-    const head = [...document.querySelectorAll('#pietanDura .pietan-dura-cell')]
-      .map(e => e.textContent.replace(/\s+/g, ' ').trim());
-    return { title: row ? row.title : '', head };
-  });
+  /* 실효 HP(내구 지표)는 **화면 큰 글씨에서 뺐지만** 자동 구성이 쓰는 눈금이라
+     어딘가에는 있어야 한다. 대결에서는 ① 중앙 카드의 「내구 지표」 줄과
+     ② 버티기 목표 줄의 「실효 HP N 로 걸립니다」 둘에 남아 있다. */
+  const hpInfo = await pg.evaluate(sel => {
+    const c = document.querySelector(sel);
+    const sub = c ? ((c.querySelector('.dc-sub') || {}).textContent || '') : '';
+    const goal = (document.querySelector('#duelModal .goal-row .goal-note') || {}).textContent || '';
+    /* 실효 HP 는 **글이 아니라 툴팁**에 있어야 한다 — 글로 적으면 사용자가 제 HP 와
+       견주다 헷갈린다(앱이 그래서 옮겼다). 그래서 글(sub)이 아니라 title 을 본다. */
+    const tip = c ? ((c.querySelector('.dc-kill') || {}).title || '') : '';
+    const head = [...document.querySelectorAll('.duel-side[data-side="L"] .ds-dura .ds-dcell')]
+      .map(e => e.textContent.replace(/[ ]+/g, ' ').trim());
+    return { title: tip + ' ' + goal, head };
+  }, cur.카드);
   ok('근거 줄에 「내구」라고 적지 않는다', !/내구/.test(rr.kill.note), rr.kill.note.slice(0, 60));
   /* 기대 HP 는 **앱이 적어 준 값이 아니라** core 로 직접 센다 — 베끼면 같이 틀린다.
      맞는 쪽 기체는 위에서 「건담 Ez8」로 골랐고, 파츠 없이 6강 기준이다. */
@@ -191,9 +186,10 @@ ok('구간 경계가 맞는다 (100→100 · 99.9→50 · 70→50 · 69→20 · 
     null, 'normal').total.hp || 0);
   ok('적힌 HP 가 그 기체의 실제 HP 다', eff === myHp, { 적힌값: eff, 실제HP: myHp, 기체: defMs.MS名 });
   ok('실효 HP 는 툴팁에 남아 있다', /실효 HP [\d,]+/.test(hpInfo.title), hpInfo.title.slice(0, 60));
-  // 윗줄 차례 — HP · 실탄 내구 지표 · 빔 · 격투
-  ok('윗줄이 HP 먼저, 그다음 속성별 내구 지표다',
-    /^HP/.test(hpInfo.head[0] || '') && /내구 지표/.test(hpInfo.head[1] || ''), hpInfo.head);
+  // 내구 칸 — 속성 셋이 다 있어야 한다 (HP 는 기체 줄에 따로 적힌다)
+  ok('내구 칸에 실탄·빔·격투가 다 있다',
+    hpInfo.head.length === 3 && /실탄/.test(hpInfo.head[0]) && /빔/.test(hpInfo.head[1])
+    && /격투/.test(hpInfo.head[2]), hpInfo.head);
   let left = eff, n = 0;
   for (const s of steps) { left -= s.d; n++; if (left <= 0) break; }
   const shown = Number((rr.kill.v.match(/\d+/) || [])[0]);
@@ -216,31 +212,17 @@ ok('구간 경계가 맞는다 (100→100 · 99.9→50 · 70→50 · 69→20 · 
   const unkMs = msData.find(m => unkKeys.has(pageOf(m)));
   ok('못 세는 무장을 가진 기체를 찾았다', !!unkMs, unkMs && unkMs.MS名);
   if (unkMs) {
-    const pe2 = await pickEnemy(msName(unkMs));
+    const pe2 = await pickEnemy(unkMs.MS名);
     ok('그 기체를 골랐다', pe2.ok, pe2);
     await sleep(1300);
     const uk = unknown.find(u => u.key === pageOf(unkMs));
     const koW = uk ? uk.name : '';
-    const got = await pg.evaluate(() => {
-      // HP 조건이 달린 무장을 이름으로 못 찾을 수 있으니, 하나씩 눌러 보고 ※ 줄이 뜨는 것을 찾는다
-      return [...document.querySelectorAll('#pietanList > *')].length;
-    });
+    /* HP 조건이 달린 무장을 이름으로 못 찾을 수 있으니, 하나씩 골라 보고 ※ 줄이 뜨는 것을 찾는다. */
     let found = null;
-    for (let i = 0; i < got && !found; i++) {
-      const okClick = await pg.evaluate(idx => {
-        const items = [...document.querySelectorAll('#pietanList > *')];
-        if (!items[idx] || /다른 기체|적 무장/.test(items[idx].textContent)) return false;
-        items[idx].click();
-        return true;
-      }, i);
-      if (!okClick) continue;
-      await sleep(900);
+    for (const nm of await foeWeapons()) {
+      if (!(await pickWeaponExact(nm))) continue;
       const r = await readResult();
-      if (r.unmod) found = r;
-      await pg.evaluate(() => {
-        const b = [...document.querySelectorAll('#pietanList > *')].find(e => /다른 기체/.test(e.textContent));
-        // 무장 목록은 그대로 두고 다음 것을 누르면 되므로 되돌릴 것 없음
-      });
+      if (r.unmod) { found = r; break; }
     }
     ok('못 세는 무장을 고르면 ※ 줄이 뜬다', !!found, { ms: unkMs.MS名, 무장: koW });
     if (found) {

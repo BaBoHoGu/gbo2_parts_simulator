@@ -4,15 +4,16 @@
 //
 // 왜 필요한가 — 피해 계산이 한 곳이 아니다.
 //   ① 무장표·PNG 카드·저장구성 → weaponHitDamage() (공용)
-//   ② 피탄 「내 무장 → 적」      → D.shootingDamage / D.meleeDamage 직접 호출
+//   ② 대결 「내 무장 → 상대」    → D.shootingDamage / D.meleeDamage 직접 호출
 // ②가 따로인 이유는 공용 함수가 상성(attr)·방향 배율(ccd)을 안 받기 때문이다.
 // 그래서 새 보정을 넣을 때 두 곳을 다 고쳐야 하는데, 이 저장소는 이미 두 번 물렸다
 // (「고정 피해가 한쪽만」·「1히트 vs 전탄」). 그 재발을 여기서 막는다.
 //
 // 두 값은 **같아야 하는 게 아니라, 설명되는 만큼만 달라야** 한다:
-//   피탄 = floor(무장표 1히트 × 상성배율) × 전탄배수  (+ 고정 피해)
+//   대결 = floor(무장표 1히트 × 상성배율) × 전탄배수  (+ 고정 피해)
 // 상성 배율은 기체마다 하나뿐이므로, 한 기체 안에서 무장마다 배율이 달라지면 그것이 버그다.
 const GBO2Browser = require('./lib/browser.js');   // 크롬 임시 프로필 정리가 프로세스를 죽이지 않게
+const DG = require('./lib/duelgate.js');           // 대결 시뮬을 몰아 재는 공용 손잡이
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -49,7 +50,7 @@ const check = (label, cond, extra) => {
   await sleep(4000);
 
   for (const name of MECHS) {
-    await pg.evaluate(() => { const x = document.querySelector('#pietanClose'); if (x) x.click(); });
+    await pg.evaluate(() => { const x = document.querySelector('#duelClose'); if (x) x.click(); });
     await sleep(350);
     await pg.evaluate(() => { const b = document.querySelector('#backToSelect'); if (b) b.click(); });
     await sleep(700);
@@ -84,29 +85,19 @@ const check = (label, cond, extra) => {
       }
       return out;
     });
-    // ② 피탄 「내 무장 → 적」
-    await pg.evaluate(() => { const x = [...document.querySelectorAll('button')].find(y => /피탄 시뮬/.test(y.textContent)); if (x) x.click(); });
-    await sleep(1500);
-    // 구역 이름표(.pietan-sec-lb)가 아니라 **진짜 기체 줄**을 누른다.
-    await pg.evaluate(() => {
-      const t = document.querySelector('#pietanList .pietan-row');
-      if (t) (t.querySelector('button') || t).click();
-    });
-    await sleep(1600);
-    const pie = await pg.evaluate(() => {
-      const out = {};
-      const r = document.querySelector('#pietanResult');
-      if (!r) return out;
-      for (const row of r.querySelectorAll('*')) {
-        const t = (row.innerText || '').trim();
-        const m = t.match(/^(?:실탄|빔|격투|실드|기타)\s*\n?\s*(.+?)\s+([\d,]+)(?:\s*\(×\d+\))?\s+([\d,]+)발$/);
-        if (m) out[m[1].trim()] = Number(m[2].replace(/,/g, ''));
-      }
-      return out;
-    });
+    // ② 대결 「내 무장 → 상대」 — 무장마다 attack() 으로 잰다(피탄 표가 있던 자리).
+    //    화면 글자를 긁지 않는다. 표가 사라져도 뜻은 그대로다.
+    const pie = {}, fixedOf = {};
+    for (const jp of await DG.weaponsOf(pg, { me: null, foe: 'ザクⅡ' })) {
+      const r = await DG.measure(pg, { me: null, foe: 'ザクⅡ', weaponExact: jp });
+      if (r.오류) continue;
+      pie[r.무장ko] = r.한발;
+      fixedOf[r.무장ko] = r.고정;
+    }
+    await DG.close(pg);
 
     const keys = Object.keys(screen).filter(k => pie[k] != null);
-    if (!keys.length) { check(name + ' — 대조할 무장이 있음', false, '무장표 ' + Object.keys(screen).length + ' · 피탄 ' + Object.keys(pie).length); continue; }
+    if (!keys.length) { check(name + ' — 대조할 무장이 있음', false, '무장표 ' + Object.keys(screen).length + ' · 대결 ' + Object.keys(pie).length); continue; }
 
     // 무장마다 「어떤 상성×전탄 조합으로 설명되는가」를 찾는다
     const explained = [], odd = [];
@@ -114,9 +105,9 @@ const check = (label, cond, extra) => {
       let hit = null;
       for (const [lbl, m] of ATTR_MULT)
         for (const f of FIRE)
-          if (Math.floor(screen[k] * m) * f === pie[k]) { hit = { lbl, m, f }; break; }
+          if (Math.floor(screen[k] * m) * f + (fixedOf[k] || 0) === pie[k]) { hit = { lbl, m, f }; break; }
       if (hit) explained.push({ k, ...hit });
-      else odd.push(k + ': 무장표 ' + screen[k] + ' vs 피탄 ' + pie[k]
+      else odd.push(k + ': 무장표 ' + screen[k] + ' vs 대결 ' + pie[k]
         + ' (비 ' + (pie[k] / screen[k]).toFixed(3) + ')');
     }
     check(name + ' — 모든 무장이 상성×전탄으로 설명된다 (' + keys.length + '종)',
@@ -152,49 +143,30 @@ const check = (label, cond, extra) => {
      트윈 새틀라이트 캐논은 **집속 필수라 비집속 위력이 없어**(power = null) 여태 이 목록에서
      통째로 빠져 있었다 — 103 종이 그랬다. 그 줄이 뜨는 것과, 두 꼬리표가 **잘리지 않고**
      다 보이는 것을 함께 본다(한 칸에 몰아넣었더니 「집속…」으로 잘렸다). */
-  const ui = await pg.evaluate(async () => {
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    const c = document.querySelector('#infoClose');
-    if (c && document.body.classList.contains('info-open')) c.click();
-    const q = document.querySelector('#msQuery');
-    q.value = '건담 DX'; q.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(900);
-    const card = document.querySelector('#msList .ms-card');
-    if (!card) return '(기체 없음)';
-    card.click(); await wait(1500);
-    document.querySelector('#pietanBtn').click(); await wait(700);
-    // 앞 단계에서 이미 상대를 골라 둔 상태라, 목록 자리에는 「‹ 다른 기체」가 있다.
-    // 그걸 안 눌러 두면 그 버튼을 눌러 버려 **앞 상대가 그대로 남는다**(실측으로 밟았다).
-    const back = document.querySelector('.pietan-back');
-    if (back) { back.click(); await wait(500); }
-    const pq = document.querySelector('#pietanQuery');
-    // 상대는 **내성이 높은** 기체라야 한다. 자쿠Ⅰ 로는 20% 를 깎아도 발수가 그대로여서
-    // (ceil 이 삼킨다) 되돌려도 게이트가 안 물렸다 — 실측으로 확인하고 바꾼 자리다.
-    pq.value = '사이코 건담'; pq.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(900);
-    // 「‹ 다른 기체」가 남아 있으면 그것을 고르지 않는다
-    const first = [...document.querySelectorAll('#pietanList > *')]
-      .find(x => !/다른 기체|검색 결과/.test(x.textContent));
-    if (!first) return '(적 없음)';
-    first.click(); await wait(1200);
-    const foeName = (document.querySelector('.pietan-out-lb') || {}).textContent || '(모름)';
-    const rows = [...document.querySelectorAll('.pietan-out-row')].map(r => {
-      const pierce = r.querySelector('.pietan-pierce');
-      const charge = r.querySelector('.pietan-charge');
-      const box = el => el ? el.getBoundingClientRect() : null;
-      const nb = box(r.querySelector('.pietan-out-nm'));
-      return {
-        nm: (r.querySelector('.pietan-out-tx') || {}).textContent || '',
-        pierce: pierce ? pierce.textContent : null,
-        charge: charge ? charge.textContent : null,
-        // 꼬리표가 이름 칸 밖으로 잘려 나가지 않았는가
-        fits: !pierce || (box(pierce).right <= nb.right + 1 && box(pierce).width > 20),
-        hits: Number(((r.querySelector('.pietan-out-hits') || {}).textContent || '').replace(/[^\d]/g, '')),
-        per: Number(((r.querySelector('.pietan-out-dmg') || {}).textContent || '').replace(/,/g, '').match(/\d+/) || [0])
-      };
-    });
-    return { foe: foeName, rows };
-  });
+  /* 대결 시뮬에서 **무장마다** 잰다(피탄 표가 있던 자리).
+     상대는 **내성이 높은** 기체라야 한다 — 자쿠Ⅰ 로는 20% 를 깎아도 발수가 그대로여서
+     (ceil 이 삼킨다) 되돌려도 자가 안 물렸다. 실측으로 확인하고 바꾼 자리다. */
+  const DXFOE = 'プロトタイプ・サイコ・ガンダム';
+  const ui = await (async () => {
+    const rows = [];
+    for (const jp of await DG.weaponsOf(pg, { me: 'ガンダムDX', foe: DXFOE })) {
+      const r = await DG.measure(pg, { me: 'ガンダムDX', foe: DXFOE, weaponExact: jp });
+      if (r.오류) continue;
+      rows.push({
+        nm: r.무장ko,
+        pierce: r.적내성깎기 ? '내' + ({ solid: '실탄', beam: '빔', melee: '격투' }[r.속성] || r.속성)
+          + ' −' + r.적내성깎기 + '%' : null,
+        charge: r.집속 ? '집속' : null,
+        hits: r.발수, per: r.한발
+      });
+    }
+    /* 꼬리표가 칸 밖으로 잘려 나가지 않았는가 — 대결에서는 중앙 카드의 칩이다.
+       표가 없어졌으니 「표 칸에서 잘림」이 아니라 **칩 글자가 잘렸는가**를 본다. */
+    const fits = await pg.evaluate(() => [...document.querySelectorAll('#duelModal .dc-chips > *')]
+      .every(e => e.scrollWidth <= e.clientWidth + 1));
+    await DG.close(pg);
+    return { foe: DXFOE, rows: rows.map(r => ({ ...r, fits })) };
+  })();
 
   /* ── 스킬의 적 내성 감소 ①: **어느 무장에 걸리는가** ──
      여기가 위험한 자리다. 「対象の耐格闘補正を N%減」이 같은 말로 적혀 있어도
@@ -231,44 +203,25 @@ const check = (label, cond, extra) => {
      V2AB 의 롱 레인지 어댑터는 내실탄·내빔을 40% 깎는다. 스킬을 켜면 사격 무장은
      발수가 줄고 **격투 무장은 그대로**여야 한다 — 범위를 지키는지까지 한 번에 잰다.
      실측: 스프레이 빔 포드 7→6 · M·B 라이플 10→8 · B 사벨 12→12. */
-  const skillOn = await pg.evaluate(async () => {
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    const pick = async () => {
-      const b = document.querySelector('#pietanBtn'); b.click(); await wait(600);
-      const back = document.querySelector('.pietan-back');
-      if (back) { back.click(); await wait(400); }
-      const q = document.querySelector('#pietanQuery');
-      q.value = '사이코 건담'; q.dispatchEvent(new Event('input', { bubbles: true }));
-      await wait(800);
-      const first = [...document.querySelectorAll('#pietanList > *')]
-        .find(x => !/다른 기체|검색 결과/.test(x.textContent));
-      if (!first) return null;
-      first.click(); await wait(1100);
-      const rows = {};
-      for (const r of document.querySelectorAll('.pietan-out-row')) {
-        const nm = (r.querySelector('.pietan-out-tx') || {}).textContent || '';
-        rows[nm] = Number(((r.querySelector('.pietan-out-hits') || {}).textContent || '').replace(/[^\d]/g, ''));
+  /* V2AB 의 롱 레인지 어댑터는 내실탄·내빔을 40% 깎는다. 스킬을 켜면 사격 무장은
+     발수가 줄고 **격투 무장은 그대로**여야 한다 — 범위를 지키는지까지 한 번에 잰다.
+     (피탄 시뮬이 있던 자리. 대결은 쪽마다 버프 스킬을 켜므로 buffs 로 넘긴다.) */
+  const skillOn = await (async () => {
+    const ME = 'V2アサルトバスターガンダム', FOE = 'プロトタイプ・サイコ・ガンダム';
+    const SK = 'ロングレンジ・アダプター';
+    const read = async buffs => {
+      const out = {};
+      for (const jp of await DG.weaponsOf(pg, { me: ME, foe: FOE })) {
+        const r = await DG.measure(pg, { me: ME, foe: FOE, weaponExact: jp, buffs });
+        if (!r.오류) out[r.무장ko] = r.발수;
       }
-      document.querySelector('#pietanClose').click(); await wait(300);
-      return rows;
+      return out;
     };
-    const c = document.querySelector('#infoClose');
-    if (c && document.body.classList.contains('info-open')) c.click();
-    const q = document.querySelector('#msQuery');
-    q.value = 'V2 어설트 버스터'; q.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(900);
-    const card = document.querySelector('#msList .ms-card');
-    if (!card) return '(기체 없음)';
-    card.click(); await wait(1500);
-    const off = await pick();
-    document.querySelector('#skillBtn').click(); await wait(300);
-    const item = [...document.querySelectorAll('#skillMenu .skill-item')]
-      .find(x => /롱 레인지/.test(x.textContent));
-    if (!item) return '(스킬 없음)';
-    item.querySelector('input').click(); await wait(600);
-    const on = await pick();
+    const off = await read([]);
+    const on = await read([SK]);
+    await DG.close(pg);
     return { off, on };
-  });
+  })();
 
   /* ── 적 실드를 무시하는 무장 ──
      「攻撃対象のシールドHP無視」「…シールド無視」「…シールド貫通効果有」 세 가지로 적히고
@@ -288,40 +241,21 @@ const check = (label, cond, extra) => {
     ].join(',');
   });
 
-  const shieldUi = await pg.evaluate(async () => {
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    // 앞 단계가 V2AB 를 골라 둔 채다 — 실드를 무시하는 무장을 가진 기체로 갈아타야 한다.
-    // 안 갈아타면 「무시가 하나도 없다」로 실패한다(실측으로 밟았다).
-    const q = document.querySelector('#msQuery');
-    if (q) {
-      const list = document.querySelector('#msList');
-      if (!list || !list.offsetParent) {
-        const b = document.querySelector('#backToList') || document.querySelector('.step-back');
-        if (b) { b.click(); await wait(600); }
-      }
-      q.value = '건담 DX'; q.dispatchEvent(new Event('input', { bubbles: true }));
-      await wait(900);
-      const card = document.querySelector('#msList .ms-card');
-      if (card) { card.click(); await wait(1500); }
+  /* 실드로 막는 상대에게 「실드 무시」 무장이 그렇게 적히는가.
+     (피탄 시뮬이 있던 자리. 대결은 맞는 쪽의 「🛡 실드로 막음」을 켠다.) */
+  const shieldUi = await (async () => {
+    const ME = 'ガンダムDX', FOE = 'ジム';
+    const out = [];
+    for (const jp of await DG.weaponsOf(pg, { me: ME, foe: FOE })) {
+      const r = await DG.measure(pg, { me: ME, foe: FOE, weaponExact: jp, shield: true });
+      if (r.오류) continue;
+      out.push({ w: r.무장ko,
+        sh: r.실드 ? (r.실드.발수 != null ? '실드 ' + r.실드.발수 + '발' : r.실드.메모) : null,
+        ign: !!(r.실드 && r.실드.메모 === '실드 무시') });
     }
-    document.querySelector('#pietanBtn').click(); await wait(600);
-    const t = document.querySelector('#pietanShield');
-    if (t && !t.classList.contains('on')) { t.click(); await wait(300); }
-    const back = document.querySelector('.pietan-back');
-    if (back) { back.click(); await wait(400); }
-    const pq = document.querySelector('#pietanQuery');
-    pq.value = '짐'; pq.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(800);
-    const first = [...document.querySelectorAll('#pietanList > *')]
-      .find(x => !/다른 기체|검색 결과/.test(x.textContent));
-    if (!first) return '(적 없음)';
-    first.click(); await wait(1200);
-    return [...document.querySelectorAll('.pietan-out-row')].map(x => ({
-      w: (x.querySelector('.pietan-out-tx') || {}).textContent,
-      sh: ((x.querySelector('.pietan-out-sh') || {}).textContent) || null,
-      ign: !!x.querySelector('.pietan-out-sh.ign')
-    }));
-  });
+    await DG.close(pg);
+    return out;
+  })();
 
   /* ── 누적치의 배수 ──
      「20% x2発 x3射」처럼 배수가 **둘** 붙는 표기가 있다(153 무장). 첫 것만 읽고 있어서
@@ -355,70 +289,64 @@ const check = (label, cond, extra) => {
   const WEAP_STAG = KO('肩部ビーム砲');
   const WEAP_SOLID = [KO('マシンキャノンx2'), KO('頭部バルカン砲x4')];
 
-  const stagUi = await pg.evaluate(async (WEAP) => {
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    document.querySelector('#pietanBtn').click(); await wait(600);
-    const back = document.querySelector('.pietan-back');
-    if (back) { back.click(); await wait(400); }
-    const pq = document.querySelector('#pietanQuery');
-    pq.value = '파라스'; pq.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(800);
-    const first = [...document.querySelectorAll('#pietanList > *')]
-      .find(x => !/다른 기체|검색 결과/.test(x.textContent));
-    if (!first) return '(적 없음)';
-    first.click(); await wait(1100);
-    const wrow = [...document.querySelectorAll('#pietanList > *')]
-      .find(x => x.textContent.includes(WEAP));
-    if (!wrow) return '(무장 없음)';
-    wrow.click(); await wait(900);
-    const m = {};
-    for (const x of document.querySelectorAll('#pietanResult .pietan-metric')) {
-      m[(x.querySelector('.pietan-mlb') || {}).textContent] = (x.querySelector('.pietan-mnote') || {}).textContent;
-    }
-    return m;
-  }, WEAP_STAG);
+  /* 두 방향이 **같은 배수**를 쓰는지. 파라스 아테네의 어깨 빔포는
+     「よろけ値：50% x2発 x5射」이고 발사는 「二発同時発射 … 最大5ヒット」다 —
+     피해 쪽 히트 수(fireMult)와 경직 쪽 「1발=K히트」가 같아야 한다.
+     (피탄 시뮬이 있던 자리. 글자 두 줄을 맞추던 것을 **값**으로 바꿨다.) */
+  const stagUi = await (async () => {
+    const r = await DG.measure(pg, { me: 'パラス・アテネ', foe: 'ザクⅡ',
+      weaponExact: '肩部ビーム砲' });
+    await DG.close(pg);
+    if (r.오류) return { 오류: r.오류 };
+    return { 무장: r.무장ko, 피해히트: r.히트, 경직설명: r.경직 && r.경직.설명 };
+  })();
 
   /* ── 값이 있어도 **고를 수 없으면** 없는 것과 같다 ──
      갓 건담의 명경지수는 적 내격투를 10% 깎는데, 다른 수치가 하나도 없어 스킬 표에
      아예 안 올랐다 — 스킬 칸에 뜨지 않으니 발동시킬 방법이 없었다(사용자 지적).
      표에 올랐는지(드롭다운에 뜨는지)와, 켰을 때 **격투만** 주는지를 함께 본다. */
-  const god = await pg.evaluate(async () => {
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    const c = document.querySelector('#infoClose');
-    if (c && document.body.classList.contains('info-open')) c.click();
-    const q = document.querySelector('#msQuery');
-    q.value = '갓 건담'; q.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(900);
-    const card = document.querySelector('#msList .ms-card');
-    if (!card) return { err: '기체 없음' };
-    card.click(); await wait(1500);
-    const read = async () => {
-      document.querySelector('#pietanBtn').click(); await wait(600);
-      const back = document.querySelector('.pietan-back');
-      if (back) { back.click(); await wait(400); }
-      const pq = document.querySelector('#pietanQuery');
-      pq.value = '사이코 건담'; pq.dispatchEvent(new Event('input', { bubbles: true }));
-      await wait(800);
-      const f = [...document.querySelectorAll('#pietanList > *')]
-        .find(x => !/다른 기체|검색 결과/.test(x.textContent));
-      if (!f) return null;
-      f.click(); await wait(1100);
+  /* 「명경지수가 스킬 칸에 뜨는가」는 **앱 화면**의 문제라 그대로 앱에서 본다.
+     「켜면 격투만 주는가」는 대결에서 쪽마다 켜고 잰다 — 범위를 지키는지가 요점이다. */
+  const god = await (async () => {
+    const ME = 'ゴッドガンダム', FOE = 'プロトタイプ・サイコ・ガンダム', SK = '明鏡止水';
+    // ① 스킬 칸(드롭다운)에 올랐는가 — 못 고르면 값이 있어도 없는 것과 같다
+    const listed = await pg.evaluate(async nm => {
+      const wait = ms => new Promise(r => setTimeout(r, ms));
+      const c = document.querySelector('#infoClose');
+      if (c && document.body.classList.contains('info-open')) c.click();
+      const q = document.querySelector('#msQuery');
+      q.value = '갓 건담'; q.dispatchEvent(new Event('input', { bubbles: true }));
+      await wait(900);
+      const card = document.querySelector('#msList .ms-card');
+      if (!card) return { err: '기체 없음' };
+      card.click(); await wait(1500);
+      const b2 = document.querySelector('#skillBtn');
+      if (!b2) return { err: '스킬 단추 없음' };
+      b2.click(); await wait(400);
+      const item = [...document.querySelectorAll('#skillMenu .skill-item')]
+        .find(x => /명경/.test(x.textContent));
+      const out = item ? { nm: ((item.querySelector('.k') || {}).textContent || '').trim() }
+        : { err: '드롭다운에 없음' };
+      const m = document.querySelector('#skillMenu');
+      /* **지우지 않는다.** 앱은 전역 클릭마다 이 메뉴를 닫으므로, 지우면 그 뒤 모든
+         클릭이 터진다(그래서 「스크립트 오류 없음」이 울었다). 앱과 같이 닫기만 한다. */
+      if (m) m.hidden = true;
+      return out;
+    }, SK);
+    // ② 켜면 격투만 주는가
+    const read = async buffs => {
       const o = {};
-      for (const x of document.querySelectorAll('.pietan-out-row'))
-        o[(x.querySelector('.pietan-out-tx') || {}).textContent] =
-          Number(((x.querySelector('.pietan-out-hits') || {}).textContent || '').replace(/[^0-9]/g, ''));
-      document.querySelector('#pietanClose').click(); await wait(300);
+      for (const jp of await DG.weaponsOf(pg, { me: ME, foe: FOE })) {
+        const r = await DG.measure(pg, { me: ME, foe: FOE, weaponExact: jp, buffs });
+        if (!r.오류) o[r.무장ko] = r.발수;
+      }
       return o;
     };
-    const off = await read();
-    document.querySelector('#skillBtn').click(); await wait(300);
-    const item = [...document.querySelectorAll('#skillMenu .skill-item')]
-      .find(x => /명경/.test(x.textContent));
-    if (!item) return { off, err: '드롭다운에 없음' };
-    const nm = (item.querySelector('.k') || {}).textContent;
-    item.querySelector('input').click(); await wait(600);
-    return { nm, off, on: await read() };
-  });
+    const off = await read([]);
+    const on = await read([SK]);
+    await DG.close(pg);
+    return { ...listed, off, on };
+  })();
 
   await br.close();
 
@@ -444,11 +372,11 @@ const check = (label, cond, extra) => {
       stagRead === '20:6 / 6:18 / 12:6 / 20:6 / 5:10 / 7:1 / 80:1', String(stagRead));
     /* 여기가 진짜다 — 단위 판정은 「쓰이는지」를 안 본다.
        화면의 두 줄에서 배수를 꺼내 맞춰 본다(공식을 베끼지 않는다). */
-    const kill = (stagUi && stagUi['격파까지']) || '';
-    const stag = (stagUi && stagUi['경직까지']) || '';
-    const km = kill.match(/×\s*(\d+)\s*발\s*×\s*(\d+)\s*히트/);
-    const sm = stag.match(/1발\s*=\s*(\d+)\s*히트/);
-    const same = km && sm && Number(km[1]) * Number(km[2]) === Number(sm[1]);
+    /* 피해 쪽 히트 수(fireMult)와 경직 쪽 「1발=K히트」가 **같은 수**여야 한다.
+       예전에는 화면 두 줄의 글자를 맞췄는데, 이제 피해 쪽은 값으로 받고
+       경직 쪽은 그 문구에서 K 를 꺼내 맞춘다(공식을 베끼지 않는다). */
+    const sm2 = String((stagUi && stagUi.경직설명) || '').match(/1발\s*=\s*(\d+)\s*히트/);
+    const same = !!(stagUi && !stagUi.오류 && sm2 && Number(sm2[1]) === stagUi.피해히트);
     check('피해와 누적치가 같은 배수를 쓴다', !!same, JSON.stringify(stagUi));
   }
 

@@ -88,14 +88,14 @@ const tfName = tfMs ? (dict[String(tfMs.MS名).replace(/_LV\d+$/, '')] || String
     const r = [...document.querySelectorAll('#statBody .dura-row')].find(x => /내구 지표/.test(x.textContent));
     return r ? r.textContent : '';
   }));
-  await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-  await sleep(1200);
-  /* 피탄 상단은 이제 「HP · 실탄 내구 지표 · 빔 · 격투」 순이다 — HP 칸은 빼고 내구만 읽는다.
-     (상자 전체 글자를 긁으면 HP 가 섞여 들어와 개수가 안 맞는다) */
+  /* 대결 시뮬의 내구 지표와 같은 값인가 — 두 화면이 같은 자를 쓰는지 본다.
+     (피탄 시뮬이 있던 자리. 대결은 쪽마다 내구 칸을 들고 있어, 왼쪽 = 지금 편집 중인 구성이다.) */
+  await pg.evaluate(() => document.querySelector('#duelBtn').click());
+  await sleep(1400);
   const pie = nums(await pg.evaluate(() =>
-    [...document.querySelectorAll('#pietanDura .pietan-dura-cell:not(.pietan-dura-hp)')]
+    [...document.querySelectorAll('.duel-side[data-side="L"] .ds-dura .ds-dcell b')]
       .map(e => e.textContent).join(' ')));
-  await pg.evaluate(() => document.querySelector('#pietanClose').click());
+  await pg.evaluate(() => document.querySelector('#duelClose').click());
   await sleep(500);
   await pg.evaluate(() => { window.prompt = () => '일관성점검'; document.querySelector('#save').click(); });
   await sleep(700);

@@ -126,9 +126,9 @@ const VIEWS = [
 const INSET = 44;
 const INSET_CSS = `
   body { padding-top: ${INSET}px !important; }
-  #pietanModal { padding-top: ${INSET}px !important; }
+  #duelModal { padding-top: ${INSET}px !important; }
   .drawer { padding-top: ${INSET}px !important; }
-  .auto-modal:not(#pietanModal) { top: calc(50% + ${INSET / 2}px) !important; max-height: calc(100vh - ${INSET + 20}px) !important; }
+  .auto-modal:not(#duelModal) { top: calc(50% + ${INSET / 2}px) !important; max-height: calc(100vh - ${INSET + 20}px) !important; }
   .build-stats, .build-weapons, .mskill-inline.sheet-open { padding-top: ${INSET}px !important; }
 `;
 
@@ -363,35 +363,44 @@ async function runView(view) {
       await sleep(600);
     }
 
-    // ── 피탄 시뮬 (① 이 났던 자리) ──
-    await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-    await sleep(1000);
-    await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); if (q) { q.value = '자쿠'; q.dispatchEvent(new Event('input')); } });
+    // ── 대결 시뮬 (① 이 났던 자리 — 피탄 시뮬이 있던 곳) ──
+    await pg.evaluate(() => document.querySelector('#duelBtn').click());
+    await sleep(1200);
+    /* 상대를 세우고 양쪽 무장을 골라야 중앙 카드가 그려진다. 고르기 전만 재면
+       「칸이 비어도 배치는 맞다」로 통과한다 — 예전에 그래서 상세 칸의 예외를 놓쳤다. */
+    await pg.evaluate(() => {
+      const q = document.querySelector('.duel-side[data-side="R"] .ds-search');
+      if (q) { q.value = '자쿠'; q.dispatchEvent(new Event('input', { bubbles: true })); }
+    });
     await sleep(800);
-    const clickRow = () => pg.evaluate(() => {
-      // 목록 머리글(.pietan-whead)도 같은 .pietan-row 를 쓴다 — 그것을 누르면 아무 일도
-      // 안 일어나고, 무장을 고른 줄 알고 넘어가게 된다(실제로 그래서 상세 칸의 예외를
-      // 놓쳤다). 머리글은 빼고 진짜 줄만 누른다.
-      const r = [...document.querySelectorAll('#pietanModal .pietan-row')]
-        .find(x => !x.classList.contains('pietan-whead'));
+    const pickedFoe = await pg.evaluate(() => {
+      const r = document.querySelector('.duel-side[data-side="R"] .ds-msrow');
       if (r) r.click();
       return !!r;
     });
-    await clickRow();
-    await sleep(1200);
-    await clickRow();
+    check(view.tag, '[대결시뮬] 상대 기체를 고를 수 있음', pickedFoe);
     await sleep(1000);
-    await step(pg, view, '피탄시뮬');
-    // 무장을 골랐으면 상세가 **실제로 그려져야** 한다. 렌더 중 예외가 나면 칸만 비는데,
+    await pg.evaluate(() => {
+      for (const side of ['L', 'R']) {
+        const w = document.querySelector('.duel-side[data-side="' + side + '"] .ds-w');
+        if (w) w.click();
+      }
+    });
+    await sleep(900);
+    await step(pg, view, '대결시뮬');
+    // 무장을 골랐으면 중앙 카드가 **실제로 그려져야** 한다. 렌더 중 예외가 나면 칸만 비는데,
     // 배치만 재는 검사로는 그것이 통과해 버린다.
     const detail = await pg.evaluate(() => {
-      const r = document.querySelector('#pietanResult');
-      return { head: !!(r && r.querySelector('.pietan-rhd')),
-        kill: !!(r && /격파까지/.test(r.innerText)) };
+      const m = document.querySelector('#duelModal');
+      const c = m && m.querySelector('.duel-center');
+      return { head: !!(c && c.querySelector('.dc-card')),
+        kill: !!(c && /발 격파/.test(c.innerText)),
+        dura: !!(m && m.querySelector('.ds-dura .ds-dcell')) };
     });
-    check(view.tag, '[피탄시뮬] 무장 상세가 그려짐', detail.head && detail.kill, JSON.stringify(detail));
-    const pt = await pg.evaluate(probeSafeTop, '#pietanModal', INSET);
-    check(view.tag, '[피탄시뮬] 상단 안전영역 존중', pt.found && pt.ok, JSON.stringify(pt));
+    check(view.tag, '[대결시뮬] 중앙 카드가 그려짐', detail.head && detail.kill && detail.dura,
+      JSON.stringify(detail));
+    const pt = await pg.evaluate(probeSafeTop, '#duelModal', INSET);
+    check(view.tag, '[대결시뮬] 상단 안전영역 존중', pt.found && pt.ok, JSON.stringify(pt));
     // 모달이 화면 밖으로 늘어지지 않고, 아래쪽 내용에 **닿을 수 있는가**.
     //
     // 예전에는 「결과 칸이 화면 안에 들어오는가」로 쟀는데, 그것은 옛 방식(칸마다 따로
@@ -399,19 +408,19 @@ async function runView(view) {
     // 화면 아래로 넘어가는 것이 정상이고, 스크롤해서 닿으면 된다.
     // 그래서 재는 것을 「닿을 수 있는가」로 바꾼다 — 방식이 아니라 뜻을 잰다.
     const fit = await pg.evaluate(() => {
-      const m = document.querySelector('#pietanModal'), r = m.getBoundingClientRect();
-      const res = m.querySelector('.pietan-result');
+      const m = document.querySelector('#duelModal'), r = m.getBoundingClientRect();
+      const res = m.querySelector('.duel-center');
       const scrolls = m.scrollHeight > m.clientHeight + 2
         || [...m.querySelectorAll('*')].some(x => x.scrollHeight > x.clientHeight + 2
           && getComputedStyle(x).overflowY !== 'visible');
       const resBelow = res ? Math.round(res.getBoundingClientRect().bottom - innerHeight) : 0;
       return { below: Math.round(r.bottom - innerHeight), resBelow, scrolls };
     });
-    check(view.tag, '[피탄시뮬] 모달이 화면 안에 들어옴', fit.below <= 1, JSON.stringify(fit));
-    check(view.tag, '[피탄시뮬] 아래 내용에 닿을 수 있음',
+    check(view.tag, '[대결시뮬] 모달이 화면 안에 들어옴', fit.below <= 1, JSON.stringify(fit));
+    check(view.tag, '[대결시뮬] 아래 내용에 닿을 수 있음',
       fit.resBelow <= 1 || fit.scrolls, JSON.stringify(fit));
-    if (!(pt.ok && fit.below <= 1)) await shot(pg, view.tag + '_피탄');
-    await pg.evaluate(() => document.querySelector('#pietanClose').click());
+    if (!(pt.ok && fit.below <= 1)) await shot(pg, view.tag + '_대결');
+    await pg.evaluate(() => document.querySelector('#duelClose').click());
     await sleep(600);
 
     check(view.tag, '페이지 오류 없음', errs.length === 0, errs.join(' | '));

@@ -11,8 +11,13 @@
  *   HOOK.fixedDamage(A, wp)           → 앱 fixedDamageWithParts(w, A 파츠).total  (소이 등)
  *   HOOK.seed(left, setMs, force)     → 앱 state.ms · state.equipped · state.stage 를 왼쪽에
  *   HOOK.airMelee(side, wp)           → 앱 airMeleeOf + airMeleeWeapon  (공중 격투 위력 상승)
+ *   HOOK.durability(side, st)         → 앱 enduranceOf + damageCutsOf  (속성별 내구 지표)
  *   HOOK.shield(side)                 → 앱 shieldOf        (그 쪽이 든 실드와 HP)
  *   HOOK.shieldHit(wp, dmg, charged, atkParts) → 앱 shieldHit + weaponIgnoresShield
+ *   HOOK.bandWhy(info)                → 앱 hpBandWhy      (구간 무장의 발마다 피해)
+ *   HOOK.bandUnknown(why)             → 앱 hpUnknownNote  (셈에 못 넣은 구간을 밝힌다)
+ *   HOOK.foeArmorCut(side, wp)        → 앱 weaponFoeArmorCut + foeArmorCutOf  (적 내성 깎기)
+ *   HOOK.react(wp)                    → 앱 reactOf         (강경직 / 조건부 강경직 / 경직)
  *   HOOK.stagger(side, wp)            → 앱 parseStagger + activeStaggerMods  (경직까지 히트)
  *   HOOK.goalRow(info)                → 앱 pietanGoalRow   (N발 버티기 → 자동 구성 목표)
  * ------------------------------------------------------------------ */
@@ -233,8 +238,13 @@
     seed: (left, setMs, force) => seedDefault(left, setMs, force),
     /* ★ 아래 넷은 **앱 안쪽 판정**이라 간이판을 두지 않는다. 지어내면 두 번째 자가 된다 —
        안 걸렸으면 그 칸이 안 나올 뿐이고, 나온 수는 늘 앱의 수다. */
+    durability: () => null,
     shield: () => null,
     shieldHit: () => null,
+    bandWhy: () => '',
+    bandUnknown: () => null,
+    foeArmorCut: () => null,
+    react: () => null,
     stagger: () => null,
     goalRow: () => null,
     /* ★ 공중 격투 제어 — 판정이 원문(ms_skills)에 있어 바깥에서 읽을 수 없다.
@@ -295,10 +305,14 @@
     const n = HOOK.hitsPerTrigger(wp, charged) || 1;
     const fixed = HOOK.fixedDamage(A, wp) || 0;           // 보정을 안 받는 고정 피해 — 경감도 안 건다
     const per = hit * n + fixed;
-    // 무장 자체가 상대 내성을 깎는다 — 「対象の耐ビーム補正を30%減でダメージ計算」 = 보정값의 70% 상태
-    const fc = FOE_ARMOR_RE.exec(wp.note);
-    const foeCut = fc ? Number(fc[2]) : 0;
-    const tB = foeCut ? { ...sB, [ARMOR[wp.attr]]: (sB[ARMOR[wp.attr]] || 0) * (1 - foeCut / 100) } : sB;
+    /* 상대 내성을 깎는 몫 — **무장과 스킬 둘 다**. 「対象の耐ビーム補正を30%減でダメージ計算」
+       은 보정값의 70% 상태라는 뜻이라, 빼지 않고 곱한다. 여럿이면 남는 비율을 곱한다.
+       판정은 앱이 한다(간이판은 무장 것만 읽어 스킬 몫이 빠진다). */
+    const fa = HOOK.foeArmorCut(A, wp);
+    const fc = fa ? null : FOE_ARMOR_RE.exec(wp.note);
+    const foeCut = fa ? fa.cut : (fc ? Number(fc[2]) : 0);
+    const keep = fa ? fa.keep : (1 - foeCut / 100);
+    const tB = foeCut ? { ...sB, [ARMOR[wp.attr]]: (sB[ARMOR[wp.attr]] || 0) * keep } : sB;
     const eff = C.durabilityOf(tB, ARMOR[wp.attr]);           // 실효 HP = HP ÷ (1 − 내성)
     const hp = Math.round(sB.hp || 0);
     const toHp = v => Math.round(v * (eff > 0 ? hp / eff : 1));
@@ -327,7 +341,7 @@
     const stg = HOOK.stagger(B, wp);
 
     return { wp, mode, charged, power, corr, att, etcA, etcTxt, dirTxt, partPct, skPcts, factor, cuts,
-      hit, n, fixed, per, perHp, eff, hp, shots, air, shield, stg, bands, bandWhy, step, toHp,
+      hit, n, fixed, per, perHp, eff, hp, shots, air, shield, stg, bands, bandWhy, step, toHp, fa,
       foeCut, armor: tB[ARMOR[wp.attr]] || 0 };
   }
   const FOE_ARMOR_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を?\s*(\d+)\s*[%％]\s*減/;
@@ -338,14 +352,18 @@
   let root, back, body;
 
   function build() {
-    back = el('div', 'duel-back'); back.hidden = true; back.onclick = () => open(false);
-    root = el('section', 'duel'); root.hidden = true;
+    /* id 를 붙인다 — 점검 도구가 이 창을 집을 손잡이가 필요하고(안전영역 CSS·열고 닫기),
+       피탄 시뮬의 #pietanModal / #pietanBack / #pietanClose 와 짝이 맞아야 자를 옮길 수 있다. */
+    back = el('div', 'duel-back'); back.id = 'duelBack'; back.hidden = true; back.onclick = () => open(false);
+    root = el('section', 'duel'); root.id = 'duelModal'; root.hidden = true;
     root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', '대결 시뮬레이터');
     root.dataset.tab = 'L';
     const head = el('div', 'duel-head');
     head.append(el('b', null, '⚔ 대결 시뮬레이터'), el('span', 'tag', '개편 시안'), el('span', 'grow'));
     head.append(btn('btn-ghost', '좌우 바꾸기', () => { const t = S.L; S.L = S.R; S.R = t; S.L.who = 'L'; S.R.who = 'R'; renderAll(); }));
-    head.append(btn('btn-ghost', '닫기', () => open(false)));
+    const closeBtn = btn('btn-ghost', '닫기', () => open(false));
+    closeBtn.id = 'duelClose';
+    head.append(closeBtn);
     const tabs = el('div', 'duel-tabs');
     for (const [k, t] of [['L', '나의 기체'], ['R', '상대 기체']]) {
       const b = btn('d-btn' + (k === 'L' ? ' on' : ''), t, () => {
@@ -425,19 +443,24 @@
     top.append(im, info);
     b.append(top);
 
-    /* 내구 지표 — 「HP ÷ (1 − 내성)」. 속성마다 한 대가 얼마나 아픈지의 기준이고,
-       아래 격파 발수가 이 값을 쓴다. 기준이 보이지 않으면 발수만 보고 왜 그런지 알 수 없다.
-       식은 core 의 durabilityOf 하나뿐이다 — 화면과 자동 구성이 같은 자를 쓴다. */
-    const dura = el('div', 'ds-dura');
-    dura.append(el('span', 'lb', '내구'));
-    for (const [k, ko] of [['armorRange', '실탄'], ['armorBeam', '빔'], ['armorMelee', '격투']]) {
-      const cell = el('span', 'ds-dcell');
-      cell.append(el('i', null, ko), el('b', null, fmt(C.durabilityOf(st, k))));
-      cell.title = ko + ' 내구 지표 = HP ' + fmt(st.hp) + ' ÷ (1 − 내' + ko + ' '
-        + Math.round(st[k] || 0) + ')';
-      dura.append(cell);
+    /* 내구 지표 — 속성마다 한 대가 얼마나 아픈지의 기준이고, 아래 격파 발수가 이 값을 쓴다.
+       **셈은 앱이 한다**(교체 지점). HP ÷ (1 − 내성) 만 쓰면 파츠 피해 경감이 빠져
+       성능표와 같은 이름의 지표가 두 화면에서 갈린다 — 실제로 그렇게 냈고
+       consistency_check 가 잡았다(성능 24,572 · 여기 22,115). */
+    const rows = HOOK.durability(side, st);
+    if (rows && rows.length) {
+      const dura = el('div', 'ds-dura');
+      dura.append(el('span', 'lb', '내구'));
+      for (const d of rows) {
+        const cell = el('span', 'ds-dcell');
+        cell.append(el('i', null, d.ko), el('b', null, fmt(d.value)));
+        if (d.cut) cell.append(el('em', null, '−' + d.cut + '%'));
+        cell.title = d.ko + ' 공격을 기준으로 실제로 버티는 총량'
+          + ' (HP ' + fmt(st.hp) + ' ÷ (1 − 내성) ÷ 피해경감)';
+        dura.append(cell);
+      }
+      b.append(dura);
     }
-    b.append(dura);
 
     const row = el('div', 'ds-row');
     row.append(el('span', 'lb', 'LV'));
@@ -742,7 +765,13 @@
     cap.append(el('b', null, A.who === 'L' ? '나' : '상대'), el('span', 'arrow', '→'),
       el('b', null, B.who === 'L' ? '나' : '상대'), el('span', 'grow'));
     const r = attack(A, B);
-    if (r) cap.append(el('span', null, T.weaponName(r.wp.w.name)));
+    if (r) {
+      cap.append(el('span', null, T.weaponName(r.wp.w.name)));
+      /* 이 무장이 **무슨 반응**을 일으키는가 — 강경직이면 한 발로 못 움직이게 된다.
+         조건부(공중의 적에게만 등)를 그냥 「강경직」으로 적으면 없는 성능을 말하는 셈이다. */
+      const rc = HOOK.react(r.wp);
+      if (rc) cap.append(el('span', 'dc-react' + (/강경직/.test(rc) ? ' strong' : ''), rc));
+    }
     c.append(cap);
     if (!A.ms || !B.ms) { c.append(el('div', 'dc-wait', '양쪽 기체를 고르면 계산합니다')); return c; }
     if (!r) {
@@ -759,9 +788,30 @@
     sub.append('1발 ', el('b', null, fmt(r.perHp)), ' HP (', el('b', null, pct.toFixed(1) + '%'), ')');
     if (r.n > 1) sub.append(el('br'), '= ' + fmt(Math.round(r.perHp / r.n)) + ' × ' + r.n + '히트');
     sub.append(el('br'), '대상 HP ', el('b', null, fmt(r.hp)), ' · 내' + ATTR_KO[r.wp.attr] + ' ' + Math.round(r.armor) + (r.foeCut ? ' (−' + r.foeCut + '%)' : ''));
-    sub.append(el('br'), '내구 지표 ', el('b', null, fmt(r.eff)));
-    if (r.bands) sub.append(el('br'), '※ 대상 HP 구간마다 피해가 달라 발수를 쌓아 셌습니다');
-    else if (r.bandWhy) sub.append(el('br'), '※ ' + r.bandWhy);
+    /* 내구 지표(실효 HP)는 **글로 적지 않는다.** 자동 구성이 쓰는 눈금이라 어딘가에는
+       있어야 하지만, 글로 적으면 HP 와 숫자가 둘이 되어 사용자가 제 HP 와 견주다
+       헷갈린다 — 「1발 20,134 인데 내 HP 는 24,000?」. 앱이 그래서 툴팁으로 옮겼고,
+       옮겨 오면서 내가 그 결정을 되돌렸다(hpcond_check 가 잡았다). 속성별 값은
+       쪽 패널의 내구 칸에 그대로 있다. */
+    kill.title = '실효 HP ' + fmt(r.eff)
+      + ' — HP ÷ (1 − 내성) ÷ 피해경감. 자동 구성의 「실효 HP」 목표가 쓰는 눈금입니다.';
+    if (r.bands) {
+      /* 구간 무장은 「÷ 1발」이 거짓말이 된다 — 발마다 값이 다르다. 그래서 **발마다 적는다**.
+         이 줄이 없으면 발수의 근거가 화면에 없다(문구는 앱의 hpBandWhy 한 곳에서 만든다). */
+      const why = HOOK.bandWhy({ eff: r.eff, bands: r.bands, dmgAt: r.step.dmgAt,
+        toHp: r.toHp, hits: r.shots });
+      sub.append(el('br'), '※ 대상 HP 구간마다 피해가 다릅니다' + why);
+    }
+    else if (r.bandWhy) {
+      /* 셈에 못 넣은 구간 — 숫자를 지어내지 않고, **어느 쪽으로 틀리는지**를 적는다.
+         문장은 앱의 hpUnknownNote 한 곳에서 만든다(두 화면이 같은 말을 하게). */
+      const u = HOOK.bandUnknown(r.bandWhy);
+      const box = el('div', 'dc-unmod');
+      box.append(el('span', 'lb', (u && u.label) || '※'),
+        el('b', null, (u && u.value) || ''),
+        el('small', null, (u && u.note) || r.bandWhy));
+      c.append(box);
+    }
     main.append(kill, sub);
     c.append(main);
 
@@ -822,7 +872,8 @@
     chip('상성 ' + MATCH_TXT[r.att], r.att === 'advantage' ? 'up' : r.att === 'disadvantage' ? 'down' : '');
     if (r.partPct) chip('파츠 피해 +' + r.partPct + '%', 'up');
     for (const p of r.skPcts) chip('스킬 피해 +' + p + '%', 'up');
-    if (r.foeCut) chip('상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '% (무장 효과)', 'up');
+    if (r.foeCut) chip('상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '%'
+      + (r.fa && r.fa.sCut ? (r.fa.wCut ? ' (무장+스킬)' : ' (스킬 효과)') : ' (무장 효과)'), 'up');
     if (r.factor < 1) chip('상대 경감 ×' + (+r.factor.toFixed(3)), 'down');
     c.append(chips);
 
@@ -836,8 +887,12 @@
         ? D.hpBandSteps({ eff: r.eff, oneHit: r.hit, mult: r.n, fixed: r.fixed,
             bands: r.bands, targetHits: n }).total
         : r.per * n;
+      /* note·psycommu·type·mods 까지 넘긴다 — 자동 구성이 조건부 파츠 경감(관통·폭풍)을
+         다시 잴 때 그것들을 본다. 이름만 넘기면 목표가 사용자가 본 값과 갈린다. */
       const g = HOOK.goalRow({ side: B, attacker: A, wp: r.wp, attr: r.wp.attr,
-        name: r.wp.w.name, per: r.per, hits: r.shots, eff: r.eff, toHp: r.toHp,
+        name: r.wp.w.name, note: r.wp.note, psycommu: !!r.wp.w.psycommu,
+        type: r.wp.w.type, mods: r.wp.w.mods,
+        per: r.per, hits: r.shots, eff: r.eff, toHp: r.toHp,
         bands: r.bands, needOf, close: () => open(false) });
       if (g) c.append(g);
     }

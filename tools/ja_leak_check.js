@@ -137,20 +137,29 @@ function punctRule() {
     out.push(scan('기체 스킬 패널'));
     await click('#mskillClose', 500);
 
-    await click('#pietanBtn', 900);
-    const pq = document.querySelector('#pietanQuery');
-    if (!pq || !pq.getClientRects().length) return { err: '피탄 시뮬이 안 열렸다' };
-    pq.value = '자쿠'; pq.dispatchEvent(new Event('input', { bubbles: true })); await wait(900);
-    const rows = [...document.querySelectorAll('#pietanList .pietan-row')];
-    if (!rows.length) return { err: '피탄 시뮬에서 적 기체를 못 찾았다' };
-    rows[0].click(); await wait(1300);
-    out.push(scan('피탄 시뮬'));
-    /* 적 무장까지 골라야 격파·경직 계산이 그려진다 — 거기가 원문이 가장 많이 지나는 자리다.
-       무장도 같은 #pietanList 에 pietan-row 로 그려지고, 머리줄(whead)은 누를 것이 아니다. */
-    const ws = [...document.querySelectorAll('#pietanList .pietan-row:not(.pietan-whead)')];
-    if (!ws.length) return { err: '피탄 시뮬에서 적 무장을 못 찾았다' };
-    ws[0].click(); await wait(1000);
-    out.push(scan('피탄 시뮬 · 무장 고른 뒤'));
+    /* 대결 시뮬 — 기체·무장 이름과 스킬·방향 라벨이 가장 많이 지나는 자리다.
+       (피탄 시뮬이 있던 자리. 양쪽 패널 + 중앙 카드를 한 번에 훑는다.) */
+    await click('#duelBtn', 1200);
+    if (!document.querySelector('#duelModal') || document.querySelector('#duelModal').hidden)
+      return { err: '대결 시뮬이 안 열렸다' };
+    out.push(scan('대결 시뮬'));
+    /* 상대를 세우고 양쪽 무장을 골라야 중앙 카드(격파·경직·실드·방향)가 그려진다.
+       여기가 원문이 가장 많이 지나는 곳이라, 고르기 전만 훑으면 절반을 안 보는 셈이다. */
+    const q2 = document.querySelector('.duel-side[data-side="R"] .ds-search');
+    if (q2) { q2.value = '자쿠'; q2.dispatchEvent(new Event('input', { bubbles: true })); await wait(800); }
+    const mrow = document.querySelector('.duel-side[data-side="R"] .ds-msrow');
+    if (!mrow) return { err: '대결 시뮬에서 상대 기체를 못 찾았다' };
+    mrow.click(); await wait(1000);
+    for (const side of ['L', 'R']) {
+      const ws = [...document.querySelectorAll('.duel-side[data-side="' + side + '"] .ds-w')];
+      if (!ws.length) return { err: '대결 시뮬 ' + side + ' 쪽 무장을 못 찾았다' };
+      ws[0].click(); await wait(600);
+    }
+    out.push(scan('대결 시뮬 · 양쪽 무장 고른 뒤'));
+    /* 격투 무장을 고르면 방향·변형 라벨이 더 나온다 — 그 글자도 한글이어야 한다. */
+    const mw = [...document.querySelectorAll('.duel-side[data-side="L"] .ds-w')]
+      .find(e => /격투/.test(e.textContent || ''));
+    if (mw) { mw.click(); await wait(700); out.push(scan('대결 시뮬 · 격투 무장')); }
 
     return { out };
   }, TAIL_SRC);

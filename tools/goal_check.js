@@ -39,26 +39,19 @@ const check = (label, ok, extra) => {
   await sleep(1100);
   await sleep(1000);
 
-  // 피탄 시뮬에서 적 기체·무장 선택
-  await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-  await sleep(600);
-  await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '자쿠'; q.dispatchEvent(new Event('input')); });
-  await sleep(700);
-  // 머리글(.pietan-whead)도 같은 .pietan-row 를 쓴다 — 그것을 누르면 아무 일도 안 일어나고
-  // 무장을 고른 줄 알고 넘어간다. 진짜 줄만 누른다.
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row:not(.pietan-whead)'); if (r) r.click(); });
-  await sleep(900);
-  await pg.evaluate(() => { const r = [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')].pop(); if (r) r.click(); });
-  await sleep(900);
+  /* 대결 시뮬에서 상대를 세우고 **상대가 쏘게** 한다 — 버티기 목표는 맞는 쪽이
+     내 구성(왼쪽)일 때만 뜻이 있다. (피탄 시뮬이 있던 자리) */
+  const DG = require('./lib/duelgate.js');
+  const shot = await DG.measure(pg, { me: null, foe: 'ザクⅡ', from: 'R' });
+  check('대결에서 상대 무장으로 계산된다', !shot.오류, JSON.stringify(shot).slice(0, 160));
 
   const before = await pg.evaluate(() => {
-    const g = document.querySelector('.pietan-goal');
+    const g = document.querySelector('#duelModal .goal-row');
     if (!g) return null;
-    const hit = [...document.querySelectorAll('#pietanModal .pietan-metric')]
-      .find(m => /격파까지/.test(m.textContent));
+    const c = document.querySelector('#duelModal .dc-card .dc-kill');
     return {
       goal: g.textContent.replace(/\s+/g, ' ').trim(),
-      hits: hit ? hit.textContent.replace(/\s+/g, ' ').trim() : '',
+      hits: c ? c.textContent.replace(/\s+/g, ' ').trim() : '',
       n: (g.querySelector('input') || {}).value
     };
   });
@@ -68,7 +61,7 @@ const check = (label, ok, extra) => {
   console.log('   ' + before.goal.slice(0, 90));
 
   // 목표 전달
-  await pg.evaluate(() => document.querySelector('.pietan-goal .btn-primary').click());
+  await pg.evaluate(() => document.querySelector('#duelModal .goal-row .btn-primary').click());
   await sleep(1000);
 
   const after = await pg.evaluate(() => {
@@ -103,13 +96,12 @@ const check = (label, ok, extra) => {
     });
     await sleep(1500);
     if (!applied) console.log('   (적용 버튼을 못 찾아 선택 상태로만 확인)');
-    await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-    await sleep(1500);
-    const now = await pg.evaluate(() => {
-      const m = [...document.querySelectorAll('#pietanModal .pietan-metric')].find(x => /격파까지/.test(x.textContent));
-      return m ? m.textContent.replace(/\s+/g, ' ').trim() : '';
-    });
-    const nowHits = Number((now.match(/(\d+)발/) || [])[1]);
+    /* 구성을 적용한 뒤 **같은 짝**을 다시 재서 발수가 목표를 넘는지 본다.
+       화면 글자가 아니라 attack() 의 발수를 쓴다 — 글자는 바뀌어도 뜻은 안 바뀐다. */
+    const re2 = await DG.measure(pg, { me: null, foe: 'ザクⅡ', from: 'R',
+      weaponExact: shot.무장 });
+    const nowHits = re2.오류 ? 0 : re2.발수;
+    const now = re2.오류 ? JSON.stringify(re2) : (re2.무장 + ' — ' + re2.발수 + '발 (한발 ' + re2.한발 + ')');
     check(`구성 적용 후 ${goal}발 이상 버틴다`, nowHits >= goal, `실제 ${nowHits}발`);
     console.log('   ' + now.slice(0, 60));
   }

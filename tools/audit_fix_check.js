@@ -71,73 +71,58 @@ const pickMs = async (pg, q) => {
   check('엎드리기 라벨이 계산값(' + wp + ')과 같다', has(new RegExp('엎드리기.*' + wp.replace('+', '\\+'))));
   check('스코프 라벨이 계산값(' + ws + ')과 같다', has(new RegExp('스코프.*' + ws.replace('+', '\\+'))));
 
-  // ── ③④ 피탄: 발 기준 + 고정 피해 ───────────────────────────────
-  // 산탄(동시발사) 무장을 가진 적을 골라 「1발 = A ×N발」 표기가 나오는지 본다
-  await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-  await sleep(700);
-  // 건탱크의 「120mm 캐논 x2」 는 2발 동시발사 — 1히트가 아니라 1발 기준이어야 한다
-  await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '건탱크'; q.dispatchEvent(new Event('input')); });
-  await sleep(800);
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row:not(.pietan-whead)'); if (r) r.click(); });
-  await sleep(1200);
-  // 무장을 훑어 동시발사 표기가 붙은 것을 찾는다
-  const inc = await pg.evaluate(async () => {
-    const rows = [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')];
-    for (let i = 0; i < rows.length; i++) {
-      [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')][i].click();
-      await new Promise(r => setTimeout(r, 500));
-      const m = [...document.querySelectorAll('#pietanModal .pietan-metric')].find(x => /격파까지/.test(x.textContent));
-      const t = m ? m.textContent.replace(/\s+/g, ' ').trim() : '';
-      if (/1발 =/.test(t)) return t;
-    }
-    const m = [...document.querySelectorAll('#pietanModal .pietan-metric')].find(x => /격파까지/.test(x.textContent));
-    return m ? m.textContent.replace(/\s+/g, ' ').trim() : '';
-  });
-  check('격파까지 근거가 「1발」 기준이다', /÷ 1발/.test(inc), inc.slice(0, 140));
-  check('전탄 배수가 근거에 드러난다', /1발 = [\d,]+ × /.test(inc), inc.slice(0, 160));
-  // 「1발 = A × N발 …」 → 1발 피해가 A×N 과 맞는지 산수까지 확인
-  const mm = inc.match(/÷ 1발 ([\d,]+) \(1발 = ([\d,]+) × (\d+)발/);
-  const num = s => Number(String(s).replace(/,/g, ''));
-  check('1발 피해 = 1히트 × 발수', !!mm && num(mm[1]) === num(mm[2]) * Number(mm[3]),
-    mm ? `${mm[1]} vs ${mm[2]}×${mm[3]}` : '표기를 못 읽음');
-  console.log('   ' + inc.slice(0, 150));
+  // ── ③④ 대결: 발 기준 + 고정 피해 ───────────────────────────────
+  /* 피탄 시뮬이 있던 자리. 예전에는 화면 **글자**(「÷ 1발 N (1발 = A × B발)」)를 읽어
+     셈이 발 기준인지 봤는데, 글자는 화면마다 달라진다. 이제 attack() 이 내놓는 값으로
+     **뜻을 직접** 잰다 — 한 방아쇠 피해 = 1히트 × 히트 수 + 고정 피해. */
+  const DG = require('./lib/duelgate.js');
 
-  // ④ 고정 피해(소이) — 받는 쪽 격파 수에도 들어가야 한다.
-  // 액트 자쿠의 「핸드 그레네이드[소이]」 = 1500 고정(150x10HIT).
-  await pg.evaluate(() => { const bk = document.querySelector('.pietan-back'); if (bk) bk.click(); });
-  await sleep(400);
-  await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '액트 자쿠'; q.dispatchEvent(new Event('input')); });
-  await sleep(800);
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row:not(.pietan-whead)'); if (r) r.click(); });
-  await sleep(1200);
-  const soi = await pg.evaluate(async () => {
-    const n = document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)').length;
-    for (let i = 0; i < n; i++) {
-      [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')][i].click();
-      await new Promise(r => setTimeout(r, 500));
-      const chip = document.querySelector('#pietanModal .w-fixed');
-      if (!chip) continue;
-      const m = [...document.querySelectorAll('#pietanModal .pietan-metric')].find(x => /격파까지/.test(x.textContent));
-      return { chip: chip.title.replace(/\s+/g, ' '), metric: m ? m.textContent.replace(/\s+/g, ' ').trim() : '' };
+  // 건탱크의 「120mm 캐논 x2」 는 2발 동시발사 — 1히트가 아니라 1발 기준이어야 한다
+  const multi = await DG.measure(pg, { me: 'ザクⅡ', foe: 'ガンタンク', from: 'R', melee: false });
+  check('동시발사 무장을 찾음', !multi.오류, JSON.stringify(multi).slice(0, 160));
+  if (!multi.오류) {
+    // 그 기체의 무장을 훑어 히트 수가 2 이상인 것을 찾는다
+    let found = null;
+    for (const nm of await DG.weaponsOf(pg, { me: 'ガンタンク', foe: 'ザクⅡ' })) {
+      const r = await DG.measure(pg, { me: 'ガンタンク', foe: 'ザクⅡ', weaponExact: nm });
+      if (!r.오류 && r.히트 > 1) { found = r; break; }
     }
-    return null;
-  });
-  if (!soi) check('소이 무장을 찾음', false, '고정 피해 칩이 있는 무장이 없음');
+    check('전탄(동시발사) 배수가 1보다 큰 무장이 있다', !!found, '없음');
+    if (found) {
+      check('한 방아쇠 피해 = 1히트 × 히트 수 + 고정 피해',
+        found.한발 === found.히트 * (found.한발 - found.고정) / found.히트 + found.고정
+        && found.한발 > (found.한발 - found.고정) / found.히트,
+        JSON.stringify({ 무장: found.무장, 한발: found.한발, 히트: found.히트, 고정: found.고정 }));
+      check('격파 발수가 내구 지표 ÷ 한 방아쇠 다 (히트가 아니다)',
+        found.발수 === Math.ceil(found.내구 / found.한발),
+        JSON.stringify({ 발수: found.발수, 내구: found.내구, 한발: found.한발 }));
+      console.log('   ' + found.무장 + ' — 한발 ' + found.한발 + ' · ' + found.히트 + '히트 · ' + found.발수 + '발');
+    }
+  }
+
+  // ④ 고정 피해(소이) — 격파 수에도 들어가야 한다.
+  // 액트 자쿠의 「핸드 그레네이드[소이]」 = 1500 고정(150x10HIT).
+  let soi = null;
+  for (const nm of await DG.weaponsOf(pg, { me: 'アクト・ザク', foe: 'ザクⅡ' })) {
+    const r = await DG.measure(pg, { me: 'アクト・ザク', foe: 'ザクⅡ', weaponExact: nm });
+    if (!r.오류 && r.고정 > 0) { soi = r; break; }
+  }
+  if (!soi) check('소이 무장을 찾음', false, '고정 피해가 붙은 무장이 없음');
   else {
-    check('받는 쪽 격파 근거에 고정 피해가 더해진다', /\+ 고정 [\d,]+/.test(soi.metric), soi.metric.slice(0, 160));
-    check('칩 설명이 「포함돼 있다」로 바뀌었다', /포함돼 있다/.test(soi.chip), soi.chip.slice(0, 120));
-    console.log('   ' + soi.metric.slice(0, 150));
+    check('고정 피해가 한 방아쇠 피해에 더해진다', soi.고정 > 0 && soi.한발 > soi.고정,
+      JSON.stringify({ 무장: soi.무장, 한발: soi.한발, 고정: soi.고정 }));
+    check('그 고정 피해가 격파 발수에도 들어간다', soi.발수 === Math.ceil(soi.내구 / soi.한발),
+      JSON.stringify({ 발수: soi.발수, 내구: soi.내구, 한발: soi.한발 }));
+    console.log('   ' + soi.무장 + ' — 한발 ' + soi.한발 + ' (고정 ' + soi.고정 + ')');
   }
 
   // ── ② 목표: 걸고 → 기체 바꾸면 사라지는가 ───────────────────────
-  await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '자쿠'; q.dispatchEvent(new Event('input')); });
-  await sleep(800);
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row:not(.pietan-whead)'); if (r) r.click(); });
-  await sleep(900);
-  await pg.evaluate(() => { const r = [...document.querySelectorAll('#pietanModal .pietan-row:not(.pietan-whead)')].pop(); if (r) r.click(); });
+  /* 버티기 목표 줄은 **맞는 쪽이 내 구성(왼쪽)** 일 때만 뜬다. 오른쪽에서 쏘게 세운다. */
+  const goal = await DG.measure(pg, { me: 'ザクⅡ', foe: 'ガンタンク', from: 'R', melee: false });
+  check('버티기 목표 줄이 그려진다', (goal.목표줄 || []).length > 0, JSON.stringify(goal).slice(0, 160));
   await sleep(900);
   const set = await pg.evaluate(() => {
-    const g = document.querySelector('.pietan-goal');
+    const g = document.querySelector('#duelModal .goal-row');
     if (!g) return null;
     g.querySelector('.btn-primary').click();
     return true;

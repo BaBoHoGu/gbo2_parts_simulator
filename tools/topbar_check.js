@@ -31,7 +31,7 @@ const ok = (label, cond, extra) => {
 };
 
 // 파츠 화면에서 닿을 수 있어야 하는 것 전부 — 상단바에 있든 메뉴에 있든
-const MUST_REACH = ['#openAuto', '#pietanBtn', '#compareBtn', '#save', '#share', '#pngBtn',
+const MUST_REACH = ['#openAuto', '#duelBtn', '#compareBtn', '#save', '#share', '#pngBtn',
   '#uploadBtn', '#load', '#importBtn', '#ownedBtn', '#updateBtn',
   '#galleryBtn', '#patchBtn', '#codexBtn', '#tokenBtn'];
 

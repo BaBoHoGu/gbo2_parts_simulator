@@ -82,33 +82,27 @@ const num = s => Number(String(s).replace(/,/g, ''));
 
   // ── 이 파츠가 실제로 피해를 깎는 적 무장을 찾는다 ─────────────────
   // (그 무장이 곧 「관통 성능을 가진 사격 무장」이다 — 이름으로 짐작하지 않고 값으로 고른다)
-  await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-  await sleep(700);
-  // 헤비 건담의 「빔 캐논」 이 ユニット貫通 · 사이코뮤 아님 · 사격 — 관통 경감이 걸리는 조건이다
-  await pg.evaluate(() => { const q = document.querySelector('#pietanQuery'); q.value = '헤비 건담'; q.dispatchEvent(new Event('input')); });
-  await sleep(800);
-  await pg.evaluate(() => { const r = document.querySelector('#pietanModal .pietan-row'); if (r) r.click(); });
-  await sleep(1200);
-  const found = await pg.evaluate(async () => {
-    const n = document.querySelectorAll('#pietanModal .pietan-row').length;
-    for (let i = 0; i < n; i++) {
-      [...document.querySelectorAll('#pietanModal .pietan-row')][i].click();
-      await new Promise(r => setTimeout(r, 450));
-      const m = [...document.querySelectorAll('#pietanModal .pietan-metric')].find(x => /격파까지/.test(x.textContent));
-      const t = m ? m.textContent.replace(/\s+/g, ' ').trim() : '';
-      if (/관통 경감/.test(t)) {
-        return { i, text: t, hits: Number((t.match(/격파까지\s*(\d+)발/) || [])[1]) };
-      }
+  /* 헤비 건담의 「빔 캐논」 이 ユニット貫通 · 사이코뮤 아님 · 사격 — 관통 경감이 걸리는 조건이다.
+     이름으로 짐작하지 않고 **값으로** 고른다: 그 파츠만 끼운 상태에서 경감 배수가 1 보다
+     작아지는 무장이 곧 조건부 경감이 걸리는 무장이다. (피탄 시뮬이 있던 자리) */
+  const DG = require('./lib/duelgate.js');
+  let found = null;
+  for (const nm of await DG.weaponsOf(pg, { me: null, foe: 'ヘビーガンダム', from: 'R' })) {
+    const r = await DG.measure(pg, { me: null, foe: 'ヘビーガンダム', from: 'R', weaponExact: nm });
+    if (r.오류) continue;
+    if (r.경감배수 < 1) {
+      found = { text: r.무장 + ' — 경감 ×' + r.경감배수 + ' · 격파 ' + r.발수 + '발 · 내구 ' + r.내구,
+        hits: r.발수, weapon: r.무장, factor: r.경감배수 };
+      break;
     }
-    return null;
-  });
+  }
   if (!found) { check('관통 경감이 걸리는 적 무장을 찾음', false, '헤비 건담 무장 중 없음'); await br.close(); process.exit(1); }
   check('관통 경감이 걸리는 적 무장을 찾음', true);
   console.log('   ' + found.text.slice(0, 170));
 
   // ── 지금 실제로 버티는 발수를 그대로 목표로 건다 ───────────────────
   const setOk = await pg.evaluate(hits => {
-    const g = document.querySelector('.pietan-goal');
+    const g = document.querySelector('#duelModal .goal-row');
     if (!g) return false;
     const inp = g.querySelector('input');
     inp.value = String(hits);
@@ -156,17 +150,19 @@ const num = s => Number(String(s).replace(/,/g, ''));
   // 그 후보를 실제로 적용하고, 같은 적 무장으로 피탄 화면에서 다시 잰다
   await pg.evaluate(() => { const c = document.querySelector('#autoResults .auto-cand'); if (c) c.click(); });
   await sleep(1500);
-  await pg.evaluate(() => document.querySelector('#pietanBtn').click());
-  await sleep(1500);
-  /* 화면 글자는 이제 **HP 눈금**이다(사용자가 제 HP 와 견주다 헷갈려서 바꿨다).
-     자동 구성이 쓰는 실효 HP 는 그 줄의 title 에 남겨 뒀으므로 거기서 읽는다 —
-     그 값이 곧 「이 무장 기준·조건부 경감까지 접은」 실효 HP 다. */
-  const now = await pg.evaluate(() => {
-    const m = [...document.querySelectorAll('#pietanModal .pietan-metric')].find(x => /격파까지/.test(x.textContent));
-    return m ? { txt: m.textContent.replace(/\s+/g, ' ').trim(), title: m.title || '' } : { txt: '', title: '' };
-  });
-  const expect = num((now.title.match(/실효 HP ([\d,]+)/) || [])[1]);
-  console.log(`   피탄(툴팁): 실효 HP ${expect.toLocaleString()}`);
+  /* 같은 적 무장으로 대결 화면에서 다시 잰다. 버티기 목표 줄이 적는 「자동 구성에는
+     실효 HP N 로 걸립니다」 가 곧 「이 무장 기준·조건부 경감까지 접은」 실효 HP 다 —
+     자동 구성에 넘기는 값과 같은 자여야 한다. */
+  const again = await DG.measure(pg, { me: null, foe: 'ヘビーガンダム', from: 'R',
+    weaponExact: found.weapon });
+  /* 「이 무장에 대한 실효 HP」 = 내구 지표 ÷ 경감 배수.
+     (주석 위에 적힌 그 식이다 — 내구 23,630 ÷ 0.8 = 29,538.)
+     목표 줄의 「실효 HP N 로 걸립니다」 는 **지금 칸에 적힌 발수**의 값이라 여기 쓸 수 없다. */
+  const now = { txt: again.오류 ? JSON.stringify(again)
+    : (again.무장 + ' 내구 ' + again.내구 + ' · 경감 ×' + again.경감배수),
+    title: (again.목표줄 || [])[0] || '' };
+  const expect = again.오류 ? 0 : Math.round(again.내구 / again.경감배수);
+  console.log(`   대결: 내구 ${(again.내구 || 0).toLocaleString()} ÷ 경감 ×${again.경감배수} = 실효 HP ${expect.toLocaleString()}`);
   console.log(`   자동 구성 측정값: ${measured.toLocaleString()}`);
   check('같은 구성을 두 화면이 같은 값으로 잰다', measured === expect,
     `자동 ${measured.toLocaleString()} ≠ 피탄 ${expect.toLocaleString()}`
