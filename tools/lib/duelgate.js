@@ -30,6 +30,7 @@
  * @param o.defs        맞는 쪽이 켤 방어 스킬 이름 배열
  * @param o.buffs       공격 측이 켤 버프 스킬 이름 배열
  * @param o.exp         확장 스킬 (양쪽 모두)
+ * @param o.corr        공격 측 보정 직접 입력 {shoot, melee} — null 이면 구성값(자동)
  * @returns {Promise<object|null>} attack() 결과를 JSON 으로 옮긴 것 (+ 고른 것들)
  */
 async function measure(pg, o) {
@@ -65,12 +66,18 @@ async function measure(pg, o) {
     // 앱 구성을 쓸 때는 왼쪽 확장도 앱 값을 그대로 둔다 — 아래 exp 설정에서 되돌리지 않게
     S.L.buffs.clear(); S.R.buffs.clear(); S.L.defs.clear(); S.R.defs.clear();
     S.L.shieldOn = false; S.R.shieldOn = false;
+    /* 보정 직접 입력도 **매번 비운다.** 호출 사이에 남겨 두면 앞 호출의 값이 따라와,
+       「사격 칸을 흔들어도 안 바뀐다」가 앞 호출의 격투 250 때문에 바뀌어 보인다
+       (실제로 그렇게 걸렸다 — 1,965 → 5,376). 세우는 값은 전부 여기서 초기화한다. */
+    S.L.corr = { shoot: null, melee: null };
+    S.R.corr = { shoot: null, melee: null };
     if (!keepMine) S.L.exp = q.exp || C.EXPANSION_NONE;
     S.R.exp = q.exp || C.EXPANSION_NONE;
     S.L.posture = 'stand'; S.R.posture = 'stand'; S.L.scope = false; S.R.scope = false;
     const from = q.from || 'L';
     const A = from === 'L' ? S.L : S.R, B = from === 'L' ? S.R : S.L;
     if (q.shield) B.shieldOn = true;
+    if (q.corr) for (const k of ['shoot', 'melee']) if (k in q.corr) A.corr[k] = q.corr[k];
     for (const n of (q.defs || [])) B.defs.add(n);
     for (const n of (q.buffs || [])) A.buffs.add(n);
     Duel.use({});                      // 다시 그린다 (renderAll 은 밖으로 안 나와 있다)
@@ -110,7 +117,8 @@ async function measure(pg, o) {
     const out = {
       무장: r.wp.w.name, 무장ko: window.GBO2i18n.weaponName(r.wp.w.name),
       속성: r.wp.attr, 격투: !!r.wp.melee,
-      위력: r.power, 보정: r.corr, 상성: r.att, 한발: r.per, HP눈금: r.perHp,
+      위력: r.power, 보정: r.corr, 구성보정: r.autoCorr, 직접입력: r.manual,
+      상성: r.att, 한발: r.per, HP눈금: r.perHp,
       히트: r.n, 고정: r.fixed, 발수: r.shots, 내구: r.eff, HP: r.hp,
       경감배수: r.factor, 파츠피해: r.partPct, 스킬피해: r.skPcts,
       적내성깎기: r.foeCut, 무장깎기: r.fa ? r.fa.wCut : null, 스킬깎기: r.fa ? r.fa.sCut : null,
@@ -127,6 +135,11 @@ async function measure(pg, o) {
     // 화면에 뜬 것도 함께 — 칸이 있는지(값이 보이는지)까지 재려고
     out.방어칩 = [...document.querySelectorAll('.duel-side[data-side="' + (from === 'L' ? 'R' : 'L') + '"] .ds-chip.def')]
       .map(e => (e.textContent || '').replace(/\s+/g, ' ').trim());
+    out.보정칸 = [...document.querySelectorAll('.duel-side[data-side="' + from + '"] .ds-corr')]
+      .map(e => ({ ko: (e.querySelector('i') || {}).textContent,
+        값: (e.querySelector('input') || {}).value,
+        구성값: (e.querySelector('input') || {}).placeholder,
+        켜짐: e.classList.contains('on') }));
     out.내구칸 = [...document.querySelectorAll('.duel-side[data-side="' + (from === 'L' ? 'R' : 'L') + '"] .ds-dura .ds-dcell')]
       .map(e => (e.textContent || '').replace(/\s+/g, ' ').trim());
     out.목표줄 = [...document.querySelectorAll('#duelModal .goal-row')]

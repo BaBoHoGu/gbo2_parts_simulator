@@ -71,6 +71,9 @@
     wKey: null, mode: 'nc', posture: 'stand', scope: false, variant: 0, dir: 0,
     air: false,            // 공중 격투 제어로 하는 공중 격투인가 (위력 상승)
     shieldOn: false,       // 이 쪽이 실드로 막는가 (맞는 쪽에 걸린다)
+    /* 공격보정 직접 입력 — null 이면 구성에서 나온 값을 쓴다(자동).
+       상대 파츠를 모를 때 보정만 어림해 넣으려고 둔다. 기체를 바꾸면 풀린다(setMs). */
+    corr: { shoot: null, melee: null },
     pickParts: false, pq: '', pcat: 'all', pickMs: false, mq: '',
     step: 1                // 이 쪽 무장으로 상대를 몇 발 맞혔는지 (게이지 미리보기)
   });
@@ -265,7 +268,10 @@
        (땅에서의 N격·횡격에 얹으면 거짓이 된다). 수치를 낼 수 있는 때만 앱이 답을 준다. */
     const air = (A.air && wp.melee) ? HOOK.airMelee(A, wp) : null;
     if (air) power = air.power(power);
-    const corr = kind === 'melee' ? (sA.meleeCorrection || 0) : (sA.shoot || 0);
+    /* 직접 입력한 보정이 있으면 그것을 쓴다 — 없으면 구성에서 나온 값. */
+    const autoCorr = kind === 'melee' ? (sA.meleeCorrection || 0) : (sA.shoot || 0);
+    const manual = A.corr ? A.corr[kind === 'melee' ? 'melee' : 'shoot'] : null;
+    const corr = manual == null ? autoCorr : manual;
     const att = matchup(A.ms.属性, B.ms.属性);
 
     // 자세·스코프 — 사격 판정에만, (1 + ETCa) 로 곱해진다 (앱의 postureEtcA 와 같은 규칙)
@@ -342,6 +348,7 @@
 
     return { wp, mode, charged, power, corr, att, etcA, etcTxt, dirTxt, partPct, skPcts, factor, cuts,
       hit, n, fixed, per, perHp, eff, hp, shots, air, shield, stg, bands, bandWhy, step, toHp, fa,
+      manual, autoCorr,
       foeCut, armor: tB[ARMOR[wp.attr]] || 0 };
   }
   const FOE_ARMOR_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を?\s*(\d+)\s*[%％]\s*減/;
@@ -499,6 +506,35 @@
       exRow.append(exLv);
     }
     b.append(exRow);
+
+    /* 공격보정 직접 입력 — 상대 파츠를 모를 때 보정만 어림해 넣는 자리.
+       비우면 구성값으로 돌아간다(자동). 기체를 바꾸면 저절로 풀린다.
+       피탄 시뮬에서 옮겨 왔다 — 거기서는 '만졌다' 깃발을 따로 들고 있었는데,
+       값 하나(null = 자동)로 합쳤다. 둘을 따로 두면 깃발과 값이 갈린다. */
+    const coRow = el('div', 'ds-row');
+    coRow.append(el('span', 'lb', '보정'));
+    for (const [k, ko] of [['shoot', '사격'], ['melee', '격투']]) {
+      const cell = el('label', 'ds-corr');
+      cell.append(el('i', null, ko));
+      const inp = el('input');
+      inp.type = 'number'; inp.min = '0'; inp.max = '999';
+      inp.placeholder = String(Math.round(k === 'melee' ? st.meleeCorrection : st.shoot) || 0);
+      if (side.corr[k] != null) { inp.value = String(side.corr[k]); cell.classList.add('on'); }
+      inp.title = ko + ' 보정 — 비우면 구성값('
+        + (Math.round(k === 'melee' ? st.meleeCorrection : st.shoot) || 0) + ')을 씁니다';
+      inp.oninput = () => {
+        const t = inp.value.trim();
+        side.corr[k] = t === '' ? null : Math.max(0, Math.min(999, Number(t) || 0));
+        changed(side);
+      };
+      cell.append(inp);
+      coRow.append(cell);
+    }
+    if (side.corr.shoot != null || side.corr.melee != null) {
+      coRow.append(btn('d-btn', '↺ 자동으로',
+        () => { side.corr = { shoot: null, melee: null }; changed(side); }));
+    }
+    b.append(coRow);
 
     /* 🛡 실드로 막음 — 이 쪽이 맞을 때, 실드 HP 로 먼저 받는 계산을 함께 본다.
        실드가 없는 기체에서는 단추 자체가 안 나온다(눌러도 아무 일 없는 단추를 두지 않는다). */
@@ -864,7 +900,9 @@
     const chips = el('div', 'dc-chips');
     const chip = (t, cls) => chips.append(el('span', cls || '', t));
     chip('위력 ' + fmt(r.power) + (r.charged ? (r.mode === 'ch2' ? ' (2단 집속)' : ' (집속)') : ''));
-    chip((r.wp.melee ? '격투' : '사격') + '보정 ' + Math.round(r.corr));
+    chip((r.wp.melee ? '격투' : '사격') + '보정 ' + Math.round(r.corr)
+      + (r.manual == null ? '' : ' (직접 입력 · 구성값 ' + Math.round(r.autoCorr) + ')'),
+      r.manual == null ? '' : 'down');
     for (const e of r.etcTxt) chip(e, 'up');
     if (r.dirTxt) chip(r.dirTxt);
     if (r.air) chip('공중 격투 제어 위력 +' + r.air.pct + '%', 'up');
@@ -933,6 +971,7 @@
     side.parts = keepParts ? keepEquippable(ms, side.parts, side.stage) : [];
     side.buffs.clear(); side.defs.clear();
     side.wKey = null; side.step = 1; side.pickParts = false; side.air = false;
+    side.corr = { shoot: null, melee: null };   // 기체가 바뀌면 손으로 넣은 보정은 풀린다
     // 주무장을 기본으로 골라 둔다 — 고르기 전 빈 화면을 줄인다
     const first = weaponsOf(side)[0];
     if (first) { side.wKey = first.key; const m = first.modes.find(x => x.ok); side.mode = m ? m.k : 'nc'; }
