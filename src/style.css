@@ -1858,6 +1858,8 @@ button:not(.seg-btn), .btn-ghost, .btn-primary, .back-btn, .tool-btn {
 .app-foot .foot-rights { color: var(--fg, #c9cfda); }
 .app-foot .foot-rights b { color: var(--accent); font-weight: 700; }
 .app-foot .foot-copy { letter-spacing: .2px; margin: 0; }
+/* 짧은 한 줄은 긴 문단(.foot-img)이 감춰지는 화면에서만 나온다 — 감추는 세 곳에서 같이 켠다 */
+.app-foot .foot-short { display: none; }
 /* 「출처」 머리말 — 문단 하나를 없애고 링크 줄 앞에 붙였다. 링크와 같은 줄에 서되
    눌리는 것이 아님이 보이게 색을 낮춘다. */
 .app-foot .foot-src-lb { color: var(--muted); opacity: .85; }
@@ -2583,6 +2585,7 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
   .app-foot { padding-top: 8px; padding-bottom: 8px; font-size: var(--fs-foot); }
   /* 좁은 화면에서는 핵심 고지(첫 줄)를 남기고 길게 풀어 쓴 쪽을 감춘다 */
   .app-foot .foot-img { display: none; }
+  .app-foot .foot-short { display: block; }
 }
 
 /* ── 가로로 눕힌 폰: 빌드 화면을 2열로 ──
@@ -2885,6 +2888,7 @@ body.drawer-open .m-actionbar { display: none !important; }
   /* 출처 표기는 지울 수 없다 — 두 줄을 한 줄로 접어 35px 을 목록에 돌려준다 */
   .app-foot { padding-top: 4px; padding-bottom: 4px; font-size: var(--fs-foot); }
   .app-foot .foot-img { display: none; }
+  .app-foot .foot-short { display: block; }
 
   .screen-build {
     display: grid;
@@ -3289,6 +3293,7 @@ body.drawer-open .m-actionbar { display: none !important; }
   .app-foot .foot-rights { font-size: var(--fs-foot); }
   /* 출처 안내 문장은 링크가 바로 아래 있어 굳이 두 줄을 쓸 필요가 없다 */
   .app-foot .foot-src, .app-foot .foot-img { display: none; }
+  .app-foot .foot-short { display: block; }
   .app-foot .foot-links { gap: 1px 9px; margin-top: 1px; }
 }
 
@@ -3880,8 +3885,14 @@ body.info-open .sel-info { display: flex; }
     top: -5px; bottom: -5px; left: -5px; right: -5px;   /* 15 → 25px */
   }
   /* 토큰 화면 체크박스(17×17)는 token.css 에서 키운다 — 거기 규칙의 특이도가 이긴다. */
-  /* 하단 링크 — 줄 사이가 넉넉해 높이를 실제로 늘려도 이웃을 안 덮는다. */
-  .app-foot .foot-links a { display: inline-block; padding: 5px 0; }
+  /* 하단 링크 — 누르는 곳만 24px 로 넓히고 **줄 높이는 그대로** 둔다(음수 여백으로 되돌린다).
+     처음엔 padding 만 줬는데 그 10px 이 안내문을 그대로 키웠다(폰 92 → 102, 태블릿 88 → 98).
+     「줄 사이가 넉넉하다」고 적었지만 틀렸다 — foot_height 가 전체 검사에 안 걸려 있어 몰랐다.
+     폰에서만 나오는 짧은 고지 줄의 GitHub 링크가 바로 위에 붙는다. 둘 다 위아래로 넓히면
+     겹친 곳을 아래 줄이 가져가 GitHub 이 15px 로 줄었다(a11y_check). 그래서 서로 **반대로** 넓힌다 —
+     GitHub 은 위로(그 위는 링크 없는 © 줄), 출처 링크는 아래로(그 아래는 안내문 바닥). */
+  .app-foot .foot-links a { display: inline-block; padding: 0 0 10px; margin: 0 0 -10px; }
+  .app-foot .foot-short a { display: inline-block; padding: 10px 0 0; margin: -10px 0 0; }
   .hero-wiki { display: inline-block; padding: 3px 0; }   /* 2px 로는 23 — 한 칸 더 */
 }
 

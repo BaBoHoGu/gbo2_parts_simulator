@@ -1,5 +1,9 @@
 // 하단 안내문이 화면 높이를 얼마나 먹는가 — 기기별로 실측한다.
-//   node tools/foot_height.js
+//   node tools/foot_height_check.js
+//
+// ■ 이름 — 처음엔 foot_height.js 였다. gates.js 는 「_check.js」 로 끝나는 것만 고른다 —
+//   그래서 **한 번도 전체 검사에서 돌지 않았고**, CSS 5단계의 링크 여백 10px 이
+//   안내문을 키운 것(폰 82 → 102)을 아무도 안 울었다. 이름을 맞춰 걸었다.
 //
 // ■ 왜 — 이 앱에서 가장 큰 높이 손해다. body 가 100vh·overflow:hidden·flex 이고
 //   .app-foot 이 그 마지막 줄이라 **어느 화면에서나 늘 보인다.** 폰 가로에서는
@@ -37,17 +41,20 @@ const ok = (label, good, extra) => {
    9.5 → 10.5px 로 **커졌고**(--fs-3xs 를 쓰던 자리) 그만큼 4px 를 내줬다.
    94 → 82px 이라 줄기는 줄었고, 글자는 전보다 크다. 그 교환을 적어 둔다.
    글꼴 렌더가 기기마다 1px 쯤 달라진다. 늘어나면 운다. 줄어드는 것은 막지 않는다.
-   was = 줄이기 전 값. 다시 늘어났는지 한눈에 보려고 적어 둔다. */
+   was = 줄이기 전 값. 다시 늘어났는지 한눈에 보려고 적어 둔다.
+   폰 쪽 한도는 2026-10-14 에 올렸다 — 감춰진 고지 대신 **짧은 한 줄**(비영리 · 요청 시 내림 ·
+   GitHub Issues)을 폰에 보이기로 운영자가 정했다(㉰). 그 한 줄 값이 +14~16px 이다.
+   그 전 한도는 폰세로 84 · 폰가로 64 · 스타일러스 64 였다. */
 const VIEWS = [
   { tag: '데스크톱 1500×1000', w: 1500, h: 1000, touch: false, mobile: false, px: 75, was: 99 },
   { tag: '노트북 1280×720', w: 1280, h: 720, touch: false, mobile: false, px: 75, was: 115 },
   { tag: '태블릿 1024×768', w: 1024, h: 768, touch: true, mobile: false, px: 90, was: 115 },
-  { tag: '폰세로(넓게) 390×844', w: 390, h: 844, touch: true, mobile: false, viewMode: 'wide', px: 84, was: 94 },
-  { tag: '폰세로(크게) 390×844', w: 390, h: 844, touch: true, mobile: true, viewMode: 'large', px: 84, was: 94 },
+  { tag: '폰세로(넓게) 390×844', w: 390, h: 844, touch: true, mobile: false, viewMode: 'wide', px: 98, was: 94 },
+  { tag: '폰세로(크게) 390×844', w: 390, h: 844, touch: true, mobile: true, viewMode: 'large', px: 98, was: 94 },
   /* 폰가로는 .foot-img · .foot-src 가 이미 display:none 이라 문단을 합쳐도 줄 것이 없다.
      더 줄이려면 숨기거나 접어야 하는데 그것은 운영자가 안 하기로 했다. 62px 에서 묶어 둔다. */
-  { tag: '폰가로 844×390', w: 844, h: 390, touch: true, mobile: true, px: 64, was: 62 },
-  { tag: '스타일러스 800×372', w: 800, h: 372, touch: false, mobile: true, px: 64, was: 76 }
+  { tag: '폰가로 844×390', w: 844, h: 390, touch: true, mobile: true, px: 80, was: 62 },
+  { tag: '스타일러스 800×372', w: 800, h: 372, touch: false, mobile: true, px: 80, was: 76 }
 ];
 
 /* 고지에 반드시 남아 있어야 하는 말 — **높이만 재면 「다 지워서 통과」가 된다.**
@@ -120,8 +127,11 @@ const MUST = [
 
   /* **폰에서 어떤 고지가 안 보이는가** — 재서 적어 둔다. 지금은 그것이 운영자의 선택이라
      실패로 두지 않지만, 숨은 항목이 **늘어나면** 운다. 법적 문구가 조용히 더 사라지는 것을
-     막는 자리다. was = 2026-10-14 실측(이미지 출처·비영리·판매금지·요청 시 내림·GitHub). */
-  const HIDDEN_MAX = 6;
+     막는 자리다. 6 → 3 으로 조였다(2026-10-14) — 폰에 짧은 한 줄을 보이면서 「비영리 ·
+     요청 시 내림 · 알리는 길」 셋이 돌아왔다. 남은 셋은 이미지 출처 · 광고·수익 없음 · 판매·재배포.
+     특히 「알리는 길」이 다시 숨으면 운다 — 권리자가 폰으로 볼 때 내려 달라고 할 곳이다. */
+  const HIDDEN_MAX = 3;
+  const MUST_ON_PHONE = ['요청 시 내림', '알리는 길'];
   for (const { v, r } of rows) {
     if (/데스크톱/.test(v.tag)) continue;
     const miss = MUST.filter(([, re]) => re && !re.test(r.text)).map(([n]) => n);
@@ -129,6 +139,8 @@ const MUST = [
       + miss.length + '개 — ' + miss.join(' · '));
     ok(v.tag + ' 에서 숨은 고지가 ' + HIDDEN_MAX + '개를 넘지 않는다 (지금 ' + miss.length + '개)',
       miss.length <= HIDDEN_MAX, miss);
+    const gone = MUST_ON_PHONE.filter(n => miss.includes(n));
+    ok(v.tag + ' 에서 「요청 시 내림 · 알리는 길」 이 보인다', gone.length === 0, gone);
   }
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
