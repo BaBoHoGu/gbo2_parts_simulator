@@ -4,8 +4,24 @@
    0.5px 차이는 이 크기에서 눈에 안 띄는데, 고칠 때마다 「어느 쪽에 맞추나」를
    매번 판단하게 만든다. 0.5px 차이는 합치고 1px 이상만 단계로 남겼다.
    새 규칙을 쓸 때도 여기 있는 것 중에서 고른다 — 새 숫자를 만들지 않는다. */
-  --fs-3xs: 9.5px;   /* 미세 배지·힌트 */
-  --fs-2xs: 10.5px;  /* 보조 설명 */
+  /* 바닥을 11px 로 올린다(9.5·10.5 → 11). 쓰는 곳 87군데를 고치지 않고 값만 바꾼다.
+     왜 — 폰 「넓게 보기」는 768px 로 그린 화면을 기기 폭으로 줄여 보여 주므로
+     390px 기기에서 ×0.508 이 된다. 9.5px 은 거기서 **4.8px** 로 보였다(실측).
+     11px 로 올리면 5.6px 이다 — 넓게 보기는 사용자가 「작게 보기」를 고른 모드이고
+     두 손가락으로 키울 수 있으니 거기까지 맞추지는 않는다. 요점은 **크게 보기에서
+     11px** 이 되는 것이다. 두 토큰이 같은 값이 되지만 이름은 남겨 둔다 —
+     87군데를 --fs-xs 로 바꾸는 것은 뜻이 아니라 글자를 고치는 일이고,
+     나중에 둘을 다시 벌릴 여지를 없앤다. */
+  --fs-3xs: 11px;    /* 미세 배지·힌트 — 바닥 */
+  /* 하단 고지 전용 — **바닥 올리기에서 빼 둔 하나.** 왜 빼는가:
+     ① 이 글은 기능 글이 아니다. 파츠 이름·LV·사유처럼 **보면서 고르는** 글이
+        작아서 못 읽히는 것이 바닥을 올린 이유였다. 고지는 한 번 읽는 글이다.
+     ② 폰에서 바닥을 올리니 안내문이 78 → 100px 로 커져, 2단계에서 되찾은 높이가
+        통째로 사라졌다(실측). 가이드가 적어 둔 P4↔P7 충돌이 여기서 난다.
+     그래서 고지만 10.5px 로 둔다 — 전과 같은 크기이니 **읽기가 나빠지지는 않는다.**
+     더 줄이지는 않는다(안 읽히는 고지는 적어 둔 뜻이 없다). */
+  --fs-foot: 10.5px;
+  --fs-2xs: 11px;    /* 보조 설명 — 바닥 */
   --fs-xs:  11px;    /* 칩·라벨 */
   --fs-sm:  12px;    /* 본문 */
   --fs-md:  13px;    /* 강조 본문 */
@@ -1796,6 +1812,21 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* 하단 출처·저작권 표기 — 화면 맨 아래 얇은 바 */
+/* ── 버튼·제목 줄바꿈 ─────────────────────────────────────────────────
+   폰 크게 보기에서 버튼 글자가 한두 글자씩 꺾였다 — 「돌/아가/기」 「전체 해/제」
+   「닫/기」, 제목 옆 부가 정보는 「1723/기」. 버튼은 좁아지면 글자를 꺾는 대신
+   줄을 밀고(nowrap + flex-shrink:0), 제목 줄은 넘치면 **다음 줄로 흐르게** 둔다.
+   (버튼을 꺾지 않으면 줄이 길어지는데, 그건 상단바 ⋯ 접기가 받아 준다.) */
+button, .btn-ghost, .btn-primary, .back-btn, .tool-btn, .seg-btn {
+  white-space: nowrap;
+}
+/* 버튼이 줄을 밀 수 있게 — flex 안에서 쪼그라들며 글자를 꺾는 것을 막는다.
+   .seg-btn 은 세그먼트 안에서 늘어나야 하므로 빼 둔다(flex: 1 로 쓰는 자리가 있다). */
+button:not(.seg-btn), .btn-ghost, .btn-primary, .back-btn, .tool-btn {
+  flex-shrink: 0;
+}
+.select-title, .am-head { flex-wrap: wrap; row-gap: 4px; }
+
 .app-foot {
   flex: 0 0 auto;
   border-top: 1px solid var(--line);
@@ -2533,7 +2564,7 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
 @media (max-height: 560px) and (pointer: coarse), (max-height: 560px) and (max-width: 1100px) {
   .equip-grid { grid-template-columns: repeat(4, 1fr); }
   .hero-body img { width: 56px; height: 56px; }
-  .app-foot { padding-top: 8px; padding-bottom: 8px; font-size: var(--fs-2xs); }
+  .app-foot { padding-top: 8px; padding-bottom: 8px; font-size: var(--fs-foot); }
   /* 좁은 화면에서는 핵심 고지(첫 줄)를 남기고 길게 풀어 쓴 쪽을 감춘다 */
   .app-foot .foot-img { display: none; }
 }
@@ -2836,7 +2867,7 @@ body.drawer-open .m-actionbar { display: none !important; }
   .stepper li[data-step]:not(.on), .stepper li.arrow { display: none; }
 
   /* 출처 표기는 지울 수 없다 — 두 줄을 한 줄로 접어 35px 을 목록에 돌려준다 */
-  .app-foot { padding-top: 4px; padding-bottom: 4px; font-size: var(--fs-2xs); }
+  .app-foot { padding-top: 4px; padding-bottom: 4px; font-size: var(--fs-foot); }
   .app-foot .foot-img { display: none; }
 
   .screen-build {
@@ -3238,8 +3269,8 @@ body.drawer-open .m-actionbar { display: none !important; }
 
 /* 좁은 화면에서 푸터가 화면을 너무 먹지 않게 — 고지는 남기고 부피만 줄인다 */
 @media (max-width: 768px) {
-  .app-foot { font-size: var(--fs-3xs); line-height: 1.35; padding: 4px 10px; }
-  .app-foot .foot-rights { font-size: var(--fs-2xs); }
+  .app-foot { font-size: var(--fs-foot); line-height: 1.35; padding: 4px 10px; }
+  .app-foot .foot-rights { font-size: var(--fs-foot); }
   /* 출처 안내 문장은 링크가 바로 아래 있어 굳이 두 줄을 쓸 필요가 없다 */
   .app-foot .foot-src, .app-foot .foot-img { display: none; }
   .app-foot .foot-links { gap: 1px 9px; margin-top: 1px; }

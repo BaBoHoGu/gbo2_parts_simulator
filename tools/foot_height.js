@@ -33,14 +33,17 @@ const ok = (label, good, extra) => {
 };
 
 /* px 는 **2026-10-14 에 실측한 값**이다(고지를 줄인 뒤). 여유 2px 를 두었다 —
+   폰세로만 84px 로 조금 느슨하다: 글자 바닥을 올리면서 그 화면 고지가
+   9.5 → 10.5px 로 **커졌고**(--fs-3xs 를 쓰던 자리) 그만큼 4px 를 내줬다.
+   94 → 82px 이라 줄기는 줄었고, 글자는 전보다 크다. 그 교환을 적어 둔다.
    글꼴 렌더가 기기마다 1px 쯤 달라진다. 늘어나면 운다. 줄어드는 것은 막지 않는다.
    was = 줄이기 전 값. 다시 늘어났는지 한눈에 보려고 적어 둔다. */
 const VIEWS = [
   { tag: '데스크톱 1500×1000', w: 1500, h: 1000, touch: false, mobile: false, px: 75, was: 99 },
   { tag: '노트북 1280×720', w: 1280, h: 720, touch: false, mobile: false, px: 75, was: 115 },
   { tag: '태블릿 1024×768', w: 1024, h: 768, touch: true, mobile: false, px: 90, was: 115 },
-  { tag: '폰세로(넓게) 390×844', w: 390, h: 844, touch: true, mobile: false, viewMode: 'wide', px: 80, was: 94 },
-  { tag: '폰세로(크게) 390×844', w: 390, h: 844, touch: true, mobile: true, viewMode: 'large', px: 80, was: 94 },
+  { tag: '폰세로(넓게) 390×844', w: 390, h: 844, touch: true, mobile: false, viewMode: 'wide', px: 84, was: 94 },
+  { tag: '폰세로(크게) 390×844', w: 390, h: 844, touch: true, mobile: true, viewMode: 'large', px: 84, was: 94 },
   /* 폰가로는 .foot-img · .foot-src 가 이미 display:none 이라 문단을 합쳐도 줄 것이 없다.
      더 줄이려면 숨기거나 접어야 하는데 그것은 운영자가 안 하기로 했다. 62px 에서 묶어 둔다. */
   { tag: '폰가로 844×390', w: 844, h: 390, touch: true, mobile: true, px: 64, was: 62 },
