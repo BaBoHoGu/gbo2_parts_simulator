@@ -132,9 +132,9 @@
       <div class="row-inputs">
         <input type="text" id="goalName" class="full" placeholder="목표 이름 (예: 신규 기체)">
         <input type="number" id="goalNeed" class="full" placeholder="필요 토큰" min="1" step="1">
-        <label class="field full" style="margin:0;">픽업 기간 (시작 ~ 종료)</label>
+        <!-- 이 라벨은 어느 칸과도 이어져 있지 않아 화면 낭독기가 「픽업 기간」을 날짜 칸과 못 이었다. 시작 날짜에 잇는다(눌러도 거기로 간다). 끝 날짜는 aria-label 로 따로 이름을 준다. --><label class="field full" style="margin:0;" for="goalStart">픽업 기간 (시작 ~ 종료)</label>
         <input type="date" id="goalStart">
-        <input type="date" id="goalEnd">
+        <input type="date" id="goalEnd" aria-label="픽업 기간 종료일">
         <button class="btn full" id="goalAdd">목표 추가</button>
         <button class="btn secondary full" id="goalCancel" style="display:none;">취소</button>
       </div>

@@ -1203,6 +1203,7 @@
     for (const m of list.slice(0, state.msLimit)) {
       const card = el('div', 'ms-card' + (state.ms === m ? ' sel' : ''));
       card.dataset.ms = m.MS名;          // 다시 그린 뒤 같은 카드를 다시 찾으려고
+      kbdPressable(card, T.msName(m.MS名));
       card.append(img(msImg(m.MS名), 'ms', m.MS名));
 
       // 즐겨찾기 별 — 카드 선택과 별개로 토글한다
@@ -4212,6 +4213,7 @@
     const v = partView(p);
     const tile = el('div', 'part-tile');
     tile.title = `${v.fullNm}\n${v.cat} · ${v.slotTxt}\n\n${v.desc}`;
+    kbdPressable(tile, v.fullNm);
 
     const thumb = el('div', 'pt-thumb');
     thumb.append(img(partImg(p.name), 'parts', p.name));
@@ -10024,6 +10026,14 @@
 
     document.addEventListener('keydown', ev => {
       if (ev.key === 'Escape') navBack(ev.target);
+      /* 키보드로 고르기 — role=button 을 단 div(기체 카드·파츠 타일)는 Enter/Space 를
+         스스로 받지 못한다(진짜 <button> 만 받는다). 여기서 클릭으로 바꿔 준다.
+         Space 는 그냥 두면 **화면을 내린다** — 막아야 한다. */
+      if ((ev.key === 'Enter' || ev.key === ' ') && ev.target && ev.target.matches
+        && ev.target.matches('[data-kbd-press]')) {
+        ev.preventDefault();
+        ev.target.click();
+      }
     });
 
     /* 안드로이드 껍데기가 부르는 한 곳. 'back' 이면 처리했고, 'exit' 면 시작 화면이라
@@ -10091,6 +10101,18 @@
   const VIEW_KEY = 'gbo2.viewMode';
   let viewMode = 'large';
   try { viewMode = localStorage.getItem(VIEW_KEY) || 'wide'; } catch (e) { viewMode = 'wide'; }
+
+  /** 키보드로 누를 수 있게 — Tab 으로 가고 Enter/Space 로 누른다.
+   *  기체 카드·파츠 타일이 div 라 Tab 이 거기 가지 않았다(가이드 #12, 실측 0/164).
+   *  <button> 으로 바꾸지 않는 이유: 카드 안에 ★·ⓘ 단추가 있어 단추 안의 단추가 되고,
+   *  스타일도 다시 맞춰야 한다. 이름은 aria-label 로 — 안 주면 낭독기가 카드 안 글자를
+   *  통째로(LV·코스트·속성까지) 읽는다. */
+  function kbdPressable(elm, name) {
+    elm.tabIndex = 0;
+    elm.setAttribute('role', 'button');
+    elm.dataset.kbdPress = '1';
+    if (name) elm.setAttribute('aria-label', name);
+  }
 
   /* ---------- 좁은/낮은 화면 표시 ----------
      이 조건이 CSS 안에 **21번** 똑같이 적혀 있었다 — 하나를 고치려면 스물한 군데를

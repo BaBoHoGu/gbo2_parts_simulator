@@ -89,7 +89,11 @@ button, input, select {
 button { cursor: pointer; transition: border-color .12s, background .12s; }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: .4; cursor: default; }
-input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent-dim); outline-offset: 1px; }
+/* 포커스 링 — accent-dim(#7d6318)은 배경 대비 3.4 · 패널 3.16 으로 기준(3:1)을 겨우 넘었다.
+   밝은 accent 로 바꾸고 2px 띄워 글자와 겹치지 않게 한다. :focus-visible 이라 마우스로
+   누를 때는 안 그려지고 **키보드로 왔을 때만** 그려진다. */
+input:focus, select:focus { outline: 2px solid var(--accent-dim); outline-offset: 1px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .btn-primary { background: var(--accent); color: #241c00; border-color: var(--accent); font-weight: 700; }
 .btn-primary:hover:not(:disabled) { background: #ffd968; }
@@ -268,9 +272,10 @@ body.pn-info .sel-info {
     border-color .22s ease, box-shadow .22s ease;
 }
 .pn-date:hover { border-color: var(--accent); color: var(--text); }
-.pn-date .pn-y { font-size: var(--fs-xs); opacity: .7; }
+/* opacity 로 흐리게 하면 대비가 기준 아래로 떨어진다(3.38) — 흐린 **색**을 쓴다. */
+.pn-date .pn-y { font-size: var(--fs-xs); color: var(--muted); }
 .pn-date .pn-md { font-size: var(--fs-lg); font-weight: 700; line-height: 1.1; }
-.pn-date .pn-cnt { font-size: var(--fs-xs); opacity: .75; }
+.pn-date .pn-cnt { font-size: var(--fs-xs); color: var(--muted); }
 
 /* 고른 칸 — 크게 */
 .pn-date.on {
@@ -279,7 +284,7 @@ body.pn-info .sel-info {
   box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
 }
 .pn-date.on .pn-md { font-size: var(--fs-2xl); }
-.pn-date.on .pn-y { font-size: var(--fs-sm); opacity: .85; }
+.pn-date.on .pn-y { font-size: var(--fs-sm); color: var(--fg, #c9cfda); }
 
 /* ---- 우측 ---- */
 .pn-body { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 18px; }
@@ -701,7 +706,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   font-size: var(--fs-2xs); text-align: center; padding: 2px 0; border-radius: 5px;
   background: var(--panel-3); color: var(--muted);
 }
-.w-sec.main { background: var(--accent-dim); color: var(--accent); }
+.w-sec.main { background: var(--accent-badge); color: var(--accent); }
 /* 이름 칸은 두 줄 — 윗줄 이름, 아랫줄 고정 피해. 한 줄에 몰면 이름이 잘린다. */
 .w-nm { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
 .w-nm-top { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden;
@@ -723,7 +728,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 /* 조사·산탄·동시발사 배지 (무장명 옆) */
 .w-mult {
   flex-shrink: 0; font-size: var(--fs-2xs); font-weight: 700; line-height: 1.5;
-  color: var(--accent); background: var(--accent-dim);
+  color: var(--accent); background: var(--accent-badge);
   padding: 0 5px; border-radius: 4px; margin-left: 2px;
 }
 /* 고정 피해(소이 등) — 위력과 별개로 더해지는 몫 */
@@ -746,8 +751,8 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 .type-solid  { color: #ffce6b; background: rgba(255, 201, 60, 0.13); }
 .type-beam   { color: var(--mid);   background: rgba(91, 192, 255, 0.13); }
-.type-melee  { color: #ff7a9c; background: rgba(255, 122, 156, 0.14); }
-.type-shield { color: var(--long);  background: rgba(183, 139, 255, 0.14); }
+.type-melee  { color: #ff9ab4; background: rgba(255, 122, 156, 0.14); }   /* #ff7a9c 4.39 → 한 단계 밝게 */
+.type-shield { color: #c6a6ff;  background: rgba(183, 139, 255, 0.14); }   /* --long 4.38 → 한 단계 밝게 */
 .type-other  { color: #7ec98f; background: rgba(126, 201, 143, 0.13); }
 .w-col { color: var(--muted); }
 
@@ -803,7 +808,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   border-radius: 7px; max-width: 230px; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap;
 }
-.skill-btn i { font-style: normal; opacity: .7; }
+.skill-btn i { font-style: normal; color: var(--muted); }   /* opacity .7 → 4.07, 색으로 흐린다 */
 .skill-box.on .skill-btn { border-color: var(--skill); color: var(--skill); }
 .skill-box.multi .skill-btn { border-color: var(--skill2); color: var(--skill2); }
 
@@ -1207,8 +1212,11 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   /* 파츠를 끼우면 칸이 커지던 것을 막는다 — 빈 칸 84 / 이름 한 줄 94 / 두 줄 107 이라
      한 칸만 채워도 그 줄 전체가 10~23px 늘고, 아래(파츠 목록·성능)가 통째로 밀렸다.
      상세 칸은 높이를 못 박아 두었으니 그만큼 **어긋나 공백**이 생긴다(사용자 지적).
-     그래서 가장 큰 경우(두 줄 이름)에 맞춰 늘 같은 높이를 잡는다. 아래 .nm 과 한 쌍이다. */
-  min-height: 107px;
+     그래서 가장 큰 경우(두 줄 이름)에 맞춰 늘 같은 높이를 잡는다. 아래 .nm 과 한 쌍이다.
+     ■ 107 은 **글자 10.5px 일 때** 잰 값이다. 글자 바닥을 11px 로 올리자(CSS 4단계)
+       두 줄 이름 칸이 그보다 커져, 끼우면 다시 2px 씩 밀렸다(part_effect_check 가 잡았다).
+       글자 크기를 바꾸면 **이 값도 다시 잴 것.** */
+  min-height: 109px;
 }
 
 .eq:hover { border-color: var(--bad); }
@@ -1402,12 +1410,16 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.pt-why { font-size: var(--fs-3xs); line-height: 1.15; text-align: center; color: var(--bad); }
+.pt-why { font-size: var(--fs-3xs); line-height: 1.15; text-align: center; color: #ff8f8f; }   /* --bad(#ff6b6b) 는 타일 바탕에서 4.22 — 사유 글자만 한 단계 밝힌다 */
 .pt-slot, .pt-cat { display: none; }   /* 폰 가로줄 타일 · 태블릿 큰 카드에서만 켠다 */
 
 .part-tile.on { background: #1c2a1e; border-color: #3f7a4d; }
 .part-tile.on .pt-nm::after { content: " ✓"; color: var(--ok); }
-.part-tile.blocked { opacity: .5; }
+/* 막힌 타일 — 예전엔 타일째 opacity .5 라 **안의 사유까지** 흐려졌다(2.05:1).
+   사유(「강습 전용」 등)는 왜 못 끼우는지 알려 주는 글이라 흐리면 뜻이 없다.
+   못 고르는 것이라는 표시는 그림·이름·LV 를 흐려 그대로 남기고, 사유만 또렷하게 둔다.
+   (흐린 이름·LV 는 「못 쓰는 단추」의 글자라 대비 기준의 예외다 — WCAG 1.4.3.) */
+.part-tile.blocked > :not(.pt-why) { opacity: .5; }
 .part-tile.blocked img { filter: grayscale(1); }
 .part-tile.banned { opacity: .32; }
 .part-tile.banned .pt-nm { text-decoration: line-through; }
@@ -2063,6 +2075,9 @@ button:not(:disabled):active, .chip:active, .seg-btn:active, .ms-card:active,
   --dim: #5c6273;
   --accent: #ffca3a;
   --accent-dim: #6d5410;
+  /* accent 글자를 얹는 **배지 바탕** — accent-dim(#6d5410) 위의 accent 는 3.97:1 이라
+     AA(4.5)에 못 미쳤다. 옅은 칠로 깔면 바탕이 패널에 가까워져 글자가 산다. */
+  --accent-badge: rgba(255, 202, 58, .14);
   --info: #56a8ff;
   --data: #34c1c1;
   --good: #6bd98a;
@@ -3164,7 +3179,7 @@ body.drawer-open .m-actionbar { display: none !important; }
 .codex-item.on { border-color: var(--accent); background: var(--accent-dim); }
 .codex-nm { font-weight: 700; font-size: var(--fs-sm); color: var(--fg, #d7dce6); min-width: 0; }
 .codex-lvs { display: flex; gap: 3px; flex-wrap: wrap; }
-.codex-lv { font-size: var(--fs-2xs); padding: 1px 5px; border-radius: 5px; background: var(--accent-dim); color: var(--accent); }
+.codex-lv { font-size: var(--fs-2xs); padding: 1px 5px; border-radius: 5px; background: var(--accent-badge); color: var(--accent); }
 .codex-item.on .codex-lv { background: rgba(0,0,0,.35); }
 .codex-cnt { margin-left: auto; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
 
@@ -3848,6 +3863,24 @@ body.info-open .sel-info { display: flex; }
     /* 그리지 않는다 — 손가락 판정만 넓히는 것이다 */
   }
   .tool-btn::before { height: 37px; }
+
+  /* ── 2026-10-14 터치 실측으로 더한 것 (CSS-GUIDE 5단계 · F-3) ─────────────
+     「?」 15×15 · 하루 할 일 체크 17×17 · 하단 링크 높이 15 · 기체 위키 링크 20.
+     가이드 기준은 24×24(WCAG 2.5.8 AA). 보이는 크기는 그대로 두고 판정만 넓힌다.
+
+     「?」 는 위 주석에서 **세로 여유가 2px 뿐이라 손대지 않았다**고 적어 둔 자리다.
+     그때 잰 것은 **세로** 이웃이다. 가로로는 라벨 글자 뒤에 붙어 오른쪽이 비어 있어,
+     세로는 그대로 두고 **가로·바깥쪽으로만** 넓힌다(위아래 이웃을 안 덮는다).
+     이웃을 덮지 않는지는 tap_target_check 의 「서로 가리지 않는다」가 본다. */
+  .lbl-help { position: relative; }
+  .lbl-help::before {
+    content: ''; position: absolute;
+    top: -5px; bottom: -5px; left: -5px; right: -5px;   /* 15 → 25px */
+  }
+  /* 토큰 화면 체크박스(17×17)는 token.css 에서 키운다 — 거기 규칙의 특이도가 이긴다. */
+  /* 하단 링크 — 줄 사이가 넉넉해 높이를 실제로 늘려도 이웃을 안 덮는다. */
+  .app-foot .foot-links a { display: inline-block; padding: 5px 0; }
+  .hero-wiki { display: inline-block; padding: 3px 0; }   /* 2px 로는 23 — 한 칸 더 */
 }
 
 /* 「계산 안 함」 — 고칠 수 있나 축 */
@@ -3952,6 +3985,10 @@ body.info-open .sel-info { display: flex; }
   .select-head {
     max-height: 200px; overflow-y: auto;
     overscroll-behavior: contain; scrollbar-width: none;
+    /* 바닥에 붙인 검색줄(86px)이 칩을 덮는다 — 칩으로 굴려 가거나 **키보드로 가면**
+       그 칩이 검색줄 밑에 숨었다(WCAG 2.4.11 「포커스가 가려지지 않을 것」).
+       scroll-padding 은 「저절로 굴려 줄 때 이만큼은 비워 두라」는 뜻이라 바로 이 용도다. */
+    scroll-padding-bottom: 92px;
   }
   .select-head::-webkit-scrollbar { width: 0; height: 0; }
   /* 검색은 굴러가도 바닥에 남는다 — 배경을 주어야 칩이 뒤로 지나갈 때 글자가 겹치지 않는다. */
@@ -3968,6 +4005,7 @@ body.info-open .sel-info { display: flex; }
   .select-head {
     max-height: 104px; overflow-y: auto;
     overscroll-behavior: contain; scrollbar-width: none;
+    scroll-padding-bottom: 50px;   /* 가로 검색줄 44px — 위 세로 블록과 같은 이유 */
   }
   .select-head::-webkit-scrollbar { width: 0; height: 0; }
   /* 검색줄을 칸 바닥에 붙인다 — 접은 칸의 **위쪽**에 있으면 검색칸이 화면에서

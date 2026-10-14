@@ -66,6 +66,12 @@
   }
   #screenToken .check-row .pts { margin-left: auto; color: var(--info); font-weight: bold; }
   #screenToken input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; }
+  /* 터치에서는 체크박스를 24px 로 — 17×17 은 손가락 기준(WCAG 2.5.8 · 24px)에 못 미쳤다.
+     style.css 쪽 규칙(#dailyTaskDone)은 여기 특이도(#screenToken input[type])에 져서
+     안 먹었다 — 같은 파일·같은 셀렉터 꼴로 둔다. */
+  @media (pointer: coarse) {
+    #screenToken input[type=checkbox] { width: 24px; height: 24px; }
+  }
 
   #screenToken .quest-row { gap: 8px; }
   #screenToken .quest-row label { display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; white-space: nowrap; }
