@@ -11,6 +11,13 @@
   --z-modal: 50;    /* 모달과 그 뒤판 · 모달 위로 여는 서랍(+2·+3) */
   --z-pop: 60;      /* 토스트 · 메뉴 · 정보 칸 — 무엇 위에도 뜨는 짧은 것 */
   --z-drag: 90;     /* 끌고 다니는 카드 — 손가락 밑에 늘 보여야 한다 */
+
+  /* ── 자주 쓰던 맨 색을 이름으로 (CSS 9단계) ── 값은 그대로라 화면은 안 바뀐다.
+     강조색 위 글자는 #241c00(9곳) 과 #1a1d2b(5곳: 보기 칩·LV·스킬 분류 등) 두 가지가 섞여 있다.
+     하나로 맞추면 눈에 보이는 변화라 이번엔 이름만 붙이고 맞추지 않았다. */
+  --on-accent: #241c00;   /* 강조색(노랑) 바탕 위 글자 */
+  --img-well: #0b0d10;    /* 기체·파츠 그림 뒤 우물 */
+  --scrim: rgba(0, 0, 0, .55);   /* 모달·서랍 뒤판 */
 /* ---- 글자 크기 ----
    예전에는 font-size 가 296곳에 8.5~23px 사이 22단계로 흩어져 있었다.
    0.5px 차이는 이 크기에서 눈에 안 띄는데, 고칠 때마다 「어느 쪽에 맞추나」를
@@ -42,26 +49,59 @@
   --fs-2xl: 17px;    /* 큰 제목 */
   --fs-3xl: 20px;    /* 화면 제목 */
   --fs-4xl: 23px;    /* 수치 강조 */
-  --bg: #0f1013;
-  --panel: #17191f;
-  --panel-2: #1e2129;
-  --panel-3: #262a34;
-  --line: #2e323d;
-  --line-soft: #23262e;
-  --text: #e8eaef;
-  --muted: #8a91a0;
-  --dim: #5a6070;
-  --accent: #ffc93c;
-  --accent-dim: #7a5f11;
-  --info: #4aa3ff;
-  --ok: #4ec97f;
+  /* ============================================================
+  전체 비주얼 리디자인 (스킬: frontend-design · apple-design · make-interfaces-feel-better)
+  방향 — "GBO2 콕핏/HUD": 딥네이비 베이스 · 앰버 시그니처 · 데이터 청록.
+  토큰 재정의 + 표면/타이포 정돈. 레이아웃·구조는 그대로.
+  ============================================================ */
+  /* accent 글자를 얹는 **배지 바탕** — accent-dim(#6d5410) 위의 accent 는 3.97:1 이라
+     AA(4.5)에 못 미쳤다. 옅은 칠로 깔면 바탕이 패널에 가까워져 글자가 산다. */
+  --accent-badge: rgba(255, 202, 58, .14);
+  --elev-1: 0 1px 1px rgba(0, 0, 0, .5);
+  --elev-2: 0 4px 22px rgba(0, 0, 0, .45);
+  /* ============================================================
+  색상 정돈 (frontend-design) — 속성·데이터·상태색을 팔레트에 조율
+  ============================================================ */
+  --ok: #5fd18a;
   --bad: #ff6b6b;
-  --close: #ff8a5b;
-  --mid: #5bc0ff;
-  --long: #b78bff;
-  --skill: #c08bff;   /* 기체 스킬 발동분 — 초록(파츠)·빨강(감소)·노랑(UI)과 겹치지 않게 */
-  --skill2: #2ee6d6;  /* 스킬을 2개 이상 겹쳐 발동했을 때 */
-  --radius: 10px;
+  --close: #ff7a5c;   /* 근접/초과 — 코랄 */
+  --mid: #58b8ff;     /* 중거리 — 블루 */
+  --long: #b892ff;    /* 원거리 — 퍼플 */
+  --skill: #b892ff;   /* 스킬 발동분 */
+  --skill2: #34d6cc;  /* 스킬 2개+ */
+  --attr-assault: #ff6e63;   /* 강습 */
+  --attr-general: #58a9ff;   /* 범용 */
+  --attr-support: #5fd18a;   /* 지원 */
+  /* ============================================================
+  밝은 톤업 (더 과감하게) — near-black → 슬레이트 + 밝은 강조로 '가볍고 밝은' 느낌
+  ============================================================ */
+  --bg: #1c2130;
+  --panel: #272e40;
+  --panel-2: #30384b;
+  --panel-3: #3b4459;
+  --line: #47526a;
+  --line-soft: #333c50;
+  --text: #f4f6fb;
+  /* 회색 글씨가 어두운 바탕에서 잘 안 읽혔다. 패널(#272e40) 기준 명암비를
+     재 보니 --dim 이 3.6:1 로 WCAG AA(4.5:1) 미달이었다. 둘 다 올린다.
+       muted 6.22 → 7.56   ·   dim 3.61 → 5.28 */
+  --muted: #b9c2d4;
+  --dim: #98a2b8;
+  --accent: #ffd24d;
+  --accent-dim: #7d6318;
+  --info: #63b0ff;
+  --data: #3fd0cf;
+  --good: #63dc92;
+  /* ============================================================
+     HUD 형태 — 게임 내 Customize 화면의 '생김새'를 따온다.
+     색은 건드리지 않는다. 우리 색은 뜻을 지고 있다
+     (초록=파츠 · 보라=스킬 · 청록=스킬2개+). 게임은 그 구분이 없어
+     팔레트를 그대로 가져오면 정보가 사라진다. 그래서 형태만 가져왔다.
+     ============================================================ */
+
+  /* 모서리를 깎는다. clip-path 는 쓰지 않는다 — 패널 안에서 넘치는
+     드롭다운·툴팁이 잘린다. 반경을 줄이고 모서리에 꺾쇠를 얹는 방식이다. */
+  --radius: 3px;
 }
 
 * { box-sizing: border-box; }
@@ -107,7 +147,7 @@ button:disabled { opacity: .4; cursor: default; }
 input:focus, select:focus { outline: 2px solid var(--accent-dim); outline-offset: 1px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.btn-primary { background: var(--accent); color: #241c00; border-color: var(--accent); font-weight: 700; }
+.btn-primary { color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
 @media (hover: hover) { .btn-primary:hover:not(:disabled) { background: #ffd968; } }
 .btn-ghost { background: transparent; }
 
@@ -123,7 +163,6 @@ input:focus, select:focus { outline: 2px solid var(--accent-dim); outline-offset
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: linear-gradient(180deg, #1c1f26, #16181e);
   border-bottom: 1px solid var(--line);
   position: relative;
   z-index: var(--z-bar);
@@ -182,7 +221,7 @@ body.vm-wide .topbar .brand img { height: 22px; max-width: 150px; }
 }
 @media (hover: hover) { .stepper li[data-step]:hover { color: var(--muted); } }
 .stepper li[data-step].on { color: var(--text); }
-.stepper li[data-step].on i { background: var(--accent); border-color: var(--accent); color: #241c00; }
+.stepper li[data-step].on i { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .stepper li.arrow { color: var(--dim); font-size: var(--fs-2xl); }
 
 /* 파츠 적용 단계에서만 보이는 버튼(자동 구성·저장·공유) */
@@ -391,7 +430,7 @@ body.pn-info .sel-info {
 .pn-tools { display: flex; gap: 7px; padding: 8px 0 0; }
 
 /* 걸개가 켜지면 눌린 것처럼 보여야 한다 — 안 그러면 날짜가 왜 줄었는지 모른다 */
-#pnBalBtn.on { background: var(--accent); border-color: var(--accent); color: #241c00; font-weight: 700; }
+#pnBalBtn.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 
 /* 밸런스 조정이 있는 주는 레일에서 눈에 띄게 — 대부분의 주는 기체 추가뿐이다 */
 .pn-date.bal .pn-md { color: var(--accent); }
@@ -630,7 +669,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   flex-shrink: 0;
 }
 .select-title { display: flex; align-items: baseline; gap: 10px; }
-.select-title h1 { margin: 0; font-size: var(--fs-3xl); letter-spacing: .3px; }
+.select-title h1 { margin: 0; font-size: var(--fs-3xl); }
 .select-title .right { color: var(--muted); font-size: var(--fs-md); }
 .select-head input[type="search"] { max-width: 460px; padding: 8px 12px; }
 .filter-row { display: flex; align-items: flex-start; gap: 10px 22px; flex-wrap: wrap; }
@@ -673,13 +712,14 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 .build-col { display: flex; flex-direction: column; }
 .build-left  { grid-column: 1; grid-row: 1; }
-.build-detail { grid-column: 2; grid-row: 1; }
-/* 상세 칸의 높이는 **건드리지 않는다.** `.panel.fill { flex: 1 }` 이 이미 이 열을 꽉 채우고,
-   행 높이는 왼쪽 열이 정한다. 한때 떨림을 막겠다고 `#detailPanel { max-height: 461px }` 를
-   넣었는데, 그러면 파츠를 끼워 왼쪽 열이 커졌을 때 상세만 안 커져 **그 차이가 빈자리로**
-   남았다(실측 507 vs 461 = 46px). 떨림은 장착칸 타일 높이를 고정해 막는 것이 맞고
-   (.eq 참고), 높이를 숫자로 못 박는 것은 문제를 옮길 뿐이었다. */
-.build-detail { min-height: 0; }
+.build-detail { grid-column: 2; grid-row: 1;
+  /* 상세 칸의 높이는 **건드리지 않는다.** `.panel.fill { flex: 1 }` 이 이미 이 열을 꽉 채우고,
+  행 높이는 왼쪽 열이 정한다. 한때 떨림을 막겠다고 `#detailPanel { max-height: 461px }` 를
+  넣었는데, 그러면 파츠를 끼워 왼쪽 열이 커졌을 때 상세만 안 커져 **그 차이가 빈자리로**
+  남았다(실측 507 vs 461 = 46px). 떨림은 장착칸 타일 높이를 고정해 막는 것이 맞고
+  (.eq 참고), 높이를 숫자로 못 박는 것은 문제를 옮길 뿐이었다. */
+  min-height: 0;
+}
 /* 성능: 오른쪽 열을 넓게 + 두 행에 걸쳐 아래까지 */
 /* min-height:0 — 그리드 칸은 기본이 min-height:auto 라, 안쪽에 스크롤을 달아도
    **칸 자체가** 내용만큼 부풀어 두 줄을 같이 늘린다. 0 으로 풀어야 안쪽 스크롤이 산다. */
@@ -720,7 +760,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 .w-sec.main { background: var(--accent-badge); color: var(--accent); }
 /* 이름 칸은 두 줄 — 윗줄 이름, 아랫줄 고정 피해. 한 줄에 몰면 이름이 잘린다. */
-.w-nm { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
+.w-nm { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .w-nm-top { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; max-width: 100%; }
 .w-nm-sub { display: flex; align-items: center; gap: 6px; white-space: nowrap; max-width: 100%; }
@@ -886,7 +926,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 .d-head { display: flex; gap: 12px; align-items: center; }
 .d-thumb { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
-.d-thumb img { width: 72px; height: 72px; object-fit: contain; background: #0b0d10; border-radius: 9px; border: 1px solid var(--line); }
+.d-thumb img { width: 72px; height: 72px; object-fit: contain; background: var(--img-well); border-radius: 9px; border: 1px solid var(--line); }
 .d-htext { min-width: 0; }
 .d-name { font-size: var(--fs-2xl); font-weight: 700; line-height: 1.3; word-break: keep-all; }
 .d-cat { font-size: var(--fs-sm); color: var(--muted); margin-top: 3px; }
@@ -935,7 +975,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   #detailBody { min-height: 0; }
 }
 
-.stat-wrap { flex: 1; padding: 5px 0 8px; }
+.stat-wrap { padding: 5px 0 8px; }
 
 .panel {
   background: var(--panel);
@@ -954,9 +994,6 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   margin: 0;
   padding: 6px 11px;
   font-size: var(--fs-sm);
-  letter-spacing: .5px;
-  color: var(--muted);
-  background: var(--panel-2);
   border-bottom: 1px solid var(--line);
   border-radius: var(--radius) var(--radius) 0 0;
   display: flex;
@@ -983,10 +1020,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   color: var(--muted);
 }
 
-.chip.on { background: var(--accent); border-color: var(--accent); color: #241c00; font-weight: 700; }
-.chip.attr-汎用.on { background: #4aa3ff; border-color: #4aa3ff; color: #04182c; }
-.chip.attr-強襲.on { background: #ff7a7a; border-color: #ff7a7a; color: #2c0606; }
-.chip.attr-支援.on { background: #6bd98a; border-color: #6bd98a; color: #052c12; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 
 .ms-card {
   display: flex;
@@ -1057,19 +1091,16 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   border-radius: 8px;
   /* 원본이 165x145 라 cover 로 두면 정사각으로 잘려 기체 옆구리가 날아간다 */
   object-fit: contain;
-  background: #0b0d10;
+  background: var(--img-well);
   flex-shrink: 0;
 }
 
 .ms-card .info { min-width: 0; flex: 1; }
-.ms-card .nm { font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ms-card .nm { font-size: var(--fs-sm); text-overflow: ellipsis; }
 .ms-card .meta { font-size: var(--fs-xs); color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .ms-card .stars { color: var(--accent); font-size: var(--fs-2xs); letter-spacing: -1.5px; }
 
 .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.dot.汎用 { background: #4aa3ff; }
-.dot.強襲 { background: #ff7a7a; }
-.dot.支援 { background: #6bd98a; }
 
 .cost-badge { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
 
@@ -1095,7 +1126,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   width: 72px; height: 72px;
   border-radius: 10px;
   object-fit: contain;
-  background: #0b0d10;
+  background: var(--img-well);
   border: 1px solid var(--line);
   flex-shrink: 0;
 }
@@ -1172,7 +1203,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 .seg-btn:first-child { border-left: none; }
 @media (hover: hover) { .seg-btn:hover:not(.on) { background: var(--panel-3); border-color: var(--line); } }
-.seg-btn.on { background: var(--accent); color: #241c00; font-weight: 700; }
+.seg-btn.on { background: var(--accent); color: var(--on-accent); font-weight: 700; }
 
 /* ============ 슬롯 게이지 ============ */
 
@@ -1181,13 +1212,12 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .slot-bar .top { display: flex; justify-content: space-between; font-size: var(--fs-xs); margin-bottom: 3px; }
 .slot-bar .top .k { color: var(--muted); }
 .slot-bar .top .v { font-variant-numeric: tabular-nums; font-weight: 700; }
-.slot-bar .track { display: flex; gap: 2px; }
+.slot-bar .track { display: flex; }
 
 .slot-bar .track i {
   flex: 1;
   height: 7px;
   border-radius: 2px;
-  background: #2b2f39;
 }
 
 .slot-bar.close .track i.on { background: var(--close); }
@@ -1233,7 +1263,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 
 @media (hover: hover) { .eq:hover { border-color: var(--bad); } }
 @media (hover: hover) { .eq:hover .rm { opacity: 1; } }
-.eq img { width: 40px; height: 40px; object-fit: contain; background: #0b0d10; border-radius: 7px; }
+.eq img { width: 40px; height: 40px; object-fit: contain; background: var(--img-well); border-radius: 7px; }
 /* 이름 자리를 **늘 두 줄**로 잡는다 — 한 줄짜리 파츠를 끼웠다고 타일이 줄어들면
    위 min-height 를 맞춰 놔도 줄마다 높이가 달라진다(1.25 × 2 = 2.5em). */
 .eq .nm { font-size: var(--fs-2xs); line-height: 1.25; min-height: 2.5em; margin-top: 5px; color: var(--text); word-break: keep-all; }
@@ -1320,12 +1350,12 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .stat-row.capped .cap { color: var(--accent); }
 
 .graph { display: flex; align-items: center; gap: 6px; }
-.meter { flex: 1; height: 11px; background: #1b1f28; border: 1px solid var(--line-soft); border-radius: 4px; overflow: hidden; display: flex; }
+.meter { flex: 1; height: 11px; border: 1px solid var(--line-soft); border-radius: 4px; overflow: hidden; display: flex; }
 .meter > i { height: 100%; }
 /* 소체분을 선명한 청록으로 채워 '얼마나 찼는지'가 한눈에 (gbo2 그래프처럼). 증가분은 초록·스킬은 보라 오버레이 */
 .meter > i.base { background: linear-gradient(180deg, #3fb6c4, #2f97a6); }
 .meter > i.gain { background: linear-gradient(180deg, #57d977, #3fbf60); }
-.meter > i.gain.capped { background: linear-gradient(180deg, #ffd24d, var(--accent)); }
+.meter > i.gain.capped { background: linear-gradient(180deg, var(--accent), var(--accent)); }
 .meter > i.gain.over { background: linear-gradient(180deg, #ff9a6b, var(--close)); }
 .meter > i.skill { background: var(--skill); }
 .meter > i.skill.multi { background: var(--skill2); }
@@ -1337,7 +1367,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .over-warn::before { content: "⚠"; margin-right: 1px; }
 .over-badge {
   flex-shrink: 0; font-size: var(--fs-3xs); font-weight: 800; letter-spacing: .5px;
-  color: #241c00; background: var(--close); padding: 1px 4px; border-radius: 4px;
+  color: var(--on-accent); background: var(--close); padding: 1px 4px; border-radius: 4px;
 }
 .over-tag { color: var(--close); font-weight: 700; }
 .stat-row.over .total { color: var(--close); }
@@ -1386,7 +1416,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 @media (hover: hover) { .part-tile:hover { border-color: var(--accent); background: var(--panel-3); } }
 
 .pt-thumb { position: relative; width: 46px; height: 46px; }
-.part-tile img { width: 46px; height: 46px; object-fit: contain; background: #0b0d10; border-radius: 7px; }
+.part-tile img { width: 46px; height: 46px; object-fit: contain; background: var(--img-well); border-radius: 7px; }
 .pt-hint {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
@@ -1471,7 +1501,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   color: var(--dim); font-variant-numeric: tabular-nums;
 }
 .tier-rank.top { color: var(--accent); }
-.tier-row img { width: 46px; height: 46px; object-fit: cover; border-radius: 7px; background: #0b0d10; flex-shrink: 0; }
+.tier-row img { width: 46px; height: 46px; object-fit: cover; border-radius: 7px; background: var(--img-well); flex-shrink: 0; }
 .tier-info { flex: 1; min-width: 0; }
 .tier-nm { font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tier-meta { font-size: var(--fs-xs); color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -1488,7 +1518,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .drawer-back {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .55);
+  background: var(--scrim);
   z-index: var(--z-sheet);
   display: none;
 }
@@ -1566,7 +1596,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .ac-parts { font-size: var(--fs-xs); color: var(--dim); }
 /* 후보 카드의 파츠 아이콘 */
 .ac-thumbs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
-.ac-thumb { position: relative; width: 34px; height: 34px; border-radius: 5px; overflow: hidden; background: #0b0d10; border: 1px solid var(--line-soft); }
+.ac-thumb { position: relative; width: 34px; height: 34px; border-radius: 5px; overflow: hidden; background: var(--img-well); border: 1px solid var(--line-soft); }
 .ac-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ac-lv { position: absolute; right: 0; bottom: 0; font-size: var(--fs-3xs); line-height: 1; padding: 1px 2px; background: #000a; color: var(--accent); border-radius: 3px 0 0 0; }
 .ac-stats { display: flex; flex-wrap: wrap; gap: 3px 12px; margin-top: 7px; }
@@ -1622,7 +1652,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .data-fresh { font-size: var(--fs-xs); color: var(--dim); margin-left: 10px; }
 
 /* 자동 구성 결과 — 화면 중앙 모달 */
-.auto-modal-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: var(--z-modal); }
+.auto-modal-back { position: fixed; inset: 0; background: var(--scrim); z-index: var(--z-modal); }
 .auto-modal-back[hidden] { display: none; }
 .auto-modal {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -1630,7 +1660,6 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
   display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
 }
-.auto-modal[hidden] { display: none; }
 /* [hidden] 은 어떤 미디어 규칙보다 세야 한다. 모바일 블록의 모달 규칙이
    id 특이도(#…Modal{display:flex})로 위 규칙을 이겨, **닫힌 모달이 앱 전체를**
    덮고 있었다. 그 모달(피탄 시뮬)은 2026-10-13 에 대결 시뮬로 합쳐 없앴지만,
@@ -1743,7 +1772,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   height: 14px; margin-top: 1px; font-size: var(--fs-2xs); font-weight: 800; text-align: center;
   color: #ff8a8a; letter-spacing: .2px;
 }
-.owned-tile.banned .owned-mark { color: #ff6b6b; }
+.owned-tile.banned .owned-mark { color: var(--bad); }
 
 /* 기체 스킬 목록 (무장 칸 안 인라인 패널) */
 .mskill-inline {
@@ -1795,7 +1824,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 @media (hover: hover) { .sc-del:hover { color: var(--bad); background: #2a1416; } }
 .sc-ms { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
-.sc-ms img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #0b0d10; border: 1px solid var(--line-soft); flex-shrink: 0; }
+.sc-ms img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--img-well); border: 1px solid var(--line-soft); flex-shrink: 0; }
 .sc-meta { display: flex; flex-direction: column; min-width: 0; }
 .sc-msname { font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-tags { font-size: var(--fs-xs); color: var(--muted); }
@@ -1921,23 +1950,18 @@ input[type="search"], input[type="text"] { width: 100%; }
   .topbar .brand > div { display: none; }
 }
 
-/* 좁은 화면(모바일) */
-
-  :where(body.compact) .topbar { padding: 8px 10px; }
   :where(body.compact) .topbar .brand span { display: none; }
   :where(body.compact) .stepper { margin-left: 8px; gap: 5px; }
   :where(body.compact) .stepper li[data-step] { font-size: var(--fs-xs); }
   :where(body.compact) .topbar .spacer { display: none; }
-  :where(body.compact) .topbar button { flex: 1 1 auto; }
-
+  
   :where(body.compact) .select-head { padding: 12px 14px 10px; }
   :where(body.compact) .select-title h1 { font-size: var(--fs-2xl); }
   :where(body.compact) .ms-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; padding: 12px 14px 24px; }
 
   :where(body.compact) .screen-build { padding: 10px; }
   :where(body.compact) .equip-grid { grid-template-columns: repeat(2, 1fr); }
-  :where(body.compact) .hero-body { flex-direction: column; }
-  :where(body.compact) .stat-row { grid-template-columns: 76px 56px 46px 1fr; }
+    :where(body.compact) .stat-row { grid-template-columns: 76px 56px 46px 1fr; }
   :where(body.compact) .stat-row .cap { display: none; }
   :where(body.compact) .stat-row.head span:last-child { display: none; }
 
@@ -1951,16 +1975,14 @@ input[type="search"], input[type="text"] { width: 100%; }
   .ms-card .meta { justify-content: center; }
 }
 
+/* 좁은 화면(모바일) */
 /* ── 모바일/APK(WebView) 폴리시 ── */
 
   /* 툴바: 여러 줄로 쌓이지 않게 가로 스크롤 한 줄로 (버튼이 많아짐) */
   :where(body.compact) .topbar { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 8px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   :where(body.compact) .topbar::-webkit-scrollbar { display: none; }
-  :where(body.compact) .topbar button { flex: 0 0 auto; }
-
-  /* 터치 타깃 확대 (칩·세그먼트는 아래 블록에서 38px 로 통일) */
-  :where(body.compact) .auto-grid input { min-height: 30px; font-size: var(--fs-md); }
-  :where(body.compact) .ms-fav { width: 28px; height: 28px; font-size: var(--fs-2xl); }
+  
+    :where(body.compact) .ms-fav { width: 28px; height: 28px; font-size: var(--fs-2xl); }
 
   /* '왜 이 파츠?' 기여도 행 — 좁은 폭에서 스탯을 아래로 */
   :where(body.compact) .why-row { grid-template-columns: 44px 1fr; }
@@ -1977,7 +1999,9 @@ input[type="search"], input[type="text"] { width: 100%; }
    (전부 좁은 화면 전용 미디어쿼리 → 데스크톱 레이아웃은 영향 없음) */
 
   /* 상단 버튼·칩·세그먼트: 손가락으로 누르기 편한 크기 */
-  :where(body.compact) .topbar button { min-height: 40px; padding: 8px 12px; }
+  :where(body.compact) .topbar button {
+  flex: 0 0 auto;
+  min-height: 40px; padding: 8px 12px; }
   :where(body.compact) .chip { padding: 8px 14px; }
   :where(body.compact) .chip,
   :where(body.compact) .seg-btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; }
@@ -2000,7 +2024,8 @@ input[type="search"], input[type="text"] { width: 100%; }
   /* 자동 구성 드로어: 전체폭 + 입력 크게, 라벨 폭 확보 */
   :where(body.compact) .drawer { width: 100%; max-width: 100%; }
   :where(body.compact) .auto-grid { grid-template-columns: 1fr 50px 58px 58px; gap: 7px 5px; }
-  :where(body.compact) .auto-grid input { min-height: 40px; font-size: var(--fs-xl); padding: 4px 6px; }
+  /* 터치 타깃 확대 (칩·세그먼트는 아래 블록에서 38px 로 통일) */
+:where(body.compact) .auto-grid input { min-height: 40px; font-size: var(--fs-xl); padding: 4px 6px; }
   :where(body.compact) .auto-grid .lb { font-size: var(--fs-sm); }
   :where(body.compact) .auto-grid .hd { font-size: var(--fs-2xs); }
   :where(body.compact) #runAuto { min-height: 46px; font-size: var(--fs-lg); }
@@ -2044,7 +2069,9 @@ input[type="search"], input[type="text"] { width: 100%; }
    ============================================================ */
 
 /* 숫자는 표(tabular) 정렬 — 스탯·코스트·피해량이 자릿수마다 흔들리지 않는다 (데이터 툴에 특히 유효) */
-body { font-variant-numeric: tabular-nums; }
+body { font-variant-numeric: tabular-nums;
+  /* 깊이감 — 평평한 검정 대신 상단에서 은은히 떨어지는 빛 */
+}
 
 /* 짧은 제목/텍스트 줄바꿈 품질 — 고아 단어 방지, 제목은 균형 */
 h1, h2, h3 { text-wrap: balance; }
@@ -2072,45 +2099,10 @@ button:not(:disabled):active, .chip:active, .seg-btn:active, .ms-card:active,
   .auto-cand:active, .ms-fav:active { transform: none; }
 }
 
-/* ============================================================
-   전체 비주얼 리디자인 (스킬: frontend-design · apple-design · make-interfaces-feel-better)
-   방향 — "GBO2 콕핏/HUD": 딥네이비 베이스 · 앰버 시그니처 · 데이터 청록.
-   토큰 재정의 + 표면/타이포 정돈. 레이아웃·구조는 그대로.
-   ============================================================ */
-:root {
-  --bg: #0b0d12;
-  --panel: #14161d;
-  --panel-2: #1a1d26;
-  --panel-3: #232733;
-  --line: #2b3040;
-  --line-soft: #1d212b;
-  --text: #eaecf2;
-  --muted: #8b93a4;
-  --dim: #5c6273;
-  --accent: #ffca3a;
-  --accent-dim: #6d5410;
-  /* accent 글자를 얹는 **배지 바탕** — accent-dim(#6d5410) 위의 accent 는 3.97:1 이라
-     AA(4.5)에 못 미쳤다. 옅은 칠로 깔면 바탕이 패널에 가까워져 글자가 산다. */
-  --accent-badge: rgba(255, 202, 58, .14);
-  --info: #56a8ff;
-  --data: #34c1c1;
-  --good: #6bd98a;
-  --elev-1: 0 1px 1px rgba(0, 0, 0, .5);
-  --elev-2: 0 4px 22px rgba(0, 0, 0, .45);
-}
 
-/* 깊이감 — 평평한 검정 대신 상단에서 은은히 떨어지는 빛 */
-body {
-  background-color: var(--bg);
-  background-image:
-    radial-gradient(1100px 480px at 50% -10%, rgba(92, 122, 178, .10), transparent 62%),
-    linear-gradient(180deg, rgba(255, 255, 255, .012), transparent 140px);
-  background-attachment: fixed;
-}
 
 /* 툴바 — 하단 앰버 헤어라인(앱의 시그니처) */
 .topbar {
-  background: linear-gradient(180deg, #191c24, #121419);
   box-shadow: 0 1px 0 rgba(255, 202, 58, .16), 0 6px 18px rgba(0, 0, 0, .35);
 }
 
@@ -2143,24 +2135,8 @@ body {
 .ms-card img, .part-tile img, .eq img { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
 .ms-card.sel { box-shadow: 0 0 0 1px var(--accent), 0 6px 18px rgba(255, 202, 58, .16); }
 .ms-fav.on { text-shadow: 0 0 8px rgba(255, 202, 58, .55); }
-.cost-badge { background: rgba(255, 202, 58, .10); padding: 0 6px; border-radius: 999px; }
+.cost-badge { background: rgba(255, 202, 58, .10); }
 
-/* ============================================================
-   색상 정돈 (frontend-design) — 속성·데이터·상태색을 팔레트에 조율
-   ============================================================ */
-:root {
-  --info: #58a9ff;
-  --ok: #5fd18a;
-  --bad: #ff6b6b;
-  --close: #ff7a5c;   /* 근접/초과 — 코랄 */
-  --mid: #58b8ff;     /* 중거리 — 블루 */
-  --long: #b892ff;    /* 원거리 — 퍼플 */
-  --skill: #b892ff;   /* 스킬 발동분 */
-  --skill2: #34d6cc;  /* 스킬 2개+ */
-  --attr-assault: #ff6e63;   /* 강습 */
-  --attr-general: #58a9ff;   /* 범용 */
-  --attr-support: #5fd18a;   /* 지원 */
-}
 
 /* 속성 도트 — 색 조율 + 은은한 발광으로 한눈에 구분 */
 .dot { box-shadow: 0 0 5px currentColor; }
@@ -2173,8 +2149,6 @@ body {
 .chip.attr-汎用.on { background: var(--attr-general); border-color: var(--attr-general); color: #041226; }
 .chip.attr-支援.on { background: var(--attr-support); border-color: var(--attr-support); color: #052414; }
 
-/* 선택된 기체 카드 — 탁한 갈색 대신 은은한 앰버 워시 */
-.ms-card.sel { background: #17150e; }
 
 /* ============================================================
    리디자인 3 — 상호작용 요소 마감 (검색창·버튼·스텝 포커스/피드백)
@@ -2200,28 +2174,6 @@ input:focus, select:focus, textarea:focus {
 /* 스텝 활성 번호 — 은은한 발광 */
 .stepper li[data-step].on i { box-shadow: 0 0 10px rgba(255, 202, 58, .45); }
 
-/* ============================================================
-   밝은 톤업 (더 과감하게) — near-black → 슬레이트 + 밝은 강조로 '가볍고 밝은' 느낌
-   ============================================================ */
-:root {
-  --bg: #1c2130;
-  --panel: #272e40;
-  --panel-2: #30384b;
-  --panel-3: #3b4459;
-  --line: #47526a;
-  --line-soft: #333c50;
-  --text: #f4f6fb;
-  /* 회색 글씨가 어두운 바탕에서 잘 안 읽혔다. 패널(#272e40) 기준 명암비를
-     재 보니 --dim 이 3.6:1 로 WCAG AA(4.5:1) 미달이었다. 둘 다 올린다.
-       muted 6.22 → 7.56   ·   dim 3.61 → 5.28 */
-  --muted: #b9c2d4;
-  --dim: #98a2b8;
-  --accent: #ffd24d;
-  --accent-dim: #7d6318;
-  --info: #63b0ff;
-  --data: #3fd0cf;
-  --good: #63dc92;
-}
 
 /* 배경 — 더 뚜렷한 상단 라이트 글로우로 공기감 */
 body {
@@ -2238,6 +2190,7 @@ body {
 /* 어두운 하드코딩 배경들을 톤업 (썸네일·미터 트랙 등) */
 .ms-card img, .part-tile img, .eq img, .heroImg, #heroImg { background: #161b28; }
 .meter { background: #1d2432; }
+/* 선택된 기체 카드 — 탁한 갈색 대신 은은한 앰버 워시 */
 .ms-card.sel { background: #262110; }
 
 /* ============================================================
@@ -2316,7 +2269,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   /* 백드롭 */
   :where(body.compact) .sheet-backdrop {
     display: block; position: fixed; inset: 0; z-index: calc(var(--z-sheet) + 5);
-    background: rgba(0, 0, 0, .55);
+    background: var(--scrim);
     opacity: 0; pointer-events: none; transition: opacity .22s;
   }
   :where(body.compact) .sheet-backdrop.on { opacity: 1; pointer-events: auto; }
@@ -2333,8 +2286,8 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   }
   body.view-build:where(.compact) .m-actionbar { display: flex; }
-  :where(body.compact) .m-actionbar button { flex: 1; min-height: 48px; font-weight: 700; font-size: var(--fs-md); }
-  :where(body.compact) .m-actionbar button.on { background: var(--accent); color: #241c00; border-color: var(--accent); box-shadow: 0 0 12px rgba(255, 202, 58, .4); }
+  :where(body.compact) .m-actionbar button { min-height: 48px; font-weight: 700; font-size: var(--fs-md); }
+  :where(body.compact) .m-actionbar button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); box-shadow: 0 0 12px rgba(255, 202, 58, .4); }
 
   /* 메인 스크롤이 액션바에 가리지 않게 */
   :where(body.compact) .screen-build { padding-bottom: 78px; }
@@ -2516,16 +2469,17 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
 /* 「이 구성에 하는 일」과 「다녀오는 곳」 사이 칸막이 */
 .tb-sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; flex: 0 0 auto; }
 
-.topbar-more { display: inline-flex; align-items: center; font-size: var(--fs-2xl); line-height: 1; padding: 4px 12px; }
+.topbar-more { display: inline-flex; align-items: center; font-size: var(--fs-2xl); line-height: 1; padding: 4px 12px;
+  /* 넘침 표시 — 「⋯」 안에 든 버튼 수 */
+  position: relative;
+}
 /* 재서 접은 것(fitTopbar) — 장식은 그냥 사라지고, 버튼은 「⋯」 메뉴로 간다 */
 .topbar .tb-fold { display: none !important; }
-/* 넘침 표시 — 「⋯」 안에 든 버튼 수 */
-.topbar-more { position: relative; }
 .topbar-more[data-folded]:not([data-folded=""])::after {
   content: attr(data-folded);
   position: absolute; top: -5px; right: -5px;
   min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
-  border-radius: 8px; background: var(--accent); color: #241c00;
+  border-radius: 8px; background: var(--accent); color: var(--on-accent);
   font-size: 11px; font-weight: 700; line-height: 16px; text-align: center;
   pointer-events: none;
 }
@@ -2591,7 +2545,7 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
   background: transparent; border: 1px solid var(--accent); border-radius: 999px;
   padding: 4px 11px; cursor: pointer;
 }
-@media (hover: hover) { .toast-act:hover { background: var(--accent); color: #241c00; } }
+@media (hover: hover) { .toast-act:hover { background: var(--accent); color: var(--on-accent); } }
 
 /* ── 파츠 타일 길게 누르기 메뉴 ── */
 .tile-menu { min-width: 200px; max-width: min(300px, 92vw); }
@@ -3270,16 +3224,6 @@ body.drawer-open .m-actionbar { display: none !important; }
 .codex-paneback { display: none; }
 @media (max-width: 900px) { .codex-paneback { display: inline-block; margin-bottom: 8px; } }
 
-/* ============================================================
-   HUD 형태 — 게임 내 Customize 화면의 '생김새'를 따온다.
-   색은 건드리지 않는다. 우리 색은 뜻을 지고 있다
-   (초록=파츠 · 보라=스킬 · 청록=스킬2개+). 게임은 그 구분이 없어
-   팔레트를 그대로 가져오면 정보가 사라진다. 그래서 형태만 가져왔다.
-   ============================================================ */
-
-/* 모서리를 깎는다. clip-path 는 쓰지 않는다 — 패널 안에서 넘치는
-   드롭다운·툴팁이 잘린다. 반경을 줄이고 모서리에 꺾쇠를 얹는 방식이다. */
-:root { --radius: 3px; }
 
 .panel { position: relative; border-radius: 3px; }
 /* 좌상·우하 꺾쇠 — 게임 패널의 각진 인상을 내는 최소 장치 */
@@ -3399,6 +3343,7 @@ body.drawer-open .m-actionbar { display: none !important; }
   /* 전에는 .18s 로 칸이 스르르 열렸다. 그런데 **여는 동안 왼쪽 칸이 줄어들어** 손가락 밑에서
      카드가 움직인다 — ⓘ 를 눌렀는데 카드가 눌려 파츠로 넘어가는 원인이었다(사용자 확인).
      보기 좋자고 누른 것이 딴 데로 가면 안 된다. 즉시 바꾼다. */
+  position: relative;
 }
 /* 전에는 여기서 칸을 4fr 6fr 로 쪼갰다. 그런데 목록 칸이 좁아지면 그리드가 통째로
    **다시 깔린다** — 1500px 에서 6열이 2열이 되고, 누른 ⓘ 가 x 228 → 272 로 가고
@@ -3407,7 +3352,6 @@ body.drawer-open .m-actionbar { display: none !important; }
    1100px 아래에서는 앱이 이미 **덮는 방식**을 쓰고 있어 이 문제가 없다(dx 3).
    위쪽도 같게 맞춘다 — 목록은 폭 그대로 두고, 정보 칸이 오른쪽을 덮는다. */
 body.info-open .sel-2col { grid-template-columns: 1fr; }
-.sel-2col { position: relative; }
 /* 왼쪽 칸 = 머리줄(제목·필터·검색) + 목록. 머리줄이 위를 가로지르지 않으므로
    오른쪽 정보 칸이 맨 위부터 시작해 세로를 다 쓴다. */
 .sel-left { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
@@ -3580,9 +3524,10 @@ body.info-open .sel-info { display: flex; }
 /* ---- 올라온 구성 ---- */
 /* 늘리지 않는다 — 구성이 없을 때 기둥 전체가 빈 상자가 된다 */
 .mi-builds { align-self: start; }
-.mi-blist { display: flex; flex-direction: column; gap: 7px; }
-/* 구성이 많으면 이 기둥만 스크롤한다 — 나머지 두 기둥은 안 움직인다 */
-.mi-blist { max-height: 560px; overflow-y: auto; }
+.mi-blist { display: flex; flex-direction: column; gap: 7px;
+  /* 구성이 많으면 이 기둥만 스크롤한다 — 나머지 두 기둥은 안 움직인다 */
+  max-height: 560px; overflow-y: auto;
+}
 .mi-blist .saved-card { margin: 0; }
 
 /* ---- 추천 영상 ----
@@ -3753,7 +3698,7 @@ body.info-open .sel-info { display: flex; }
 .mi-sg > b { font-size: var(--fs-md); flex: 0 0 48px; text-align: right; font-variant-numeric: tabular-nums; }
 .mi-sg-by {
   flex: 1; min-width: 0; font-size: var(--fs-2xs); color: var(--dim);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; text-overflow: ellipsis;
 }
 .mi-sg.top { background: rgba(255, 201, 60, .08); }
 .mi-sg.top > b { color: var(--accent); }
