@@ -79,7 +79,7 @@
   background: var(--panel-3); color: var(--text); border: 1px solid var(--line);
   border-radius: 8px; padding: 5px 10px; font-size: 12px; min-height: 30px; cursor: pointer;
 }
-.d-btn:hover { border-color: var(--side-c, var(--accent)); }
+@media (hover: hover) { .d-btn:hover { border-color: var(--side-c, var(--accent)); } }
 .d-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(255, 202, 58, .08); }
 .d-btn:disabled { opacity: .35; cursor: not-allowed; }
 
@@ -102,11 +102,11 @@
   position: absolute; right: 2px; bottom: 1px; font-size: 9px; font-weight: 800;
   color: #241c00; background: var(--accent); border-radius: 3px; padding: 0 2px; line-height: 1.3;
 }
-.ds-slot:hover { border-color: var(--side-c); }
-.ds-slot.full:hover::after {
+@media (hover: hover) { .ds-slot:hover { border-color: var(--side-c); } }
+@media (hover: hover) { .ds-slot.full:hover::after {
   content: "✕"; position: absolute; inset: 0; display: grid; place-items: center;
   background: rgba(0, 0, 0, .55); color: #fff; border-radius: 7px; font-size: 14px;
-}
+} }
 
 /* 파츠 고르기 (인라인 서랍) */
 .ds-picker { margin-top: 8px; border-top: 1px solid var(--line-soft); padding-top: 8px; }
@@ -122,7 +122,7 @@
   padding: 4px 6px; font-size: 11px; color: var(--text); cursor: pointer; min-height: 34px;
 }
 .ds-pitem img { width: 26px; height: 26px; object-fit: contain; }
-.ds-pitem:hover:not(:disabled) { border-color: var(--side-c); }
+@media (hover: hover) { .ds-pitem:hover:not(:disabled) { border-color: var(--side-c); } }
 .ds-pitem:disabled { opacity: .35; cursor: not-allowed; }
 .ds-pitem small { display: block; color: var(--muted); font-size: 10px; }
 
@@ -147,7 +147,7 @@
   width: 100%; text-align: left; background: transparent; color: var(--text);
   border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; font-size: 13px; cursor: pointer;
 }
-.ds-w:hover { background: var(--panel-2); }
+@media (hover: hover) { .ds-w:hover { background: var(--panel-2); } }
 .ds-w.on { border-color: var(--side-c); background: color-mix(in srgb, var(--side-c) 10%, transparent); }
 .ds-w .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ds-w .pw { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }
@@ -237,7 +237,7 @@
   background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 4px 6px;
   color: var(--text); font-size: 13px; cursor: pointer; min-height: 40px;
 }
-.ds-msrow:hover { background: var(--panel-2); border-color: var(--line); }
+@media (hover: hover) { .ds-msrow:hover { background: var(--panel-2); border-color: var(--line); } }
 .ds-msrow img { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; }
 .ds-msrow small { color: var(--muted); font-size: 11px; }
 

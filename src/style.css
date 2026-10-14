@@ -87,7 +87,7 @@ button, input, select {
 }
 
 button { cursor: pointer; transition: border-color .12s, background .12s; }
-button:hover:not(:disabled) { border-color: var(--accent); }
+@media (hover: hover) { button:hover:not(:disabled) { border-color: var(--accent); } }
 button:disabled { opacity: .4; cursor: default; }
 /* 포커스 링 — accent-dim(#7d6318)은 배경 대비 3.4 · 패널 3.16 으로 기준(3:1)을 겨우 넘었다.
    밝은 accent 로 바꾸고 2px 띄워 글자와 겹치지 않게 한다. :focus-visible 이라 마우스로
@@ -96,12 +96,12 @@ input:focus, select:focus { outline: 2px solid var(--accent-dim); outline-offset
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .btn-primary { background: var(--accent); color: #241c00; border-color: var(--accent); font-weight: 700; }
-.btn-primary:hover:not(:disabled) { background: #ffd968; }
+@media (hover: hover) { .btn-primary:hover:not(:disabled) { background: #ffd968; } }
 .btn-ghost { background: transparent; }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: #333845; border-radius: 5px; }
-::-webkit-scrollbar-thumb:hover { background: #434a5b; }
+@media (hover: hover) { ::-webkit-scrollbar-thumb:hover { background: #434a5b; } }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ============ 상단 바 ============ */
@@ -168,7 +168,7 @@ body.vm-wide .topbar .brand img { height: 22px; max-width: 150px; }
   font-style: normal;
   font-weight: 700;
 }
-.stepper li[data-step]:hover { color: var(--muted); }
+@media (hover: hover) { .stepper li[data-step]:hover { color: var(--muted); } }
 .stepper li[data-step].on { color: var(--text); }
 .stepper li[data-step].on i { background: var(--accent); border-color: var(--accent); color: #241c00; }
 .stepper li.arrow { color: var(--dim); font-size: var(--fs-2xl); }
@@ -271,7 +271,7 @@ body.pn-info .sel-info {
   transition: padding .22s ease, background .22s ease, color .22s ease,
     border-color .22s ease, box-shadow .22s ease;
 }
-.pn-date:hover { border-color: var(--accent); color: var(--text); }
+@media (hover: hover) { .pn-date:hover { border-color: var(--accent); color: var(--text); } }
 /* opacity 로 흐리게 하면 대비가 기준 아래로 떨어진다(3.38) — 흐린 **색**을 쓴다. */
 .pn-date .pn-y { font-size: var(--fs-xs); color: var(--muted); }
 .pn-date .pn-md { font-size: var(--fs-lg); font-weight: 700; line-height: 1.1; }
@@ -311,7 +311,7 @@ body.pn-info .sel-info {
   background: var(--panel); padding: 13px 16px 13px 12px;
 }
 .pn-card.pick { cursor: pointer; transition: border-color .15s ease, background .15s ease; }
-.pn-card.pick:hover { border-color: var(--accent); }
+@media (hover: hover) { .pn-card.pick:hover { border-color: var(--accent); } }
 .pn-card.pick.on { border-color: var(--accent); background: var(--panel-3); }
 .pn-card img { width: 82px; height: 82px; object-fit: contain; flex: 0 0 auto; }
 .pn-ci { min-width: 0; }
@@ -338,7 +338,7 @@ body.pn-info .sel-info {
   background: transparent; color: var(--dim); cursor: pointer;
   width: 28px; height: 28px; line-height: 1;
 }
-.pn-dclose:hover { border-color: var(--accent); color: var(--text); }
+@media (hover: hover) { .pn-dclose:hover { border-color: var(--accent); color: var(--text); } }
 
 .pn-sub {
   margin: 10px 0 6px; font-size: var(--fs-sm); font-weight: 700;
@@ -391,7 +391,7 @@ body.pn-info .sel-info {
 .pn-wiki summary, .pn-ref summary {
   cursor: pointer; font-size: var(--fs-sm); font-weight: 600; color: var(--dim);
 }
-.pn-wiki summary:hover, .pn-ref summary:hover { color: var(--text); }
+@media (hover: hover) { .pn-wiki summary:hover, .pn-ref summary:hover { color: var(--text); } }
 .pn-wl { font-size: var(--fs-sm); line-height: 1.5; word-break: break-word; color: var(--muted); }
 .pn-wl.d1 { padding-left: 14px; }
 .pn-wl.d2 { padding-left: 28px; }
@@ -414,7 +414,7 @@ body.pn-info .sel-info {
 .pn-intent summary {
   cursor: pointer; font-size: var(--fs-sm); font-weight: 600; color: var(--dim);
 }
-.pn-intent summary:hover { color: var(--text); }
+@media (hover: hover) { .pn-intent summary:hover { color: var(--text); } }
 .pn-intent .pn-ln { color: var(--dim); margin-top: 4px; }
 
 /* ---- 좁은 화면 — 레일을 가로로 눕힌다 ---- */
@@ -470,7 +470,8 @@ body.pn-info .sel-info {
   border: 1px solid var(--line); border-radius: 50%;
   background: transparent; color: var(--dim); cursor: pointer; font-size: var(--fs-xs);
 }
-.pc-help:hover, .pc-help.on { border-color: var(--accent); color: var(--accent); }
+.pc-help.on { border-color: var(--accent); color: var(--accent); }
+@media (hover: hover) { .pc-help:hover { border-color: var(--accent); color: var(--accent); } }
 .pc-warn { color: var(--warn, #e6b35c); font-size: var(--fs-sm); }
 .pc-chk { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); margin-bottom: 6px; }
 
@@ -481,7 +482,7 @@ body.pn-info .sel-info {
   border: 0; background: transparent; color: var(--dim);
   cursor: pointer; font-size: var(--fs-sm); line-height: 1; padding: 2px 4px;
 }
-.plan-edit-btn:hover { color: var(--text); }
+@media (hover: hover) { .plan-edit-btn:hover { color: var(--text); } }
 .plan-zone { margin-bottom: 18px; }
 .plan-zone-head {
   display: flex; align-items: center; gap: 8px;
@@ -514,7 +515,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   border: 1px solid var(--line); border-radius: 10px;
   background: var(--panel); cursor: pointer;
 }
-.plan-card:hover { border-color: var(--dim); }
+@media (hover: hover) { .plan-card:hover { border-color: var(--dim); } }
 .plan-card.dragging { opacity: .35; }
 /* 끌고 다니는 동안 손가락을 따라다니는 쪽 */
 .plan-card.ghost {
@@ -553,7 +554,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   background: transparent; color: var(--muted); cursor: pointer;
   font-size: var(--fs-sm);
 }
-.plan-add:hover { border-color: var(--accent); color: var(--text); }
+@media (hover: hover) { .plan-add:hover { border-color: var(--accent); color: var(--text); } }
 /* 순위 옮기기 — 드래그를 못 쓰는 상황(보조기기·좁은 화면)의 두 번째 길 */
 .plan-move { display: flex; gap: 3px; margin-top: 4px; }
 .plan-move button {
@@ -699,7 +700,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 .weapon { border-top: 1px solid var(--line-soft); cursor: pointer; }
 .weapon:first-child { border-top: none; }
-.weapon:hover { background: var(--panel-2); }
+@media (hover: hover) { .weapon:hover { background: var(--panel-2); } }
 .weapon.open { background: var(--panel-2); }
 
 .w-sec {
@@ -822,7 +823,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   display: flex; align-items: flex-start; gap: 7px;
   padding: 5px 7px; border-radius: 6px; cursor: pointer; font-weight: 400;
 }
-.skill-item:hover { background: var(--panel-3); }
+@media (hover: hover) { .skill-item:hover { background: var(--panel-3); } }
 .skill-item input { width: 13px; height: 13px; margin: 2px 0 0; accent-color: var(--skill); cursor: pointer; }
 .skill-item .k { color: var(--text); font-size: var(--fs-sm); }
 .skill-item .v { display: block; color: var(--dim); font-size: var(--fs-2xs); margin-top: 1px; }
@@ -841,7 +842,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   display: block; width: 100%; text-align: left; cursor: pointer;
   padding: 7px 10px; border: 0; border-radius: 6px; background: none; color: var(--text);
 }
-.png-menu-item:hover { background: var(--panel-3); }
+@media (hover: hover) { .png-menu-item:hover { background: var(--panel-3); } }
 .png-menu-item .pm-t { display: block; font-size: var(--fs-md); font-weight: 600; }
 .png-menu-item .pm-s { display: block; font-size: var(--fs-xs); color: var(--dim); margin-top: 1px; }
 
@@ -881,7 +882,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 
 .d-status { padding: 7px 10px; border-radius: 8px; font-size: var(--fs-sm); font-weight: 600; text-align: center; }
 .d-status.clickable { cursor: pointer; }
-.d-status.clickable:hover { filter: brightness(1.15); }
+@media (hover: hover) { .d-status.clickable:hover { filter: brightness(1.15); } }
 .d-status.ok  { background: #14261a; color: var(--ok); border: 1px solid #2f6039; }
 .d-status.on  { background: #2a2617; color: var(--accent); border: 1px solid var(--accent-dim); }
 .d-status.bad { background: #2a1616; color: var(--bad); border: 1px solid #6b2f2f; }
@@ -996,7 +997,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   border: none; background: transparent; color: var(--dim);
   font-size: var(--fs-xl); cursor: pointer; border-radius: 6px;
 }
-.ms-fav:hover { color: var(--accent); background: rgba(255,201,60,.12); border-color: transparent; }
+@media (hover: hover) { .ms-fav:hover { color: var(--accent); background: rgba(255,201,60,.12); border-color: transparent; } }
 .ms-fav.on { color: var(--accent); }
 
 /* ⓘ — 카드를 누르면 바로 파츠로 가므로, 기체를 먼저 훑어보고 싶을 때 여기를 누른다.
@@ -1021,7 +1022,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   border: none; background: transparent; color: var(--dim);
   font-size: var(--fs-lg); cursor: pointer; border-radius: 6px;
 }
-.ms-info:hover { color: var(--accent); background: rgba(255, 201, 60, .12); }
+@media (hover: hover) { .ms-info:hover { color: var(--accent); background: rgba(255, 201, 60, .12); } }
 /* ⓘ 를 누르면 :active 가 **부모 카드까지** 올라가 카드가 같이 0.97 로 줄고, 오른쪽 끝에 앉은
    ⓘ 가 카드 중심 쪽으로 3px 끌려간다. 누른 것은 카드가 아니라 ⓘ 다 — 카드는 가만히 둔다.
    (:has 를 모르는 브라우저에서는 이 규칙만 통째로 버려지고 예전처럼 동작한다 — 따로 쓴 이유다) */
@@ -1037,7 +1038,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   }
 }
 
-.ms-card:hover { background: var(--panel-2); border-color: var(--line); }
+@media (hover: hover) { .ms-card:hover { background: var(--panel-2); border-color: var(--line); } }
 .ms-card.sel { background: #2a2617; border-color: var(--accent); }
 
 .ms-card img {
@@ -1076,7 +1077,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   background: var(--panel-2);
   border-radius: 999px;
 }
-.back-btn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+@media (hover: hover) { .back-btn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); } }
 .btn-ghost.small { padding: 4px 10px; font-size: var(--fs-sm); }
 
 .hero-body > img {
@@ -1092,7 +1093,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 /* 기체 이름 → 위키. 제목 모양은 그대로 두고, 눌리는 것임을 밑줄로만 알린다
    (색까지 바꾸면 이름이 링크로 보여 제목 구실을 못 한다). */
 .hero-wiki { color: inherit; text-decoration: none; }
-.hero-wiki:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) { .hero-wiki:hover { text-decoration: underline; text-underline-offset: 3px; } }
 .hero-wiki::after { content: ' ↗'; font-size: .62em; color: var(--dim); vertical-align: super; }
 .hero h3 { margin: 0 0 2px; font-size: var(--fs-xl); line-height: 1.22; word-break: keep-all; }
 .hero .h-sub { color: var(--muted); font-size: var(--fs-sm); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -1116,7 +1117,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   color: var(--dim); background: transparent; border: 1px solid var(--line);
   border-radius: 50%; cursor: pointer;
 }
-.lbl-help:hover { color: var(--text); border-color: var(--muted); }
+@media (hover: hover) { .lbl-help:hover { color: var(--text); border-color: var(--muted); } }
 
 /* 확장 스킬 효과 팝업 — LV1~5 를 한눈에, 지금 고른 줄만 강조 */
 .exp-help-modal { max-width: 560px; }
@@ -1159,7 +1160,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   color: var(--muted);
 }
 .seg-btn:first-child { border-left: none; }
-.seg-btn:hover:not(.on) { background: var(--panel-3); border-color: var(--line); }
+@media (hover: hover) { .seg-btn:hover:not(.on) { background: var(--panel-3); border-color: var(--line); } }
 .seg-btn.on { background: var(--accent); color: #241c00; font-weight: 700; }
 
 /* ============ 슬롯 게이지 ============ */
@@ -1219,8 +1220,8 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   min-height: 109px;
 }
 
-.eq:hover { border-color: var(--bad); }
-.eq:hover .rm { opacity: 1; }
+@media (hover: hover) { .eq:hover { border-color: var(--bad); } }
+@media (hover: hover) { .eq:hover .rm { opacity: 1; } }
 .eq img { width: 40px; height: 40px; object-fit: contain; background: #0b0d10; border-radius: 7px; }
 /* 이름 자리를 **늘 두 줄**로 잡는다 — 한 줄짜리 파츠를 끼웠다고 타일이 줄어들면
    위 min-height 를 맞춰 놔도 줄마다 높이가 달라진다(1.25 × 2 = 2.5em). */
@@ -1237,7 +1238,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   cursor: default;
 }
 
-.eq.empty:hover { border-color: var(--line); }
+@media (hover: hover) { .eq.empty:hover { border-color: var(--line); } }
 
 .eq .lock, .eq .rm {
   position: absolute;
@@ -1371,7 +1372,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   background: var(--panel-2);
   transition: border-color .12s, background .12s;
 }
-.part-tile:hover { border-color: var(--accent); background: var(--panel-3); }
+@media (hover: hover) { .part-tile:hover { border-color: var(--accent); background: var(--panel-3); } }
 
 .pt-thumb { position: relative; width: 46px; height: 46px; }
 .part-tile img { width: 46px; height: 46px; object-fit: contain; background: #0b0d10; border-radius: 7px; }
@@ -1382,7 +1383,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   background: rgba(11, 13, 16, .74); border-radius: 7px;
   opacity: 0; transition: opacity .1s; pointer-events: none;
 }
-.part-tile:hover .pt-hint { opacity: 1; }
+@media (hover: hover) { .part-tile:hover .pt-hint { opacity: 1; } }
 .pt-hint.rm { color: var(--bad); }
 .pt-hint.off { display: none; }     /* 장착 불가 타일은 힌트를 띄우지 않는다 */
 .pt-why:empty { display: none; }
@@ -1453,7 +1454,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   border: 1px solid var(--line-soft); border-radius: 9px; background: var(--panel);
   cursor: pointer; transition: border-color .12s, background .12s;
 }
-.tier-row:hover { background: var(--panel-2); border-color: var(--line); }
+@media (hover: hover) { .tier-row:hover { background: var(--panel-2); border-color: var(--line); } }
 .tier-rank {
   flex: 0 0 38px; text-align: center; font-size: var(--fs-lg); font-weight: 700;
   color: var(--dim); font-variant-numeric: tabular-nums;
@@ -1546,7 +1547,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--panel); cursor: pointer; transition: border-color .12s, background .12s;
 }
-.auto-cand:hover { border-color: var(--muted); }
+@media (hover: hover) { .auto-cand:hover { border-color: var(--muted); } }
 .auto-cand.on { border-color: var(--accent); background: #201d0e; }
 .ac-head { display: flex; justify-content: space-between; align-items: baseline; }
 .ac-rank { font-weight: 700; font-size: var(--fs-sm); }
@@ -1644,7 +1645,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .cmp-tag.t0 { color: var(--info); } .cmp-tag.t1 { color: var(--accent); }
 .cmp-tag.t2 { color: var(--ok); } .cmp-tag.t3 { color: var(--warn, #ffb454); }
 .cmp-drop { background: none; border: 0; color: var(--dim); cursor: pointer; font-size: var(--fs-xl); padding: 0 2px; }
-.cmp-drop:hover { color: var(--bad); }
+@media (hover: hover) { .cmp-drop:hover { color: var(--bad); } }
 /* 칸이 늘면 가로로 넘칠 수 있다 — 헤더와 표를 같은 최소 너비로 묶어 함께 스크롤시킨다 */
 .compare-body { overflow: auto; padding: 10px 16px 16px; }
 .compare-body .cmp-head, .compare-body .cmp-table { min-width: var(--cmp-min, 0); }
@@ -1701,7 +1702,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;
   font-size: var(--fs-xs); padding: 2px 7px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2);
 }
-.stg-chk:hover { border-color: var(--accent); }
+@media (hover: hover) { .stg-chk:hover { border-color: var(--accent); } }
 .stg-chk.on { border-color: var(--accent); background: rgba(255, 201, 60, .14); }
 .stg-chk input { margin: 0; cursor: pointer; }
 .stg-tag { color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -1776,12 +1777,12 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 
 /* 저장한 구성 카드 */
 .sc-name { cursor: text; }
-.sc-name:hover { text-decoration: underline dotted; }
+@media (hover: hover) { .sc-name:hover { text-decoration: underline dotted; } }
 .sc-del {
   border: none; background: none; color: var(--dim); cursor: pointer;
   font-size: var(--fs-md); line-height: 1; padding: 2px 4px; border-radius: 4px;
 }
-.sc-del:hover { color: var(--bad); background: #2a1416; }
+@media (hover: hover) { .sc-del:hover { color: var(--bad); background: #2a1416; } }
 .sc-ms { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
 .sc-ms img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #0b0d10; border: 1px solid var(--line-soft); flex-shrink: 0; }
 .sc-meta { display: flex; flex-direction: column; min-width: 0; }
@@ -1866,7 +1867,7 @@ button:not(.seg-btn), .btn-ghost, .btn-primary, .back-btn, .tool-btn {
   justify-content: center; margin-top: 2px;
 }
 .app-foot a { color: var(--muted); text-decoration: none; }
-.app-foot a:hover { color: var(--accent); text-decoration: underline; }
+@media (hover: hover) { .app-foot a:hover { color: var(--accent); text-decoration: underline; } }
 
 input[type="search"], input[type="text"] { width: 100%; }
 
@@ -2047,9 +2048,9 @@ button:not(:disabled):active, .chip:active, .seg-btn:active, .ms-card:active,
 }
 
 /* 상호작용 카드에 은은한 깊이 — 구조는 보더, 깊이는 그림자(레이어드) */
-.ms-card:hover, .part-tile:hover, .auto-cand:hover, .saved-card:hover {
+@media (hover: hover) { .ms-card:hover, .part-tile:hover, .auto-cand:hover, .saved-card:hover {
   box-shadow: 0 1px 2px rgba(0, 0, 0, .30), 0 6px 16px rgba(0, 0, 0, .22);
-}
+} }
 
 /* 접근성: 모션 최소화 선호 시 전환·변형·애니메이션을 끈다 */
 @media (prefers-reduced-motion: reduce) {
@@ -2181,7 +2182,7 @@ input:focus, select:focus, textarea:focus {
   background: linear-gradient(180deg, #ffd45a, var(--accent));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 2px 9px rgba(255, 202, 58, .26);
 }
-.btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ffdd78, #ffd04a); }
+@media (hover: hover) { .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ffdd78, #ffd04a); } }
 
 /* 스텝 활성 번호 — 은은한 발광 */
 .stepper li[data-step].on i { box-shadow: 0 0 10px rgba(255, 202, 58, .45); }
@@ -2565,7 +2566,7 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
   background: transparent; border: 1px solid var(--accent); border-radius: 999px;
   padding: 4px 11px; cursor: pointer;
 }
-.toast-act:hover { background: var(--accent); color: #241c00; }
+@media (hover: hover) { .toast-act:hover { background: var(--accent); color: #241c00; } }
 
 /* ── 파츠 타일 길게 누르기 메뉴 ── */
 .tile-menu { min-width: 200px; max-width: min(300px, 92vw); }
@@ -3072,7 +3073,7 @@ body.drawer-open .m-actionbar { display: none !important; }
   cursor: pointer;
   padding: 7px 0 6px;
 }
-.stg-head:hover .dura-lb { color: var(--accent); }
+@media (hover: hover) { .stg-head:hover .dura-lb { color: var(--accent); } }
 .stg-head .stg-caret { color: var(--muted); font-size: var(--fs-xs); width: 11px; flex: 0 0 auto; }
 .stg-head .stagger-detail { margin-left: auto; }
 /* [hidden] 은 UA 기본 display:none 일 뿐이라, 아래 .stagger-skills 의 display 지정에
@@ -3175,7 +3176,7 @@ body.drawer-open .m-actionbar { display: none !important; }
   border: 1px solid var(--line); border-radius: 9px; background: var(--panel);
   padding: 7px 10px; margin-bottom: 5px; cursor: pointer; user-select: none;
 }
-.codex-item:hover { border-color: var(--accent); background: var(--panel2, #171b24); }
+@media (hover: hover) { .codex-item:hover { border-color: var(--accent); background: var(--panel2, #171b24); } }
 .codex-item.on { border-color: var(--accent); background: var(--accent-dim); }
 .codex-nm { font-weight: 700; font-size: var(--fs-sm); color: var(--fg, #d7dce6); min-width: 0; }
 .codex-lvs { display: flex; gap: 3px; flex-wrap: wrap; }
@@ -3221,14 +3222,14 @@ body.drawer-open .m-actionbar { display: none !important; }
   padding: 6px 10px; font-size: var(--fs-sm); cursor: pointer;
 }
 .codex-ms + .codex-ms { border-top: 1px solid var(--line); }
-.codex-ms:hover { background: var(--panel2, #171b24); }
+@media (hover: hover) { .codex-ms:hover { background: var(--panel2, #171b24); } }
 .codex-ms .nm { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .codex-ms .nm span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .codex-ms .at { color: var(--muted); font-size: var(--fs-xs); }
 .codex-ms .co { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 .codex-ms .lv { display: flex; gap: 3px; }
 .codex-msmore { padding: 7px 10px; text-align: center; color: var(--muted); font-size: var(--fs-sm); border-top: 1px solid var(--line); cursor: pointer; }
-.codex-msmore:hover { color: var(--accent); }
+@media (hover: hover) { .codex-msmore:hover { color: var(--accent); } }
 
 @media (max-width: 900px) {
   .codex-2col { grid-template-columns: 1fr; padding: 4px 10px 14px; }
@@ -3349,7 +3350,7 @@ body.drawer-open .m-actionbar { display: none !important; }
   display: inline-flex; align-items: center; gap: 5px;
 }
 .panel-fold i { font-style: normal; color: var(--muted); font-size: var(--fs-2xs); transition: transform .12s; }
-.panel-fold:hover { color: var(--accent); }
+@media (hover: hover) { .panel-fold:hover { color: var(--accent); } }
 .panel-fold.on i { transform: rotate(-90deg); }
 /* 접으면 머리줄만 남긴다 */
 .build-weapons .panel.folded > *:not(h2) { display: none; }
@@ -3435,7 +3436,7 @@ body.info-open .sel-info { display: flex; }
   border: 1px solid var(--line); border-radius: 3px;
   background: transparent; color: var(--muted);
 }
-.mi-lv:hover { color: var(--text); border-color: var(--accent); }
+@media (hover: hover) { .mi-lv:hover { color: var(--text); border-color: var(--accent); } }
 .mi-lv.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
 
 /* ---- 기둥 ----
@@ -3567,7 +3568,7 @@ body.info-open .sel-info { display: flex; }
   background: var(--panel-2); border: 1px solid var(--line-soft); border-radius: 7px;
   padding: 7px; min-width: 0;
 }
-.mi-v:hover { border-color: var(--accent); background: var(--panel-3); }
+@media (hover: hover) { .mi-v:hover { border-color: var(--accent); background: var(--panel-3); } }
 .mi-v-th {
   position: relative; flex: 0 0 108px; aspect-ratio: 16 / 9;
   border-radius: 4px; overflow: hidden; background: #000;
@@ -3648,9 +3649,10 @@ body.info-open .sel-info { display: flex; }
    안 누른 쪽까지 원색이면 눈이 시끄러우므로, 고른 것만 색을 돌려준다. */
 .vote-btn i { font-style: normal; font-size: var(--fs-sm); line-height: 1;
   filter: grayscale(1); opacity: .7; transition: filter .12s, opacity .12s; }
-.vote-btn.on i, .vote-btn:hover:not(:disabled) i { filter: none; opacity: 1; }
+.vote-btn.on i { filter: none; opacity: 1; }
+@media (hover: hover) { .vote-btn:hover:not(:disabled) i { filter: none; opacity: 1; } }
 .vote-btn b { font-size: var(--fs-xs); }
-.vote-btn:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
+@media (hover: hover) { .vote-btn:hover:not(:disabled) { color: var(--text); border-color: var(--muted); } }
 .vote-btn:disabled { opacity: .5; cursor: default; }
 /* 내가 누른 쪽만 색이 든다 — 초록은 추천, 코랄은 비추. 무장 칩과 같은 계열이다 */
 .vote-btn.up.on { color: #8fd6a4; border-color: rgba(120, 200, 140, .45); background: rgba(120, 200, 140, .12); }
@@ -3736,13 +3738,13 @@ body.info-open .sel-info { display: flex; }
   border: 1px solid var(--line); border-radius: 3px;
   background: transparent; color: var(--dim);
 }
-.mi-sg-btn:hover { color: var(--text); border-color: var(--muted); }
+@media (hover: hover) { .mi-sg-btn:hover { color: var(--text); border-color: var(--muted); } }
 .mi-sg-btn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
 
 /* ---- 눌러서 펼치는 무장·스킬 ----
    목록만으로는 「무엇을 하는 무장인가」를 알 수 없고, 다 펼쳐 두면 읽을 수가 없다. */
 .mi-w { cursor: pointer; }
-.mi-w:hover { background: rgba(255, 255, 255, .06); }
+@media (hover: hover) { .mi-w:hover { background: rgba(255, 255, 255, .06); } }
 .mi-w.on { background: rgba(255, 201, 60, .1); }
 .mi-wdesc { padding: 6px 8px 8px; }
 .mi-wnums { font-size: var(--fs-2xs); color: var(--muted); margin-bottom: 5px; }
@@ -3791,7 +3793,7 @@ body.info-open .sel-info { display: flex; }
   background: transparent; color: var(--muted);
 }
 .mi-skcatbtn u { font-style: normal; text-decoration: none; font-size: var(--fs-3xs); color: var(--dim); }
-.mi-skcatbtn:hover { color: var(--text); border-color: var(--muted); }
+@media (hover: hover) { .mi-skcatbtn:hover { color: var(--text); border-color: var(--muted); } }
 .mi-skcatbtn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
 .mi-skcatbtn.on u { color: rgba(26, 29, 43, .65); }
 
@@ -3802,7 +3804,7 @@ body.info-open .sel-info { display: flex; }
   padding: 5px 7px; margin-bottom: 3px;
   background: rgba(255, 255, 255, .03); border-radius: 3px;
 }
-.mi-skrow:hover { background: rgba(255, 255, 255, .06); }
+@media (hover: hover) { .mi-skrow:hover { background: rgba(255, 255, 255, .06); } }
 .mi-skrow.on { background: rgba(255, 201, 60, .1); }
 .mi-skrow .nm { flex: 1; min-width: 0; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mi-skrow .lv { font-size: var(--fs-2xs); color: var(--dim); white-space: nowrap; }
@@ -3947,7 +3949,7 @@ body.info-open .sel-info { display: flex; }
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
   font-size: var(--fs-xs); font-weight: 400; color: var(--muted); cursor: pointer;
 }
-.late-box:hover { border-color: var(--accent); color: var(--text); }
+@media (hover: hover) { .late-box:hover { border-color: var(--accent); color: var(--text); } }
 .late-box input { margin: 0; cursor: pointer; accent-color: var(--accent); }
 /* 켜 두면 수치가 통째로 달라진다 — 켜져 있다는 것이 한눈에 보여야 한다 */
 .late-box:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }

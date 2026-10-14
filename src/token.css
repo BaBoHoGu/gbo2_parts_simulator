@@ -242,10 +242,10 @@
      파츠의 링크 색(--info)으로 맞춘다. 픽업 이름은 표 안에서 줄이 빽빽하므로
      밑줄은 올려놓을 때만 — 늘 그으면 표가 시끄럽다. */
   #screenToken a { color: var(--info); text-decoration: none; }
-  #screenToken a:hover { color: var(--accent); text-decoration: underline; }
+  @media (hover: hover) { #screenToken a:hover { color: var(--accent); text-decoration: underline; } }
   #screenToken a:visited { color: var(--info); }
   #screenToken .link-list a { color: var(--info); text-decoration: none; font-weight: 500; }
-  #screenToken .link-list a:hover { text-decoration: underline; }
+  @media (hover: hover) { #screenToken .link-list a:hover { text-decoration: underline; } }
   #screenToken .link-list .note { color: var(--dim); font-size: 12px; font-weight: normal; }
 
   /* 목표 표 배지 / 추천 / 로그 */
