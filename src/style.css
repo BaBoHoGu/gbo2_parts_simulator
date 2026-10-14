@@ -1,4 +1,16 @@
 :root {
+  /* ── 겹침 순서 다섯 층 (CSS 8단계) ──
+     여태 z-index 가 1~90 사이 열여덟 가지 수로 흩어져 있어, 새 창을 띄울 때마다
+     「몇이면 저것 위로 가나」를 파일 전체에서 찾아야 했다. 층을 이름으로 묶는다.
+     층 안의 순서(서랍 40 < 시트 45~48 등)는 calc(층 + n) 으로 **값 그대로** 둔다 —
+     이 정리는 숫자를 바꾸지 않는다(cssdiff 로 0픽셀 확인).
+     패널 안의 sticky 머리(1~5)는 제 쌓임 맥락 안에서만 겨루므로 층에 넣지 않는다.
+     대결 창은 <dialog> 의 최상위 층(top layer)에 뜨므로 이 숫자와 겨루지 않는다. */
+  --z-bar: 20;      /* 상단바 · 그 드롭다운(+10) */
+  --z-sheet: 40;    /* 서랍 · 폰 시트 · 하단 행동 바 */
+  --z-modal: 50;    /* 모달과 그 뒤판 · 모달 위로 여는 서랍(+2·+3) */
+  --z-pop: 60;      /* 토스트 · 메뉴 · 정보 칸 — 무엇 위에도 뜨는 짧은 것 */
+  --z-drag: 90;     /* 끌고 다니는 카드 — 손가락 밑에 늘 보여야 한다 */
 /* ---- 글자 크기 ----
    예전에는 font-size 가 296곳에 8.5~23px 사이 22단계로 흩어져 있었다.
    0.5px 차이는 이 크기에서 눈에 안 띄는데, 고칠 때마다 「어느 쪽에 맞추나」를
@@ -114,7 +126,7 @@ input:focus, select:focus { outline: 2px solid var(--accent-dim); outline-offset
   background: linear-gradient(180deg, #1c1f26, #16181e);
   border-bottom: 1px solid var(--line);
   position: relative;
-  z-index: 20;
+  z-index: var(--z-bar);
   flex-wrap: wrap;
 }
 
@@ -217,7 +229,7 @@ body:not(.view-select):not(.view-build):not(.view-gallery):not(.view-token):not(
 /* 패치노트에서 연 정보 칸. 날짜 레일은 가리지 않는다 — 어느 패치를 보던 중인지 남아야 한다. */
 body.pn-info .sel-info {
   display: flex; left: 190px; right: 0; top: 0; bottom: 0; width: auto;
-  border-left: 1px solid var(--line); z-index: 60;
+  border-left: 1px solid var(--line); z-index: var(--z-pop);
 }
 @media (max-width: 760px) {
   /* 좁은 화면에서는 레일이 가로로 눕는다 — 왼쪽을 비워 둘 이유가 없다. */
@@ -518,7 +530,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .plan-card.dragging { opacity: .35; }
 /* 끌고 다니는 동안 손가락을 따라다니는 쪽 */
 .plan-card.ghost {
-  position: fixed; z-index: 90; pointer-events: none;
+  position: fixed; z-index: var(--z-drag); pointer-events: none;
   opacity: .9; box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
 }
 .plan-card img { width: 46px; height: 46px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
@@ -813,7 +825,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .skill-box.multi .skill-btn { border-color: var(--skill2); color: var(--skill2); }
 
 .skill-menu {
-  position: absolute; z-index: 30; top: calc(100% + 4px); left: 0;
+  position: absolute; z-index: calc(var(--z-bar) + 10); top: calc(100% + 4px); left: 0;
   min-width: 280px; max-width: 380px; max-height: 320px; overflow-y: auto;
   padding: 5px; border: 1px solid var(--line); border-radius: 9px;
   background: var(--panel-2); box-shadow: 0 10px 26px #0009;
@@ -833,7 +845,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 
 /* PNG 배출 — 요약/상세 선택 메뉴 */
 .png-menu {
-  position: fixed; z-index: 60; min-width: 200px;
+  position: fixed; z-index: var(--z-pop); min-width: 200px;
   padding: 5px; border: 1px solid var(--line); border-radius: 9px;
   background: var(--panel-2); box-shadow: 0 10px 26px #0009;
 }
@@ -1477,7 +1489,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, .55);
-  z-index: 40;
+  z-index: var(--z-sheet);
   display: none;
 }
 
@@ -1486,8 +1498,8 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 /* 모달 위에서 열리는 서랍 (강화 플랜이 기체를 고를 때) — 서랍은 41, 모달은 51 이라
    그대로 열면 **모달 뒤로 들어가 아무것도 못 누른다.** 그 자리에서만 위로 올린다.
    덮개(52)는 모달보다 위, 서랍(53)은 덮개보다 위여야 한다. */
-.drawer-back.over-modal { z-index: 52; }
-.drawer.over-modal { z-index: 53; }
+.drawer-back.over-modal { z-index: calc(var(--z-modal) + 2); }
+.drawer.over-modal { z-index: calc(var(--z-modal) + 3); }
 
 .drawer {
   position: fixed;
@@ -1496,7 +1508,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   max-width: 92vw;
   background: var(--panel);
   border-left: 1px solid var(--line);
-  z-index: 41;
+  z-index: calc(var(--z-sheet) + 1);
   transform: translateX(100%);
   transition: transform .18s ease;
   display: flex;
@@ -1610,11 +1622,11 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 .data-fresh { font-size: var(--fs-xs); color: var(--dim); margin-left: 10px; }
 
 /* 자동 구성 결과 — 화면 중앙 모달 */
-.auto-modal-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 50; }
+.auto-modal-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: var(--z-modal); }
 .auto-modal-back[hidden] { display: none; }
 .auto-modal {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  z-index: 51; width: min(940px, 94vw); max-height: 88vh;
+  z-index: calc(var(--z-modal) + 1); width: min(940px, 94vw); max-height: 88vh;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
   display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
 }
@@ -1815,7 +1827,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   border-radius: 8px;
   padding: 9px 16px;
   font-size: var(--fs-md);
-  z-index: 60;
+  z-index: var(--z-pop);
   opacity: 0;
   pointer-events: none;
   transition: opacity .18s, transform .18s;
@@ -2269,7 +2281,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   :where(body.compact) .build-stats {
     position: fixed; top: 0; right: 0; bottom: 0; left: auto;
     width: min(94vw, 480px);
-    z-index: 46;
+    z-index: calc(var(--z-sheet) + 6);
     margin: 0 !important;
     transform: translateX(103%);
     transition: transform .26s cubic-bezier(.32, .72, 0, 1);
@@ -2286,7 +2298,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   :where(body.compact) .build-weapons {
     position: fixed; top: 0; left: 0; bottom: 0; right: auto;
     width: min(94vw, 480px);
-    z-index: 46;
+    z-index: calc(var(--z-sheet) + 6);
     margin: 0 !important;
     transform: translateX(-103%);
     transition: transform .26s cubic-bezier(.32, .72, 0, 1);
@@ -2303,7 +2315,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
 
   /* 백드롭 */
   :where(body.compact) .sheet-backdrop {
-    display: block; position: fixed; inset: 0; z-index: 45;
+    display: block; position: fixed; inset: 0; z-index: calc(var(--z-sheet) + 5);
     background: rgba(0, 0, 0, .55);
     opacity: 0; pointer-events: none; transition: opacity .22s;
   }
@@ -2314,7 +2326,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
     display: none;
     /* 백드롭(45)·시트(46) 보다 위 — 시트가 열린 채로도 다른 시트로 바로 전환할 수 있어야 한다
        (예전엔 백드롭에 가려 버튼이 안 눌렸다) */
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 47;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: calc(var(--z-sheet) + 7);
     gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     background: linear-gradient(180deg, rgba(28, 33, 48, .72), var(--panel));
     border-top: 1px solid var(--line);
@@ -2355,7 +2367,7 @@ body.view-build .screen-build > *:nth-child(5) { animation-delay: .20s; }
   :where(body.compact) .build-stats.sheet-open > .sheet-close,
   :where(body.compact) .build-weapons.sheet-open > .sheet-close {
     display: flex; align-items: center; justify-content: center;
-    position: fixed; z-index: 48;
+    position: fixed; z-index: calc(var(--z-sheet) + 8);
     width: 36px; height: 36px; border-radius: 999px;
     background: var(--panel-3); border: 1px solid var(--line); color: var(--text);
     font-size: var(--fs-xl); line-height: 1; box-shadow: 0 2px 10px rgba(0, 0, 0, .4);
@@ -2471,7 +2483,7 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
   :where(body.compact) .mskill-inline.sheet-open {
     position: fixed; top: 0; left: 0; bottom: 0; right: auto;
     width: min(94vw, 480px);
-    z-index: 46;
+    z-index: calc(var(--z-sheet) + 6);
     margin: 0 !important;
     transform: none;
     overflow-y: auto;
@@ -2695,7 +2707,7 @@ body.drawer-open .m-actionbar { display: none !important; }
 
 /* 자세·스코프 드롭다운 — 성능의 스킬 메뉴와 같은 모양 */
 /* body 로 띄우는 팝오버 — .skill-menu 의 absolute/top/left 를 덮는다 */
-.posture-menu { position: fixed; top: auto; left: auto; z-index: 60;
+.posture-menu { position: fixed; top: auto; left: auto; z-index: var(--z-pop);
   min-width: 210px; max-width: min(280px, 92vw); max-height: none; }
 .posture-menu .skill-item input { accent-color: var(--mid); }
 .skill-sep { height: 1px; background: var(--line); margin: 4px 6px; }
@@ -3412,7 +3424,7 @@ body.info-open .sel-2col { grid-template-columns: 1fr; }
   /* 목록 위를 덮으므로 **불투명**해야 한다 (전에는 나란히 있어 반투명이어도 됐다) */
   background: var(--bg);
   position: absolute; top: 0; right: 0; bottom: 0; width: 60%;
-  z-index: 40;
+  z-index: var(--z-sheet);
 }
 body.info-open .sel-info { display: flex; }
 /* 머리줄 — 닫기(폰) · 제목 · 파츠 고르기 */
@@ -3616,7 +3628,7 @@ body.info-open .sel-info { display: flex; }
   /* **width 를 같이 풀어야 한다.** inset:0 만 주면 위의 width:60% 가 그대로 이겨,
      「전체를 덮으라」고 해 놓고 폭은 60% 에 머문다 — 폰에서 오른쪽 40% 에 못 쓰는
      기체 목록이 남고, 정보는 그 좁은 60% 안에서 다시 절반으로 줄어 보였다. */
-  .sel-info { position: fixed; inset: 0; width: auto; z-index: 60; border-left: 0; background: var(--bg); }
+  .sel-info { position: fixed; inset: 0; width: auto; z-index: var(--z-pop); border-left: 0; background: var(--bg); }
   .mi-blist { max-height: none; }
 }
 /* 좁은 화면 — 2열로 두니 칸 높이가 제각각이라 빈 자리가 생기고 눈이 갈피를 못 잡았다.

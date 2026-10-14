@@ -363,9 +363,23 @@
   function build() {
     /* id 를 붙인다 — 점검 도구가 이 창을 집을 손잡이가 필요하고(안전영역 CSS·열고 닫기),
        이름은 지워진 피탄 시뮬의 #pietanModal / #pietanBack / #pietanClose 와 짝을 맞춘 것이다. */
+    /* <dialog> 로 띄운다(CSS 8단계). showModal() 이면
+         · 최상위 층(top layer)에 떠 z-index 싸움이 없다 — 예전엔 70/71 을 손으로 골랐다
+         · 뒤 화면이 inert 가 되어 Tab 이 창 밖(상단바·파츠 목록)으로 새지 않는다
+         · 닫으면 포커스가 연 단추(⚔ 대결)로 돌아간다
+       showModal 이 없는 곳(jsdom 스모크)에서는 예전처럼 뒤판 div 를 쓴다.
+       hidden 속성은 그대로 같이 움직인다 — 앱·검사가 「열렸나」를 그것으로 본다. */
     back = el('div', 'duel-back'); back.id = 'duelBack'; back.hidden = true; back.onclick = () => open(false);
-    root = el('section', 'duel'); root.id = 'duelModal'; root.hidden = true;
-    root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', '대결 시뮬레이터');
+    root = el('dialog', 'duel'); root.id = 'duelModal'; root.hidden = true;
+    root.setAttribute('aria-label', '대결 시뮬레이터');
+    root.tabIndex = -1;
+    root.addEventListener('cancel', e => { e.preventDefault(); open(false); });   // Esc
+    /* 뒤판(::backdrop)을 누르면 닫는다 — 뒤판 클릭은 dialog 자신에게 오므로 창 밖 좌표인지 본다 */
+    root.addEventListener('click', e => {
+      if (e.target !== root) return;
+      const b = root.getBoundingClientRect();
+      if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) open(false);
+    });
     root.dataset.tab = 'L';
     const head = el('div', 'duel-head');
     head.append(el('b', null, '⚔ 대결 시뮬레이터'), el('span', 'tag', '개편 시안'), el('span', 'grow'));
@@ -1026,7 +1040,15 @@
   function open(on) {
     if (!root) build();
     if (on) fitZoom();
-    root.hidden = !on; back.hidden = !on;
+    const modal = typeof root.showModal === 'function';
+    root.hidden = !on;
+    back.hidden = !on || modal;
+    if (modal) {
+      /* showModal 은 첫 단추(닫기)에 포커스를 준다 — 마우스로 열어도 닫기에 고리가 그려졌다.
+         창 자체에 준다(tabIndex -1). Tab 을 누르면 그 다음부터 창 안 단추를 돈다. */
+      if (on && !root.open) { root.showModal(); root.focus(); }
+      else if (!on && root.open) root.close();
+    }
     document.documentElement.style.overflow = on ? 'hidden' : '';
     if (on) { HOOK.seed(S.L, setMs); renderAll(); }
   }

@@ -2,14 +2,21 @@
    좌: 나 · 중앙: 체력 상황 · 우: 상대.  각 측: 기체 → 파츠·스킬 → 무장·사격 조건.
    앱 토큰(--panel, --accent, --line …)만 쓴다 — 새 색을 들이지 않는다. */
 
-.duel-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .62); z-index: 70; }
+/* 뒤판 div 와 z-index 는 showModal 이 없는 곳(jsdom)에서만 쓰인다 — <dialog> 는 최상위 층에 뜬다 */
+.duel-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .62); z-index: calc(var(--z-pop) + 10); }
+.duel::backdrop { background: rgba(0, 0, 0, .62); }
+/* 창 자체가 받은 포커스(열 때)는 고리를 그리지 않는다 — 창 안 단추로 옮기면 그때 그린다 */
+.duel:focus, .duel:focus-visible { outline: none; }
 .duel-back[hidden], .duel[hidden] { display: none; }
 
 .duel {
   --d-me: #58a9ff;          /* 나 = 앱의 info 파랑 */
   --d-foe: #ff6b6b;         /* 상대 = 경고 빨강 */
   --d-gap: 12px;
-  position: fixed; z-index: 71;
+  position: fixed; z-index: calc(var(--z-pop) + 11);
+  /* <dialog> 기본 모양(가운데 margin · 1em 안쪽 여백 · 최대 폭/높이 · 흰 바탕)을 걷는다 —
+     자리는 아래 inset 이 정한다 */
+  margin: 0; padding: 0; max-width: none; max-height: none; width: auto; height: auto;
   inset: 24px max(16px, calc((100vw - 1480px) / 2));
   display: flex; flex-direction: column;
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
