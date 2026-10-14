@@ -4060,3 +4060,35 @@ body.info-open .sel-info { display: flex; }
   border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 13px; }
 .goal-lb { font-size: var(--fs-sm); color: var(--muted); margin-left: 2px; }
 .goal-note { font-size: var(--fs-xs); color: var(--muted); flex: 1 1 100%; }
+
+/* ── 낮은 데스크톱(높이 ≤ 800): 기체 정보를 접는다 (CSS 6단계 ㉮) ──
+   1280×720 에서 기체 칸이 233px 이라 파츠 목록이 첫 화면에 **20px** 만 보였다.
+   이름·LV·분류·코스트를 한 줄로, 강화·확장은 라벨을 옆에 붙여 한 줄로 접는다.
+   출격·적성 줄(h-facts)은 여기서만 감춘다 — 높이가 넉넉하면 그대로 나온다.
+   폰(compact)은 따로 맞춰 두었으니 건드리지 않는다. */
+@media (min-width: 1101px) and (max-height: 800px) {
+  :where(body:not(.compact)) .hero { gap: 5px; padding: 6px 10px; }
+  :where(body:not(.compact)) .hero-body { gap: 8px; }
+  :where(body:not(.compact)) .hero-body > img { width: 32px; height: 32px; border-radius: 6px; }
+  :where(body:not(.compact)) .hero .h-main {
+    display: flex; align-items: center; gap: 2px 8px; flex-wrap: wrap; min-width: 0;
+  }
+  :where(body:not(.compact)) .h-level-seg { margin-bottom: 0; flex-shrink: 0; }
+  :where(body:not(.compact)) .hero h3 {
+    /* 이름은 자르지 않는다 — 뒤가 날아가면 LV·개량형을 못 가린다. 길면 분류 줄이 아래로 내려간다. */
+    margin: 0; font-size: var(--fs-lg);
+  }
+  :where(body:not(.compact)) .hero .h-sub { flex-wrap: nowrap; white-space: nowrap; flex-shrink: 0; gap: 5px; }
+  :where(body:not(.compact)) .h-facts { display: none; }
+  :where(body:not(.compact)) .hero .h-controls { align-items: center; gap: 6px 12px; flex-wrap: nowrap; }
+  :where(body:not(.compact)) .hero .h-controls > div { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  /* 라벨 글자는 눈에서만 감춘다(font-size 0) — 낭독기는 그대로 읽고, 「?」 단추는 제 글자 크기가 있어 남는다.
+     한 줄에 강화 단추·확장 선택·레벨을 다 놓으려면 이 폭(≈110px)이 필요했다. 선택칸이 「확장 스킬 없음」을 보여 뜻은 남는다. */
+  :where(body:not(.compact)) .hero .h-controls label { margin-bottom: 0; white-space: nowrap; font-size: 0; }
+  :where(body:not(.compact)) .hero .h-controls label .lbl-help { margin-left: 0; }
+  :where(body:not(.compact)) .hero .h-controls .h-exp { min-width: 0; flex: 1 1 0; }
+  /* 확장 칸이 판 밖으로 밀리지 않게 — 강화 단추가 자리를 먼저 잡고, 확장 선택이 남은 폭에 줄어든다 */
+  :where(body:not(.compact)) .hero .h-controls .h-stage { flex-shrink: 0; }
+  :where(body:not(.compact)) .hero .exp-row { flex: 1 1 0; min-width: 0; }
+  :where(body:not(.compact)) .hero .exp-row #expLevel { width: 58px; }
+}
