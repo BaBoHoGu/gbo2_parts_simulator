@@ -3907,6 +3907,29 @@ body.info-open .sel-info { display: flex; }
    되돌릴 지점: git tag `css-before-20261013`
    ====================================================================== */
 
+/* ── 세로 폰: 필터가 목록을 밀어낸다 ───────────────────────────────────
+   390×844 에서 필터 363px(제목 51 + 칩 105 + 칩 68 + 검색 86) · 목록 346px 라
+   카드가 **4장**뿐이었다. 가로에서 하던 것(접고 굴리기)을 세로에도 넓힌다.
+
+   **검색줄을 바닥에 붙인다.** 칸의 DOM 순서가 제목 → 칩 → 칩 → 검색이라,
+   높이를 그냥 자르면 **검색칸이 먼저 잘려** 기체를 찾는 길이 사라진다.
+   칩만 굴러가게 하고 검색은 늘 보이게 둔다.
+
+   가로(104px)보다 느슨하게 200px 로 둔다 — 세로는 높이가 있어 칩 한 줄은
+   보여 주는 것이 맞다. 다 감추면 거르기가 「숨은 기능」이 된다. */
+@media (max-width: 700px) and (min-height: 561px) {
+  .select-head {
+    max-height: 200px; overflow-y: auto;
+    overscroll-behavior: contain; scrollbar-width: none;
+  }
+  .select-head::-webkit-scrollbar { width: 0; height: 0; }
+  /* 검색은 굴러가도 바닥에 남는다 — 배경을 주어야 칩이 뒤로 지나갈 때 글자가 겹치지 않는다. */
+  .select-head .ms-search-row {
+    position: sticky; bottom: 0; z-index: 2;
+    background: var(--panel); padding-bottom: 2px;
+  }
+}
+
 /* 짧은 화면 = 가로 폰. 세로 폰(높이 844)과 데스크톱에는 안 걸린다. */
 @media (max-height: 560px) {
   /* 필터는 이 화면의 본업이라 **없애지 않고 접는다** — 굴리면 다 나온다.
@@ -3916,11 +3939,21 @@ body.info-open .sel-info { display: flex; }
     overscroll-behavior: contain; scrollbar-width: none;
   }
   .select-head::-webkit-scrollbar { width: 0; height: 0; }
+  /* 검색줄을 칸 바닥에 붙인다 — 접은 칸의 **위쪽**에 있으면 검색칸이 화면에서
+     사라져 기체를 찾을 길이 없었다. 어제 접기만 넣고 이건 빠뜨렸고,
+     cardfit_check 가 「검색칸이 늘 보인다」로 재면서 잡았다.
+     (끝까지 굴린 자리만 보면 안 울린다 — 마지막 자식이라 바닥에서는 저절로 보인다.) */
+  .select-head .ms-search-row {
+    position: sticky; bottom: 0; z-index: 2;
+    background: var(--panel); padding-bottom: 2px;
+  }
 
   /* 844px 에 5열(155px)이 깔려 **이름칸이 64px** 이었다 — 80개 중 65개가 잘렸다.
      210px 로 올리면 3열·이름칸 172px 이 되고, 이름이 한 줄에 들어가 카드 높이는
      오히려 102 → 76px 로 **낮아진다.** 열이 줄어도 손해가 작은 이유다. */
-  .ms-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  /* min() 으로 감싼다 — 210px 보다 좁은 화면(폭 360 기기의 가로는 아니지만,
+     분할 화면·작은 창에서는 생긴다)에서 한 칸이 화면을 넘어가지 않게. */
+  .ms-grid { grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr)); }
 
   /* 안내문 — **지우지 않는다.** 설명 한 줄만 빼고(아래 링크가 스스로 말한다)
      줄간격·여백을 조인다. 글자 크기는 안 줄인다 — 가로에서 이미 10.5px 이라
