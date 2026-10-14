@@ -98,16 +98,20 @@ const MUST_REACH = ['#openAuto', '#duelBtn', '#compareBtn', '#save', '#share', '
       if (m) m.remove();
       const label = s => (document.querySelector(s) || {}).textContent || '';
       return { patch: vis('#patchBtn'), token: vis('#tokenBtn'), plan: vis('#planBtn'),
+        others: ['#codexBtn', '#galleryBtn', '#duelBtn', '#compareBtn'].filter(s => !vis(s)),
         items, tokenLb: label('#tokenBtn').trim(), planLb: label('#planBtn').trim() };
     });
     ok(w + 'px 에서 패치노트는 상단바에 남는다', fold.patch === true, fold);
-    if (w <= 1399) {
-      ok(w + 'px 에서 토큰·강화 플랜은 ⋯ 로 들어간다',
-        fold.token === false && fold.plan === false, fold);
-      ok(w + 'px 에서 그 둘이 ⋯ 메뉴 안에 있다',
-        fold.items.includes(fold.tokenLb) && fold.items.includes(fold.planLb),
-        { 메뉴: fold.items, 찾던것: [fold.tokenLb, fold.planLb] });
-    }
+    /* 예전엔 「1399px 이하면 둘 다 접힌다」를 폭으로 못 박았다. 이제 접기는 재서 한다(fitTopbar) —
+       1280px 에서는 강화 플랜 하나만 접어도 한 줄이 되어 토큰은 남는다. 사용자가 정한 것은
+       **폭이 아니라 순서**다: 무엇이든 접혀야 한다면 강화 플랜 → 토큰이 먼저 간다.
+       그래서 「다른 버튼이 접혔는데 토큰·강화 플랜이 남아 있다」 를 잡는다. */
+    ok(w + 'px 에서 강화 플랜이 토큰보다 먼저 접힌다', !(fold.plan && !fold.token), fold);
+    ok(w + 'px 에서 다른 버튼보다 토큰·강화 플랜이 먼저 접힌다',
+      !fold.others.length || (!fold.token && !fold.plan), fold);
+    const folded = [[fold.token, fold.tokenLb], [fold.plan, fold.planLb]].filter(([v]) => !v).map(([, l]) => l);
+    ok(w + 'px 에서 접힌 토큰·강화 플랜이 ⋯ 메뉴 안에 있다 (' + folded.length + '개)',
+      folded.every(l => fold.items.includes(l)), { 메뉴: fold.items, 찾던것: folded });
     await br.close();
   }
 

@@ -205,9 +205,8 @@ body:not(.view-select):not(.view-build):not(.view-gallery):not(.view-token):not(
    접을 것을 패치노트로 잡았다가 사용자 지시로 바꿨다 — 패치노트는 늘 보이고,
    덜 자주 쓰는 토큰·강화 플랜이 접힌다. 접히면 폭이 0 이 되고 「⋯」 메뉴가
    **폭 0 인 것을 주워 담아** 그대로 닿는다(둘 다 MOBILE_FOLD 에 들어 있다). */
-@media (max-width: 1399px) {
-  .topbar #tokenBtn, .topbar #planBtn { display: none !important; }
-}
+/* (폭 기준 1399px 규칙은 걷어 냈다 — 이제 ui.js fitTopbar 가 넘치는지 재서 접는다.
+    손으로 적은 폭은 버튼이 늘 때마다 어긋났다.) */
 
 /* ---- ⑦ 게임 패치노트 ----
    좌: 패치 날짜 레일(고른 칸 크게 · 나머지 작게 · 미끄러져 가운데로)
@@ -2506,6 +2505,18 @@ body.vm-wide .w-fixed, body.vm-wide .w-debuff, body.vm-wide .w-mult { flex-shrin
 .tb-sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; flex: 0 0 auto; }
 
 .topbar-more { display: inline-flex; align-items: center; font-size: var(--fs-2xl); line-height: 1; padding: 4px 12px; }
+/* 재서 접은 것(fitTopbar) — 장식은 그냥 사라지고, 버튼은 「⋯」 메뉴로 간다 */
+.topbar .tb-fold { display: none !important; }
+/* 넘침 표시 — 「⋯」 안에 든 버튼 수 */
+.topbar-more { position: relative; }
+.topbar-more[data-folded]:not([data-folded=""])::after {
+  content: attr(data-folded);
+  position: absolute; top: -5px; right: -5px;
+  min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box;
+  border-radius: 8px; background: var(--accent); color: #241c00;
+  font-size: 11px; font-weight: 700; line-height: 16px; text-align: center;
+  pointer-events: none;
+}
 
   :where(body.compact) .topbar-more { display: inline-flex; align-items: center; }
   :where(body.compact) .topbar .in-more { display: none !important; }

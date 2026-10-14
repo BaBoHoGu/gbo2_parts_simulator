@@ -832,6 +832,24 @@
   }
 
   let toastTimer = null;
+  /* 토스트를 **하단 안내문 위로** 띄운다(CSS 7단계, #8).
+     CSS 의 bottom:26px 은 안내문(73~96px) 한가운데라, 모든 크기에서 고지를 40px 가렸다.
+     안내문 높이는 화면마다 다르고(폰은 한 줄이 더 붙는다) 폰 빌드 화면엔 아래 행동 바도 있다 —
+     수를 적지 않고 **띄울 때 재서** 그 위에 둔다. CSS 값보다 낮게 내리지는 않는다. */
+  function placeToast(t) {
+    t.style.bottom = '';
+    const base = parseFloat(getComputedStyle(t).bottom) || 0;
+    let top = innerHeight;
+    for (const sel of ['.app-foot', '.m-actionbar']) {
+      const e = document.querySelector(sel);
+      if (!e) continue;
+      const r = e.getBoundingClientRect();
+      if (r.height > 0 && r.top < innerHeight && r.bottom > 0) top = Math.min(top, r.top);
+    }
+    const need = innerHeight - top + 10;
+    if (need > base) t.style.bottom = need + 'px';
+  }
+
   function toast(msg, action) {
     const t = $('#toast');
     t.replaceChildren(el('span', 'toast-msg', msg));
@@ -840,6 +858,7 @@
       b.onclick = () => { t.classList.remove('show'); action.run(); };
       t.append(b);
     }
+    placeToast(t);
     t.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), action ? 5000 : 2200);
@@ -1297,6 +1316,7 @@
       document.body.classList.toggle('view-' + v, view === v);
     [...$('#stepper').querySelectorAll('li[data-step]')].forEach(li =>
       li.classList.toggle('on', li.dataset.step === view));
+    fitTopbar();   // 화면마다 상단바 버튼이 다르다(빌드 화면에만 있는 것들)
     // 화면 전환 시 스크롤을 위로 되돌린다
     const scr = { build: $('#screenBuild'), gallery: $('#screenGallery'), codex: $('#screenCodex'),
       token: $('#screenToken'), plan: $('#screenPlan'), patch: $('#screenPatch') }[view] || $('#screenSelect');
@@ -7782,6 +7802,7 @@
     window.addEventListener('load', () => {
       const dBtn = document.getElementById('duelBtn');
       if (dBtn) dBtn.classList.add('in-more');
+      fitTopbar();
     }, { once: true });
     window.GBO2Duel.use({
       /* 방아쇠 한 번에 맞는 히트 수 — 무장표의 「전탄」과 같은 자. {nc,ch} 각각 null|{n}. */
@@ -9951,6 +9972,7 @@
            폰 전용 표시(vm-wide·wnarrow)가 달라지는데, 여태 여기서 안 불러
            돌린 뒤에도 세로 설정이 그대로 남아 있었다. */
         applyViewMode();
+        fitTopbar();
         fitBuildBand(); fitWholeRows($('#partList'));
         markWeaponScroll();     // 가로↔세로 회전으로 넘침 여부가 바뀐다
         /* 패치노트 레일도 다시 잰다. 안 하면 창을 줄여 넘치게 돼도 자리와 마스크가
@@ -10224,6 +10246,49 @@
     }), 0);
   }
 
+  /* ■ 상단바 접기 — **재서** 접는다(CSS 7단계).
+     여태는 폭 기준을 손으로 적었다(1399 · 1560px). 버튼이 하나 늘 때마다 그 수가 어긋났다 —
+     대결 버튼이 붙은 뒤 1600px 과 900~1100px 에서 상단바가 2~3줄(91·99px)이 됐는데
+     검사는 1920·1500·1280 만 봐서 몰랐다. 그래서 수를 적지 않고 **넘치는지 직접 본다**:
+     다 펴 놓고, 넘치면 덜 쓰는 것부터 하나씩 접는다. 접힌 버튼은 폭이 0 이 되어
+     「⋯」 메뉴가 주워 담는다(그 규칙은 아래 btn.onclick 그대로).
+     순서: 장식(제목 글자) → 강화 플랜 → 토큰 → 스킬 도감 → 갤러리 → 대결 → 비교.
+     자동 구성 · 내보내기 · 패치노트는 접지 않는다(패치노트는 사용자 지시). */
+  const TB_FOLD_ORDER = ['.brand span', '.brand > div', '#planBtn', '#tokenBtn', '#codexBtn',
+    '#galleryBtn', '#duelBtn', '#compareBtn'];
+  function topbarOverflows(bar) {
+    if (bar.scrollWidth > bar.clientWidth + 1) return true;          // 한 줄로 묶인 폰 바
+    const items = [...bar.children].filter(x => {
+      const r = x.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && !x.classList.contains('spacer');
+    });
+    if (!items.length) return false;
+    const rects = items.map(x => x.getBoundingClientRect());
+    const firstBottom = Math.min(...rects.map(r => r.bottom));
+    return rects.some(r => r.top >= firstBottom - 1);                 // 첫 줄 아래로 내려간 것
+  }
+  function fitTopbar() {
+    const bar = document.querySelector('.topbar');
+    if (!bar) return;
+    const folds = TB_FOLD_ORDER.flatMap(sel => [...bar.querySelectorAll(sel)]);
+    folds.forEach(e => e.classList.remove('tb-fold'));
+    for (const e of folds) {
+      if (!topbarOverflows(bar)) break;
+      e.classList.add('tb-fold');
+    }
+    /* 넘침 표시 — 「⋯」 안에 버튼이 몇 개 들어 있는지 숫자로 알린다.
+       접혀 사라진 버튼을 찾는 사람이 「⋯」 를 열어 볼 이유를 준다. */
+    const more = document.getElementById('topbarMore');
+    if (more) {
+      const n = MOBILE_FOLD.filter(sel => {
+        const b = $(sel);
+        return b && b.getBoundingClientRect().width === 0;
+      }).length;
+      more.dataset.folded = n ? String(n) : '';
+      more.setAttribute('aria-label', n ? '더보기 — 접힌 버튼 ' + n + '개' : '더보기');
+    }
+  }
+
   function setupTopbarOverflow() {
     const bar = document.querySelector('.topbar');
     if (!bar) return;
@@ -10256,6 +10321,10 @@
       }).concat(MORE_MENU);
       openTopbarMenu(btn, list);
     };
+    fitTopbar();
+    /* 글꼴이 늦게 붙으면 버튼 폭이 바뀐다 · duel.js 는 load 때 버튼을 단다 — 둘 다 다시 잰다 */
+    window.addEventListener('load', () => setTimeout(fitTopbar, 0), { once: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTopbar);
   }
 
 
