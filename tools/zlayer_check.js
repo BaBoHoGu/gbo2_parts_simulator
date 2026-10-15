@@ -58,5 +58,20 @@ for (const f of FILES) {
 }
 ok('층 안 덧셈(+n)이 다음 층을 넘지 않는다', over.length === 0, over);
 
+/* ── CSS 층(@layer, 10단계) ──
+   세 CSS 파일이 통째로 `@layer app` 안에 있어야 한다. 하나라도 층 밖으로 빠지면 그 규칙은 특이도와
+   상관없이 **모든 층 규칙을 이긴다** — 겨룸이 조용히 뒤집힌다. 토큰 층에는 사용자 속성만 둔다
+   (보통 속성을 넣으면 app 의 규칙에 늘 지는데, 그걸 눈으로는 알 수 없다). */
+const html = fs.readFileSync(path.join(ROOT, 'src/index.html'), 'utf8');
+const st = (html.match(/<style>([\s\S]*?)<\/style>/) || [])[1] || '';
+ok('<style> 이 @layer app { … } 하나로 감싸여 있다', /^@layer app \{[\s\S]*\}\s*$/.test(st.trim()), st.slice(0, 40));
+ok('세 CSS 자리표가 모두 그 안에 있다', ['/*__CSS__*/', '/*__DUEL_CSS__*/', '/*__TOKEN_CSS__*/'].every(k => st.includes(k)));
+const tk = css.match(/@layer tokens \{([\s\S]*?)\n\}\r?\n\}/);
+/* 선언을 ; 로 가른다 — 줄 머리만 보면 한 줄에 둘을 적은 것(--a: 1; color: red;)을 놓친다(심어 보니 놓쳤다) */
+const tkProps = tk ? tk[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*:root\s*\{/, '').split(';')
+  .map(d => (d.split(':')[0] || '').trim()).filter(Boolean) : null;
+ok('토큰 층에는 사용자 속성(--)만 있다', !!tkProps && tkProps.length > 0 && tkProps.every(p => p.startsWith('--')),
+  tkProps ? tkProps.filter(p => !p.startsWith('--')) : '토큰 층을 못 찾음');
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

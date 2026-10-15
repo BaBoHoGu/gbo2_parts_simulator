@@ -7,9 +7,16 @@
 <!-- 탭 아이콘. 빌드가 assets/favicon.png 를 data URI 로 심는다 — 파일을 따로 두면
      사이트에서 /favicon.ico 404 가 나고, 오프라인 단일 파일에는 실을 곳이 없다. -->
 <link rel="icon" href="/*__FAVICON__*/">
-<style>/*__CSS__*/
+<!-- CSS 층(@layer) — 세 파일을 통째로 app 층에 넣는다(CSS 10단계).
+     안의 겨룸(순서·특이도·!important)은 그대로다 — 모두 같은 층이라서. 색·크기 토큰(:root)만 그 안의
+     app.tokens 층으로 뗐다. 앞으로 「어떤 규칙보다 이겨야 하는 것」 은 특이도를 올리지 말고
+     `@layer app, override;` 를 맨 앞에 적고 override 층에 둔다. JS 가 다는 인라인 style 은 층 밖이라
+     지금처럼 이긴다. -->
+<style>@layer app {
+/*__CSS__*/
 /*__DUEL_CSS__*/
-/*__TOKEN_CSS__*/</style>
+/*__TOKEN_CSS__*/
+}</style>
 </head>
 <!-- 화면을 감추는 규칙은 body 의 view-* 클래스에 걸려 있다. JS 가 그 클래스를 붙이는데,
      16.7MB 짜리 문서라 **콜드 스타트에서는 그 전에 한 번 그려진다** — 그때 여섯 화면이
