@@ -16,8 +16,9 @@
   --z-drag: 90;     /* 끌고 다니는 카드 — 손가락 밑에 늘 보여야 한다 */
 
   /* ── 자주 쓰던 맨 색을 이름으로 (CSS 9단계) ── 값은 그대로라 화면은 안 바뀐다.
-     강조색 위 글자는 #241c00(9곳) 과 #1a1d2b(5곳: 보기 칩·LV·스킬 분류 등) 두 가지가 섞여 있다.
-     하나로 맞추면 눈에 보이는 변화라 이번엔 이름만 붙이고 맞추지 않았다. */
+     강조색 위 글자는 갈색 #241c00 과 남색 #1a1d2b(보기 전환·LV·스킬 분류·무장 LV, 5곳)가 섞여 있었다.
+     명암비는 같았고(11.75 / 11.62) 색감만 달라, 사용자 결정으로 **갈색 하나로** 맞췄다(2026-10-15).
+     강조색 위에 글자를 얹을 때는 맨 색을 적지 말고 이 이름을 쓸 것. */
   --on-accent: #241c00;   /* 강조색(노랑) 바탕 위 글자 */
   --img-well: #0b0d10;    /* 기체·파츠 그림 뒤 우물 */
   --scrim: rgba(0, 0, 0, .55);   /* 모달·서랍 뒤판 */
@@ -1488,7 +1489,7 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 .ms-view-seg button:first-child { border-radius: 6px 0 0 6px; }
 .ms-view-seg button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
-.ms-view-seg button.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); font-weight: 700; }
+.ms-view-seg button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
 
 /* ---- 기체 티어 ----
    갤러리와 같은 화면의 다른 보기다. 카드가 아니라 **순위 줄**로 둔다 —
@@ -3436,7 +3437,7 @@ body.info-open .sel-info { display: flex; }
   background: transparent; color: var(--muted);
 }
 @media (hover: hover) { .mi-lv:hover { color: var(--text); border-color: var(--accent); } }
-.mi-lv.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
+.mi-lv.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 
 /* ---- 기둥 ----
    레퍼런스와 같은 3열: 무장·스킬 / 성능·파츠칸·누적치 / 기체 신분증·강화.
@@ -3739,7 +3740,7 @@ body.info-open .sel-info { display: flex; }
   background: transparent; color: var(--dim);
 }
 @media (hover: hover) { .mi-sg-btn:hover { color: var(--text); border-color: var(--muted); } }
-.mi-sg-btn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
+.mi-sg-btn.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 
 /* ---- 눌러서 펼치는 무장·스킬 ----
    목록만으로는 「무엇을 하는 무장인가」를 알 수 없고, 다 펼쳐 두면 읽을 수가 없다. */
@@ -3794,7 +3795,7 @@ body.info-open .sel-info { display: flex; }
 }
 .mi-skcatbtn u { font-style: normal; text-decoration: none; font-size: var(--fs-3xs); color: var(--dim); }
 @media (hover: hover) { .mi-skcatbtn:hover { color: var(--text); border-color: var(--muted); } }
-.mi-skcatbtn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
+.mi-skcatbtn.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .mi-skcatbtn.on u { color: rgba(26, 29, 43, .65); }
 
 /* ---- 스킬 줄 ----
@@ -3828,7 +3829,7 @@ body.info-open .sel-info { display: flex; }
 .up-pwnote { display: block; margin: -4px 0 8px; color: var(--dim); font-size: var(--fs-2xs); }
 
 /* 무장 LV 칸 — 기체 LV 와 다를 때는 한눈에 보여야 한다(기본값이 아니라는 표시) */
-.wlv-seg .seg-btn.on { background: var(--accent); color: #1a1d2b; border-color: var(--accent); }
+.wlv-seg .seg-btn.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .wlv-seg .seg-btn:first-child.on { background: transparent; color: var(--text); border-color: var(--line); }
 
 /* ---- 계산에 반영되지 않는 파츠 효과 ----
