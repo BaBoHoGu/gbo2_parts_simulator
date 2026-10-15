@@ -518,8 +518,23 @@ function hpBandSteps({ eff, oneHit, mult, fixed, bands, targetHits }) {
   return { n, total, dmgAt };
 }
 
+/**
+ * 「攻撃対象の(特殊)緩衝材系スキル無視」 — 맞는 쪽의 완충재 스킬(機体HPへのダメージを N%軽減)을
+ * 이 무장은 **안 받는다.** 무장 34종(2026-10-15 셈), 조건 넷:
+ *   늘 24 · 集束時(집속했을 때) 4 · 下格闘時(하격) 1 · スキル発動中(어느 스킬인지 원문에 없다) 5.
+ * special=true 면 「特殊緩衝材」 만, false 면 이름에 「緩衝材」 가 든 스킬 모두.
+ * 판정은 여기 한 곳 — 대결의 셈과 계산식 표시가 같은 답을 보게 한다.
+ * @returns {null | {special:boolean, when:'always'|'charged'|'down'|'skill', text:string}}
+ */
+function bufferIgnoreOf(note) {
+  const m = /(下格闘時、|集束時|スキル発動中、)?攻撃対象の(特殊)?緩衝材系スキル無視/.exec(String(note || ''));
+  if (!m) return null;
+  const when = !m[1] ? 'always' : /集束/.test(m[1]) ? 'charged' : /下格闘/.test(m[1]) ? 'down' : 'skill';
+  return { special: !!m[2], when, text: m[0] };
+}
+
 const GBO2Damage = {
-  hpBonusOf, hpBandAt, hpBandSteps,
+  hpBonusOf, hpBandAt, hpBandSteps, bufferIgnoreOf,
   CAP_A, ATTR_BONUS, ETC_ATTACK,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag,

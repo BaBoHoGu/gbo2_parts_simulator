@@ -225,6 +225,40 @@
 }
 .dc-chips span.up { color: var(--good); }
 .dc-chips span.down { color: #ff8f8f; }
+
+/* 피해량 계산식 — 카드 아래 접힌 칸. 펼치면 단계마다 「무엇 × 무엇 = 값」 */
+.dc-formula { margin-top: 10px; border-top: 1px dashed var(--line-soft); padding-top: 8px; }
+.dc-formula > summary {
+  cursor: pointer; font-size: 12px; color: var(--muted); list-style: none;
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 0;
+}
+.dc-formula > summary::-webkit-details-marker { display: none; }
+.dc-formula > summary::before { content: '▸'; font-size: 11px; transition: transform .15s; }
+.dc-formula[open] > summary::before { transform: rotate(90deg); }
+@media (hover: hover) { .dc-formula > summary:hover { color: var(--text); } }
+.fx-steps { list-style: none; counter-reset: fx; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.fx-steps li {
+  counter-increment: fx; display: grid; grid-template-columns: 22px 64px 1fr auto; gap: 2px 8px;
+  align-items: baseline; font-size: 12px; line-height: 1.45;
+}
+.fx-steps li::before { content: counter(fx); color: var(--dim); font-size: 11px; text-align: right; }
+.fx-lb { color: var(--muted); }
+.fx-ex { color: var(--text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fx-val { color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fx-note { grid-column: 3 / -1; color: var(--dim); font-size: 11px; }
+.fx-conds { margin-top: 10px; display: grid; gap: 4px; }
+.fx-cap { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.fx-cond { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 12px; padding: 4px 8px;
+  border-radius: 6px; background: var(--panel); border-left: 3px solid var(--good); }
+.fx-cond.off { border-left-color: var(--dim); }
+.fx-cond b { color: var(--text); font-weight: 600; }
+.fx-cond span { color: var(--muted); }
+.fx-foot { margin-top: 8px; font-size: 11px; color: var(--dim); }
+@container duel (max-width: 720px) {
+  .fx-steps li { grid-template-columns: 18px 1fr auto; }
+  .fx-lb { grid-column: 2 / -1; }
+  .fx-ex { grid-column: 2 / 3; }
+}
 .dc-wait { color: var(--dim); font-size: 13px; padding: 18px 4px; text-align: center; }
 .dc-verdict {
   grid-column: 1 / -1; display: flex; justify-content: center; gap: 6px; align-items: baseline;

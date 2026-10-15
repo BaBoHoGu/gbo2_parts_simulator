@@ -127,7 +127,10 @@ async function measure(pg, o) {
       공중: r.air ? r.air.pct : null,
       실드: r.shield ? { 이름: r.shield.name, HP: r.shield.hp, 발수: r.shield.hits, 메모: r.shield.note } : null,
       경직: r.stg ? { 히트: r.stg.hits, 값: r.stg.value, 설명: r.stg.note } : null,
-      경감목록: (r.cuts || []).map(c => c.scope + ':' + c.pct)
+      경감목록: (r.cuts || []).map(c => c.scope + ':' + c.pct),
+      // 완충재 무시(10월) — 무장이 상대 완충재 스킬을 안 받는가 · 경감마다 이름과 무시 여부
+      완충재무시: r.bi ? { 조건: r.bi.when, 특수만: r.bi.special, 적용: !!r.biOn } : null,
+      경감이름: (r.cutList || []).map(c => c.label + ' −' + c.pct + '%' + (c.ignored ? ' (무시)' : ''))
     };
     /* 어느 방향 카드를 읽어야 하는지 알려 준다 — 첫 카드는 늘 L→R 이라,
        오른쪽에서 쏘게 세운 자가 그걸 읽으면 **빈 안내문**을 읽는다(실제로 그랬다). */

@@ -285,7 +285,7 @@
       if (A.scope && wp.canScope) { etcA += D.ETC_ATTACK.scope; etcTxt.push('스코프 +' + D.ETC_ATTACK.scope * 100 + '%'); }
     }
     // 격투 변형·방향 배율
-    let ccd = [1], dirTxt = '';
+    let ccd = [1], dirTxt = '', dirRaw = '';
     if (wp.variants) {
       const v = wp.variants[Math.min(A.variant, wp.variants.length - 1)];
       // 공중 격투는 원문이 가리키는 방향 하나로 고정된다 — 고른 방향을 쓰지 않는다
@@ -293,6 +293,7 @@
         : v.direction[Math.min(A.dir, v.direction.length - 1)];
       if (d) {
         ccd = d.hits;
+        dirRaw = d.label;
         dirTxt = (wp.variants.length > 1 ? v.label + ' ' : '')
           + (air ? '공중 ' : '') + dirLabel(d.label) + ' ' + d.raw;
       }
@@ -304,11 +305,26 @@
     const partPct = D.damagePctFor(wm, wp.w, kind) || 0;
     const skPcts = skillDmgPcts(A, kind);
     const boosted = D.applyDamagePct(raw, [partPct, ...skPcts]);
-    // 대상의 피해 경감 — 파츠 + 켠 방어 스킬
-    const cuts = [...C.partDamageCuts(B.parts, msLv(B.ms)),
-      ...HOOK.defSkills(B).filter(s => s.always || B.defs.has(s.name)).map(s => ({ scope: s.scope, pct: s.pct })),
-      ...(HOOK.extraCuts(A, B, wp) || [])];
+    /* 「攻撃対象の(特殊)緩衝材系スキル無視」 — 맞는 쪽의 완충재 스킬 경감을 **안 받는다**.
+       예전엔 이 줄이 없어 무장 34종에서 피해를 작게(발수를 많게) 셌다. 조건은 원문 그대로:
+       집속했을 때만 · 하격일 때만 · 「스킬 발동 중」(어느 스킬인지 원문에 없어 **셈에 안 넣고 밝힌다**). */
+    const bi = D.bufferIgnoreOf ? D.bufferIgnoreOf(wp.note) : null;
+    const biOn = !!bi && (bi.when === 'always' || (bi.when === 'charged' && charged)
+      || (bi.when === 'down' && dirRaw === '下格'));
+    const isBuffer = nm => bi && (bi.special ? /特殊緩衝材/ : /緩衝材/).test(String(nm || ''));
+    // 대상의 피해 경감 — 파츠 + 켠 방어 스킬 (이름을 지닌 채 — 계산식에 하나씩 적는다)
+    const allCuts = [
+      ...C.partDamageCuts(B.parts, msLv(B.ms)).map(c => ({ ...c, label: '파츠 경감' })),
+      ...HOOK.defSkills(B).filter(s => s.always || B.defs.has(s.name))
+        .map(s => ({ scope: s.scope, pct: s.pct, label: s.ko || s.name, ignored: biOn && isBuffer(s.name) })),
+      ...(HOOK.extraCuts(A, B, wp) || []).map(c => ({ ...c, label: c.label || '조건부 경감' }))];
+    const cuts = allCuts.filter(c => !c.ignored);
     const factor = C.staggerDmgFactor(cuts, wp.attr);
+    /* 계산식 표시용 중간값 — 셈을 다시 하지 않고 **위에서 쓴 값**을 그대로 넘긴다 */
+    const atk = D.attackPower(corr);
+    const tAtt = D.floorTo(atk * (1 + etcA), 2);
+    const pr = D.ATTR_BONUS[att] ?? 0;
+    const cutHits = c => c.scope === 'all' || c.scope === (wp.attr === 'melee' ? 'melee' : 'shoot') || c.scope === wp.attr;
     const hit = Math.floor(boosted * factor);
     const n = HOOK.hitsPerTrigger(wp, charged) || 1;
     const fixed = HOOK.fixedDamage(A, wp) || 0;           // 보정을 안 받는 고정 피해 — 경감도 안 건다
@@ -351,7 +367,10 @@
     return { wp, mode, charged, power, corr, att, etcA, etcTxt, dirTxt, partPct, skPcts, factor, cuts,
       hit, n, fixed, per, perHp, eff, hp, shots, air, shield, stg, bands, bandWhy, step, toHp, fa,
       manual, autoCorr,
-      foeCut, armor: tB[ARMOR[wp.attr]] || 0 };
+      foeCut, armor: tB[ARMOR[wp.attr]] || 0,
+      // 계산식(formulaBox)이 쓰는 중간값 — 같은 셈에서 나온 것
+      raw, boosted, atk, tAtt, pr, ccd, kind, armor0: sB[ARMOR[wp.attr]] || 0,
+      cutList: allCuts.filter(cutHits), bi, biOn };
   }
   const FOE_ARMOR_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を?\s*(\d+)\s*[%％]\s*減/;
   const DIR_KO = { 'N格': 'N격', '横格': '횡격', '下格': '하격', '前格': '전격', '後格': '후격', '空中格': '공중격' };
@@ -936,6 +955,7 @@
       + (r.fa && r.fa.sCut ? (r.fa.wCut ? ' (무장+스킬)' : ' (스킬 효과)') : ' (무장 효과)'), 'up');
     if (r.factor < 1) chip('상대 경감 ×' + (+r.factor.toFixed(3)), 'down');
     c.append(chips);
+    c.append(formulaBox(r, dir));
 
     /* 「이 무장 N발 버티기 → 자동 구성 목표로」.
        맞는 쪽이 **내 구성(왼쪽)** 일 때만 뜻이 있다 — 목표는 내 파츠를 고르는 자다.
@@ -957,6 +977,110 @@
       if (g) c.append(g);
     }
     return c;
+  }
+
+  /* ---------- 피해량 계산식 ----------
+     카드의 숫자가 **어떻게 나왔는지** 단계마다 적는다. 셈은 다시 하지 않는다 — attack() 이
+     실제로 쓴 중간값(r.raw · r.boosted · r.cutList …)을 그대로 옮겨 적을 뿐이다. 그래야 식과
+     위 숫자가 갈라지지 않는다. 무장 원문의 조건(완충재 무시 · 관통 · 구간 피해 …)은
+     「셈에 넣었는가」 를 같이 적는다 — 넣지 못한 것을 넣은 것처럼 보이면 안 된다. */
+  const fxOpen = { LR: false, RL: false };     // 다시 그려도 펼친 채로 둔다(발수 막대를 움직일 때마다 다시 그린다)
+  const pctTxt = p => (p > 0 ? '+' : '') + p + '%';
+  function formulaBox(r, dir) {
+    const box = el('details', 'dc-formula');
+    box.open = !!fxOpen[dir];
+    box.ontoggle = () => { fxOpen[dir] = box.open; };
+    box.append(el('summary', null, '피해량 계산식'));
+    const ol = el('ol', 'fx-steps');
+    const row = (lb, expr, val, note) => {
+      const li = el('li');
+      li.append(el('span', 'fx-lb', lb), el('span', 'fx-ex', expr));
+      if (val != null) li.append(el('b', 'fx-val', '= ' + val));
+      if (note) li.append(el('small', 'fx-note', note));
+      ol.append(li);
+    };
+    const f2 = v => (+v.toFixed(2)).toString();
+    const kindKo = r.kind === 'melee' ? '격투' : '사격';
+
+    // ① 공격력
+    row('공격력', '1 + ' + kindKo + '보정 ' + Math.round(r.corr) + ' ÷ 100'
+      + (r.etcA ? ' → × (1 + ' + f2(r.etcA) + ' ' + r.etcTxt.join('·') + ')' : ''),
+      f2(r.tAtt), r.etcA ? '소수 둘째 자리 아래는 버림' : null);
+    /* ⌊ ⌋ · ⌈ ⌉ 기호는 앱 글꼴에서 [ ] 처럼 보여 버림과 올림이 안 갈렸다 — 중간값을 적고 말로 쓴다 */
+    // ② 기본 피해 (상성까지)
+    const mult = f2(1 + r.pr);
+    const base = Math.floor(r.power * r.tAtt);
+    if (r.kind === 'melee') {
+      const dirs = r.ccd.length > 1 || r.ccd[0] !== 1;
+      row('기본 피해', '위력 ' + fmt(r.power) + ' × ' + f2(r.tAtt) + ' = ' + fmt(base)
+        + (dirs ? ' → 타마다 × 방향 [' + r.ccd.join(', ') + ']' : '') + ' → × 상성 ' + mult, fmt(r.raw),
+        (r.dirTxt ? r.dirTxt + ' · ' : '') + '곱할 때마다 소수점 버림' + (r.ccd.length > 1 ? ' · 타마다 따로 셈해 더함' : ''));
+    } else {
+      row('기본 피해', '위력 ' + fmt(r.power) + ' × ' + f2(r.tAtt) + ' = ' + fmt(base) + ' → × 상성 ' + mult, fmt(r.raw),
+        '곱할 때마다 소수점 버림' + (r.charged ? ' · ' + (r.mode === 'ch2' ? '2단 집속 위력' : '집속 위력') : ''));
+    }
+    // ③ 파츠·스킬 피해 %
+    const ups = [r.partPct, ...r.skPcts].filter(Boolean);
+    row('피해 증가', ups.length
+      ? fmt(r.raw) + ' × ' + ups.map(p => '(1 ' + (p > 0 ? '+ ' : '− ') + Math.abs(p) + '%)').join(' × ')
+      : '없음', ups.length ? fmt(r.boosted) : null, ups.length ? '파츠·스킬 피해% — 하나씩 곱하고 버림' : null);
+    // ④ 상대 경감
+    const live = r.cutList.filter(c => !c.ignored);
+    const cutTxt = r.cutList.length
+      ? r.cutList.map(c => c.label + ' −' + c.pct + '%' + (c.ignored ? ' (무시)' : '')).join(' · ')
+      : '없음';
+    row('상대 경감', live.length
+      ? fmt(r.boosted) + ' × ' + live.map(c => '(1 − ' + c.pct + '%)').join(' × ') + ' → 버림'
+      : fmt(r.boosted) + ' (경감 없음)', fmt(r.hit), r.cutList.length ? cutTxt : null);
+    // ⑤ 한 발
+    if (r.n > 1 || r.fixed) {
+      row('한 발', fmt(r.hit) + (r.n > 1 ? ' × ' + r.n + '히트' : '')
+        + (r.fixed ? ' + 고정 피해 ' + fmt(r.fixed) : ''), fmt(r.per),
+        r.fixed ? '고정 피해는 보정·상성·경감을 안 받는다' : null);
+    }
+    // ⑥ 내성 → 실효 HP
+    const arm = '내' + ATTR_KO[r.wp.attr] + ' ' + Math.round(r.armor0)
+      + (r.foeCut ? ' × (1 − ' + r.foeCut + '%) = ' + f2(r.armor) : '');
+    row('실효 HP', 'HP ' + fmt(r.hp) + ' ÷ (1 − ' + f2(Math.min(r.armor, 99)) + '%)', fmt(r.eff), arm);
+    // ⑦ 깎이는 HP · 격파
+    row('깎이는 HP', fmt(r.per) + ' × HP ' + fmt(r.hp) + ' ÷ 실효 ' + fmt(r.eff), fmt(r.perHp) + ' / 발');
+    if (r.bands) row('격파', '대상 HP 구간마다 한 발 피해가 달라 발마다 쌓아 센다', r.shots != null ? r.shots + '발' : '—');
+    else row('격파', '실효 HP ' + fmt(r.eff) + ' ÷ 한 발 ' + fmt(r.per)
+      + (r.per > 0 ? ' = ' + f2(r.eff / r.per) + ' → 올림' : ''), r.shots != null ? r.shots + '발' : '—');
+    box.append(ol);
+
+    // 무장 원문의 조건 — 셈에 넣었는가
+    const conds = [];
+    const note = String(r.wp.note || '');
+    if (r.bi) {
+      const why = { always: '늘', charged: '집속했을 때만', down: '하격일 때만', skill: '스킬 발동 중일 때만' }[r.bi.when];
+      const on = r.biOn ? '반영 — 상대 완충재 스킬 경감을 뺐다'
+        : r.bi.when === 'skill' ? '셈에 안 넣음 — 원문에 어느 스킬인지 없다'
+        : '지금 조건이 아니라 반영 안 함';
+      conds.push(['상대 ' + (r.bi.special ? '특수' : '') + '완충재 스킬 무시 (' + why + ')', on, r.bi.text, r.biOn ? 'on' : 'off']);
+    }
+    if (r.foeCut) conds.push(['상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '%', '반영 — ⑥ 실효 HP 에', '', 'on']);
+    if (/ユニット貫通/.test(note)) conds.push(['관통', r.cutList.some(c => c.label === '관통 경감')
+      ? '반영 — 상대의 관통 경감 파츠가 ④ 에' : '상대에게 관통 경감 파츠가 없어 바뀌는 것 없음', 'ユニット貫通', 'on']);
+    if (/爆風/.test(note) && !/爆風なし/.test(note)) conds.push(['폭풍', r.cutList.some(c => c.label === '폭풍 경감')
+      ? '반영 — 상대의 폭풍 경감 파츠가 ④ 에' : '상대에게 폭풍 경감 파츠가 없어 바뀌는 것 없음', '爆風', 'on']);
+    if (/シールド(?:HP)?を?(?:無視|貫通)/.test(note)) conds.push(['실드 무시', '「실드로 막음」 을 켰을 때 실드 줄에 반영', '', 'on']);
+    if (r.bands) conds.push(['대상 HP 구간 추가 피해', '반영 — 발마다 쌓아 셈', '', 'on']);
+    else if (r.bandWhy) conds.push(['대상 HP 에 따른 추가 피해', '셈에 못 넣음 — 위 ※ 줄 참고', '', 'off']);
+    if (r.fixed) conds.push(['고정 피해 ' + fmt(r.fixed), '반영 — ⑤ 에', '', 'on']);
+    if (conds.length) {
+      const cl = el('div', 'fx-conds');
+      cl.append(el('div', 'fx-cap', '무장 원문의 조건'));
+      for (const [name, how, ja, st] of conds) {
+        const d = el('div', 'fx-cond ' + st);
+        d.append(el('b', null, name), el('span', null, how));
+        if (ja) d.title = '원문: ' + ja;
+        cl.append(d);
+      }
+      box.append(cl);
+    }
+    box.append(el('div', 'fx-foot', '전탄 명중으로 셈한다 · 국부 보정 · 명중률은 넣지 않는다.'));
+    return box;
   }
 
   /** 체력 게이지 — k 발 맞은 뒤 남은 HP, 다음 한 발(빗금), 발마다 눈금. */
