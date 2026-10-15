@@ -10600,7 +10600,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 5,
-     "hispeed": 5,
+     "hispeed": 10,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0
