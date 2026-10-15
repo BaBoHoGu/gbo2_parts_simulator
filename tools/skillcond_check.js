@@ -132,6 +132,80 @@ for (const [ms, forms] of Object.entries(MSK)) {
   ok('그래도 그 스킬이 **고를 수 있게** 칩으로는 떠 있다 (조건부로 옮기며 사라지지 않게)',
     !!num && num.방어칩.some(t => /라미네이트|ナノラミネート/.test(t)), num && num.방어칩);
 
+  /* ══ 직접 발동 · HP 미만 · 부위 피격(場合) · 아군 지원 포격 ══════════════════
+     ■ 왜 — 2026-10-15 사용자: 「레지스트 무브는 사용자가 직접 발동하는 스킬… 보조동력과 같은 현상,
+       전체적으로 확인」. 전수해 보니 값 있는 스킬 14종이 '상시' 였고 그중 9종이 조건부였다:
+       レジストムーブ(動作中) · ビーム撹乱(集束中) · 耐ビーム・コーティング(HP 50%未満) ·
+       胸部Iフィールド/多目的大型バインダー(「胸部に…攻撃を受けた際」) · 특수방어기구(「…部へ…場合」) ·
+       シールド内Iフィールド · マーカー(아군 지원 포격에만).
+     ■ 자 — 위와 같이 **원문에서 스스로** 고른다. 조건 낱말이 있는데 앱이 '상시' 라 부르면 운다. */
+  {
+    const GATED = [
+      [/動作中|集束中|ボタンを/, '직접 발동'],
+      [/HP[^。]{0,12}(未満|を下回)/, 'HP 미만'],
+      [/(部|シールド|バインダー|ファンネル)(?:の[^、。/]{0,8})?[へに][^、。/]{0,14}攻撃を受け(?:た際|た場合)/, '부위 피격'],
+    ];
+    const VAL = /(ダメージ|被ダメージ)[^。]{0,30}\d+\s*[%％]\s*軽減|よろけ値を\s*\d+|蓄積よろけまでの値が\s*\d+/;
+    const want2 = new Map(), support = new Map();
+    for (const [ms, forms] of Object.entries(MSK)) {
+      for (const f of forms || []) for (const s of (f.skills || [])) {
+        const blob = ((s.eff || '') + ' / ' + (s.desc || '')).replace(/\s+/g, ' ');
+        if (!VAL.test(blob)) continue;
+        if (/支援砲撃を受けた/.test(blob)) { if (!support.has(ms)) support.set(ms, new Set()); support.get(ms).add(s.name); continue; }
+        const g = GATED.find(([re]) => re.test(blob));
+        if (!g) continue;
+        if (!want2.has(ms)) want2.set(ms, new Map());
+        want2.get(ms).set(s.name, g[1]);
+      }
+    }
+    const res2 = await pg.evaluate((list, sup) => {
+      const A = window.GBO2UiTest, all = A.msData();
+      const pick = base => all.filter(m => m.MS名.replace(/_LV\d+$/, '') === base).pop();
+      const out = [], sOut = [];
+      for (const [base, names] of list) {
+        const ms = pick(base); if (!ms) continue;
+        const sk = A.staggerSkillsOf(ms, A.msLevel(ms), 'normal');
+        for (const [n, why] of names) { const hit = sk.find(x => x.name === n); if (hit) out.push({ base, name: n, why, cond: hit.cond }); }
+      }
+      for (const [base, names] of sup) {
+        const ms = pick(base); if (!ms) continue;
+        const sk = A.staggerSkillsOf(ms, A.msLevel(ms), 'normal');
+        for (const n of names) sOut.push({ base, name: n, listed: !!sk.find(x => x.name === n) });
+      }
+      return { out, sOut };
+    }, [...want2.entries()].map(([k, m]) => [k, [...m.entries()]]), [...support.entries()].map(([k, s]) => [k, [...s]]));
+    const leak2 = res2.out.filter(x => x.cond === '상시');
+    ok('직접 발동 · HP 미만 · 부위 피격 스킬 ' + res2.out.length + '개 가운데 상시로 새는 것이 없다   (was 9종이 샜다)',
+      leak2.length === 0 && res2.out.length >= 20, leak2.slice(0, 6));
+    const listed = res2.sOut.filter(x => x.listed);
+    ok('아군 지원 포격 전용 경감(マーカー)은 방어 스킬 목록에 없다 (' + res2.sOut.length + '기)   (was 상시 −45%)',
+      res2.sOut.length > 0 && listed.length === 0, listed.slice(0, 4));
+    const rm = res2.out.find(x => x.base === 'ゲルググJ' && x.name === 'レジストムーブ');
+    ok('ゲルググJ 의 レジストムーブ = 발동중   (was 상시 — 사용자가 짚음)', !!rm && rm.cond === '발동중', rm || '(목록에 없다)');
+
+    /* 수가 달라지는가 — 겔구그J 를 맞는 쪽에 두고 아무것도 안 켠다. 예전엔 −50% 가 늘 걸렸다 */
+    const rnum = await pg.evaluate(() => {
+      const G = window.GBO2_DATA, S = window.GBO2Duel.state;
+      const by = n => G.msData.filter(m => m.MS名.replace(/_LV\d+$/, '') === n).pop();
+      const foe = by('ゲルググJ'), me = by('サザビー');
+      if (!foe || !me) return null;
+      window.GBO2Duel.open();
+      S.L.ms = me; S.R.ms = foe; S.L.parts = []; S.R.parts = []; S.L.wKey = null;
+      S.L.buffs.clear(); S.R.defs.clear();
+      window.GBO2Duel.use({});
+      const els = [...document.querySelectorAll('.duel-side[data-side="L"] .ds-w')];
+      let r = null;
+      for (const e of els) { e.click(); const a = window.GBO2Duel.attack(S.L, S.R); if (a && !a.wp.melee) { r = a; break; } }
+      const chips = [...document.querySelectorAll('.duel-side[data-side="R"] .ds-chip.def')].map(e => (e.textContent || '').replace(/\s+/g, ' ').trim());
+      window.GBO2Duel.close();
+      return r && { 경감배수: r.factor, 방어칩: chips };
+    });
+    ok('겔구그J 를 맞힐 때 아무것도 안 켜면 경감이 없다 (×1)   (was 레지스트 무브 −50% 가 늘 걸렸다)',
+      !!rnum && rnum.경감배수 === 1, rnum);
+    ok('레지스트 무브는 켤 수 있는 칩으로 남아 있다 (상시 표시가 아니다)',
+      !!rnum && rnum.방어칩.some(t => /레지스트/.test(t) && !/상시/.test(t)), rnum && rnum.방어칩);
+  }
+
   /* ══ 공중 격투 제어 LV2 의 「威力 +30%」 ═══════════════════════════════
      ■ 왜 — 올리는 축이 威力 인데 skills.json 에 위력 축이 없어, 그 스킬의 수치가
        전부 0 으로 담겨 **목록에서 통째로 버려졌다**(2026-10-13 사용자 지적:
