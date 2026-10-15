@@ -306,7 +306,7 @@
 
 <!-- 강화 플랜 — 한 칸 설정. 기체는 「기체 변경」 서랍을 그대로 빌려 고른다. -->
 <div class="auto-modal-back" id="planEditBack" hidden></div>
-<div class="auto-modal plan-edit-modal" id="planEditModal" hidden role="dialog" aria-label="강화 플랜 항목">
+<dialog class="auto-modal plan-edit-modal" id="planEditModal" hidden aria-label="강화 플랜 항목">
   <div class="am-head">
     <b id="planEditTitle">강화 플랜 추가</b>
     <span class="grow"></span>
@@ -337,7 +337,7 @@
       <button type="button" id="planSave" class="btn-primary">저장</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- ④ 스킬 도감 — 기체와 상관없이 위키 분류대로 스킬을 모아 본다 -->
 <section class="screen screen-codex" id="screenCodex">
@@ -597,27 +597,27 @@
      손으로 적어 두면 상수가 바뀔 때 화면만 옛 숫자를 말하게 된다. -->
 <!-- 강화리스트 설명 — 요구치(points)·항목은 기체 데이터에서, 효과는 fullst 정의에서 만든다 -->
 <div class="auto-modal-back" id="stageHelpBack" hidden></div>
-<div class="auto-modal exp-help-modal" id="stageHelpModal" hidden role="dialog" aria-label="강화리스트">
+<dialog class="auto-modal exp-help-modal" id="stageHelpModal" hidden aria-label="강화리스트">
   <div class="am-head">
     <b id="stageHelpTitle">강화리스트</b>
     <span class="grow"></span>
     <button id="stageHelpClose" class="btn-ghost">닫기</button>
   </div>
   <div class="admin-body" id="stageHelpBody"></div>
-</div>
+</dialog>
 
 <div class="auto-modal-back" id="expHelpBack" hidden></div>
-<div class="auto-modal exp-help-modal" id="expHelpModal" hidden role="dialog" aria-label="확장 스킬 효과">
+<dialog class="auto-modal exp-help-modal" id="expHelpModal" hidden aria-label="확장 스킬 효과">
   <div class="am-head">
     <b id="expHelpTitle">확장 스킬</b>
     <span class="grow"></span>
     <button id="expHelpClose" class="btn-ghost">닫기</button>
   </div>
   <div class="admin-body" id="expHelpBody"></div>
-</div>
+</dialog>
 
 <div class="auto-modal-back" id="uploadBack" hidden></div>
-<div class="auto-modal admin-modal" id="uploadModal" hidden role="dialog" aria-label="내 구성 올리기">
+<dialog class="auto-modal admin-modal" id="uploadModal" hidden aria-label="내 구성 올리기">
   <div class="am-head">
     <b>↑ 내 구성 올리기</b>
     <span class="grow"></span>
@@ -652,12 +652,12 @@
       <button id="uploadGo" class="btn-primary">올리기</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- 관리자 로그인 팝업 — 비밀번호는 앱에 없다. 여기서 입력해 Firebase 에 로그인한다.
      prompt() 는 PC·APK 모두 입력한 비밀번호가 그대로 보여서 쓰지 않는다. -->
 <div class="auto-modal-back" id="adminBack" hidden></div>
-<div class="auto-modal admin-modal" id="adminModal" hidden role="dialog" aria-label="관리자 로그인">
+<dialog class="auto-modal admin-modal" id="adminModal" hidden aria-label="관리자 로그인">
   <div class="am-head">
     <b>🔑 관리자 로그인</b>
     <span class="grow"></span>
@@ -672,10 +672,10 @@
       <button id="adminGo" class="btn-primary">로그인</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <div class="auto-modal-back" id="savedModalBack" hidden></div>
-<div class="auto-modal" id="savedModal" hidden role="dialog" aria-label="저장한 구성">
+<dialog class="auto-modal" id="savedModal" hidden aria-label="저장한 구성">
   <div class="am-head">
     <b>💾 저장한 구성</b>
     <span class="am-note" id="savedModalNote"></span>
@@ -683,11 +683,11 @@
     <button id="savedModalClose" class="btn-ghost">닫기</button>
   </div>
   <div class="auto-results" id="savedResults"></div>
-</div>
+</dialog>
 
 <!-- ========== 빌드 A/B 비교 ========== -->
 <div class="auto-modal-back" id="compareModalBack" hidden></div>
-<div class="auto-modal compare-modal" id="compareModal" hidden role="dialog" aria-label="빌드 비교">
+<dialog class="auto-modal compare-modal" id="compareModal" hidden aria-label="빌드 비교">
   <div class="am-head">
     <b>⚖ 빌드 비교</b>
     <span class="am-note">최대 4개 구성을 나란히</span>
@@ -697,11 +697,11 @@
   <!-- 비교 칸은 2~4개로 늘었다 (JS 가 채운다) -->
   <div class="compare-pick" id="comparePick"></div>
   <div class="compare-body" id="compareBody"></div>
-</div>
+</dialog>
 
 <!-- ========== 기본 파츠 설정 (기본 제외 파츠) ========== -->
 <div class="auto-modal-back" id="ownedModalBack" hidden></div>
-<div class="auto-modal owned-modal" id="ownedModal" hidden role="dialog" aria-label="기본 파츠 설정">
+<dialog class="auto-modal owned-modal" id="ownedModal" hidden aria-label="기본 파츠 설정">
   <div class="am-head">
     <b>🧰 기본 파츠 설정</b>
     <span class="am-note" id="ownedNote"></span>
@@ -712,12 +712,12 @@
   <div class="owned-hint"><b>기본적으로 제외</b>할 파츠를 클릭하세요(다시 클릭하면 해제). 제외한 파츠는 자동 구성과 직접 장착에서 빠집니다. (모든 기체 공통 · 브라우저에 저장 · 파츠 적용 화면에서 <b>우클릭</b>으로도 토글)</div>
   <input type="search" id="ownedQuery" placeholder="파츠명 검색 (강화프레임 / 슬러스터…)">
   <div class="owned-list" id="ownedList"></div>
-</div>
+</dialog>
 
 <!-- ========== 피탄 시뮬레이터 (받는 피해 / 경직 저항) ========== -->
 <!-- ========== 이미지 미리보기 ========== -->
 <div class="auto-modal-back" id="pngModalBack" hidden></div>
-<div class="auto-modal png-modal" id="pngModal" hidden role="dialog" aria-label="이미지 미리보기">
+<dialog class="auto-modal png-modal" id="pngModal" hidden aria-label="이미지 미리보기">
   <div class="am-head">
     <b>🖼 이미지</b>
     <span class="am-note" id="pngNote"></span>
@@ -728,7 +728,7 @@
   </div>
   <div class="png-preview" id="pngPreview"></div>
   <div class="png-hint">저장하면 기기의 <b>다운로드</b> 폴더에 들어갑니다. 복사는 채팅창에 바로 붙여넣을 때 쓰세요.</div>
-</div>
+</dialog>
 
 <div class="toast" id="toast"></div>
 

@@ -1665,6 +1665,29 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
    덮고 있었다. 그 모달(피탄 시뮬)은 2026-10-13 에 대결 시뮬로 합쳐 없앴지만,
    같은 꼴이 다시 생기지 않게 이 한 줄은 남긴다 — ui_check 가 ① 로 재는 자리다. */
 .auto-modal[hidden] { display: none !important; }
+/* <dialog> 기본 모양을 걷는다(CSS 10단계) — 자리·크기는 위 .auto-modal 이 정한다.
+   UA 의 :modal 은 inset:0 · margin:auto · max-width · overflow:auto · 글자색 CanvasText 를 준다.
+   top/left 50% + translate 로 가운데 두는 방식이라 right/bottom 이 0 이면 높이가 눌린다.
+   **:where 로 특이도 0** — dialog.auto-modal(0,1,1) 로 썼더니 .exp-help-modal 의 max-width:560px 까지
+   눌러 강화리스트·확장 스킬 창이 940px 로 넓어졌다(모달 사진 대조가 잡았다). UA 만 이기면 된다. */
+:where(dialog.auto-modal) {
+  right: auto; bottom: auto; margin: 0; padding: 0;
+  max-width: none; overflow: visible; color: inherit;
+  /* div 였을 때와 계산값까지 같게 — UA 가 dialog 에 height:fit-content 를, div 에 unicode-bidi:isolate 를
+     준다(cstyle_diff 가 이 둘만 남은 차이로 짚었다) */
+  height: auto; unicode-bidi: isolate;
+}
+/* 뒤판 — ::backdrop 은 예전 Chrome 에서 :root 변수를 못 물려받아 값을 그대로 적는다(= --scrim) */
+.auto-modal::backdrop { background: rgba(0, 0, 0, .55); }
+/* 창 자체가 받은 포커스(열 때)는 고리를 그리지 않는다 — 안의 칸으로 옮기면 그때 그린다 */
+dialog.auto-modal:focus, dialog.auto-modal:focus-visible { outline: none; }
+/* 토스트는 popover 로 최상위 층 맨 위에 다시 띄운다(ui.js raiseToTop). UA 의 [popover] 모양
+   (inset:0 · margin:auto · 테두리 · 안쪽 여백 · 흰 바탕)을 걷는다 — :where 로 특이도 0 이라
+   .toast 자신의 규칙이 그대로 이긴다. */
+:where([popover]) {
+  inset: auto; width: auto; height: auto; margin: 0; padding: 0; border: 0;
+  overflow: visible; color: inherit; background: none;
+}
 .am-head {
   display: flex; align-items: center; gap: 10px; padding: 12px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel-2); border-radius: 12px 12px 0 0;

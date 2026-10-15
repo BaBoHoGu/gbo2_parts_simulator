@@ -6,6 +6,7 @@
 //   새로 들인 토큰 이름은 CS_IGNORE=--a,--b 로 뺀다(그 값이 쓰이는 속성은 그대로 비교된다).
 //   스스로를 맞대면 0 이어야 한다 — 0 이 아니면 자가 흔들리는 것이다(localStorage·속성 순서를 그래서 막았다).
 //   node tools/cstyle_diff.js <old.html> <new.html>
+//   DIALOG 은 열쇠에서 DIV 로 친다 — 모달을 div → <dialog> 로 바꿔도 안의 요소를 맞대려고(10단계).
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const B = require(ROOT + '/tools/lib/browser.js');
@@ -45,7 +46,7 @@ async function dump(br, file, v) {
         let key = '', e = el;
         while (e && e !== document.body) {
           const par = e.parentElement;
-          key = e.tagName + (e.id ? '#' + e.id : ':' + (par ? [...par.children].indexOf(e) : 0)) + '>' + key;
+          key = (e.tagName === 'DIALOG' ? 'DIV' : e.tagName) + (e.id ? '#' + e.id : ':' + (par ? [...par.children].indexOf(e) : 0)) + '>' + key;
           if (e.id) break;
           e = par;
         }

@@ -85,7 +85,8 @@ async function openByMouse(pg) {
     await pg.keyboard.press('Tab');
     trail.push(await state(pg));
   }
-  const out = trail.filter(t => !t.inside).map(t => t.active);
+  /* BODY 는 브라우저 바깥으로 나간 자리라 새는 것이 아니다(modal_check 와 같은 자) — 뒤 화면 요소만 센다 */
+  const out = trail.filter(t => !t.inside && !/^(BODY|HTML)\b/.test(t.active || '')).map(t => t.active);
   ok('② Tab 을 열두 번 눌러도 포커스가 창 밖으로 안 나간다', out.length === 0, out);
 
   /* ⑤-a 창 안을 누르면 안 닫힌다 — 머리줄 제목 자리 */

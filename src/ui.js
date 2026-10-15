@@ -858,6 +858,7 @@
       b.onclick = () => { t.classList.remove('show'); action.run(); };
       t.append(b);
     }
+    raiseToTop(t);
     placeToast(t);
     t.classList.add('show');
     clearTimeout(toastTimer);
@@ -4105,8 +4106,7 @@
 
   function openPngModal(open) {
     const m = document.getElementById('pngModal'), b = document.getElementById('pngModalBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
+    setModal(m, b, open);
     if (!open) { const box = document.getElementById('pngPreview'); if (box) box.innerHTML = ''; pngShot = null; }
   }
 
@@ -5047,6 +5047,10 @@
     /* 모달 위에서 열리면 z-index 를 올린다 — 안 올리면 모달 뒤로 들어가 못 누른다.
        열 때만 켜고 닫을 때 끈다(남겨 두면 다음에 파츠 화면에서 열 때도 떠 있게 된다). */
     const overModal = open && !!onPick;
+    const wasOver = dr.classList.contains('over-modal');
+    const host = document.querySelector('dialog.auto-modal[open]');
+    if (overModal) modalYield(host, true);          // 모달을 잠시 비모달로 — 서랍이 눌리게
+    else if (wasOver) modalYield(host, false);      // 서랍을 닫으면 다시 모달로
     dr.classList.toggle('over-modal', overModal);
     $('#msDrawerBack').classList.toggle('over-modal', overModal);
     document.body.classList.toggle('drawer-open', open);
@@ -5994,12 +5998,10 @@
     $('#planEditTitle').textContent = it ? '강화 플랜 고치기' : '강화 플랜 추가';
     $('#planDelete').hidden = !it;
     syncPlanEdit();
-    $('#planEditModal').hidden = false;
-    $('#planEditBack').hidden = false;
+    setModal($('#planEditModal'), $('#planEditBack'), true);
   }
   function closePlanEdit() {
-    $('#planEditModal').hidden = true;
-    $('#planEditBack').hidden = true;
+    setModal($('#planEditModal'), $('#planEditBack'), false);
     planEdit = null;
   }
 
@@ -6928,8 +6930,7 @@
 
   function openStageHelp(open) {
     const m = $('#stageHelpModal'), b = $('#stageHelpBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
+    setModal(m, b, open);
     if (!open) return;
 
     const body = $('#stageHelpBody');
@@ -7033,8 +7034,7 @@
 
   function openExpHelp(open) {
     const m = $('#expHelpModal'), b = $('#expHelpBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
+    setModal(m, b, open);
     if (!open) return;
 
     const name = state.expansion;
@@ -7080,8 +7080,7 @@
   /** 관리자 로그인 팝업 여닫기. 닫을 때 입력을 지운다 — 비밀번호를 화면에 남기지 않는다. */
   function openAdmin(open) {
     const m = $('#adminModal'), b = $('#adminBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
+    setModal(m, b, open);
     $('#adminMsg').textContent = '';
     if (open) { $('#adminPw').value = ''; setTimeout(() => $('#adminPw').focus(), 30); }
     else { $('#adminPw').value = ''; }
@@ -7151,8 +7150,7 @@
 
   function openUpload(open) {
     const m = $('#uploadModal'), b = $('#uploadBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
+    setModal(m, b, open);
     if (!open) return;
     $('#uploadMsg').textContent = '';
     const box = $('#uploadTarget');
@@ -7244,8 +7242,7 @@
 
   function openSavedModal(open) {
     const m = document.getElementById('savedModal'), b = document.getElementById('savedModalBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
+    setModal(m, b, open);
     if (open) renderSavedBuilds();
   }
 
@@ -7478,8 +7475,7 @@
 
   function openCompareModal(open) {
     const m = $('#compareModal'), b = $('#compareModalBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
+    setModal(m, b, open);
     if (!open) return;
     compareOpts = compareOptions();
     const ids = new Set(compareOpts.map(o => o.id));
@@ -7558,8 +7554,7 @@
 
   function openOwnedModal(open) {
     const m = $('#ownedModal'), b = $('#ownedModalBack');
-    if (m) m.hidden = !open;
-    if (b) b.hidden = !open;
+    setModal(m, b, open);
     if (open) { $('#ownedQuery').value = ''; renderOwnedList(); updateOwnedUi(); }
     else renderAll();   // 닫을 때 빌드 화면(회색·자동구성 후보)에 반영
   }
@@ -10123,6 +10118,61 @@
   const VIEW_KEY = 'gbo2.viewMode';
   let viewMode = 'large';
   try { viewMode = localStorage.getItem(VIEW_KEY) || 'wide'; } catch (e) { viewMode = 'wide'; }
+
+  /* ---------- 모달 — <dialog> (CSS 10단계) ----------
+     아홉 모달을 div + 뒤판 div 에서 <dialog> + showModal() 로 바꿨다(대결 창과 같은 길).
+       · 최상위 층에 떠 z-index 를 고르지 않는다 · 뒤 화면이 inert 라 Tab 이 새지 않는다
+       · 닫으면 포커스가 연 단추로 돌아간다 · Esc / 폰 뒤로가기(cancel) · 뒤판 누르기로 닫힌다
+     닫는 길은 **뒤판 div 의 onclick** 하나로 모은다 — 모달마다 닫을 때 하는 일(입력 지우기·
+     다시 그리기)이 거기 이미 걸려 있다. showModal 이 없는 곳(jsdom)은 예전처럼 뒤판 div 를 쓴다.
+     hidden 은 그대로 같이 움직인다 — 앱·검사가 「열렸나」를 그것으로 본다. */
+  function setModal(m, b, open) {
+    if (!m) return;
+    m.hidden = !open;
+    const modal = typeof m.showModal === 'function';
+    if (b) b.hidden = !open || modal;
+    if (!modal) return;
+    if (!m.dataset.dlg) {
+      m.dataset.dlg = '1';
+      m.tabIndex = -1;
+      const shut = () => { if (b && typeof b.onclick === 'function') b.onclick(); else setModal(m, b, false); };
+      m.addEventListener('cancel', e => { e.preventDefault(); shut(); });
+      m.addEventListener('click', e => {
+        if (e.target !== m) return;
+        const r = m.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) shut();
+      });
+    }
+    if (open && !m.open) {
+      m.showModal();
+      /* 떠 있던 토스트를 다시 맨 위로 — 안 그러면 새 모달의 뒤판 밑에 깔려 흐려진다
+         (예전엔 z-index 60 > 모달 51 이라 늘 위였다. 모달 사진 대조가 잡았다). */
+      const t = document.getElementById('toast');
+      if (t && t.classList.contains('show')) raiseToTop(t);
+      /* 첫 단추(닫기)가 아니라 창 자체에 — 폰에서 「닫기」 에 고리가 그려졌다(대결 창에서 잰 것).
+         제 칸에 포커스를 주는 모달(관리자 비밀번호)은 뒤에서 다시 옮긴다. */
+      m.focus();
+    } else if (!open && m.open) m.close();
+  }
+  /* 모달 위에 서랍을 열 때(강화 플랜 → 기체 고르기) — 모달 dialog 위의 것은 **inert** 라
+     서랍을 못 누른다(Chrome 실측: 위에 띄운 popover 도 클릭이 안 먹었다). 서랍이 열려 있는 동안만
+     모달을 비모달(show)로 내려 예전 z-index 쌓임(모달 51 < 서랍 52·53)으로 돌린다. */
+  function modalYield(m, yieldIt) {
+    if (!m || typeof m.showModal !== 'function' || !m.open) return;
+    if (yieldIt && m.matches(':modal')) { m.close(); m.show(); }
+    else if (!yieldIt && !m.matches(':modal')) { m.close(); m.showModal(); m.focus(); }
+  }
+  /* 토스트를 **맨 위**로 — 모달 dialog 가 최상위 층에 있으니 z-index 60 으로는 그 뒤에 숨는다.
+     popover 로 다시 띄우면 최상위 층의 맨 끝(가장 위)에 붙는다. 보이기만 하면 된다
+     (모달 위에서는 inert 라 눌리지 않지만, 「되돌리기」 토스트는 빌드 화면에서만 뜬다). */
+  function raiseToTop(e) {
+    if (!e || typeof e.showPopover !== 'function') return;
+    if (!e.hasAttribute('popover')) e.setAttribute('popover', 'manual');
+    try {
+      if (e.matches(':popover-open')) e.hidePopover();
+      e.showPopover();
+    } catch { /* 지원 안 함 — 예전 z-index 로 둔다 */ }
+  }
 
   /** 키보드로 누를 수 있게 — Tab 으로 가고 Enter/Space 로 누른다.
    *  기체 카드·파츠 타일이 div 라 Tab 이 거기 가지 않았다(가이드 #12, 실측 0/164).
