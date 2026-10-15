@@ -247,6 +247,8 @@ const html = read('src', 'index.html')
   .replace('/*__PATCHNOTES__*/', () => inline('GBO2_PATCHNOTES',
     fs.existsSync(path.join(ROOT, 'data', 'patchnotes.json'))
       ? JSON.parse(read('data', 'patchnotes.json')) : null))
+  // 아이콘 한 벌 — 화면 스크립트보다 먼저 실려야 한다(GBO2Icons).
+  .replace('/*__ICONS__*/', () => read('src', 'icons.js'))
   .replace('/*__CORE__*/', () => read('src', 'core.js'))
   .replace('/*__I18N__*/', () => read('src', 'i18n.js'))
   .replace('/*__OPT__*/', () => read('src', 'optimizer.js'))
@@ -268,7 +270,7 @@ if (/<script[\s>]/i.test(read('src', 'token.body.html').replace(/<!--[\s\S]*?-->
   throw new Error('src/token.body.html 에 <script> 가 있습니다 — 계산기가 두 벌 실립니다. 스크립트는 src/token.js 에만 두세요.');
 }
 
-for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__SHARE__', '__UI__',
+for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__ICONS__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__SHARE__', '__UI__',
   '__TOKEN_CSS__', '__TOKEN__', '__TOKEN_BODY__', '__PICKUPS__', '__DUEL_CSS__', '__DUEL__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }

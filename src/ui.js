@@ -99,6 +99,63 @@
   // 무장 유형(속성) 표시 — 위키 무장표 컨테이너에서 뽑은 attr(solid/beam/melee/shield/other).
   // attr 이 없으면(옛 데이터·실드 등) 종류·빔 판정으로 보완한다.
   const ATTR_LABEL = { solid: '실탄', beam: '빔', melee: '격투', shield: '실드', other: '기타' };
+  // 아이콘 한 벌(src/icons.js) — 모든 화면이 이것 하나만 쓴다.
+  const ICON = window.GBO2Icons;
+  /* 기체 속성 표시 — 예전의 색 점(.dot) 대신 속성 아이콘. 색은 속성색 그대로라
+     색을 못 가리는 사람도 모양으로 가린다. 속성이 없는 기체는 예전처럼 빈 점. */
+  const attrMark = a => ICON.el(ICON.MS_ATTR[a], 'attr-ic a-' + a) || el('span', 'dot ' + (a || ''));
+  /* 등급 — 별 다섯 개 대신 별 하나 + 숫자 칩, 색으로 등급(5 백금 · 4 파랑 · 3 금 · 2 은 · 1 동).
+     별 다섯 개는 기체 카드에서 ⓘ 단추와 자리를 다퉜다(사용자 지적). 클래스 stars 는 그대로 —
+     카드 배치 검사(msdrawer_check)가 이 자리를 본다. */
+  /* 정적 HTML 에 적어 둔 아이콘(data-ic="이름") — 처음 한 번 채운다(표 머리 · 상단바). */
+  for (const e of document.querySelectorAll('[data-ic]:not(svg)')) ICON.prepend(e, e.dataset.ic);
+  /* 무장 상세의 항목 이름 — 표 머리와 같은 아이콘이라 표와 상세가 이어져 읽힌다. 숫자·소제목은 글자 그대로. */
+  const WD_KEY_IC = [
+    [/^(쿨타임|발사 간격|무장 전환|전환 시간)/, 'cooldown'], [/^사거리/, 'range'],
+    [/^(히트율|OH까지)/, 'heat'], [/^(OH 복귀|리로드)/, 'reload'], [/^누적치/, 'stagger'],
+  ];
+  const wdKey = k => {
+    const s = el('span', 'wd-k', k);
+    const hit = WD_KEY_IC.find(([re]) => re.test(k));
+    if (hit) ICON.prepend(s, hit[1]);
+    return s;
+  };
+  /* 위키 설명 칩 — **정해 둔 목록에만** 붙인다(외울 것을 늘리지 않는다). 글자는 그대로라
+     「집속 시」 같은 조건은 글자로 읽힌다. 무시 계열은 「무시」 를 먼저 확인한다 —
+     「실드」 글자만 보고 방패를 붙이면 「실드 무시」 가 거꾸로 읽혔다(시안에서 잡음). */
+  const CHIP_IC = [
+    [/이동 사격/, 'moveShot'],
+    [/실드[^/]*무시/, 'shieldX', true], [/완충재[^/]*무시/, 'bufferX', true], [/유닛 관통/, 'pierce', true],
+    [/강경직/, 'stagger2'], [/경직/, 'stagger'], [/발 동시|동시 발사/, 'dual'],
+  ];
+  const chipIcon = t => {
+    const hit = CHIP_IC.find(([re, , neg]) => re.test(t) && !(neg && CHIP_NEGATE.test(t)));
+    return hit ? hit[1] : null;
+  };
+  /* 성능 항목 → 아이콘. 내성 셋은 무장 속성과 같은 아이콘 · 사격 보정 = 빔 라이플 · 격투 보정 = 주먹.
+     파츠 화면 성능 표(core 키)와 기체 정보 성능(한글 이름)이 같은 아이콘을 쓴다. */
+  const STAT_IC = { hp: 'hp', armorRange: 'solid', armorBeam: 'beam', armorMelee: 'melee', shoot: 'shootC',
+    meleeCorrection: 'meleeC', speed: 'speed', highSpeedMovement: 'dash', thruster: 'thrust',
+    turnPerformanceGround: 'turn', turnPerformanceSpace: 'turn' };
+  const MI_STAT_IC = { 'HP': 'hp', '내실탄 보정': 'solid', '내빔 보정': 'beam', '내격투 보정': 'melee', '사격 보정': 'shootC',
+    '격투 보정': 'meleeC', '스피드': 'speed', '고속이동': 'dash', '슬러스터': 'thrust', '선회(지상)': 'turn', '선회(우주)': 'turn',
+    '재출격': 'cooldown' };
+  /* 파츠 칸 거리(퍼지는 호 1·2·3겹) · 출격 환경(지상 = 산 · 우주 = 고리 행성, 수중은 글자만) */
+  const SLOT_IC = { '근접': 'near', '중거리': 'mid', '원거리': 'far' };
+  const ENV_IC = { 'env-g': 'ground', 'env-s': 'space' };
+  /* 파츠 분류 · 스킬 분류 — 같은 뜻은 같은 아이콘(방어 = 방패 · 공격 = 위 화살 · 이동/기동 = 사방 화살) */
+  const PART_CAT_IC = { 防御: 'def', 攻撃: 'atk', 移動: 'mob', 補助: 'sup', 特殊: 'spc' };
+  const SKILL_CAT_IC = { '足回り': 'mob', '移動': 'mob', '攻撃': 'atk', '防御': 'def' };
+  const rarityChip = r => {
+    const c = el('span', 'stars rar r' + r);
+    const nm = (ICON.RARITY[r] || [])[0];
+    c.title = r + '성' + (nm ? ' (' + nm + ')' : '');
+    c.setAttribute('aria-label', c.title);
+    const i = ICON.el('rarity');
+    if (i) c.append(i);
+    c.append(String(r));
+    return c;
+  };
   const weaponAttr = w => w.attr
     || (w.type === 'shield' ? 'shield' : w.type === 'melee' ? 'melee' : D.isBeamWeapon(w) ? 'beam' : 'solid');
 
@@ -1263,11 +1320,11 @@
       info.append(nm);
 
       const meta = el('div', 'meta');
-      meta.append(el('span', 'dot ' + (m.属性 || '')));
+      meta.append(attrMark(m.属性));
       meta.append(el('span', '', T.attrName(m.属性) || '-'));
       meta.append(el('span', 'cost-badge', m.コスト));
       const r = msRarity(m);
-      if (r) meta.append(el('span', 'stars', '★'.repeat(r)));
+      if (r) meta.append(rarityChip(r));
 
       // ⓘ — 기체 정보를 본다. 카드 본체는 곧바로 파츠로 가므로, 훑어보고 싶을 때만 누른다.
       // (예전에는 카드를 누르면 늘 정보가 먼저 떠서, 아는 기체를 고를 때마다 한 번 더 눌러야 했다.)
@@ -2435,7 +2492,8 @@
     const burst = per / t;
     const mag = magazineOf(w, d), reload = reloadSecOf(w, d);
     const sustained = (mag && reload) ? (per * mag) / (mag * t + reload) : burst;
-    const sub = el('span', 'w-sub w-dps', '⚡DPS ' + Math.round(sustained).toLocaleString());
+    // 번개는 자동 구성 전용이다(사용자 결정 2026-10-15) — DPS 는 글자만.
+    const sub = el('span', 'w-sub w-dps', 'DPS ' + Math.round(sustained).toLocaleString());
     // 소이 등 고정 피해는 DPS 에 넣지 않는다. 이 무장들은 0.15~0.3초 간격으로 쏘는데
     // 소이는 몇 초에 걸쳐 들어가, 트리거마다 더하면 실제보다 몇 배로 부풀려진다.
     // 겹치는지 갱신되는지가 자료에 없어 추정으로 숫자를 만들지 않고, 빠졌다는 사실만 밝힌다.
@@ -2663,7 +2721,13 @@
       nmTop.append(document.createTextNode(T.weaponName(w.name)));
       // 이름 옆 칩: 두 모드가 같으면 하나, 다르면 있는 쪽 (각 칸의 '전탄'이 정확히 보여 준다)
       const chip = (mult.nc && mult.ch && mult.nc.n === mult.ch.n) ? mult.nc : (mult.nc || mult.ch);
-      if (chip) nmTop.append(el('span', 'w-mult', chip.label));
+      if (chip) {
+        const mc = el('span', 'w-mult', chip.label);
+        /* 동시 발사 아이콘은 「N발 동시」 에만 — 같은 칸에 「최대 19히트」 · 「4발 ×4연사」 도 온다.
+           히트에 붙이면 뜻이 틀리고, 연사에 붙이면 좁은 표(이름 칸 106px)에서 칩이 잘렸다(wsticky_check). */
+        if (/발 동시/.test(chip.label)) ICON.prepend(mc, 'dual');
+        nmTop.append(mc);
+      }
       nm.append(nmTop);
       // 고정 피해(소이 등) — 위력과 별개로 더해지는 몫이라 안 보여 주면 무장이 실제보다 약해 보인다.
       // 소이는 한 방에 들어가지 않고 1틱씩 나눠 들어가므로 「1틱×히트 = 합계」 로 적는다.
@@ -2718,7 +2782,9 @@
 
       // ②-b 무장 유형 (실탄/빔/격투/실드/기타) — 위키 무장표 속성과 동일
       const at = weaponAttr(w);
-      row.append(el('span', 'w-type type-' + at, ATTR_LABEL[at]));
+      const tyEl = el('span', 'w-type type-' + at, ATTR_LABEL[at]);
+      ICON.prepend(tyEl, ICON.ATTR[at]);
+      row.append(tyEl);
 
       /** 위력 한 칸 — 기본값 · 파츠 보정분(초록) · 스킬 발동분(보라). m: 이 칸(논차지/풀차지)의 동시발사 배수 */
       const dmgCell = (base, m) => {
@@ -3096,7 +3162,7 @@
       const grid = el('div', 'wd-grid');
       for (const k of rows) {
         const line = el('div', 'wd-row');
-        line.append(el('span', 'wd-k', k));
+        line.append(wdKey(k));
         line.append(el('span', 'wd-v', vals.get(k)));
         grid.append(line);
         vals.delete(k);
@@ -3111,7 +3177,7 @@
       const grid = el('div', 'wd-grid');
       for (const [k, v] of vals) {
         const line = el('div', 'wd-row');
-        line.append(el('span', 'wd-k', k));
+        line.append(wdKey(k));
         line.append(el('span', 'wd-v', v));
         grid.append(line);
       }
@@ -3133,7 +3199,11 @@
       const items = noteText(w.info['備考']).split(' / ').map(t => t.trim()).filter(Boolean);
       if (items.length) {
         const wrap = el('div', 'wd-note-chips');
-        for (const t of items) wrap.append(el('span', 'wd-chip' + noteChipCls(t), noKeepSlash(t)));
+        for (const t of items) {
+          const c = el('span', 'wd-chip' + noteChipCls(t), noKeepSlash(t));
+          ICON.prepend(c, chipIcon(t));
+          wrap.append(c);
+        }
         note.append(wrap);
       }
       box.append(note);
@@ -3280,7 +3350,9 @@
       const gain = tot - soche;                                          // 강화+확장+파츠로 인한 증가분
 
       const row = el('div', 'stat-row' + (atCap ? ' capped' : '') + (over ? ' over' : ''));
-      row.append(el('span', 'label', C.STAT_LABEL[k]));
+      const lb = el('span', 'label', C.STAT_LABEL[k]);
+      ICON.prepend(lb, STAT_IC[k]);
+      row.append(lb);
 
       const totalCell = el('span', 'total');
       totalCell.append(document.createTextNode(tot.toLocaleString()));
@@ -5296,11 +5368,11 @@
       nm.title = r.base;
       info.append(nm);
       const meta = el('div', 'tier-meta');
-      meta.append(el('span', 'dot ' + (r.rep['属性'] || '')));
+      meta.append(attrMark(r.rep['属性']));
       meta.append(el('span', '', T.attrName(r.rep['属性']) || '-'));
       meta.append(el('span', 'cost-badge', r.rep['コスト']));
       const rr = msRarity(r.rep);
-      if (rr) meta.append(el('span', 'stars', '★'.repeat(rr)));
+      if (rr) meta.append(rarityChip(rr));
       info.append(meta);
       row.append(info);
 
@@ -6531,7 +6603,7 @@
     for (const r of rows.slice(0, codexMsLimit)) {
       const it = el('div', 'codex-ms');
       const nm = el('div', 'nm');
-      nm.append(el('span', 'dot ' + r.attr));
+      nm.append(attrMark(r.attr));
       nm.append(el('span', '', r.ko));
       it.append(nm);
       it.append(el('div', 'at', r.attrKo));
@@ -8415,14 +8487,14 @@
     const sub = $('#heroSub');
     sub.innerHTML = '';
     if (!m) return;
-    sub.append(el('span', 'dot ' + (m.属性 || '')));
+    sub.append(attrMark(m.属性));
     sub.append(el('span', '', T.attrName(m.属性)));
     sub.append(el('span', '', '·'));
     sub.append(el('span', 'cost-badge', '코스트 ' + m.コスト));
     const r = msRarity(m);
     if (r) {
       sub.append(el('span', '', '·'));
-      sub.append(el('span', 'stars', '★'.repeat(r)));   // 기체 카드와 같은 표기
+      sub.append(rarityChip(r));   // 기체 카드와 같은 표기
     }
 
     // 출격 가능 · 환경 적성 · 격투 판정력 — 기체 정보 화면과 같은 줄을 쓴다.
@@ -8455,7 +8527,12 @@
           const both = typeof x !== 'string' && typeof parts[i - 1] !== 'string';
           v.append(document.createTextNode(both ? ' · ' : ' '));
         }
-        v.append(typeof x === 'string' ? document.createTextNode(x) : el('span', x.cls, x.t));
+        if (typeof x === 'string') v.append(document.createTextNode(x));
+        else {
+          const c = el('span', x.cls, x.t);
+          ICON.prepend(c, ENV_IC[x.cls]);
+          v.append(c);
+        }
       });
       b.append(v);
       target.append(b);
@@ -8619,10 +8696,10 @@
     // 속성 · 코스트 · 등급
     const tags = $('#infoTags');
     tags.innerHTML = '';
-    tags.append(el('span', 'dot ' + (m.属性 || '')), el('span', '', T.attrName(m.属性)));
+    tags.append(attrMark(m.属性), el('span', '', T.attrName(m.属性)));
     tags.append(el('span', 'cost-badge', '코스트 ' + m.コスト));
     const r = msRarity(m);
-    if (r) tags.append(el('span', 'stars', '★'.repeat(r)));
+    if (r) tags.append(rarityChip(r));
 
     // LV 탭 — 여기서 바꾸면 이 화면만 바뀐다(구성은 아직 시작도 안 했다)
     const lvs = $('#infoLvs');
@@ -8708,7 +8785,9 @@
       const d = el('div', 'mi-st');
       // 통상과 값이 다르면 눈에 띄게 — 변형으로 무엇이 달라지는지가 요점이다
       if (field && infoForm === 'alt' && infoStatOf(m, field, 'alt') !== m[field]) d.classList.add('alt');
-      d.append(el('i', '', k), el('b', '', v));
+      const ki = el('i', '', k);
+      ICON.prepend(ki, MI_STAT_IC[k]);
+      d.append(ki, el('b', '', v));
       // 막대는 기준이 있는 항목에만. 재출격처럼 '작을수록 좋은' 값엔 안 붙인다.
       const cap = field && MI_SCALE[field];
       const raw = field && Number(infoStatOf(m, field, infoForm));
@@ -8744,7 +8823,9 @@
     sb.innerHTML = '';
     for (const [k, v] of [['근접', m['近スロット']], ['중거리', m['中スロット']], ['원거리', m['遠スロット']]]) {
       const d = el('div', 'mi-slot');
-      d.append(el('i', '', k), el('b', '', v == null ? '—' : String(v)));
+      const ki = el('i', '', k);
+      ICON.prepend(ki, SLOT_IC[k]);
+      d.append(ki, el('b', '', v == null ? '—' : String(v)));
       const pips = el('span', 'mi-pips');
       for (let i = 0; i < Math.min(Number(v) || 0, 30); i++) pips.append(el('u'));
       d.append(pips);
@@ -8797,8 +8878,8 @@
     const s2 = stag2Of(t);
     /* 조건부면 **조건부라고 적는다**(사용자 지시) — 그냥 「강경직」으로 두면
        늘 강경직인 무장과 구별이 안 된다(F89·걍 개량형은 공중의 적에게만 걸린다). */
-    if (s2) out.push({ t: s2.cond ? '조건부 강경직' : '강경직', cls: 't-stag2' + (s2.cond ? ' cond' : '') });
-    else if (/경직\s*있음|즉시\s*발사\s*경직|집속\s*시\s*경직/.test(t)) out.push({ t: '경직', cls: 't-stag' });
+    if (s2) out.push({ t: s2.cond ? '조건부 강경직' : '강경직', cls: 't-stag2' + (s2.cond ? ' cond' : ''), ic: 'stagger2', keepText: !!s2.cond });
+    else if (/경직\s*있음|즉시\s*발사\s*경직|집속\s*시\s*경직/.test(t)) out.push({ t: '경직', cls: 't-stag', ic: 'stagger' });
     if (/다운/.test(t)) out.push({ t: '다운', cls: 't-down' });
     return out;
   }
@@ -8910,13 +8991,21 @@
       nmEl.title = wn;              // 줄여 놓았으니 전체 이름은 올려 보면 나온다
       d.append(nmEl);
       // 무엇을 거는 무장인가 — 경직·강경직·다운. 목록에서 「눕히는 무장」을 바로 찾게 한다.
-      for (const t of weaponTagsOf(w)) d.append(el('span', 'mi-wtag ' + t.cls, t.t));
+      for (const t of weaponTagsOf(w)) {
+        const tg = el('span', 'mi-wtag ' + t.cls, t.t);
+        /* 경직·강경직은 아이콘만(이름 자리를 넓힌다). 조건부는 「조건부」 글자가 정보라 글자를 둔다.
+           다운은 정해 둔 아이콘이 없어 글자 그대로. */
+        if (t.ic && !t.keepText) ICON.only(tg, t.ic); else if (t.ic) ICON.prepend(tg, t.ic);
+        d.append(tg);
+      }
       // 상태를 가리는 무장이면 어느 상태인지 적어 준다 — 합쳐 보고 있을 때 특히 필요하다
       const md = weaponModeOf(w);
       if (md) d.append(el('span', 'mi-wmode', md.label));
       // 실드는 attr 가 비어 있고 type 에만 들어 있다 — 무장 표와 같은 판정을 쓴다
       const at = (w.attr === 'shield' || w.type === 'shield') ? 'shield' : w.attr;
-      d.append(el('span', 'ty', MI_ATTR_KO[at] || '—'));
+      const tyEl = el('span', 'ty', MI_ATTR_KO[at] || '—');
+      ICON.only(tyEl, ICON.ATTR[at]);   // 실드·기타는 아이콘이 없어 글자 그대로
+      d.append(tyEl);
       // 위력은 이 기체 LV 에 맞는 칸을 본다. 실드처럼 위력이 없는 무장은 「—」.
       // weaponLevel() 은 state.ms 를 보므로 여기서는 못 쓴다 — 아직 고르지 않은 기체다.
       const keys = Object.keys(w.levels || {}).map(Number).sort((a, b) => a - b);
@@ -9010,6 +9099,7 @@
         if (infoSkCat !== 'all' && !cats.includes(infoSkCat)) infoSkCat = 'all';
         const mk = (v, label, n) => {
           const b = el('button', 'mi-skcatbtn' + (infoSkCat === v ? ' on' : ''), label);
+          ICON.prepend(b, SKILL_CAT_IC[v]);
           b.append(el('u', '', String(n)));
           b.onclick = () => { infoSkCat = v; renderInfoSkills(m); };
           catBar.append(b);
@@ -9022,7 +9112,11 @@
     for (const cat of cats) {
       if (infoSkCat !== 'all' && infoSkCat !== cat) continue;
       // 하나만 고른 상태에서는 소제목이 군더더기다
-      if (infoSkCat === 'all') box.append(el('div', 'mi-skcat', SKILL_CAT_KO[cat] || cat || '기타'));
+      if (infoSkCat === 'all') {
+        const h = el('div', 'mi-skcat', SKILL_CAT_KO[cat] || cat || '기타');
+        ICON.prepend(h, SKILL_CAT_IC[cat]);
+        box.append(h);
+      }
       // 칩을 하나씩 늘어놓으면 이름이 길 때 줄이 어긋난다 — 무장처럼 줄로 세운다.
       for (const sk of byCat.get(cat)) {
         const r = el('div', 'mi-skrow');
@@ -9627,6 +9721,10 @@
       [{ label: '전체', v: '' }, { label: T.attrName('強襲'), v: '強襲' },
        { label: T.attrName('汎用'), v: '汎用' }, { label: T.attrName('支援'), v: '支援' }],
       'msAttr', it => 'attr-' + it.v);
+    for (const c of document.querySelectorAll('#attrChips .chip')) {
+      const v = ([...c.classList].find(x => x.startsWith('attr-')) || '').slice(5);
+      if (v) ICON.prepend(c, ICON.MS_ATTR[v], 'a-' + v);
+    }
     buildChips('#costChips', COST_CHIPS, 'msCost');
     buildChips('#levelChips', LEVEL_CHIPS, 'msLv');
     buildChips('#rarityChips', RARITY_CHIPS, 'msRarity');
@@ -9694,6 +9792,7 @@
     for (const cat of [C.CATEGORY_ALL, ...C.CATEGORIES]) {
       const b = el('button', 'chip' + (state.partTab === cat ? ' on' : ''),
         cat === C.CATEGORY_ALL ? '전체' : C.CATEGORY_LABEL[cat]);
+      ICON.prepend(b, PART_CAT_IC[cat]);
       b.onclick = () => {
         state.partTab = cat;
         [...tabs.children].forEach(c => c.classList.remove('on'));
@@ -10347,7 +10446,10 @@
       if (onSelect && src.classList.contains('step-only')) continue;   // 기체 선택 화면에선 뜻이 없다
       if (src.dataset.phoneOnly && !isPhoneWidth()) continue;          // 태블릿·PC 에선 의미 없는 항목
       const it = el('button', 'png-menu-item');
-      it.append(el('span', 'pm-t', src.textContent.trim()));
+      const pt = el('span', 'pm-t', src.textContent.trim());
+      const sic = src.querySelector(':scope > svg.ic');   // 상단바 단추의 아이콘을 메뉴에도
+      if (sic) pt.prepend(sic.cloneNode(true));
+      it.append(pt);
       if (src.title) it.append(el('span', 'pm-s', src.title));
       it.onclick = () => { menu.remove(); src.click(); };
       menu.append(it);

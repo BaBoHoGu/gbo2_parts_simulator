@@ -42,20 +42,20 @@
   <span class="spacer"></span>
 
   <!-- ── 왼쪽: 이 구성에 하는 일 ── -->
-  <button id="openAuto" class="btn-primary step-only">⚡ 자동 구성</button>
-  <button id="compareBtn" class="btn-ghost step-only" title="두 구성의 스탯·내구를 나란히 비교">⚖ 비교</button>
+  <button id="openAuto" class="btn-primary step-only" data-ic="auto">자동 구성</button>
+  <button id="compareBtn" class="btn-ghost step-only" title="두 구성의 스탯·내구를 나란히 비교" data-ic="compare">비교</button>
   <!-- 저장·공유·이미지·올리기는 전부 「이 구성을 밖으로」 하나다. 버튼 넷이 뜻 하나를
        나눠 갖고 있어 묶는다. 메뉴 항목은 아래 원본 버튼을 그대로 누른다. -->
-  <button id="exportMenuBtn" class="btn-ghost step-only" title="저장 · 공유 · 이미지 · 갤러리에 올리기">⬆ 내보내기 ▾</button>
+  <button id="exportMenuBtn" class="btn-ghost step-only" title="저장 · 공유 · 이미지 · 갤러리에 올리기" data-ic="exportI">내보내기 ▾</button>
 
   <span class="tb-sep step-only"></span>
 
   <!-- ── 오른쪽: 다녀오는 곳 ── -->
-  <button id="galleryBtn" class="btn-ghost" title="다른 사람이 올린 구성을 둘러보고 그대로 가져옵니다">🌏 갤러리</button>
-  <button id="patchBtn" class="btn-ghost" title="게임 밸런스 조정·추가 기체를 패치 날짜별로 봅니다">📰 <span class="tb-lb">패치노트</span></button>
-  <button id="codexBtn" class="btn-ghost" title="기체와 상관없이 스킬을 분류별로 모아 봅니다">📖 스킬 도감</button>
-  <button id="tokenBtn" class="btn-ghost" title="토큰 수급·픽업 달성 계산기">🪙 토큰</button>
-  <button id="planBtn" class="btn-ghost" title="어느 기체를 먼저 강화할지 순위를 매겨 둡니다">🔧 강화 플랜</button>
+  <button id="galleryBtn" class="btn-ghost" title="다른 사람이 올린 구성을 둘러보고 그대로 가져옵니다" data-ic="gallery">갤러리</button>
+  <button id="patchBtn" class="btn-ghost" title="게임 밸런스 조정·추가 기체를 패치 날짜별로 봅니다" data-ic="patch"><span class="tb-lb">패치노트</span></button>
+  <button id="codexBtn" class="btn-ghost" title="기체와 상관없이 스킬을 분류별로 모아 봅니다" data-ic="codex">스킬 도감</button>
+  <button id="tokenBtn" class="btn-ghost" title="토큰 수급·픽업 달성 계산기" data-ic="token">토큰</button>
+  <button id="planBtn" class="btn-ghost" title="어느 기체를 먼저 강화할지 순위를 매겨 둡니다" data-ic="plan">강화 플랜</button>
 
   <!-- ── 아래는 상단바에 직접 보이지 않는다 — 「⬆ 내보내기」와 「⋯」 메뉴의 원본이다.
        메뉴는 원본의 글자·설명을 읽어 만들고, 누르면 원본을 click() 한다.
@@ -472,7 +472,7 @@
   <div class="build-parts">
     <section class="panel fill">
       <h2>커스텀 파츠 <span class="tabs" id="tabs"></span>
-        <button id="autoResultShow" class="btn-ghost small" hidden>⚡ 자동 결과</button>
+        <button id="autoResultShow" class="btn-ghost small" hidden data-ic="auto">자동 결과</button>
         <span class="right">
           <input type="search" id="partQuery" placeholder="파츠 검색 (이름 / 효과)">
           <span class="note" id="bannedCount"></span>
@@ -485,7 +485,7 @@
   <!-- 하단: 자동 구성 결과(있을 때) + 무장 — 커스텀 파츠와 무장 사이 전체 폭 밴드 -->
   <div class="build-bottom">
   <section class="panel fill" id="autoResultPanel" hidden>
-    <h2>⚡ 자동 구성 결과
+    <h2 data-ic="auto">자동 구성 결과
       <span class="right">
         <span class="am-note" id="autoModalNote"></span>
         <button id="autoModalClose" class="btn-ghost small">닫기</button>
@@ -532,7 +532,7 @@
       </div>
       <div class="weapon-head">
         <span>구분</span><span>이름</span><span>유형</span><span>논차지</span><span>풀차지</span>
-        <span>쿨타임 / 발사간격</span><span>탄 / 히트율</span><span>누적치</span><span>사거리</span><span>리로드 / OH복귀</span>
+        <span data-ic="cooldown">쿨타임 / 발사간격</span><span data-ic="heat">탄 / 히트율</span><span data-ic="stagger">누적치</span><span data-ic="range">사거리</span><span data-ic="reload">리로드 / OH복귀</span>
       </div>
       <div class="weapon-list" id="weaponList"></div>
     </section>
@@ -570,7 +570,7 @@
   </div>
 </aside>
 <aside class="drawer" id="autoDrawer">
-  <h2>⚡ 자동 구성 <span class="right"><button id="closeAuto" class="btn-ghost">닫기</button></span></h2>
+  <h2 data-ic="auto">자동 구성 <span class="right"><button id="closeAuto" class="btn-ghost">닫기</button></span></h2>
   <div class="drawer-body">
     <div class="row">
       <select id="preset" class="grow"></select>
@@ -779,6 +779,7 @@
 <script>/*__I18N_DATA__*/
 /*__PICKUPS__*/
 /*__PATCHNOTES__*/</script>
+<script>/*__ICONS__*/</script>
 <script>/*__CORE__*/</script>
 <script>/*__I18N__*/</script>
 <script>/*__OPT__*/</script>

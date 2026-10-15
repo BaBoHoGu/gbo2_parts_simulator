@@ -150,7 +150,7 @@
 /* 무장 목록 */
 .ds-wlist { display: flex; flex-direction: column; gap: 3px; max-height: 236px; overflow-y: auto; }
 .ds-w {
-  display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center;
+  display: grid; grid-template-columns: 54px 1fr auto; gap: 8px; align-items: center;
   width: 100%; text-align: left; background: transparent; color: var(--text);
   border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; font-size: 13px; cursor: pointer;
 }
@@ -159,7 +159,7 @@
 .ds-w .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ds-w .pw { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }
 .ds-w .pw em { font-style: normal; color: #8fc0ff; }
-.ds-w .w-type { font-size: 11px; text-align: center; border-radius: 5px; padding: 1px 0; }
+.ds-w .w-type { font-size: 11px; text-align: center; border-radius: 5px; padding: 1px 4px; }
 
 /* 사격 조건 */
 .ds-cond { display: grid; grid-template-columns: 52px 1fr; gap: 6px 8px; align-items: center; margin-top: 8px; }
@@ -252,6 +252,7 @@
   border-radius: 6px; background: var(--panel); border-left: 3px solid var(--good); }
 .fx-cond.off { border-left-color: var(--dim); }
 .fx-cond b { color: var(--text); font-weight: 600; }
+.fx-cond b > .ic, .dc-react > .ic, .dc-chips span > .ic { margin-right: 3px; }
 .fx-cond span { color: var(--muted); }
 .fx-foot { margin-top: 8px; font-size: 11px; color: var(--dim); }
 @container duel (max-width: 720px) {
@@ -281,6 +282,7 @@
 @media (hover: hover) { .ds-msrow:hover { background: var(--panel-2); border-color: var(--line); } }
 .ds-msrow img { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; }
 .ds-msrow small { color: var(--muted); font-size: 11px; }
+.ds-msrow small > .ic { margin-right: 3px; }
 
 /* 기체 고르기 필터 — 속성 · 코스트 · 레벨. 칩 모양은 앱의 .chip 을 그대로 쓴다(켜진 칩 = 노랑) */
 .ds-msfilter { display: grid; gap: 5px; }

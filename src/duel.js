@@ -52,6 +52,13 @@
   for (const arr of byBase.values()) arr.sort((a, b) => msLv(a) - msLv(b));
 
   const ATTR_KO = { solid: '실탄', beam: '빔', melee: '격투' };
+  const ICON = window.GBO2Icons;   // 아이콘 한 벌(src/icons.js)
+  /* 계산식의 「무장 원문의 조건」 줄 — 조건 이름 앞에 붙인다. 글자는 그대로(조건이 글자로 읽힌다).
+     무시 계열은 「무시」 를 본다 — 「실드」 만 보고 방패를 붙이면 뜻이 거꾸로 읽힌다. */
+  const FX_COND_IC = [
+    [/완충재[^/]*무시/, 'bufferX'], [/실드 무시/, 'shieldX'], [/^관통/, 'pierce'], [/^폭풍/, 'blast'],
+    [/^상대 내(실탄|빔|격투)/, 'foeArmor'], [/HP/, 'hpBand'], [/^고정 피해/, 'fixed'],
+  ];
   const ARMOR = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee' };
   const MS_ATTR_KO = { '強襲': '강습', '汎用': '범용', '支援': '지원' };
   const BEATS = { '汎用': '強襲', '強襲': '支援', '支援': '汎用' };
@@ -470,13 +477,17 @@
         return hit.length ? hit[hit.length - 1] : null;
       };
       const filters = el('div', 'ds-msfilter');
-      const chipRow = (label, items, isOn, onTap) => {
+      const chipRow = (label, items, isOn, onTap, icOf) => {
         const r = el('div', 'ds-mf-row');
         r.append(el('span', 'ds-mf-lb', label));
         // 칩은 한 덩어리로 — 코스트처럼 두 줄로 넘어가도 둘째 줄이 첫 칩 아래에서 시작한다
         const box = el('div', 'ds-mf-chips');
         box.append(btn('chip' + (items.every(([v]) => !isOn(v)) ? ' on' : ''), '전체', () => { onTap(null); }));
-        for (const [v, t] of items) box.append(btn('chip' + (isOn(v) ? ' on' : ''), t, () => onTap(v)));
+        for (const [v, t] of items) {
+          const c = btn('chip' + (isOn(v) ? ' on' : ''), t, () => onTap(v));
+          if (icOf) ICON.prepend(c, icOf(v), 'a-' + v);
+          box.append(c);
+        }
         r.append(box);
         return r;
       };
@@ -484,7 +495,7 @@
       const drawFilters = () => {
         filters.innerHTML = '';
         filters.append(chipRow('속성', [['強襲', '강습'], ['汎用', '범용'], ['支援', '지원']],
-          v => mf.attr.has(v), v => { toggle(mf.attr, v); drawFilters(); fill(); }));
+          v => mf.attr.has(v), v => { toggle(mf.attr, v); drawFilters(); fill(); }, v => ICON.MS_ATTR[v]));
         /* 코스트 칩은 데이터에서 센다 — 손으로 적은 목록은 새 코스트가 생기면 어긋난다 */
         const costs = [...new Set(G.msData.map(m => Number(m.コスト)).filter(c => c > 0))].sort((a, b) => a - b);
         filters.append(chipRow('코스트', costs.map(c => [c, String(c)]),
@@ -504,8 +515,9 @@
         for (const r of rows.slice(0, 120)) {
           const row = btn('ds-msrow', null, () => setMs(side, r.rep));
           const im = el('img'); im.src = msImg(r.rep); im.alt = ''; im.loading = 'lazy'; fallbackOnce(im, 'ms');
-          row.append(im, el('span', null, koMs(r.rep)),
-            el('small', null, (MS_ATTR_KO[r.rep.属性] || '') + ' · LV' + msLv(r.rep) + ' · ' + r.rep.コスト));
+          const sm = el('small', null, (MS_ATTR_KO[r.rep.属性] || '') + ' · LV' + msLv(r.rep) + ' · ' + r.rep.コスト);
+          ICON.prepend(sm, ICON.MS_ATTR[r.rep.属性], 'a-' + r.rep.属性);
+          row.append(im, el('span', null, koMs(r.rep)), sm);
           list.append(row);
         }
       };
@@ -825,6 +837,7 @@
         changed(side);
       });
       const ty = el('span', 'w-type type-' + x.attr, ATTR_KO[x.attr]);
+      ICON.prepend(ty, ICON.ATTR[x.attr]);
       const pw = el('span', 'pw', fmt(x.power || x.charged));
       if (x.charged && x.power && x.charged !== x.power) { pw.append(' / '); pw.append(el('em', null, fmt(x.charged))); }
       r.append(ty, el('span', 'nm', T.weaponName(x.w.name)), pw);
@@ -932,7 +945,11 @@
       /* 이 무장이 **무슨 반응**을 일으키는가 — 강경직이면 한 발로 못 움직이게 된다.
          조건부(공중의 적에게만 등)를 그냥 「강경직」으로 적으면 없는 성능을 말하는 셈이다. */
       const rc = HOOK.react(r.wp);
-      if (rc) cap.append(el('span', 'dc-react' + (/강경직/.test(rc) ? ' strong' : ''), rc));
+      if (rc) {
+        const rb = el('span', 'dc-react' + (/강경직/.test(rc) ? ' strong' : ''), rc);
+        ICON.prepend(rb, /강경직/.test(rc) ? 'stagger2' : 'stagger');   // 「조건부」 는 글자로 남는다
+        cap.append(rb);
+      }
     }
     c.append(cap);
     if (!A.ms || !B.ms) { c.append(el('div', 'dc-wait', '양쪽 기체를 고르면 계산합니다')); return c; }
@@ -1024,7 +1041,11 @@
       c.append(st);
     }
     const chips = el('div', 'dc-chips');
-    const chip = (t, cls) => chips.append(el('span', cls || '', t));
+    const chip = (t, cls) => {
+      const c = el('span', cls || '', t);
+      if (/\(2단 집속\)|\(집속\)/.test(t)) ICON.prepend(c, 'charge');
+      chips.append(c);
+    };
     chip('위력 ' + fmt(r.power) + (r.charged ? (r.mode === 'ch2' ? ' (2단 집속)' : ' (집속)') : ''));
     chip((r.wp.melee ? '격투' : '사격') + '보정 ' + Math.round(r.corr)
       + (r.manual == null ? '' : ' (직접 입력 · 구성값 ' + Math.round(r.autoCorr) + ')'),
@@ -1158,7 +1179,10 @@
       cl.append(el('div', 'fx-cap', '무장 원문의 조건'));
       for (const [name, how, ja, st] of conds) {
         const d = el('div', 'fx-cond ' + st);
-        d.append(el('b', null, name), el('span', null, how));
+        const nb = el('b', null, name);
+        const hit = FX_COND_IC.find(([re]) => re.test(name));
+        if (hit) ICON.prepend(nb, hit[1]);
+        d.append(nb, el('span', null, how));
         if (ja) d.title = '원문: ' + ja;
         cl.append(d);
       }
@@ -1268,7 +1292,8 @@
        못 찾으면 body 에 붙는데, 그러면 상단바 밖에 떠서 눌릴 자리가 이상해진다.
        그래서 topbar_check 의 MUST_REACH 가 #duelBtn 을 지킨다. */
     const ref = document.getElementById('compareBtn');
-    const b = btn('btn-ghost', '⚔ 대결', () => open(true));
+    const b = btn('btn-ghost', '대결', () => open(true));
+    ICON.prepend(b, 'duel');
     b.id = 'duelBtn';
     b.title = '나와 상대를 좌우에 두고, 무장·사격 조건별로 서로의 체력이 얼마나 깎이는지 봅니다 (개편 시안)';
     if (ref && ref.parentNode) ref.parentNode.insertBefore(b, ref.nextSibling);

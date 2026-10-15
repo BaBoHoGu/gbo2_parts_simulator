@@ -740,7 +740,9 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 /* 구분 · 이름 · 논차지 · 풀차지 · 탄/히트율 · 누적치 · 사거리 · 리로드 */
 .weapon, .weapon-head {
   display: grid;
-  grid-template-columns: 50px minmax(140px, 1.5fr) 52px 105px 125px 104px 92px 88px 96px 112px;
+  /* 쿨타임 칸 116 — 머리에 아이콘이 붙어 「쿨타임 / 발사간격」 이 114px 가 됐다(104 면 「발사간/격」 으로 꺾였다).
+     늘린 12px 는 이름 칸 최소 폭(140 → 128)에서 뺐다 — 표 전체 최소 폭은 그대로라 좁은 화면 배치가 안 바뀐다. */
+  grid-template-columns: 50px minmax(128px, 1.5fr) 52px 105px 125px 116px 92px 88px 96px 112px;
   gap: 10px;
   align-items: center;
   padding: 7px 6px;
@@ -800,11 +802,22 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   color: var(--muted); background: var(--panel-3);
   padding: 0 5px; border-radius: 4px; margin-left: 3px;
 }
-/* 무장 유형 (실탄/빔/격투/실드/기타) — 위키 무장표 속성과 동일 */
+/* 아이콘(src/icons.js) — 글자 크기를 따라간다. 색은 글자색(currentColor). */
+.ic { width: 1.15em; height: 1.15em; flex: 0 0 auto; vertical-align: -0.2em; }
+/* 아이콘만 보이는 칸 — 글자는 남겨 두고 눈에서만 감춘다(화면 읽기·검사가 읽는다).
+   폰은 올려 볼 수가 없어 아이콘 뜻을 확인할 길이 없다 — 글자를 그대로 보인다. */
+.ic-only { display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .ic-only > .tx { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap; }
+}
+/* 무장 유형 (실탄/빔/격투/실드/기타) — 위키 무장표 속성과 동일.
+   앞에 속성 아이콘이 붙는다(실드·기타는 글자만) — 그래서 폭은 고정이 아니라 최소 폭이다. */
 .w-type {
   font-size: var(--fs-xs); font-weight: 700; text-align: center;
-  padding: 1px 0; border-radius: 4px; letter-spacing: -0.3px;
-  justify-self: center; width: 40px;
+  padding: 1px 4px; border-radius: 4px; letter-spacing: -0.3px;
+  justify-self: center; min-width: 46px; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px; white-space: nowrap;
 }
 .type-solid  { color: #ffce6b; background: rgba(255, 201, 60, 0.13); }
 .type-beam   { color: var(--mid);   background: rgba(91, 192, 255, 0.13); }
@@ -2171,6 +2184,47 @@ button:not(:disabled):active, .chip:active, .seg-btn:active, .ms-card:active,
 .dot.強襲 { background: var(--attr-assault); color: var(--attr-assault); }
 .dot.汎用 { background: var(--attr-general); color: var(--attr-general); }
 .dot.支援 { background: var(--attr-support); color: var(--attr-support); }
+/* 기체 속성 아이콘 — 색 점을 대신한다(src/icons.js). 색은 같은 속성색. */
+.ic.a-強襲 { color: var(--attr-assault); }
+.ic.a-汎用 { color: var(--attr-general); }
+.ic.a-支援 { color: var(--attr-support); }
+.attr-ic { width: 14px; height: 14px; vertical-align: -2px; }
+/* 켜진 속성 칩은 바탕이 속성색이다 — 아이콘은 칩 글자색(짙은 색)을 따른다 */
+.chip.on > .ic[class*=" a-"] { color: inherit; }
+.chip > .ic { margin-right: 3px; }
+/* 상단바 · 「⋯」 메뉴 · 자동 구성 제목 — 이모지 대신 SVG(윈도·안드로이드에서 이모지 모양이 달랐다) */
+.topbar button > .ic { width: 1.2em; height: 1.2em; margin-right: 4px; }
+.pm-t > .ic { margin-right: 6px; }
+h2 > .ic { margin-right: 6px; }
+#autoResultShow > .ic { margin-right: 3px; }
+/* 무장 표 머리 · 상세 항목 이름 · 설명 칩 · 「2발 동시」 — 글자 앞 아이콘 */
+.weapon-head .ic, .wd-k > .ic { margin-right: 4px; color: var(--muted); }
+/* 좁은 표(.wnarrow)는 이름 칸 하한 때문에 쿨타임 칸을 못 늘린다 — 머리가 두 줄이 되면
+   「발사간/격」 이 아니라 「쿨타임 / ↵ 발사간격」 처럼 낱말에서 꺾이게 한다. */
+.weapon-head span { word-break: keep-all; }
+/* 성능 표 · 기체 정보 성능 · 파츠 칸 · 출격 환경 · 스킬 분류 */
+.stat-row .label > .ic, .mi-st i > .ic, .mi-slot i > .ic { margin-right: 5px; }
+.mi-st i > .ic, .mi-slot i > .ic { color: var(--muted); }
+.mi-skcat > .ic, .mi-skcatbtn > .ic { margin-right: 4px; }
+.env-g > .ic, .env-s > .ic { margin-right: 2px; }
+/* 좁은 파츠 칸의 분류 탭은 글자만 — 아이콘까지 붙이면 탭 줄이 387px 가 되어 376px 칸을 넘었고
+   「특수」 가 잘렸다(폰 넓게 보기). 시안은 아이콘만 두었지만 폰은 올려 볼 수 없어 뜻을 확인할 길이
+   없다 — 글자를 남긴다. 기준은 화면 폭이 아니라 **칸 폭**이다: 넓게 보기는 폰도 768px 로 잡아
+   compact 가 꺼진 채 칸만 좁다. */
+.build-parts > .panel { container: partsPanel / inline-size; }
+@container partsPanel (max-width: 520px) { #tabs .chip > .ic { display: none; } }
+.wd-chip > .ic, .w-mult > .ic { margin-right: 3px; }
+/* 등급 칩 — 별 하나 + 숫자, 바탕색으로 등급. 칩은 꽉 채운다(테두리만이면 백금과 은이 같은 회색이다). */
+.stars.rar {
+  display: inline-flex; align-items: center; gap: 2px; font-weight: 700; font-size: 11px; line-height: 1;
+  letter-spacing: 0; padding: 2px 5px 2px 3px; border-radius: 3px; color: #1a1d24; border: 1px solid rgba(0, 0, 0, .25);
+}
+.stars.rar .ic { width: 11px; height: 11px; vertical-align: 0; }
+.rar.r5 { background: linear-gradient(135deg, #ffffff 0%, #cfefff 45%, #9fd8f0 100%); }
+.rar.r4 { background: #4c9cf5; }
+.rar.r3 { background: #f2bf3a; }
+.rar.r2 { background: #a9b2bf; }
+.rar.r1 { background: #c07a43; }
 
 /* 속성 필터 칩(켜짐) — 속성색으로, 텍스트는 짙게 */
 .chip.attr-強襲.on { background: var(--attr-assault); border-color: var(--attr-assault); color: #2a0704; }
