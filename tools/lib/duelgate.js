@@ -31,6 +31,8 @@
  * @param o.buffs       공격 측이 켤 버프 스킬 이름 배열
  * @param o.exp         확장 스킬 (양쪽 모두)
  * @param o.corr        공격 측 보정 직접 입력 {shoot, melee} — null 이면 구성값(자동)
+ * @param o.form        공격 측 모드 'normal' | 'transform' (변형 · 변신 · 시스템 발동)
+ * @param o.foeForm     맞는 쪽 모드
  * @returns {Promise<object|null>} attack() 결과를 JSON 으로 옮긴 것 (+ 고른 것들)
  */
 async function measure(pg, o) {
@@ -66,6 +68,10 @@ async function measure(pg, o) {
     // 앱 구성을 쓸 때는 왼쪽 확장도 앱 값을 그대로 둔다 — 아래 exp 설정에서 되돌리지 않게
     S.L.buffs.clear(); S.R.buffs.clear(); S.L.defs.clear(); S.R.defs.clear();
     S.L.shieldOn = false; S.R.shieldOn = false;
+    /* 모드(통상/변신)도 **매번 되돌린다** — 기체를 setMs 없이 바로 넣으므로 앞 호출의 변신이 따라온다
+       (유니콘 변신 뒤 더블오 라이저가 시스템 발동 중으로 시작했다). q.form / q.foeForm 으로 세운다. */
+    if (!keepMine) S.L.form = 'normal';
+    S.R.form = 'normal';
     /* 보정 직접 입력도 **매번 비운다.** 호출 사이에 남겨 두면 앞 호출의 값이 따라와,
        「사격 칸을 흔들어도 안 바뀐다」가 앞 호출의 격투 250 때문에 바뀌어 보인다
        (실제로 그렇게 걸렸다 — 1,965 → 5,376). 세우는 값은 전부 여기서 초기화한다. */
@@ -77,6 +83,8 @@ async function measure(pg, o) {
     const from = q.from || 'L';
     const A = from === 'L' ? S.L : S.R, B = from === 'L' ? S.R : S.L;
     if (q.shield) B.shieldOn = true;
+    if (q.form) A.form = q.form;            // 공격 측 모드 'transform'
+    if (q.foeForm) B.form = q.foeForm;      // 맞는 쪽 모드
     if (q.corr) for (const k of ['shoot', 'melee']) if (k in q.corr) A.corr[k] = q.corr[k];
     for (const n of (q.defs || [])) B.defs.add(n);
     for (const n of (q.buffs || [])) A.buffs.add(n);

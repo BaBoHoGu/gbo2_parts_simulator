@@ -383,3 +383,6 @@ body.vm-wide .duel { inset: 0; border-radius: 0; border: none; }
   border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 12px;
 }
 .ds-corr.on input { border-color: var(--accent); color: var(--accent); }
+
+/* 모드(통상 / 변형·변신·시스템 발동) — 변신 쪽을 고르면 한 줄 안내가 붙는다 */
+.ds-form .ds-form-note { font-size: 11px; color: var(--accent); margin-left: 4px; }

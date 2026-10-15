@@ -550,7 +550,8 @@
   function damageCutsOf(equipped, opt = {}) {
     const lv = opt.lv != null ? opt.lv : (state.ms ? msLevel(state.ms) : 1);
     const cuts = partDamageCuts(equipped, lv);
-    if (opt.skillMs) cuts.push(...boostBufferCuts(activeStaggerMods(opt.skillMs, lv, opt.skills).cuts, equipped));
+    /* opt.form — 대결은 쪽마다 모드가 다르다. 안 넘기면 앱 화면의 state.form 을 따라가 버렸다(2026-10-15) */
+    if (opt.skillMs) cuts.push(...boostBufferCuts(activeStaggerMods(opt.skillMs, lv, opt.skills, opt.form).cuts, equipped));
     if (opt.weapon) cuts.push(...conditionalPartCuts(equipped, opt.weapon));
     return cuts;
   }
@@ -7815,6 +7816,12 @@
       fitTopbar();
     }, { once: true });
     window.GBO2Duel.use({
+      /* 변형 · 변신 · 시스템 발동(트랜잠) — 그 기체에 통상 말고 다른 모드가 있는가, 이름은 무엇인가.
+         무장이 어느 모드에서 쓰이는가(＜変身時＞使用可 등). 판정은 앱의 altModeOf · weaponModeOf 한 곳
+         — 무장 표의 「모든 상태 / 통상 / 변신 시」 칩과 같은 답을 쓴다(사용자 지적 2026-10-15:
+         「변형 스킬을 켰을 때의 공격 수치가 반영이 안 됨」). */
+      altMode: ms => altModeOf(ms),
+      weaponMode: w => weaponModeOf(w),
       /* 방아쇠 한 번에 맞는 히트 수 — 무장표의 「전탄」과 같은 자. {nc,ch} 각각 null|{n}. */
       hitsPerTrigger: (wp, charged) => {
         const m = fireMult(wp.w);
@@ -7823,8 +7830,8 @@
       },
       /* 피해 경감 스킬 — 스킬 하나에 경감이 여럿이면 칩도 여럿.
          `ko` 는 staggerSkillsOf 가 이미 번역해 준다(skTr 를 두 번 부르지 않는다).
-         form 은 옛 피탄 시뮬과 같게 'normal' 로 — 변신 기체의 변신 모드는 아직 안 고른다. */
-      defSkills: side => staggerSkillsOf(side.ms, msLevel(side.ms), 'normal')
+         form 은 그 쪽이 고른 모드(side.form) — 통상 / 변형·변신·시스템 발동. (예전엔 'normal' 로 박혀 있었다) */
+      defSkills: side => staggerSkillsOf(side.ms, msLevel(side.ms), side.form || 'normal')
         .flatMap(sk => (sk.cuts || []).map((c, i) => ({
           name: sk.name + (i ? '#' + i : ''), ko: sk.ko || sk.name,
           scope: c.scope, pct: c.pct, always: sk.cond === '상시',
@@ -7839,7 +7846,7 @@
          수치를 낼 수 없는 쪽(방향 배율이 위키에 없는 7기)은 null 을 돌려 단추가 안 나온다. */
       airMelee: (side, wp) => {
         if (!wp || !wp.melee || !airMeleeWeapon(wp.w)) return null;
-        const a = airMeleeOf(side.ms, msLevel(side.ms), 'normal');
+        const a = airMeleeOf(side.ms, msLevel(side.ms), side.form || 'normal');
         if (!a || !a.dir) return null;
         const has = (wp.variants || []).some(v => (v.direction || []).some(d => d.label === a.dir));
         if (!has) return null;
@@ -7853,7 +7860,7 @@
          방어 스킬은 그 쪽이 켠 것(side.defs)을 그대로 본다 — 화면의 체크와 같은 자. */
       /* st 는 대결이 센 그 쪽 스탯(스킬 버프까지 반영) — 스탯을 두 번 세지 않는다. */
       durability: (side, st) => DURA_ATTRS.map(([attr, , lb]) => {
-        const cuts = damageCutsOf(side.parts, { lv: msLevel(side.ms), skillMs: side.ms, skills: side.defs });
+        const cuts = damageCutsOf(side.parts, { lv: msLevel(side.ms), skillMs: side.ms, skills: side.defs, form: side.form || 'normal' });
         return { attr, ko: lb, value: enduranceOf(st, attr, cuts), cut: cutPctOf(cuts, attr) };
       }),
       /* 대결에서 「실드로 막음」을 켜면 무장 표의 🛡 보정 칩도 같이 켠다.
@@ -7882,7 +7889,7 @@
          통째로 빠져 있었고 damage_path_check 가 잡았다. 판정·식은 앱 한 곳만 쓴다. */
       foeArmorCut: (side, wp) => {
         const wCut = weaponFoeArmorCut(wp.w);
-        const sCut = foeArmorCutOf([...side.buffs], wp.attr, side.ms, 'normal');
+        const sCut = foeArmorCutOf([...side.buffs], wp.attr, side.ms, side.form || 'normal');
         const keep = (1 - wCut / 100) * (1 - sCut / 100);
         return { wCut, sCut, cut: Math.round((1 - keep) * 1000) / 10, keep };
       },
@@ -7890,7 +7897,7 @@
       react: wp => reactOf(wp.w),
       stagger: (side, wp) => {
         const st = parseStagger(wp.w);
-        const mods = activeStaggerMods(side.ms, msLevel(side.ms), side.defs, 'normal');
+        const mods = activeStaggerMods(side.ms, msLevel(side.ms), side.defs, side.form || 'normal');
         return staggerBox(st, mods);
       },
       /* 「이 무장 N발 버티기 → 자동 구성 목표로」.
@@ -7914,7 +7921,7 @@
          force 는 「⟳ 지금 편집 중인 구성 가져오기」 단추가 보내는 것으로, 지문을 무시한다. */
       seed: (left, setMs, force) => {
         if (!state.ms) return;
-        const fp = [state.ms.MS名, state.stage, state.expansion, state.expLevel,
+        const fp = [state.ms.MS名, state.stage, state.expansion, state.expLevel, state.form,
           state.equipped.map(p => p.name).join(',')].join('|');
         if (left.ms && !force && fp === duelSeedFp) return;
         duelSeedFp = fp;
@@ -7923,6 +7930,16 @@
         left.parts = [...state.equipped];
         left.exp = state.expansion;
         left.expLv = state.expLevel;
+        /* 앱에서 변신 화면을 보며 짠 구성이면 변신 모드로 가져온다 — 「지금 편집 중인 구성」 그대로.
+           모드를 바꾸면 쓸 수 있는 무장이 달라지므로 첫 무장을 다시 고른다(setMs 와 같은 규칙). */
+        const f = (state.form === 'transform' && altModeOf(state.ms)) ? 'transform' : 'normal';
+        if (left.form !== f) {
+          left.form = f;
+          const ws = window.GBO2Duel.weaponsOf ? window.GBO2Duel.weaponsOf(left) : [];
+          if (ws.length && !ws.some(x => x.key === left.wKey)) {
+            left.wKey = ws[0].key; const m = ws[0].modes.find(x => x.ok); left.mode = m ? m.k : 'nc';
+          }
+        }
       }
     });
   }, 0);

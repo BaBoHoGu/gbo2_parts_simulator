@@ -77,6 +77,7 @@
     corr: { shoot: null, melee: null },
     pickParts: false, pq: '', pcat: 'all', pickMs: false, mq: '',
     mf: { attr: new Set(), cost: new Set(), lv: 0 },   // 기체 고르기 필터 — 속성 · 코스트(여럿) · LV(하나, 0=전체)
+    form: 'normal',        // 'normal' | 'transform' — 변형 · 변신(NT-D) · 시스템 발동(트랜잠). 앱의 state.form 과 같은 뜻
     step: 1                // 이 쪽 무장으로 상대를 몇 발 맞혔는지 (게이지 미리보기)
   });
   const S = { L: mkSide('L'), R: mkSide('R'), tab: 'L' };
@@ -168,8 +169,10 @@
     if (!side.ms) return null;
     /* 확장 스킬은 사격·격투 보정과 내성·상한을 올린다 — 「없음」으로 못 박아 두면
        실제로 끼고 싸우는 구성과 다른 수가 나온다. 쪽마다 고른 것을 그대로 넘긴다. */
+    /* 모드도 넘긴다 — 유니콘 NT-D 는 사격 46 → 13 · 격투 22 → 65, 더블오 라이저 트랜잠은 사격 46 → 61 ·
+       격투 30 → 60 이다. 예전엔 form 자리에 null 을 넘겨 늘 통상 수치로 셌다(사용자 지적 2026-10-15). */
     const run = skill => C.calcStats(side.ms, side.parts, side.stage, side.exp, G.parts, G.fullst,
-      side.expLv, null, skill, null).total;
+      side.expLv, side.form === 'transform' ? 'transform' : 'normal', skill, null).total;
     const bare = run(null);
     const sk = skillStatBonus(side, bare);
     return sk ? run(sk) : bare;
@@ -191,6 +194,9 @@
     const lv = msLv(side.ms), out = [];
     (page.weapons || []).forEach((w, i) => {
       if (w.type === 'shield') return;
+      /* ＜変身時＞使用可 · ＜通常時＞使用可 — 고른 모드에서 못 쓰는 무장은 뺀다(표기 없는 무장은 어느 모드나) */
+      const wm = HOOK.weaponMode(w);
+      if (wm && !(side.form === 'transform' ? wm.alt : wm.normal)) return;
       const lvs = Object.keys(w.levels || {}).map(Number).sort((a, b) => a - b);
       const fit = lvs.filter(l => l <= lv);
       const k = String(fit.length ? fit[fit.length - 1] : lvs[0]);
@@ -255,7 +261,10 @@
     goalRow: () => null,
     /* ★ 공중 격투 제어 — 판정이 원문(ms_skills)에 있어 바깥에서 읽을 수 없다.
        간이판은 **없다고 답한다**. 지어내 답하면 앱과 다른 수가 나온다. */
-    airMelee: () => null
+    airMelee: () => null,
+    /* ★ 모드 — 간이판은 **모른다고 답한다**(단추가 안 나온다). 앱이 altModeOf · weaponModeOf 를 넘긴다 */
+    altMode: () => null,
+    weaponMode: () => null
   };
 
   /* ---------- 한 방향의 계산 (공격 측 A → 대상 B) ---------- */
@@ -566,6 +575,32 @@
     row.append(stSeg);
     row.append(btn('d-btn', '⇄ 기체 변경', () => { side.pickMs = true; renderSide(side); }));
     b.append(row);
+
+    /* 모드 — 변형 · 변신(NT-D) · 시스템 발동(트랜잠). 그 기체에 모드가 있을 때만 단추를 낸다.
+       바꾸면 능력치(보정) · 무장 목록 · 방어 스킬 · 경직 · 공중 격투가 그 모드 것으로 바뀐다.
+       고른 무장이 그 모드에서 못 쓰는 것이면 쓸 수 있는 첫 무장으로 옮긴다. */
+    const alt = HOOK.altMode(ms);
+    if (alt) {
+      const mr = el('div', 'ds-row ds-form');
+      mr.append(el('span', 'lb', '모드'));
+      const fs = el('div', 'seg');
+      for (const [v, t] of [['normal', '통상'], ['transform', alt.label]]) {
+        fs.append(btn('seg-btn' + (side.form === v ? ' on' : ''), t, () => {
+          if (side.form === v) return;
+          side.form = v; side.step = 1; side.air = false;
+          const ws = weaponsOf(side);
+          if (!ws.some(x => x.key === side.wKey)) {
+            const first = ws[0];
+            side.wKey = first ? first.key : null;
+            const m = first && first.modes.find(x => x.ok); side.mode = m ? m.k : 'nc';
+          }
+          changed(side);
+        }));
+      }
+      mr.append(fs);
+      if (side.form === 'transform') mr.append(el('small', 'ds-form-note', alt.label + ' 수치 · 무장 · 스킬로 셉니다'));
+      b.append(mr);
+    }
 
     /* 확장 스킬 — 앱의 파츠 화면과 같은 목록·같은 LV 범위. */
     const exRow = el('div', 'ds-row');
@@ -1164,6 +1199,7 @@
     side.buffs.clear(); side.defs.clear();
     side.wKey = null; side.step = 1; side.pickParts = false; side.air = false;
     side.corr = { shoot: null, melee: null };   // 기체가 바뀌면 손으로 넣은 보정은 풀린다
+    if (!keepParts || !HOOK.altMode(ms)) side.form = 'normal';
     // 주무장을 기본으로 골라 둔다 — 고르기 전 빈 화면을 줄인다
     const first = weaponsOf(side)[0];
     if (first) { side.wKey = first.key; const m = first.modes.find(x => x.ok); side.mode = m ? m.k : 'nc'; }
@@ -1240,7 +1276,7 @@
     for (const [k, f] of Object.entries(over || {})) if (k in HOOK && typeof f === 'function') HOOK[k] = f;
     if (root && !root.hidden) renderAll();
   }
-  window.GBO2Duel = { open: () => open(true), close: () => open(false), use, state: S, attack };
+  window.GBO2Duel = { open: () => open(true), close: () => open(false), use, state: S, attack, weaponsOf };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountButton);
   else mountButton();
 })();
