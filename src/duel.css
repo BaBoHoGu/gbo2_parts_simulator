@@ -282,6 +282,15 @@
 .ds-msrow img { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; }
 .ds-msrow small { color: var(--muted); font-size: 11px; }
 
+/* 기체 고르기 필터 — 속성 · 코스트 · 레벨. 칩 모양은 앱의 .chip 을 그대로 쓴다(켜진 칩 = 노랑) */
+.ds-msfilter { display: grid; gap: 5px; }
+.ds-mf-row { display: flex; gap: 6px; align-items: flex-start; }
+.ds-mf-chips { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; min-width: 0; }
+.ds-mf-lb { flex: 0 0 42px; font-size: 11px; color: var(--muted); padding-top: 5px; }
+.ds-msfilter .chip { padding: 3px 9px; font-size: 12px; min-height: 26px; }
+.ds-mscount { font-size: 11px; color: var(--dim); }
+.ds-msempty { padding: 14px 6px; text-align: center; color: var(--dim); font-size: 12px; }
+
 /* 모바일 전환 탭 (넓은 화면에선 숨김) */
 .duel-tabs { display: none; }
 

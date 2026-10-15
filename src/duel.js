@@ -76,6 +76,7 @@
        상대 파츠를 모를 때 보정만 어림해 넣으려고 둔다. 기체를 바꾸면 풀린다(setMs). */
     corr: { shoot: null, melee: null },
     pickParts: false, pq: '', pcat: 'all', pickMs: false, mq: '',
+    mf: { attr: new Set(), cost: new Set(), lv: 0 },   // 기체 고르기 필터 — 속성 · 코스트(여럿) · LV(하나, 0=전체)
     step: 1                // 이 쪽 무장으로 상대를 몇 발 맞혔는지 (게이지 미리보기)
   });
   const S = { L: mkSide('L'), R: mkSide('R'), tab: 'L' };
@@ -445,25 +446,63 @@
       const pick = el('div', 'ds-mspick');
       const q = el('input', 'ds-search'); q.type = 'search'; q.placeholder = '기체 검색 (자쿠 / ザク / 건담…)'; q.value = side.mq;
       const list = el('div', 'ds-mslist'); list.dataset.keep = 'ms';
+      const cnt = el('div', 'ds-mscount');
+      /* 필터 — 속성 · 코스트 · LV. 코스트는 LV 마다 다르다(같은 기체 LV1 300 / LV2 350 …).
+         그래서 LV 를 고르면 **그 LV 의 코스트**로 거르고, 고르지 않으면 기체의 LV 가운데
+         하나라도 맞으면 남긴다. 누르면 맞은 LV 로 들어간다(LV 를 안 골랐으면 맞은 것 중 가장 높은 LV). */
+      const mf = side.mf;
+      const pickOf = arr => {
+        const ok = m => (!mf.lv || msLv(m) === mf.lv) && (!mf.cost.size || mf.cost.has(Number(m.コスト)));
+        const hit = arr.filter(ok);
+        return hit.length ? hit[hit.length - 1] : null;
+      };
+      const filters = el('div', 'ds-msfilter');
+      const chipRow = (label, items, isOn, onTap) => {
+        const r = el('div', 'ds-mf-row');
+        r.append(el('span', 'ds-mf-lb', label));
+        // 칩은 한 덩어리로 — 코스트처럼 두 줄로 넘어가도 둘째 줄이 첫 칩 아래에서 시작한다
+        const box = el('div', 'ds-mf-chips');
+        box.append(btn('chip' + (items.every(([v]) => !isOn(v)) ? ' on' : ''), '전체', () => { onTap(null); }));
+        for (const [v, t] of items) box.append(btn('chip' + (isOn(v) ? ' on' : ''), t, () => onTap(v)));
+        r.append(box);
+        return r;
+      };
+      const toggle = (set, v) => { if (v == null) set.clear(); else if (set.has(v)) set.delete(v); else set.add(v); };
+      const drawFilters = () => {
+        filters.innerHTML = '';
+        filters.append(chipRow('속성', [['強襲', '강습'], ['汎用', '범용'], ['支援', '지원']],
+          v => mf.attr.has(v), v => { toggle(mf.attr, v); drawFilters(); fill(); }));
+        /* 코스트 칩은 데이터에서 센다 — 손으로 적은 목록은 새 코스트가 생기면 어긋난다 */
+        const costs = [...new Set(G.msData.map(m => Number(m.コスト)).filter(c => c > 0))].sort((a, b) => a - b);
+        filters.append(chipRow('코스트', costs.map(c => [c, String(c)]),
+          v => mf.cost.has(v), v => { toggle(mf.cost, v); drawFilters(); fill(); }));
+        const lvs = [...new Set(G.msData.map(msLv).filter(Boolean))].sort((a, b) => a - b);
+        filters.append(chipRow('레벨', lvs.map(l => [l, 'LV' + l]),
+          v => mf.lv === v, v => { mf.lv = (v == null || mf.lv === v) ? 0 : v; drawFilters(); fill(); }));
+      };
       const fill = () => {
         list.innerHTML = '';
         const s = q.value.trim().toLowerCase();
-        let rows = [...byBase.entries()].map(([bn, arr]) => ({ bn, rep: arr[arr.length - 1] }));
+        let rows = [...byBase.entries()].map(([bn, arr]) => ({ bn, rep: pickOf(arr) })).filter(r => r.rep);
+        if (mf.attr.size) rows = rows.filter(r => mf.attr.has(r.rep.属性));
         if (s) rows = rows.filter(r => (T.msName(r.rep.MS名) + ' ' + r.rep.MS名).toLowerCase().includes(s));
+        cnt.textContent = rows.length + '기' + (rows.length > 120 ? ' — 앞 120기만 보입니다. 검색이나 필터로 좁혀 주세요' : '');
+        if (!rows.length) list.append(el('div', 'ds-msempty', '조건에 맞는 기체가 없습니다'));
         for (const r of rows.slice(0, 120)) {
           const row = btn('ds-msrow', null, () => setMs(side, r.rep));
           const im = el('img'); im.src = msImg(r.rep); im.alt = ''; im.loading = 'lazy';
           row.append(im, el('span', null, koMs(r.rep)),
-            el('small', null, (MS_ATTR_KO[r.rep.属性] || '') + ' · ' + r.rep.コスト));
+            el('small', null, (MS_ATTR_KO[r.rep.属性] || '') + ' · LV' + msLv(r.rep) + ' · ' + r.rep.コスト));
           list.append(row);
         }
       };
       q.oninput = () => { side.mq = q.value; fill(); };
+      drawFilters();
       fill();
       // 저장 구성 불러오기
       const builds = loadBuilds();
       if (builds.length) pick.append(buildSelect(side, builds));
-      pick.append(q, list);
+      pick.append(q, filters, cnt, list);
       if (side.ms) pick.append(btn('d-btn', '취소', () => { side.pickMs = false; renderSide(side); }));
       b.append(pick);
       setTimeout(() => q.focus({ preventScroll: true }), 0);
