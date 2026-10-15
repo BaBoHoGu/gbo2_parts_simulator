@@ -528,16 +528,23 @@
        **셈은 앱이 한다**(교체 지점). HP ÷ (1 − 내성) 만 쓰면 파츠 피해 경감이 빠져
        성능표와 같은 이름의 지표가 두 화면에서 갈린다 — 실제로 그렇게 냈고
        consistency_check 가 잡았다(성능 24,572 · 여기 22,115). */
+    /* 화면에는 **게임 공식 수치**(내실탄 · 내빔 · 내격투 보정, 두 자리)를 적는다 — 사용자 요청 2026-10-15.
+       실효 HP(내구 지표)는 게임에 없는 눈금이라 글로 적으면 낯설다. 다만 자동 구성 목표와 격파 발수가
+       그 눈금을 쓰므로 **툴팁에 남긴다**(data-eff 도 — consistency_check 가 성능표와 맞대는 자리). */
+    const ARMOR_OF = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee' };
     const rows = HOOK.durability(side, st);
     if (rows && rows.length) {
       const dura = el('div', 'ds-dura');
-      dura.append(el('span', 'lb', '내구'));
+      dura.append(el('span', 'lb', '내성'));
       for (const d of rows) {
         const cell = el('span', 'ds-dcell');
-        cell.append(el('i', null, d.ko), el('b', null, fmt(d.value)));
-        if (d.cut) cell.append(el('em', null, '−' + d.cut + '%'));
-        cell.title = d.ko + ' 공격을 기준으로 실제로 버티는 총량'
-          + ' (HP ' + fmt(st.hp) + ' ÷ (1 − 내성) ÷ 피해경감)';
+        const arm = Math.round(st[ARMOR_OF[d.attr]] || 0);
+        cell.append(el('i', null, '내' + d.ko), el('b', null, String(arm)));
+        if (d.cut) cell.append(el('em', null, '피해 −' + d.cut + '%'));
+        cell.dataset.eff = String(d.value);
+        cell.title = '내' + d.ko + ' 보정 ' + arm + (d.cut ? ' · 파츠·스킬 피해 −' + d.cut + '%' : '')
+          + '\n실효 HP ' + fmt(d.value) + ' — HP ' + fmt(st.hp) + ' ÷ (1 − 내성) ÷ 피해 경감.'
+          + ' 격파 발수와 자동 구성 목표가 쓰는 눈금입니다.';
         dura.append(cell);
       }
       b.append(dura);

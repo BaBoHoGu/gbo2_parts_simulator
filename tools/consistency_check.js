@@ -92,9 +92,11 @@ const tfName = tfMs ? (dict[String(tfMs.MS名).replace(/_LV\d+$/, '')] || String
      (피탄 시뮬이 있던 자리. 대결은 쪽마다 내구 칸을 들고 있어, 왼쪽 = 지금 편집 중인 구성이다.) */
   await pg.evaluate(() => document.querySelector('#duelBtn').click());
   await sleep(1400);
+  /* 대결 칸의 **글**은 이제 게임 공식 내성 보정(두 자리)이다(2026-10-15 사용자 요청).
+     같은 자를 쓰는지는 칸에 붙은 실효 HP(data-eff)로 본다 — 글을 읽으면 내성 10 과 24,572 를 맞대게 된다. */
   const pie = nums(await pg.evaluate(() =>
-    [...document.querySelectorAll('.duel-side[data-side="L"] .ds-dura .ds-dcell b')]
-      .map(e => e.textContent).join(' ')));
+    [...document.querySelectorAll('.duel-side[data-side="L"] .ds-dura .ds-dcell')]
+      .map(e => e.dataset.eff || '').join(' ')));
   await pg.evaluate(() => document.querySelector('#duelClose').click());
   await sleep(500);
   await pg.evaluate(() => { window.prompt = () => '일관성점검'; document.querySelector('#save').click(); });

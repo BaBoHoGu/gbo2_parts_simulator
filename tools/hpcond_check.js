@@ -190,6 +190,18 @@ ok('구간 경계가 맞는다 (100→100 · 99.9→50 · 70→50 · 69→20 · 
   ok('내구 칸에 실탄·빔·격투가 다 있다',
     hpInfo.head.length === 3 && /실탄/.test(hpInfo.head[0]) && /빔/.test(hpInfo.head[1])
     && /격투/.test(hpInfo.head[2]), hpInfo.head);
+  /* 칸의 숫자는 **게임 공식 내성 보정**(두 자리)이다 — 사용자 요청 2026-10-15. 기대값은 core 로 따로 센다.
+     예전처럼 실효 HP(24,572 같은 다섯 자리)를 글로 적으면 운다. */
+  {
+    const tot = C2.calcStats(defMs, [], 6, '拡張スキル無し',
+      JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'parts.json'), 'utf8')),
+      JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'fullst.json'), 'utf8')), null, 'normal').total;
+    const want = [tot.armorRange, tot.armorBeam, tot.armorMelee].map(v => Math.round(v || 0));
+    const got = hpInfo.head.map(t => Number((t.match(/내(?:실탄|빔|격투)\s*(\d+)/) || [])[1]));
+    ok('내성 칸 숫자가 게임 공식 내성 보정이다 (' + want.join(' / ') + ')',
+      JSON.stringify(got) === JSON.stringify(want), { 화면: hpInfo.head, 기대: want });
+    ok('내성 칸 글에 실효 HP(네 자리 이상)를 적지 않는다', hpInfo.head.every(t => !/\d{1,3},\d{3}/.test(t)), hpInfo.head);
+  }
   let left = eff, n = 0;
   for (const s of steps) { left -= s.d; n++; if (left <= 0) break; }
   const shown = Number((rr.kill.v.match(/\d+/) || [])[0]);
