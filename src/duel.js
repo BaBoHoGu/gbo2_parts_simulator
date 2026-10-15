@@ -33,8 +33,12 @@
   /* ---------- 데이터 도우미 ---------- */
   const baseName = n => String(n).replace(/_LV\d+$/, '');
   const msLv = ms => C.msLevel(ms.MS名);
-  const imgOf = key => IM[key] || '';
+  /* 그림 주소는 **앱의 imgUrl 하나**로 정한다 — 오프라인판은 인라인(GBO2_IMAGES), 사이트판은 images/ 주소.
+     예전엔 인라인만 찾아 사이트에서 기체 그림이 다 비었다. 부를 때마다 찾으므로 실리는 순서와 무관하다. */
+  const imgOf = key => (typeof window.GBO2ImgUrl === 'function' ? window.GBO2ImgUrl(key) : (IM[key] || ''));
   const msImg = ms => imgOf('ms/' + baseName(ms.MS名).normalize('NFC') + '.webp');
+  /** 사이트판에서 그림 파일이 없는 기체 — 기본 그림으로 **한 번만** 바꾼다(그것도 없으면 그대로 둔다) */
+  const fallbackOnce = (im, dir) => { im.onerror = () => { im.onerror = null; im.src = imgOf(dir + '/_default.webp'); }; };
   const partImg = p => imgOf('parts/' + String(p.name).normalize('NFC') + '.webp');
   const koMs = ms => T.msName(ms.MS名).replace(/\s*LV\d+$/, '');
   const pageId = ms => (String(ms && ms.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];
@@ -499,7 +503,7 @@
         if (!rows.length) list.append(el('div', 'ds-msempty', '조건에 맞는 기체가 없습니다'));
         for (const r of rows.slice(0, 120)) {
           const row = btn('ds-msrow', null, () => setMs(side, r.rep));
-          const im = el('img'); im.src = msImg(r.rep); im.alt = ''; im.loading = 'lazy';
+          const im = el('img'); im.src = msImg(r.rep); im.alt = ''; im.loading = 'lazy'; fallbackOnce(im, 'ms');
           row.append(im, el('span', null, koMs(r.rep)),
             el('small', null, (MS_ATTR_KO[r.rep.属性] || '') + ' · LV' + msLv(r.rep) + ' · ' + r.rep.コスト));
           list.append(row);
@@ -519,7 +523,7 @@
     }
     const ms = side.ms;
     const top = el('div', 'ds-unit');
-    const im = el('img'); im.src = msImg(ms); im.alt = '';
+    const im = el('img'); im.src = msImg(ms); im.alt = ''; fallbackOnce(im, 'ms');
     const info = el('div');
     info.append(el('div', 'ds-who', who));
     info.append(el('div', 'ds-name', koMs(ms)));
@@ -724,7 +728,7 @@
       if (p) {
         const s = btn('ds-slot full', null, () => { side.parts.splice(i, 1); changed(side); });
         s.title = T.partName(p.name) + ' — 눌러서 빼기\n' + (T.partDesc ? T.partDesc(p.name, p.description) || '' : '');
-        const im = el('img'); im.src = partImg(p); im.alt = T.partName(p.name);
+        const im = el('img'); im.src = partImg(p); im.alt = T.partName(p.name); fallbackOnce(im, 'parts');
         const lv = (String(p.name).match(/_LV(\d+)$/) || [])[1];
         s.append(im); if (lv) s.append(el('span', 'lv', lv));
         slots.append(s);
@@ -767,7 +771,7 @@
         const it = btn('ds-pitem', null, () => { side.parts.push(p); changed(side); });
         it.disabled = !ck.ok;
         it.title = (T.partDesc ? T.partDesc(p.name, p.description) : p.description) || '';
-        const im = el('img'); im.src = partImg(p); im.alt = ''; im.loading = 'lazy';
+        const im = el('img'); im.src = partImg(p); im.alt = ''; im.loading = 'lazy'; fallbackOnce(im, 'parts');
         const tx = el('span', null, nm);
         tx.append(el('small', null, ck.ok ? slotTxt(p) : ((CODE_TXT[ck.code] && CODE_TXT[ck.code](ck.param)) || '장착 불가')));
         it.append(im, tx);

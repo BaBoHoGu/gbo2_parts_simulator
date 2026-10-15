@@ -35,6 +35,9 @@
     ? IMG_BASE + key
     : (IMG_MAP[key] || IMG_MAP[key.replace(/\/[^/]+$/, '/_default.webp')] || '');
   const msImg = name => imgUrl(`ms/${baseName(name).normalize('NFC')}.webp`);
+  /* 대결(duel.js)도 이 함수를 쓴다 — 거기 따로 두었더니 인라인 그림만 찾아 **사이트판(images/)에서
+     그림이 통째로 비었다**(2026-10-15 사용자 제보). 그림 주소를 정하는 자는 여기 하나다. */
+  window.GBO2ImgUrl = imgUrl;
 
   /* 공식 일러스트 — 사이트에 따로 올려 두고 **URL 로** 부른다.
      원본이 750x800 PNG 라 508장이면 61MB, 360px WebP 로 줄여도 10MB 다.
