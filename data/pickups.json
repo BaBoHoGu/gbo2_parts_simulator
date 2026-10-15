@@ -1,6 +1,24 @@
 {
- "pickupsUpdated": "2026-10-13",
+ "pickupsUpdated": "2026-10-15",
  "pickups": [
+  {
+   "name": "밴디트",
+   "consoleStart": "2026-10-15",
+   "consoleEnd": "2026-10-22",
+   "start": "2026-12-17",
+   "end": "2026-12-24",
+   "tokens": 120,
+   "url": "https://bo2.ggame.jp/kr/info/?p=198964"
+  },
+  {
+   "name": "【배틀 오퍼레이션 가을 축제】 MS",
+   "consoleStart": "2026-10-15",
+   "consoleEnd": "2026-10-29",
+   "start": "2026-12-17",
+   "end": "2026-12-31",
+   "tokens": null,
+   "url": "https://bo2.ggame.jp/kr/info/?p=198978"
+  },
   {
    "name": "캐논 건담",
    "consoleStart": "2026-10-08",
@@ -198,28 +216,17 @@
    "end": "2026-10-29",
    "tokens": 195,
    "url": "https://bo2.ggame.jp/kr/info/?p=194588"
-  },
-  {
-   "name": "양산형 사이코 건담",
-   "consoleStart": "2026-08-13",
-   "consoleEnd": "2026-08-20",
-   "start": "2026-10-15",
-   "end": "2026-10-22",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=194072"
-  },
-  {
-   "name": "【8주년 대감사제】 제4탄",
-   "consoleStart": "2026-08-13",
-   "consoleEnd": "2026-08-20",
-   "start": "2026-10-15",
-   "end": "2026-10-22",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=194083"
   }
  ],
- "steamUpdated": "2026-10-13",
+ "steamUpdated": "2026-10-15",
  "steamNews": [
+  {
+   "name": "양산형 사이코 건담",
+   "start": "2026-10-15",
+   "end": "2026-10-22",
+   "tokens": 120,
+   "url": "https://store.steampowered.com/news/app/1367080/view/704408284537290772?l=koreana"
+  },
   {
    "name": "고트라탄",
    "start": "2026-10-08",
