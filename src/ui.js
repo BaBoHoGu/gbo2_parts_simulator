@@ -10186,6 +10186,38 @@
     if (name) elm.setAttribute('aria-label', name);
   }
 
+  /* ■ 누르는 div 를 **알아서** 키보드에 닿게 한다(CSS 10단계, 가이드 #12 나머지).
+     5단계에서 기체 카드·파츠 타일은 손으로 kbdPressable 을 달았는데, 재 보니 그 밖에도
+     onclick 만 있고 Tab 이 안 가는 것이 화면마다 있었다 — 무장 줄 · 장착 칸 · 잠금 · 상세의 장착 단추 ·
+     갤러리 카드 · 스킬 도감 302줄 · 패치노트 카드 · 단계 표시 · 강화 플랜 카드 · 기본 파츠 타일 …
+     하나씩 다는 목록은 새 화면이 생길 때마다 빠진다(손으로 적은 목록은 어긋난다). 그래서
+     **onclick 을 가진 것이 문서에 붙는 순간** 한 곳에서 단다. 뒤판(누르면 닫히는 덮개)은 뺀다 —
+     그것에 Tab 이 가면 「닫기」 를 두 번 지나게 된다. 이미 tabindex/role 을 정한 것은 건드리지 않는다. */
+  const KBD_NATIVE = /^(BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL|SUMMARY|DIALOG|OPTION|DETAILS)$/;
+  const KBD_SKIP = '.auto-modal-back, .drawer-back, .duel-back, .sheet-backdrop, [id$="Back"], [data-no-kbd]';
+  function kbdAuto(e) {
+    if (typeof e.onclick !== 'function' || KBD_NATIVE.test(e.tagName)) return;
+    if (e.hasAttribute('tabindex') || e.dataset.kbdPress || e.matches(KBD_SKIP)) return;
+    const name = e.getAttribute('aria-label') || (e.title || '').split('\n')[0].trim()
+      || (e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    kbdPressable(e, name);
+    if (!e.hasAttribute('role')) e.setAttribute('role', 'button');
+  }
+  function kbdAutoTree(root) {
+    if (root.nodeType !== 1) return;
+    kbdAuto(root);
+    for (const e of root.querySelectorAll('*')) kbdAuto(e);
+  }
+  function setupKbdAuto() {
+    kbdAutoTree(document.body);
+    if (typeof MutationObserver !== 'function') return;
+    /* 콜백은 마이크로태스크라 그리기가 끝난 **뒤** 돈다 — 요소를 붙인 다음 줄에서 onclick 을
+       다는 코드(무장 줄)도 이미 onclick 이 있다. */
+    new MutationObserver(list => {
+      for (const m of list) for (const n of m.addedNodes) kbdAutoTree(n);
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+
   /* ---------- 좁은/낮은 화면 표시 ----------
      이 조건이 CSS 안에 **21번** 똑같이 적혀 있었다 — 하나를 고치려면 스물한 군데를
      같이 고쳐야 했고, 실제로 몇 군데는 빠진 채 달라져 있었다. 조건은 여기 한 곳에만 두고,
@@ -10506,6 +10538,7 @@
   buildControls();
   renderAutoGrid();
   setupTopbarOverflow();  // 모바일: 상단바 보조 버튼을 「⋯」 메뉴로 접는다
+  setupKbdAuto();         // onclick 만 있는 div 를 키보드에 닿게
   setupMobileSheets();    // 모바일: 성능·무장·상세 슬라이드 시트 + 하단 액션바
   loadBanned();           // 저장된 기본 제외 파츠 복원
   loadFavRecent();        // 즐겨찾기·최근 기체 복원
