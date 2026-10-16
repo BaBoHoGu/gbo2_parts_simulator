@@ -18,7 +18,18 @@ const shrink = (loader, code) => SHRINK
   ? esbuild.transformSync(code, { loader, minifyWhitespace: true, legalComments: 'none', charset: 'utf8', target: 'esnext' }).code
   : code;
 const srcJs = f => shrink('js', read('src', f));
-const srcCss = f => shrink('css', read('src', f));
+/* 이름 붙인 화면 조건(@custom-media, CSS 4번 · 2026-10-17) — 브라우저가 아직 모르므로 빌드에서 풀어 넣는다.
+   정의는 style.css 머리에 있다. @media 조건 안의 (--이름) 만 바꾼다 — var(--토큰) 은 건드리지 않는다.
+   정의 안 된 이름을 쓰면 빌드를 멈춘다(조용히 빠진 조건은 그 모드 배치를 통째로 잃는다). */
+const CUSTOM_MEDIA = new Map([...read('src', 'style.css').matchAll(/@custom-media\s+(--[\w-]+)\s+([^;]+);/g)]
+  .map(m => [m[1], m[2].trim()]));
+const resolveMedia = (css, f) => css
+  .replace(/@custom-media\s+--[\w-]+\s+[^;]+;[^\n]*\n?/g, '')
+  .replace(/@media([^{]+)\{/g, (all, pre) => '@media' + pre.replace(/\((--[\w-]+)\)/g, (x, n) => {
+    if (!CUSTOM_MEDIA.has(n)) throw new Error(f + ': 정의 안 된 화면 조건 ' + n);
+    return CUSTOM_MEDIA.get(n);
+  }) + '{');
+const srcCss = f => shrink('css', resolveMedia(read('src', f), f));
 const readJson = (...p) => JSON.parse(read(...p));
 const D = require('./lib/dataset.js');
 
