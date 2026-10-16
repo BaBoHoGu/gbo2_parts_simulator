@@ -230,23 +230,25 @@ for (const [ms, forms] of Object.entries(MSK)) {
         const blob = ((k.eff || '') + ' / ' + (k.desc || '')).replace(/\s+/g, ' ');
         const m = blob.match(AIR);
         if (!m) continue;
-        mine.set(ms, { pct: Number(m[1]), dir: DOWN.test(blob) ? '下格' : null });
+        /* 공중 격투는 입력 방향과 상관없이 늘 하격이다(사용자 확인 2026-10-16) — 원문이 「特定の格闘攻撃」
+           라고만 적은 7기도 하격이다. 원문 꼴(down)은 따로 들고 가 두 갈래를 다 재는 데 쓴다. */
+        mine.set(ms, { pct: Number(m[1]), dir: '下格', down: DOWN.test(blob) });
         }
       }
     }
     ok('원문에 「威力 +N% 上昇」을 말하는 기체가 있다 (고르기가 비어 통과하지 않게)',
       mine.size >= 50, mine.size);
 
-    const asked = [...mine.entries()].map(([ms, v]) => [ms, v.pct, v.dir]);
+    const asked = [...mine.entries()].map(([ms, v]) => [ms, v.pct, v.dir, v.down]);
     const res = await pg.evaluate(list => {
       const A = window.GBO2UiTest, all = A.msData();
       const out = [];
-      for (const [base, pct, dir] of list) {
+      for (const [base, pct, dir, down] of list) {
         // 그 스킬 구간에 드는 **가장 높은 LV** 으로 본다 (LV1 에는 위력 상승이 없다)
         const ms = all.filter(m => m.MS名.replace(/_LV\d+$/, '') === base).pop();
         if (!ms) continue;
         const a = A.airMeleeOf(ms, A.msLevel(ms), 'normal');
-        out.push({ base, 원문: { pct, dir }, 앱: a });
+        out.push({ base, 원문: { pct, dir }, down, 앱: a });
       }
       return out;
     }, asked);
@@ -254,11 +256,12 @@ for (const [ms, forms] of Object.entries(MSK)) {
     ok('앱의 판정이 원문과 같다 — 올리는 %, 그리고 방향을 아는가 (' + res.length + '기)'
       + '   (was 스킬이 통째로 없었다)', wrong.length === 0, wrong.slice(0, 5));
 
-    // 수치를 낼 수 있는 쪽 / 없는 쪽이 둘 다 있어야 한다 — 한쪽만 있으면 갈래를 안 재는 셈
-    const canNum = res.filter(x => x.앱 && x.앱.dir).length;
-    const cannot = res.filter(x => x.앱 && !x.앱.dir).length;
-    ok('수치를 낼 수 있는 쪽(' + canNum + ')과 못 내는 쪽(' + cannot + ') 둘 다 잰다',
-      canNum > 0 && cannot > 0, { canNum, cannot });
+    /* 원문 두 갈래(「下格闘」 · 「特定の格闘攻撃」)가 **둘 다** 하격으로 잡혀야 한다.
+       예전엔 「特定」 7기를 방향 모름(null)으로 두어 대결에 단추가 안 나왔다 — +30% 가 조용히 0 이었다. */
+    const downN = res.filter(x => x.down && x.앱 && x.앱.dir === '下格').length;
+    const specN = res.filter(x => !x.down && x.앱 && x.앱.dir === '下格').length;
+    ok('원문이 「下格闘」 인 쪽(' + downN + ')과 「特定の格闘攻撃」 인 쪽(' + specN + ') 모두 하격으로 센다'
+      + '   (was 「特定」 7기는 방향 모름이라 빠졌다)', downN > 0 && specN >= 7, { downN, specN });
 
     /* 「거베라 테트라」 — 사용자가 짚은 꼴을 글자로 못 박고, 피해를 따로 계산해 맞댄다. */
     const air = await pg.evaluate(() => {
@@ -379,6 +382,31 @@ for (const [ms, forms] of Object.entries(MSK)) {
       !!lvdep.LV4 && lvdep.LV4.단추 === true, lvdep);
     ok('ハンブラビ LV1 에는 안 나온다 (LV 을 1 로 박으면 여기가 운다)',
       !!lvdep.LV1 && lvdep.LV1.단추 === false, lvdep);
+  }
+
+  /* 공중 격투의 방향 · 대응 — 2026-10-16 사용자:
+       「공중 격투는 입력 방향과 상관없이 하격」 + 「일부 무장은 늘 하격이 아님」(스크류 웹은 N격만, 위키 해설)
+       「대응 표기가 없는 무장만 반영하지 말 것」(클러스터 건담 단일 사벨 — 위키 「空中格闘制御には非対応」)
+     판정은 앱의 airMeleeOf · airDirOf 한 곳 — 대결 단추가 그 답을 그대로 보이는지 잰다. */
+  {
+    const G = require('./lib/duelgate.js');
+    const pg2 = await br.newPage();
+    await pg2.setViewport({ width: 1500, height: 1300 });
+    await pg2.goto(URL, { waitUntil: 'load', timeout: 180000 });
+    await new Promise(r => setTimeout(r, 2400));
+    const m = o => G.measure(pg2, { foe: 'ジム_LV1', dir: '下格', ...o });
+    const web = await m({ me: 'クロスボーン・ガンダムX1改_LV1', weaponExact: 'X1改用スクリュー・ウェッブ', air: true });
+    const zan = await m({ me: 'クロスボーン・ガンダムX1改_LV1', weaponExact: 'X1改用ビーム・ザンバー', air: true });
+    ok('X1改 스크류 웹 — 공중 격투는 N격 (하격을 골라 둬도)', /공중 N격/.test(web.방향 || '') && web.공중 === 30, { 방향: web.방향, 공중: web.공중 });
+    ok('X1改 빔 잔바 — 공중 격투는 하격 (예외는 무장 단위다)', /공중 하격/.test(zan.방향 || '') && zan.공중 === 30, { 방향: zan.방향, 공중: zan.공중 });
+    const god = await m({ me: 'ゴッドガンダム_LV2', weaponExact: 'ゴッドスラッシュ', air: true });
+    ok('갓 건담 갓 슬래시 — 원문이 「特定の格闘攻撃」 이어도 공중 하격 +30% (was 단추가 안 나왔다)',
+      /공중 하격/.test(god.방향 || '') && god.공중 === 30, { 방향: god.방향, 공중: god.공중 });
+    const cOne = await m({ me: 'クラスターガンダム_LV1', weaponExact: 'Cガンダム用ビーム・サーベル', air: true });
+    const cTwo = await m({ me: 'クラスターガンダム_LV1', weaponExact: 'Cガンダム用ビーム・サーベルx2', air: true });
+    ok('클러스터 건담 — 대응 표기 없는 단일 사벨은 공중 격투 없음 · x2 는 있음',
+      !cOne.공중 && cTwo.공중 === 30, { 단일: cOne.공중, x2: cTwo.공중 });
+    await pg2.close();
   }
 
   /* ══ 방어 스킬을 **그 기체의 LV** 으로 읽는가 ═══════════════════════════

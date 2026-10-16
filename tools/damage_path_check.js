@@ -130,8 +130,14 @@ const check = (label, cond, extra) => {
         T.weaponFoeArmorCut(w('対象の耐ビーム補正を40%減でダメージ計算')),
         T.weaponFoeArmorCut(w('攻撃対象の耐格闘補正を30%減でダメージ計算')),
         T.weaponFoeArmorCut(w('移動射撃可 / よろけ有')),          // 없는 것은 0
-        T.weaponFoeArmorCut(w('対象のシールドHPを無視'))            // 실드 무시는 내성이 아니다
-      ],
+        T.weaponFoeArmorCut(w('対象のシールドHPを無視')),           // 실드 무시는 내성이 아니다
+        /* 조건 — 「集束時」 는 집속했을 때만 · 「スキル発動中」 은 무장 성능 변화 스킬이 켜졌을 때만.
+           예전엔 조건을 안 보고 늘 걸었다(2026-10-16). (w, charged, skillOn) */
+        T.weaponFoeArmorCut(w('集束時攻撃対象の耐ビーム補正を30%減でダメージ計算'), false, false),
+        T.weaponFoeArmorCut(w('集束時攻撃対象の耐ビーム補正を30%減でダメージ計算'), true, false),
+        T.weaponFoeArmorCut(w('スキル発動中、対象の耐格闘補正を30%減でダメージ計算'), true, false),
+        T.weaponFoeArmorCut(w('スキル発動中、対象の耐格闘補正を30%減でダメージ計算'), false, true)
+      ].map(x => (x && x.on ? x.pct : 0)),
       // 보정 50 을 40% 깎으면 30 이다(−40 이 되어 10 이 아니다). 내구는 HP/(1−보정/100).
       깎기전: T.durabilityOf(tot, 'armorBeam'),
       깎은뒤: T.durabilityOf({ ...tot, armorBeam: 50 * (1 - 40 / 100) }, 'armorBeam'),
@@ -178,7 +184,9 @@ const check = (label, cond, extra) => {
     const T = window.GBO2UiTest;
     const CASES = [
       ['ラムズゴック', 'ブレードタックル', null],
-      ['リバウ', '追撃格闘補助プログラム', null],
+      /* 예전엔 null(범위 못 정함)이었다. 원문의 범위 「格闘兵装を当てると」 가 수치 줄 밖 설명문에 있어
+         파서가 못 읽었을 뿐 — 동작 한정이 아니라 격투 무장 전부다(2026-10-16 · armorignore_check). */
+      ['リバウ', '追撃格闘補助プログラム', 'melee'],
       ['ゴッドガンダム', '明鏡止水', 'melee'],
       ['クシャトリヤ・リペアード', '高性能カウンタープログラム', null],
       ['プロトタイプΖΖガンダム', '能力UP「バイオセンサー（PΖΖ）」', null],
@@ -399,7 +407,7 @@ const check = (label, cond, extra) => {
       bad.length === 0, JSON.stringify(bad, null, 1));
     // 전부 null 이면 「아무것도 안 넣는다」로도 통과해 버린다 — 넣는 쪽이 있는지 함께 본다
     check('그중 반영하는 것이 실제로 있다',
-      (scope || []).filter(x => x.got).length === 4, JSON.stringify((scope || []).map(x => x.got)));
+      (scope || []).filter(x => x.got).length === 5, JSON.stringify((scope || []).map(x => x.got)));
   }
   {
     const r = skillOn;
@@ -415,8 +423,8 @@ const check = (label, cond, extra) => {
   }
   {
     const f = foe;
-    check('무장 備考에서 내성 감소를 읽는다 (없으면 0)',
-      f && f.읽기.join() === '40,30,0,0', JSON.stringify(f && f.읽기));
+    check('무장 備考에서 내성 감소를 읽는다 (없으면 0 · 집속 시 · 스킬 발동 중 조건을 지킨다)',
+      f && f.읽기.join() === '40,30,0,0,0,30,0,30', JSON.stringify(f && f.읽기));
     // 여기가 상대값과 절대값이 갈리는 자리다 — 빼면 10 이 되어 내구가 22222 가 된다
     check('「N%減」을 보정값에 곱한다 (빼지 않는다)',
       f && f.깎은뒤 === 28571 && f.깎기전 === 40000 && f.뺄경우 !== f.깎은뒤,

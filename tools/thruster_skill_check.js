@@ -313,12 +313,12 @@ const LIST = process.argv.includes('--list');
      **어느 무장에 걸리는지**를 그 조각이 안 적는다 — 그런 것은 넣지 않는다.
      (프로토타입 ΖΖ 의 바이오센서 70% 가 더 센 예지만 그 기체는 스킬 드롭다운 자체가 없다 —
       스킬 표에 읽히는 값이 없어 등재가 안 됐다. 그래서 드롭다운이 있는 쪽으로 잰다.) */
-  const foe2 = await pg.evaluate(async () => {
+  const skMenu = query => pg.evaluate(async query => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const c = document.querySelector('#infoClose');
     if (c && document.body.classList.contains('info-open')) c.click();
     const q = document.querySelector('#msQuery');
-    q.value = '리바우'; q.dispatchEvent(new Event('input', { bubbles: true }));
+    q.value = query; q.dispatchEvent(new Event('input', { bubbles: true }));
     await wait(900);
     const card = document.querySelector('#msList .ms-card');
     if (!card) return '(기체 없음)';
@@ -330,7 +330,9 @@ const LIST = process.argv.includes('--list');
       nm: (x.querySelector('.k') || {}).textContent,
       foe: x.querySelector('.foe') ? x.querySelector('.foe').textContent : null
     }));
-  });
+  }, query);
+  const foe2 = await skMenu('리바우');
+  const foe3 = await skMenu('プロトタイプΖΖ');
 
   await br.close();
 
@@ -481,9 +483,16 @@ const LIST = process.argv.includes('--list');
        바이오센서(PΖΖ)는 헤비어택 전용이라 넣으면 안 되는 쪽이다. */
     ok('반영되는 스킬은 반영된다고 적는다',
       row && row.foe && /반영됩니다/.test(row.foe), JSON.stringify(row));
-    const noScope = Array.isArray(foe2) && foe2.find(x => /추격 격투/.test(x.nm));
-    ok('동작 한정 스킬은 안 들어간다고 적는다',
-      noScope && noScope.foe && /안 들어갑니다/.test(noScope.foe), JSON.stringify(foe2));
+    /* 추격 격투 보조 프로그램은 예전에 이 자리(「안 들어간다」)의 예였다. 그런데 원문은
+       「よろけ…ダウン中の敵機に対して、格闘兵装を当てると」 — **동작이 아니라 격투 무장 전부**에 걸리는
+       조건부 효과다. 범위가 수치 줄 밖에 적혀 파서가 못 읽었을 뿐이다(2026-10-16 고침 · armorignore_check).
+       「안 들어간다」 의 예는 진짜 동작 한정인 바이오센서(헤비 어택 전용)로 옮긴다. */
+    const chase = Array.isArray(foe2) && foe2.find(x => /추격 격투/.test(x.nm));
+    ok('범위가 다른 문장에 적힌 스킬(추격 격투 보조 LV3)도 반영된다고 적는다',
+      chase && chase.foe && /반영됩니다/.test(chase.foe), JSON.stringify(foe2));
+    const noScope = Array.isArray(foe3) && foe3.find(x => x.foe && /헤비|바이오/.test(x.nm || ''));
+    ok('동작 한정 스킬(바이오센서 — 헤비 어택 전용)은 안 들어간다고 적는다',
+      noScope && /안 들어갑니다/.test(noScope.foe), JSON.stringify(foe3));
   }
 
   {

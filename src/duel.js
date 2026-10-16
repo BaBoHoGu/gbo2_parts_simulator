@@ -116,6 +116,14 @@
       if (!tags.length) continue;
       out.push({ name: sk.name, ko: sk.nameKo || sk.name, e, tags: tags.join(' · ') });
     }
+    /* 상대 내성만 깎는 스킬(명경지수 · TYPE C.A-Ⅲ · 롱 레인지 어댑터) — 스탯 축이 없어 위에서 빠진다.
+       빠지면 켤 단추가 없어 셈이 준비돼 있어도 **영영 안 걸렸다**(사용자 지적 2026-10-16 갓 건담).
+       이미 칩이 있는 스킬(추격 격투 보조 프로그램)은 꼬리표만 붙인다. */
+    for (const f of HOOK.foeArmorSkills(side) || []) {
+      const had = out.find(s => s.name === f.name);
+      if (had) { had.tags += ' · ' + f.tag; continue; }
+      out.push({ name: f.name, ko: f.ko || f.name, e: {}, tags: f.tag });
+    }
     return out;
   }
   /** 켠 버프 → calcStats 의 skill 인자 (앱의 skillStatBonus 와 같은 모양). */
@@ -275,7 +283,11 @@
     airMelee: () => null,
     /* ★ 모드 — 간이판은 **모른다고 답한다**(단추가 안 나온다). 앱이 altModeOf · weaponModeOf 를 넘긴다 */
     altMode: () => null,
-    weaponMode: () => null
+    weaponMode: () => null,
+    /* ★ 무장 원문의 「スキル発動中」 · 상대 내성만 깎는 스킬 — 판정이 원문(ms_skills)에 있다.
+       간이판은 **꺼져 있다 · 없다**고 답한다(지어내 켜면 앱과 다른 수가 나온다). */
+    weaponSkillOn: () => false,
+    foeArmorSkills: () => []
   };
 
   /* ---------- 한 방향의 계산 (공격 측 A → 대상 B) ---------- */
@@ -330,8 +342,9 @@
        예전엔 이 줄이 없어 무장 34종에서 피해를 작게(발수를 많게) 셌다. 조건은 원문 그대로:
        집속했을 때만 · 하격일 때만 · 「스킬 발동 중」(어느 스킬인지 원문에 없어 **셈에 안 넣고 밝힌다**). */
     const bi = D.bufferIgnoreOf ? D.bufferIgnoreOf(wp.note) : null;
+    const skillOn = !!HOOK.weaponSkillOn(A);    // 무장 원문의 「スキル発動中」 — 무장 성능 변화 스킬이 켜졌는가
     const biOn = !!bi && (bi.when === 'always' || (bi.when === 'charged' && charged)
-      || (bi.when === 'down' && dirRaw === '下格'));
+      || (bi.when === 'down' && dirRaw === '下格') || (bi.when === 'skill' && skillOn));
     const isBuffer = nm => bi && (bi.special ? /特殊緩衝材/ : /緩衝材/).test(String(nm || ''));
     // 대상의 피해 경감 — 파츠 + 켠 방어 스킬 (이름을 지닌 채 — 계산식에 하나씩 적는다)
     const allCuts = [
@@ -353,7 +366,7 @@
     /* 상대 내성을 깎는 몫 — **무장과 스킬 둘 다**. 「対象の耐ビーム補正を30%減でダメージ計算」
        은 보정값의 70% 상태라는 뜻이라, 빼지 않고 곱한다. 여럿이면 남는 비율을 곱한다.
        판정은 앱이 한다(간이판은 무장 것만 읽어 스킬 몫이 빠진다). */
-    const fa = HOOK.foeArmorCut(A, wp);
+    const fa = HOOK.foeArmorCut(A, wp, charged);
     const fc = fa ? null : FOE_ARMOR_RE.exec(wp.note);
     const foeCut = fa ? fa.cut : (fc ? Number(fc[2]) : 0);
     const keep = fa ? fa.keep : (1 - foeCut / 100);
@@ -375,7 +388,7 @@
     if (B.shieldOn) {
       const sh = HOOK.shield(B);
       if (sh) {
-        const r = HOOK.shieldHit(wp, hit, charged, A.parts);
+        const r = HOOK.shieldHit(wp, hit, charged, A.parts, A);
         shield = r && r.hit != null
           ? { ...sh, hits: Math.ceil(sh.hp / (r.hit * n)), per: r.hit * n, note: '' }
           : { ...sh, hits: null, per: 0, note: (r && r.why) || '표기 없음' };
@@ -391,7 +404,7 @@
       foeCut, armor: tB[ARMOR[wp.attr]] || 0,
       // 계산식(formulaBox)이 쓰는 중간값 — 같은 셈에서 나온 것
       raw, boosted, atk, tAtt, pr, ccd, kind, armor0: sB[ARMOR[wp.attr]] || 0,
-      cutList: allCuts.filter(cutHits), bi, biOn };
+      cutList: allCuts.filter(cutHits), bi, biOn, skillOn };
   }
   const FOE_ARMOR_RE = /(?:対象|敵機?)の?耐(実弾|ビーム|格闘)補正を?\s*(\d+)\s*[%％]\s*減/;
   const DIR_KO = { 'N格': 'N격', '横格': '횡격', '下格': '하격', '前格': '전격', '後格': '후격', '空中格': '공중격' };
@@ -1161,11 +1174,16 @@
     if (r.bi) {
       const why = { always: '늘', charged: '집속했을 때만', down: '하격일 때만', skill: '스킬 발동 중일 때만' }[r.bi.when];
       const on = r.biOn ? '반영 — 상대 완충재 스킬 경감을 뺐다'
-        : r.bi.when === 'skill' ? '셈에 안 넣음 — 원문에 어느 스킬인지 없다'
+        : r.bi.when === 'skill' ? '무장 성능 변화 스킬(칩 · 모드)을 켜면 반영'
         : '지금 조건이 아니라 반영 안 함';
       conds.push(['상대 ' + (r.bi.special ? '특수' : '') + '완충재 스킬 무시 (' + why + ')', on, r.bi.text, r.biOn ? 'on' : 'off']);
     }
     if (r.foeCut) conds.push(['상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '%', '반영 — ⑥ 실효 HP 에', '', 'on']);
+    /* 무장의 내성 감소가 조건(집속 시 · 스킬 발동 중) 때문에 빠졌으면 빠졌다고 적는다 — 말없이 빠지면
+       「무장 설명엔 있는데 왜 안 들어가지」 가 된다. */
+    const wf = r.fa && r.fa.wf;
+    if (wf && !wf.on) conds.push(['상대 내' + ATTR_KO[r.wp.attr] + ' −' + wf.pct + '% (' + (wf.cond === 'skill' ? '스킬 발동 중일 때만' : '집속했을 때만') + ')',
+      wf.cond === 'skill' ? '무장 성능 변화 스킬(칩 · 모드)을 켜면 반영' : '지금 조건이 아니라 반영 안 함', '', 'off']);
     if (/ユニット貫通/.test(note)) conds.push(['관통', r.cutList.some(c => c.label === '관통 경감')
       ? '반영 — 상대의 관통 경감 파츠가 ④ 에' : '상대에게 관통 경감 파츠가 없어 바뀌는 것 없음', 'ユニット貫通', 'on']);
     if (/爆風/.test(note) && !/爆風なし/.test(note)) conds.push(['폭풍', r.cutList.some(c => c.label === '폭풍 경감')

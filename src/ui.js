@@ -3232,10 +3232,15 @@
      공중 격투에만 걸린다. 격투 무장 전부에 +30% 를 얹으면 피해가 통째로 거짓이 된다
      (같은 함정을 적 내성 쪽에서 이미 밟았다 — FOE_SCOPE_MARK 주석).
 
-     원문이 두 갈래이고, **수치를 낼 수 있는 쪽이 다르다**(전수 60기):
-       ㉮ 「空中で下格闘攻撃を行うことができる」  53기 — 그 공격이 下格 이다 → 下格 배율로 낸다
-       ㉯ 「空中で連撃不能な特定の格闘攻撃」       7기 — 위키에 그 공격의 방향 배율이 없다
-     ㉯ 에 下格 배율을 갖다 쓰면 지어낸 수가 된다. 그쪽은 수치를 내지 않고 **그렇다고 적는다.** */
+     원문이 두 갈래다(전수 60기):
+       ㉮ 「空中で下格闘攻撃を行うことができる」  53기
+       ㉯ 「空中で連撃不能な特定の格闘攻撃」       7기(갓 · 윙 제로 · 프리덤 · 데스티니 · X1改 · 톨기스Ⅲ · 비기나 기나Ⅱ)
+     예전엔 ㉯ 를 「방향을 모른다」 며 수치를 안 냈다 — 대결에 단추가 안 나와 +30% 가 **조용히 0** 이었다.
+     **공중 격투는 입력 방향과 상관없이 하격으로 나간다**(사용자 확인 2026-10-16). 그래서 둘 다 下格 이다.
+     위키 해설도 6기는 「空中で下格闘」 라고 적는다(톨기스Ⅲ 만 서술 없음).
+     **예외는 무장 단위**로 AIR_DIR_EXCEPT 에 둔다 — 위키 해설이 다른 방향을 못 박은 것만(근거 문장과 함께).
+     걸리는 무장은 備考에 「スキル「空中格闘制御」対応」 이 있는 것뿐이다 — 대응 표기 없는 무장은 안 올린다
+     (델타 플러스는 스킬이 붙었지만 사벨에 대응 표기가 공식·위키 어디에도 없어 안 걸린다). */
   const AIR_SKILL = '空中格闘制御';
   /** 그 기체·LV 의 공중 격투 위력 상승. {pct, dir:'下格'|null} · 없으면 null. */
   function airMeleeOf(ms, lv, form) {
@@ -3249,8 +3254,14 @@
     const blob = ((sk.eff || '') + ' / ' + (sk.desc || '')).replace(/\s+/g, ' ');
     const m = blob.match(/威力が\s*(\d+)\s*[%％]\s*上昇/);
     if (!m) return null;                                     // LV1 에는 위력 상승이 없다
-    return { pct: Number(m[1]), dir: /下格闘攻撃を行う/.test(blob) ? '下格' : null };
+    return { pct: Number(m[1]), dir: '下格' };
   }
+  /* 공중 격투가 하격이 **아닌** 무장 — 위키 해설이 방향을 못 박은 것만 넣는다(60기 해설 전수 2026-10-16).
+       X1改用スクリュー・ウェッブ — 「空中格闘ではどの方向にレバーを入力してもN格闘になる」(위키 X1改 무장 해설)
+     조정으로 모션이 바뀌면 여기가 어긋난다 — 그때는 해설을 다시 읽을 것. */
+  const AIR_DIR_EXCEPT = { 'X1改用スクリュー・ウェッブ': 'N格' };
+  /** 그 무장의 공중 격투 방향 — 예외가 아니면 스킬이 말하는 방향(하격). */
+  const airDirOf = (w, a) => (w && AIR_DIR_EXCEPT[w.name]) || (a && a.dir) || null;
   /** 이 무장이 그 스킬에 대응하는가 — 備考가 그렇게 말할 때만 인정한다. */
   const airMeleeWeapon = w =>
     /スキル「空中格闘制御」対応/.test(String((w && w.info && w.info['備考']) || ''));
@@ -3292,7 +3303,8 @@
     }
 
     /* 공중 격투 제어 LV2 — 대응 무장에만, 그리고 수치를 낼 수 있을 때만 한 줄 더. */
-    const air = airMeleeWeapon(w) ? airMeleeOf(state.ms, msLevel(state.ms), state.form) : null;
+    const air0 = airMeleeWeapon(w) ? airMeleeOf(state.ms, msLevel(state.ms), state.form) : null;
+    const air = air0 && { ...air0, dir: airDirOf(w, air0) };
     if (air) {
       const v0 = variants[0];
       const dd = air.dir && v0 && (v0.direction || []).find(d => d.label === air.dir);
@@ -7857,25 +7869,59 @@
      조각 단위로 보고 그 모드일 때만 인정한다.
      (FA엔게이지 [C플랜]의 「展開部に当たったシールドHP無視を無効化」처럼 **막는** 쪽도
       하나 있는데, 전개형 부무장이라 실드 계산이 보는 무장이 아니다 — 넣지 않는다.) */
-  const SHIELD_IGNORE_RE = /(?:攻撃)?対象の?シールド(?:HP)?を?(?:無視|貫通効果有)/;
+  /* 「対象の」 없이 「シールド貫通効果有」 만 적은 무장이 6종 있다(섬광탄 4 · 무시카 · X3 건 모드의
+     「シールドHP無視」). 예전 정규식은 「対象」 을 요구해 그 여섯을 못 잡았다(2026-10-16 전수 감사). */
+  const SHIELD_IGNORE_RE = /(?:(?:攻撃)?対象の?)?シールド(?:HP)?を?(?:無視|貫通効果有)/;
+
+  /* 무장 원문의 「スキル発動中、…」 — 그 「스킬」 이름은 원문에 없다. 기체마다 다르지만
+     (최대 출력(K)·(T) · 아뢰야식 · NT-D(B) · NT-D 공명 · M 드라이브 · 트랜잠) **늘 원문에
+     「対応兵装の性能変化」 라고 적힌 스킬**이다 — 해당 8기 전수 확인(2026-10-16).
+     예전엔 셋이 제각각이었다: 내성 감소·실드 무시는 조건을 안 보고 **늘** 걸었고,
+     완충재 무시는 「어느 스킬인지 모른다」 며 **아예** 뺐다. */
+  const WEAPON_SKILL_RE = /(?:対応|一部)兵装の性能変化|スキルに対応した兵装/;
+  function weaponSkillNames(ms) {
+    if (!ms) return [];
+    const out = new Set();
+    for (const mo of msSkillsData[baseName(ms.MS名)] || []) for (const k of mo.skills || []) {
+      if (WEAPON_SKILL_RE.test((k.desc || '') + ' / ' + (k.eff || ''))) out.add(k.name);
+    }
+    return [...out];
+  }
+  /** 대결 한쪽에서 그 「무장 성능 변화」 스킬이 켜졌는가 — 칩으로 켰거나, 트랜잠처럼 모드 단추(〜発動中)로 켰거나. */
+  function weaponSkillOn(side) {
+    const names = weaponSkillNames(side && side.ms);
+    if (!names.length) return false;
+    if (names.some(n => side.buffs && side.buffs.has(n))) return true;
+    const alt = side.form === 'transform' && altModeOf(side.ms);
+    return !!(alt && /発動中/.test(alt.key));
+  }
+  /** 조각의 조건이 지금 맞는가 — 「集束時」 는 집속했을 때만, 「スキル発動中」 은 그 스킬이 켜졌을 때만. */
+  const segCondOk = (seg, charged, skillOn) =>
+    !(/(?:^|[^非])集束時/.test(seg) && !charged) && !(/スキル発動中/.test(seg) && !skillOn);
 
   /** 이 무장이 적 실드를 무시하는가. charged 는 지금 집속 위력으로 세는 중인지. */
-  function weaponIgnoresShield(w, charged) {
+  function weaponIgnoresShield(w, charged, skillOn) {
     const note = (w && w.info && w.info['備考']) || '';
     for (const seg of String(note).split(/\s*\/\s*/)) {
       if (!SHIELD_IGNORE_RE.test(seg)) continue;
       if (/無効化/.test(seg)) continue;              // 막는다는 말이지 무시한다는 말이 아니다
-      if (/集束時/.test(seg) && !charged) continue;   // 집속했을 때만 무시한다
+      if (!segCondOk(seg, charged, skillOn)) continue;
       return true;
     }
     return false;
   }
 
-  /** 이 무장이 적 내성을 몇 % 깎는가. 없으면 0. */
-  function weaponFoeArmorCut(w) {
+  /** 이 무장이 적 내성을 몇 % 깎는가 — {pct, on, cond}. 없으면 null.
+      조건(집속 시 · 스킬 발동 중)이 안 맞으면 on:false 로 돌려 계산식 칸에 「안 넣은 까닭」 을 적게 한다. */
+  function weaponFoeArmorCut(w, charged, skillOn) {
     const note = (w && w.info && w.info['備考']) || '';
-    const m = FOE_ARMOR_W_RE.exec(String(note));
-    return m ? Number(m[2]) : 0;
+    for (const seg of String(note).split(/\s*\/\s*/)) {
+      const m = FOE_ARMOR_W_RE.exec(seg);
+      if (!m) continue;
+      const cond = /スキル発動中/.test(seg) ? 'skill' : /(?:^|[^非])集束時/.test(seg) ? 'charged' : 'always';
+      return { pct: Number(m[2]), on: segCondOk(seg, charged, skillOn), cond };
+    }
+    return null;
   }
 
   let duelSeedFp = null;   // 대결 왼쪽에 마지막으로 앉힌 앱 구성의 지문
@@ -7922,10 +7968,11 @@
       airMelee: (side, wp) => {
         if (!wp || !wp.melee || !airMeleeWeapon(wp.w)) return null;
         const a = airMeleeOf(side.ms, msLevel(side.ms), side.form || 'normal');
-        if (!a || !a.dir) return null;
-        const has = (wp.variants || []).some(v => (v.direction || []).some(d => d.label === a.dir));
+        const dir = airDirOf(wp.w, a);
+        if (!a || !dir) return null;
+        const has = (wp.variants || []).some(v => (v.direction || []).some(d => d.label === dir));
         if (!has) return null;
-        return { pct: a.pct, dir: a.dir, power: p => airPower(p, a.pct) };
+        return { pct: a.pct, dir, power: p => airPower(p, a.pct) };
       },
       /* 소이 등 고정 피해 — 보정도 경감도 안 받는 몫 */
       fixedDamage: (A, wp) => { const f = fixedDamageWithParts(wp.w, A.parts); return f ? f.total : 0; },
@@ -7945,8 +7992,8 @@
       shield: side => shieldOf(side.ms, msLevel(side.ms), side.parts, side.exp, side.expLv),
       /* 무장 하나가 실드에 주는 한 히트 피해. 「실드 무시」는 발수를 세는 뜻이 없어 why 로 답한다.
          같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다. */
-      shieldHit: (wp, dmg, charged, atkParts) => {
-        if (weaponIgnoresShield(wp.w, charged)) return { hit: null, why: '실드 무시' };
+      shieldHit: (wp, dmg, charged, atkParts, atk) => {
+        if (weaponIgnoresShield(wp.w, charged, weaponSkillOn(atk))) return { hit: null, why: '실드 무시' };
         const sm = D.shieldMultOf(wp.w);
         const h = shieldHit(dmg, sm, charged, D.shieldDmgPctOf(atkParts || [], wp.attr));
         if (h == null) return { hit: null, why: sm && sm.unknown ? '보정 불명' : '표기 없음' };
@@ -7962,11 +8009,30 @@
       /* 적 내성을 깎는 몫 — **무장과 스킬 둘 다**. 여럿이면 곱한다(빼지 않는다).
          대결은 여태 무장 것만 셌다 — 스킬이 깎는 몫(롱 레인지 어댑터·명경지수 등)이
          통째로 빠져 있었고 damage_path_check 가 잡았다. 판정·식은 앱 한 곳만 쓴다. */
-      foeArmorCut: (side, wp) => {
-        const wCut = weaponFoeArmorCut(wp.w);
+      /** 「무장 성능 변화」 스킬이 켜졌는가 — 무장 원문의 「スキル発動中」 조건(완충재 무시 등). */
+      weaponSkillOn: side => weaponSkillOn(side),
+      /** 상대 내성만 깎는 스킬(명경지수 · 롱 레인지 어댑터 …) — 스탯 축이 없어 칩 목록에서 빠졌다.
+          어느 무장에 걸리는지 원문으로 정해지는 것만 돌려준다(태클·카운터 전용은 안 준다). */
+      foeArmorSkills: side => {
+        if (!side.ms) return [];
+        const out = [], seen = new Set();
+        for (const mo of skillModesFor(msSkillsData[baseName(side.ms.MS名)] || [], side.form || 'normal')) {
+          for (const k of mo.skills || []) {
+            if (seen.has(k.name)) continue;
+            seen.add(k.name);
+            const f = foeArmorOf(k.name, side.ms, side.form || 'normal');
+            if (f && f.scope) out.push({ name: k.name, ko: skTr(k.name),
+              tag: f.list.map(x => '적 내' + ({ solid: '실탄', beam: '빔', melee: '격투' })[x.ax] + ' −' + x.pct + '%').join(' · ') });
+          }
+        }
+        return out;
+      },
+      foeArmorCut: (side, wp, charged) => {
+        const wf = weaponFoeArmorCut(wp.w, charged, weaponSkillOn(side));
+        const wCut = wf && wf.on ? wf.pct : 0;
         const sCut = foeArmorCutOf([...side.buffs], wp.attr, side.ms, side.form || 'normal');
         const keep = (1 - wCut / 100) * (1 - sCut / 100);
-        return { wCut, sCut, cut: Math.round((1 - keep) * 1000) / 10, keep };
+        return { wCut, sCut, cut: Math.round((1 - keep) * 1000) / 10, keep, wf };
       },
       /** 무장이 일으키는 반응 — 두 화면이 같은 말을 하게 앱이 정한다. */
       react: wp => reactOf(wp.w),
@@ -9373,7 +9439,7 @@
   const FOE_SCOPE_MARK = [
     [/ヘビーアタック|タックル|カウンター/, 'action'],                 // 무장 목록에 없는 동작
     [/スナイプモード/, ['solid', 'beam']],
-    [/格闘属性兵装による攻撃時|格闘攻撃時|格闘兵装による攻撃/, ['melee']]
+    [/格闘属性兵装による攻撃時|格闘攻撃時|格闘兵装による攻撃|格闘兵装を当て/, ['melee']]
   ];
   const foeArmorScopeOf = seg => {
     for (const [re, v] of FOE_SCOPE_MARK) if (re.test(seg)) return v;
@@ -9410,6 +9476,14 @@
       scope = (v && v !== 'action') ? v : null;    // 못 정했거나 동작 한정이면 안 넣는다
     }
     if (!hit.size) return null;
+    /* 수치 줄에도 머리줄에도 범위가 없으면 **같은 스킬의 다른 문장**에서 찾는다 — 추격 격투 보조
+       프로그램은 수치가 「対象の耐格闘補正を 10%減」 한 줄뿐이고 범위는 설명문(「格闘兵装を当てると」)에
+       있다. 다만 동작 한정(태클·카운터·헤비 어택)이 한 군데라도 있거나 범위가 둘로 갈리면 넣지 않는다. */
+    if (!scope) {
+      const marks = blob.split(/\s*\/\s*/).map(foeArmorScopeOf).filter(Boolean);
+      const kinds = new Set(marks.map(v => (v === 'action' ? 'action' : v.join(','))));
+      if (kinds.size === 1 && !kinds.has('action')) scope = marks[0];
+    }
     const vals = [...new Set(hit.values())];
     const ko = [...hit.keys()].map(k => FOE_ARMOR_KO[k]);
     const txt = vals.length === 1
