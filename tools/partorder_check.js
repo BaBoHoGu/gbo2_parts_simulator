@@ -21,7 +21,7 @@ const check = (label, ok, extra) => {
 };
 
 // ③ 은 브라우저가 필요 없다 — 먼저 본다
-for (const f of ['src/ui.js', 'src/core.js', 'src/damage.js', 'src/optimizer.js', 'src/i18n.js']) {
+for (const f of [...require('./lib/uisrc.js').uiParts().map(p => path.relative(ROOT, p)), 'src/core.js', 'src/damage.js', 'src/optimizer.js', 'src/i18n.js']) {
   const s = fs.readFileSync(path.join(ROOT, f), 'utf8');
   const n = [...s].filter(c => c.codePointAt(0) === 0).length;
   if (n) check(f + ' 에 NUL 없음', false, n + '개');

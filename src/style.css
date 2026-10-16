@@ -2225,6 +2225,11 @@ h2 > .ic { margin-right: 6px; }
 .rar.r3 { background: #f2bf3a; }
 .rar.r2 { background: #a9b2bf; }
 .rar.r1 { background: #c07a43; }
+/* 위키 미수록 — 무장 · 스킬이 아직 비어 있는 새 기체. 고장처럼 보이지 않게 이유를 붙인다(title). */
+.wiki-pending {
+  font-size: var(--fs-2xs); color: var(--muted); border: 1px dashed var(--line);
+  border-radius: 3px; padding: 0 5px; white-space: nowrap; line-height: 1.5;
+}
 
 /* 속성 필터 칩(켜짐) — 속성색으로, 텍스트는 짙게 */
 .chip.attr-強襲.on { background: var(--attr-assault); border-color: var(--attr-assault); color: #2a0704; }

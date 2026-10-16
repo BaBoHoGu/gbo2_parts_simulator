@@ -87,7 +87,7 @@ if (P) {
 
 /* 자동 구성에 넘기는가 — 글자로 본다(아래 브라우저 검사가 수치로 다시 확인한다). */
 {
-  const u = fs.readFileSync(path.join(ROOT, 'src', 'ui.js'), 'utf8');
+  const u = require('./lib/uisrc.js').readUi();
   ok('자동 구성에도 넘긴다', u.includes('lateMode: state.lateMode'));
 }
 

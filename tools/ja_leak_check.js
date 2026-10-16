@@ -38,7 +38,7 @@ const ok = (label, cond, extra) => {
    「・사격 보정 ＋25」처럼 **글자는 한국어인데 부호만 일본어**인 것은 위 화면 훑기(가나)로는
    안 잡힌다. 앱은 낼 때 jaPunct 로 반각에 맞추므로, 그 규칙이 살아 있는지 소스에서 확인한다. */
 function punctRule() {
-  const src = fs.readFileSync(path.join(ROOT, 'src', 'ui.js'), 'utf8');
+  const src = require('./lib/uisrc.js').readUi();
   const has = /const skTr = s => \(s \? jaPunct\(/.test(src);
   const marks = ['・', '＋', '－', '：', '％', '×', '（', '）'];
   let n = 0;

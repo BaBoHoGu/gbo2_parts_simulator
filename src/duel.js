@@ -1,4 +1,4 @@
-/* ═══ 대결 시뮬레이터 (피탄 시뮬 개편 시안) ═══════════════════════════
+/* ═══ 대결 시뮬레이터 (피탄 시뮬을 합친 것) ═══════════════════════════
  * 앱이 밖으로 내놓은 것만 쓴다 — GBO2Core · GBO2Damage · GBO2i18n · GBO2_* 데이터.
  *
  * 앱 안쪽 함수(fireMult · staggerSkillsOf · conditionalPartCuts · fixedDamageWithParts · state)는
@@ -287,6 +287,7 @@
     /* ★ 무장 원문의 「スキル発動中」 · 상대 내성만 깎는 스킬 — 판정이 원문(ms_skills)에 있다.
        간이판은 **꺼져 있다 · 없다**고 답한다(지어내 켜면 앱과 다른 수가 나온다). */
     weaponSkillOn: () => false,
+    wikiPending: () => null,
     foeArmorSkills: () => []
   };
 
@@ -435,7 +436,7 @@
     });
     root.dataset.tab = 'L';
     const head = el('div', 'duel-head');
-    head.append(el('b', null, '⚔ 대결 시뮬레이터'), el('span', 'tag', '개편 시안'), el('span', 'grow'));
+    head.append(el('b', null, '⚔ 대결 시뮬레이터'), el('span', 'grow'));
     head.append(btn('btn-ghost', '좌우 바꾸기', () => { const t = S.L; S.L = S.R; S.R = t; S.L.who = 'L'; S.R.who = 'R'; renderAll(); }));
     const closeBtn = btn('btn-ghost', '닫기', () => open(false));
     closeBtn.id = 'duelClose';
@@ -842,7 +843,7 @@
     b.append(t);
     const list = el('div', 'ds-wlist'); list.dataset.keep = 'w';
     const ws = weaponsOf(side);
-    if (!ws.length) list.append(el('span', 'ds-empty', '무장 데이터가 없습니다'));
+    if (!ws.length) list.append(el('span', 'ds-empty', HOOK.wikiPending(side.ms) || '무장 데이터가 없습니다'));
     for (const x of ws) {
       const r = btn('ds-w' + (x.key === side.wKey ? ' on' : ''), null, () => {
         side.wKey = x.key; side.variant = 0; side.dir = 0; side.step = 1;
@@ -1313,7 +1314,7 @@
     const b = btn('btn-ghost', '대결', () => open(true));
     ICON.prepend(b, 'duel');
     b.id = 'duelBtn';
-    b.title = '나와 상대를 좌우에 두고, 무장·사격 조건별로 서로의 체력이 얼마나 깎이는지 봅니다 (개편 시안)';
+    b.title = '나와 상대를 좌우에 두고, 무장·사격 조건별로 서로의 체력이 얼마나 깎이는지 봅니다';
     if (ref && ref.parentNode) ref.parentNode.insertBefore(b, ref.nextSibling);
     else document.body.append(b);
   }

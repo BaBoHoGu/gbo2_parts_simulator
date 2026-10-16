@@ -66,7 +66,9 @@ const UNCLAIMED_MAX = 19;   // was 24 (2026-10-13 고치기 전)
       if (fp && !used.has(fp)) rest.push(id + ' ' + c);
     }
   }
-  ok('方向 표를 읽은 페이지가 그대로다 (597)', pages === 597, pages);
+  /* 읽은 페이지 수는 **바닥만** 막는다 — 0 페이지를 읽고 통과하는 헛검사를 막으려는 줄이다.
+     같다(===)로 박았더니 새 기체가 위키에 올라온 날(2026-10-16 밴디트 8007) 배포가 멈췄다. 기체는 늘기만 한다. */
+  ok('方向 표를 읽은 페이지가 줄지 않았다 (≥597, 지금 ' + pages + ')', pages >= 597, pages);   // was === 597
   ok('아무도 안 쓰는 方向 열이 ' + UNCLAIMED_MAX + '개를 넘지 않는다',
     rest.length <= UNCLAIMED_MAX, { 지금: rest.length, 넘친것: rest.slice(0, 8) });
 }

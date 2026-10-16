@@ -1,4 +1,4 @@
-/* ═══ 대결 시뮬레이터 (피탄 시뮬 개편 시안) ═══════════════════════════
+/* ═══ 대결 시뮬레이터 (피탄 시뮬을 합친 것) ═══════════════════════════
    좌: 나 · 중앙: 체력 상황 · 우: 상대.  각 측: 기체 → 파츠·스킬 → 무장·사격 조건.
    앱 토큰(--panel, --accent, --line …)만 쓴다 — 새 색을 들이지 않는다. */
 
@@ -33,10 +33,6 @@
   box-shadow: 0 1px 0 rgba(255, 202, 58, .14);
 }
 .duel-head b { font-size: 15px; letter-spacing: .4px; }
-.duel-head .tag {
-  font-size: 11px; color: var(--accent); border: 1px solid var(--accent-dim);
-  border-radius: 999px; padding: 1px 8px;
-}
 .duel-head .grow { flex: 1; }
 
 /* 본문: 좌 · 중앙 · 우 */

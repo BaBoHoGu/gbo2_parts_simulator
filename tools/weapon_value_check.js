@@ -45,8 +45,8 @@ const ok = (label, cond, extra) => {
    국부·거점·부위 보정은 「넣지 않기로」 정한 자리라 세지 않는다. */
 const VOCAB_MAX = 455;
 function vocabMiss() {
-  const src = ['src/ui.js', 'src/damage.js', 'src/core.js']
-    .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
+  const src = [require('./lib/uisrc.js').readUi(), ...['src/damage.js', 'src/core.js']
+    .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8'))].join('\n');
   const weapons = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'weapons.json'), 'utf8'));
   const JA = /[ぁ-ゖァ-ヺ一-鿿]{2,}/g;
   const SKIP = /局部補正|拠点補正|頭部補正|脚部補正|背部補正|頭部・|脚部・|脚部倍率|シールド補正/;

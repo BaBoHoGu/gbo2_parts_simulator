@@ -27,7 +27,7 @@ const ok = (label, good, extra) => {
 };
 
 /* ── 판정 함수를 ui.js 에서 떼어 온다 ─────────────────────────────── */
-const src = fs.readFileSync(path.join(ROOT, 'src', 'ui.js'), 'utf8');
+const src = require('./lib/uisrc.js').readUi();
 const a = src.indexOf('  const STAG2 = /강경직');
 const b = src.indexOf('  function weaponTagsOf', a);
 ok('ui.js 에서 판정 함수를 떼어 왔다', a > 0 && b > a, { a, b });

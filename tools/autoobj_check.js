@@ -85,7 +85,7 @@ ok('내실탄에 몰면 내실탄 실효 HP 가 더 높다',
   { 내실탄몰기: C.durabilityOf(tS, 'armorRange'), 내빔몰기: C.durabilityOf(tB, 'armorRange') });
 
 /* ③ 공식은 한 곳에만 있어야 한다 — 화면이 제 것을 따로 들고 있으면 언젠가 갈린다. */
-const ui = fs.readFileSync(path.join(ROOT, 'src', 'ui.js'), 'utf8');
+const ui = require('./lib/uisrc.js').readUi();
 ok('화면이 내구 공식을 따로 들고 있지 않다',
   !/durabilityOf\s*=\s*\(total,\s*armorKey\)\s*=>\s*\n?\s*Math\.round\(/.test(ui));
 

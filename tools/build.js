@@ -4,6 +4,21 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const read = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
+const { readUi } = require('./lib/uisrc.js');   // 화면 코드는 src/ui/ 여러 파일 — 한 IIFE 로 이어 붙인다
+
+/* 배포본만 가볍게 — 주석과 공백을 뺀다(2026-10-16 실측: 배포 코드 2.85MB 중 한국어 주석이 393KB,
+   brotli 전송 436KB → 322KB). **소스는 그대로**다 — 빌드할 때 빼는 것뿐이다.
+   이름은 줄이지 않는다(minifyIdentifiers 끔) — 오류 메시지·프로파일에서 함수 이름이 읽혀야 한다.
+   esbuild 는 wrangler 가 함께 깐다. 없으면 줄이지 않고 그대로 싣는다(빌드는 멈추지 않는다).
+   `--no-shrink` 로 끄면 소스 그대로 실린다(배포본에서 줄 번호로 따라가야 할 때). */
+let esbuild = null;
+try { esbuild = require('esbuild'); } catch { /* 없으면 줄이지 않는다 */ }
+const SHRINK = !!esbuild && !process.argv.includes('--no-shrink');
+const shrink = (loader, code) => SHRINK
+  ? esbuild.transformSync(code, { loader, minifyWhitespace: true, legalComments: 'none', charset: 'utf8', target: 'esnext' }).code
+  : code;
+const srcJs = f => shrink('js', read('src', f));
+const srcCss = f => shrink('css', read('src', f));
 const readJson = (...p) => JSON.parse(read(...p));
 const D = require('./lib/dataset.js');
 
@@ -143,8 +158,16 @@ const i18n = {
 };
 
 // </script> 가 데이터 안에 들어가도 파서가 깨지지 않도록 이스케이프한다.
-const inline = (name, value) =>
-  `window.${name}=` + JSON.stringify(value).replace(/<\/script/gi, '<\\/script') + ';';
+/* 큰 데이터는 JSON.parse('…') 로 싣는다(2026-10-16) — 브라우저는 같은 내용을 JS 객체 글자로 읽는 것보다
+   JSON 문자열로 받아 JSON.parse 하는 쪽이 빠르다(JSON 문법이 단순해서). 작은 것(10KB 미만)은 그대로 둔다.
+   문자열 안에 넣으려면 \ 와 ' 를 한 번 더 이스케이프해야 한다. </script 는 어느 쪽이든 끊어 둔다. */
+const inline = (name, value) => {
+  const json = JSON.stringify(value);
+  if (json === undefined || json.length < 10000) return `window.${name}=` + String(json).replace(/<\/script/gi, '<\\/script') + ';';
+  const lit = "'" + json.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029') + "'";
+  return `window.${name}=JSON.parse(` + lit.replace(/<\/script/gi, '<\\/script') + ');';
+};
 
 // --web : 사이트용 산출물(dist/web). 이미지를 인라인하지 않고 images/ 로 따로 낸다.
 //   왜 나누나 — 인라인은 file:// 에서 캔버스 오염을 피하려고 한 것이라 오프라인판에는 필수지만,
@@ -225,10 +248,10 @@ const html = read('src', 'index.html')
   // 탭 아이콘은 파일로 두면 사이트에서 404 가 나고 오프라인판에는 실을 곳이 없다 — data URI 로 심는다
   .replace('/*__FAVICON__*/', () => 'data:image/png;base64,'
     + fs.readFileSync(path.join(ROOT, 'assets', 'favicon.png')).toString('base64'))
-  .replace('/*__CSS__*/', () => read('src', 'style.css'))
+  .replace('/*__CSS__*/', () => srcCss('style.css'))
   /* 대결 시뮬 스타일 — 앱 토큰만 쓴다(새 색은 --d-me·--d-foe 둘). 본 CSS 뒤에 와야 이긴다. */
-  .replace('/*__DUEL_CSS__*/', () => read('src', 'duel.css'))
-  .replace('/*__TOKEN_CSS__*/', () => read('src', 'token.css'))
+  .replace('/*__DUEL_CSS__*/', () => srcCss('duel.css'))
+  .replace('/*__TOKEN_CSS__*/', () => srcCss('token.css'))
   .replace('/*__BUILD__*/', () => inline('GBO2_BUILD', buildMeta))
   .replace('/*__DATA__*/', () => inline('GBO2_DATA', { msData, parts, fullst, msSkills, recycle }))
   .replace('/*__IMAGES__*/', () => inline('GBO2_IMAGES', images))
@@ -248,17 +271,17 @@ const html = read('src', 'index.html')
     fs.existsSync(path.join(ROOT, 'data', 'patchnotes.json'))
       ? JSON.parse(read('data', 'patchnotes.json')) : null))
   // 아이콘 한 벌 — 화면 스크립트보다 먼저 실려야 한다(GBO2Icons).
-  .replace('/*__ICONS__*/', () => read('src', 'icons.js'))
-  .replace('/*__CORE__*/', () => read('src', 'core.js'))
-  .replace('/*__I18N__*/', () => read('src', 'i18n.js'))
-  .replace('/*__OPT__*/', () => read('src', 'optimizer.js'))
-  .replace('/*__DAMAGE__*/', () => read('src', 'damage.js'))
-  .replace('/*__SHARE__*/', () => read('src', 'share.js'))
-  .replace('/*__UI__*/', () => read('src', 'ui.js'))
+  .replace('/*__ICONS__*/', () => srcJs('icons.js'))
+  .replace('/*__CORE__*/', () => srcJs('core.js'))
+  .replace('/*__I18N__*/', () => srcJs('i18n.js'))
+  .replace('/*__OPT__*/', () => srcJs('optimizer.js'))
+  .replace('/*__DAMAGE__*/', () => srcJs('damage.js'))
+  .replace('/*__SHARE__*/', () => srcJs('share.js'))
+  .replace('/*__UI__*/', () => shrink('js', readUi()))
   // 토큰 계산기는 제 IIFE 로 돌아간다 — ui.js 와 변수를 나누지 않는다.
-  .replace('/*__TOKEN__*/', () => read('src', 'token.js'))
+  .replace('/*__TOKEN__*/', () => srcJs('token.js'))
   /* 대결 시뮬 — ui.js·token.js 와 변수를 나누지 않는 제 IIFE. */
-  .replace('/*__DUEL__*/', () => read('src', 'duel.js'))
+  .replace('/*__DUEL__*/', () => srcJs('duel.js'))
   .replace('/*__TOKEN_BODY__*/', () => read('src', 'token.body.html'));
 
 // 토큰 계산기 본문에 <script> 가 들어 있으면 계산기가 **두 벌** 돌아간다 —
@@ -295,6 +318,24 @@ if (WEB) {
   // GitHub Pages 는 기본으로 Jekyll 을 돌리는데, Jekyll 은 '_' 로 시작하는 파일을 빼 버린다.
   // 우리 기본 이미지가 _default.webp 라 이게 없으면 그 이미지들이 통째로 404 가 된다.
   fs.writeFileSync(path.join(DIST, '.nojekyll'), '');
+
+  /* 사이트 오프라인 — 서비스 워커(src/sw.js · 2026-10-16). 판마다 이 파일 글자가 달라야 새 워커가 깔린다:
+     빌드 시각 + 페이지 지문. 등록은 ui.js 가 사이트(https)에서만 한다. */
+  const ver = buildMeta.stamp + '-' + require('crypto').createHash('sha1').update(html).digest('hex').slice(0, 8);
+  const swSrc = read('src', 'sw.js');
+  if (!swSrc.includes("'/*__VERSION__*/'")) throw new Error('src/sw.js 에 버전 자리가 없습니다');
+  fs.writeFileSync(path.join(DIST, 'sw.js'), shrink('js', swSrc.replace("'/*__VERSION__*/'", () => JSON.stringify(ver))));
+
+  /* 캐시 지시(Cloudflare Pages 의 _headers). 없으면 매번 다시 확인했다.
+     페이지와 워커는 늘 확인(새 배포가 바로 보여야 한다), 그림은 하루 · 일러스트는 이레 둔다 —
+     그림 이름이 기체 이름이라 같은 이름으로 바뀔 수 있어 「영원히」 는 주지 않는다. */
+  fs.writeFileSync(path.join(DIST, '_headers'), [
+    '/', '  Cache-Control: no-cache',
+    '/index.html', '  Cache-Control: no-cache',
+    '/sw.js', '  Cache-Control: no-cache',
+    '/images/*', '  Cache-Control: public, max-age=86400, stale-while-revalidate=604800',
+    '/illust/*', '  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000',
+    ''].join('\n'));
 }
 const out = path.join(DIST, WEB ? 'index.html' : 'gbo2-simulator.html');
 fs.writeFileSync(out, html);

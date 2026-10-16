@@ -109,7 +109,7 @@ const ok = (label, good, extra) => {
       return w ? (w.info && w.info['備考']) : null;
     });
     ok('섬광탄(「シールド貫通効果有」) 원문을 찾았다', !!r, r);
-    const src = fs.readFileSync(path.join(ROOT, 'src', 'ui.js'), 'utf8');
+    const src = require('./lib/uisrc.js').readUi();
     const re = eval(src.match(/const SHIELD_IGNORE_RE = (\/.*\/[a-z]*);/)[1]);
     ok('실드 무시 판정이 「シールド貫通効果有」 를 읽는다 · 「…無視を無効化」 는 판정 뒤에서 거른다',
       re.test('シールド貫通効果有') && re.test('スキル発動中、シールドHP無視') && re.test('攻撃対象のシールドHP無視'));

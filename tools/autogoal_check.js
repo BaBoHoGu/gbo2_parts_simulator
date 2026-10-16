@@ -93,7 +93,7 @@ ok('실제로 목표를 넘겼다 (' + autoHp + ' ≥ ' + GOAL + ')', autoHp >= 
 /* 화면 문구가 **「불가능하다」고 단정하지 않는가.** best 는 찾은 것 중 최고값이지 상한이 아니다. */
 {
   const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
-  const ui = strip(fs.readFileSync(path.join(ROOT, 'src', 'ui.js'), 'utf8'));
+  const ui = strip(require('./lib/uisrc.js').readUi());
   ok('「어떤 구성으로도 달성하지 못했습니다」라고 단정하지 않는다',
     !ui.includes('어떤 구성으로도 달성하지 못했습니다'));
   ok('「가용 파츠·이 기체 상한 한계」라고 단정하지 않는다',

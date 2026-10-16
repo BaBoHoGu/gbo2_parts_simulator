@@ -406,6 +406,9 @@ for (const [ms, forms] of Object.entries(MSK)) {
     const cTwo = await m({ me: 'クラスターガンダム_LV1', weaponExact: 'Cガンダム用ビーム・サーベルx2', air: true });
     ok('클러스터 건담 — 대응 표기 없는 단일 사벨은 공중 격투 없음 · x2 는 있음',
       !cOne.공중 && cTwo.공중 === 30, { 단일: cOne.공중, x2: cTwo.공중 });
+    /* 델타 플러스 — 원문에 대응 표기가 빠졌지만 대응이다(사용자 확인 2026-10-16, AIR_TAG_EXTRA) */
+    const dp = await m({ me: 'デルタプラス_LV3', weaponExact: 'デルタプラス用ビーム・サーベル', air: true });
+    ok('델타 플러스 사벨 — 원문 표기는 없어도 공중 하격 +30% (사용자 확인)', /공중 하격/.test(dp.방향 || '') && dp.공중 === 30, { 방향: dp.방향, 공중: dp.공중, 오류: dp.오류 });
     await pg2.close();
   }
 
