@@ -409,6 +409,15 @@ for (const [ms, forms] of Object.entries(MSK)) {
     /* 델타 플러스 — 원문에 대응 표기가 빠졌지만 대응이다(사용자 확인 2026-10-16, AIR_TAG_EXTRA) */
     const dp = await m({ me: 'デルタプラス_LV3', weaponExact: 'デルタプラス用ビーム・サーベル', air: true });
     ok('델타 플러스 사벨 — 원문 표기는 없어도 공중 하격 +30% (사용자 확인)', /공중 하격/.test(dp.방향 || '') && dp.공중 === 30, { 방향: dp.방향, 공중: dp.공중, 오류: dp.오류 });
+
+    /* 「実弾属性射撃被ダメージ－50%」 는 **실탄 사격 한정** 하나다 — 사격 전체로도 잡혀 빔에 걸리면 안 된다
+       (밴디트 우지 아머, 사용자 지적 2026-10-16: 「사격 −50% / 실탄 −50% 로 나뉘어 있다」). */
+    const bm = o => G.measure(pg2, { me: 'F91_LV1', foe: 'バンデット_LV1', ...o });
+    const sOn = await bm({ weapon: '頭部バルカン', defs: ['ウージィ・アーマー'] });
+    const bOff = await bm({ weapon: 'F91用ビーム・ライフル' });
+    const bOn = await bm({ weapon: 'F91用ビーム・ライフル', defs: ['ウージィ・アーマー'] });
+    ok('밴디트 우지 아머 — 실탄 사격에 −50% 한 번', JSON.stringify(sOn.경감이름) === '["우지 아머 −50%"]', sOn.경감이름);
+    ok('밴디트 우지 아머 — 빔 사격에는 안 걸린다 (was 사격 전체 −50% 로도 잡혔다)', bOn.한발 === bOff.한발 && !(bOn.경감이름 || []).length, { off: bOff.한발, on: bOn.한발, 경감: bOn.경감이름 });
     await pg2.close();
   }
 
