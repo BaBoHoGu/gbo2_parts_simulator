@@ -24,7 +24,9 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k.startsWith('gbo2-page-') && k !== PAGE) await caches.delete(k);
+    // 보관함이 실패해도 claim 까지는 간다 — 안 그러면 새 워커가 이 탭을 맡지 못한다
+    try { for (const k of await caches.keys()) if (k.startsWith('gbo2-page-') && k !== PAGE) await caches.delete(k); }
+    catch { /* 보관함 실패 — 지우기만 못 한다 */ }
     await self.clients.claim();
     // keys() 는 넣은 차례다 — 앞쪽이 오래된 것
     try {
@@ -37,6 +39,13 @@ self.addEventListener('activate', e => {
 /* 페이지는 **주소로만** 가린다. 예전엔 「이동하는 요청(navigate)이면 다 페이지」 였는데, 그러면 그림이나
    robots.txt 를 새 탭에서 연 것도 페이지 보관본('./')을 덮어써, 다음에 오프라인으로 열면 앱 대신 그림이
    떴다(2026-10-19 버그 탐색). 이 사이트의 페이지는 한 장뿐이다. */
+/* **보관함(CacheStorage) 일은 절대 응답을 막지 않는다.** 예전엔 망에서 페이지를 멀쩡히 받아 놓고도
+   보관하려고 caches.open 을 같은 try 안에서 기다렸다. 보관함이 실패하면(저장 공간 부족 · 브라우저가 저장소를
+   정리하는 중 · 시크릿 창 등) catch 로 떨어지고, 거기서 또 보관함을 찾다 실패해 **페이지가 아예 안 떴다** —
+   사용자 제보 「처음 들어가면 로딩이 안 되고 F5 를 눌러야 된다」(2026-10-19). 그림 길도 같았다.
+   보관함 일은 모두 이 함수로 감싸 실패를 삼킨다 — 실패하면 오프라인 보관만 안 될 뿐이다. */
+const quiet = f => Promise.resolve().then(f).catch(() => undefined);
+
 const isPage = (req, url) => url.pathname === '/' || url.pathname.endsWith('/index.html');
 const isHtml = res => /text\/html/i.test(res.headers.get('Content-Type') || '');
 const isImg = url => /\/(images|illust)\//.test(url.pathname);
@@ -48,28 +57,40 @@ self.addEventListener('fetch', e => {
   if (url.origin !== self.location.origin) return;        // 다른 주소(유튜브 썸네일 등)는 손대지 않는다
   if (url.pathname.startsWith('/api/')) return;            // 갤러리·영상 API 는 늘 망으로
 
+  /* 마지막 안전망 — 위의 무엇이 터져도 워커가 없을 때처럼 망으로 받는다. respondWith 에 넘긴 약속이
+     거절되면 브라우저는 페이지를 **아예 못 띄운다**(ERR_FAILED). 워커는 덤이지 길목이 아니어야 한다. */
+  const safe = p => p.catch(() => fetch(req));
+
   if (isPage(req, url)) {
-    e.respondWith((async () => {
-      try {
-        const res = await fetch(req);
-        // HTML 일 때만 보관한다 — 혹시 다른 것이 같은 주소로 와도 보관본을 망치지 않게
-        if (res.ok && isHtml(res)) { const c = await caches.open(PAGE); c.put('./', res.clone()); }
-        return res;
-      } catch {
-        const hit = await caches.match('./', { cacheName: PAGE }) || await caches.match('./');
+    e.respondWith(safe((async () => {
+      let res;
+      try { res = await fetch(req); }
+      catch {
+        // 망이 안 될 때만 보관본 — 보관함마저 실패하면 워커 없을 때와 같은 오류다
+        const hit = await quiet(() => caches.match('./', { cacheName: PAGE })) || await quiet(() => caches.match('./'));
         return hit || Response.error();
       }
-    })());
+      // HTML 일 때만 보관한다 — 혹시 다른 것이 같은 주소로 와도 보관본을 망치지 않게.
+      // 보관은 **응답을 내준 뒤** 따로 한다(기다리지 않는다).
+      if (res.ok && isHtml(res)) {
+        const copy = res.clone();
+        e.waitUntil(quiet(() => caches.open(PAGE).then(c => c.put('./', copy))));
+      }
+      return res;
+    })()));
     return;
   }
 
   if (isImg(url)) {
-    e.respondWith((async () => {
-      const c = await caches.open(IMG);
-      const hit = await c.match(req);
-      const fresh = fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; }).catch(() => null);
-      if (hit) { e.waitUntil(fresh); return hit; }
-      return (await fresh) || Response.error();
-    })());
+    e.respondWith(safe((async () => {
+      const c = await quiet(() => caches.open(IMG));
+      const hit = c && await quiet(() => c.match(req));
+      const fresh = fetch(req).then(res => {
+        if (res.ok && c) { const copy = res.clone(); e.waitUntil(quiet(() => c.put(req, copy))); }
+        return res;
+      });
+      if (hit) { e.waitUntil(fresh.catch(() => null)); return hit; }
+      return fresh;
+    })()));
   }
 });
