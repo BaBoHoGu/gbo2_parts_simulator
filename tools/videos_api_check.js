@@ -17,6 +17,14 @@ function fakeDB() {
   const prep = (sql) => ({
     bind(...a) { this.a = a; return this; },
     async first() {
+      /* takeQuota — 진짜 질의는 「합이 한도 이하일 때만 올리고 RETURNING」 이다(한 질의).
+         처음 줄은 조건 없이 들어간다. 시늉도 그대로 따라간다. */
+      if (/INSERT INTO ytq/.test(sql)) {
+        const [d, add, cap] = this.a, cur = ytq.get(d);
+        if (cur == null) { ytq.set(d, add); return { n: add }; }
+        if (cur + add > cap) return null;
+        ytq.set(d, cur + add); return { n: cur + add };
+      }
       if (/FROM videos/.test(sql)) return videos.get(this.a[0]) || null;
       if (/FROM ytq/.test(sql)) { const n = ytq.get(this.a[0]); return n == null ? null : { n }; }
       return null;
@@ -26,8 +34,9 @@ function fakeDB() {
          시늉이 +1 로 굳어 있으면 「유닛으로 센다」를 검사해도 늘 1 이 나와, 기체 수로
          세던 옛 코드도 통과해 버린다. 시늉은 진짜를 따라가야 한다. */
       if (/INSERT INTO ytq/.test(sql)) {
+        // refundQuota — 음수를 더하고 0 아래로는 안 내려간다(MAX(0, …))
         const d = this.a[0], add = Number(this.a[1] == null ? 1 : this.a[1]);
-        ytq.set(d, (ytq.get(d) || 0) + add); return;
+        ytq.set(d, Math.max(0, (ytq.get(d) || 0) + add)); return;
       }
       if (/INSERT INTO videos/.test(sql)) {
         videos.set(this.a[0], { data: this.a[1], n: this.a[2], at: this.a[3] }); return;
@@ -229,9 +238,25 @@ const call = (mod, env, ms) =>
     // ⑧ 유튜브가 거절하면 이유를 남긴다 (키 틀림/제한/할당량이 서로 다른 일이다)
     globalThis.fetch = async () => ({ ok: false, status: 403,
       async text() { return '{"error":{"errors":[{"reason":"accessNotConfigured"}]}}'; } });
-    const r6 = await call(mod, { DB: fakeDB(), YT_API_KEY: 'dummy' }, 'ドム');
+    const env6 = { DB: fakeDB(), YT_API_KEY: 'dummy' };
+    const r6 = await call(mod, env6, 'ドム');
     const j6 = await r6.json();
     ok('거절 이유를 그대로 남긴다', j6.err === 'accessNotConfigured', j6);
+    /* 거절되면 미리 잡은 202유닛을 **돌려주는가.** 안 돌려주면 키가 틀린 날 47번 만에
+       그날 몫이 바닥나, 키를 고쳐도 그날은 영상이 안 떴다(2026-10-19 버그 탐색). */
+    ok('거절되면 잡아 둔 유닛을 돌려준다', (env6.DB._ytq.get(day) || 0) === 0, { 남은값: env6.DB._ytq.get(day) });
+    // 몇 번을 거절당해도 한도가 바닥나지 않는다
+    for (let i = 0; i < 60; i++) await call(mod, env6, 'ドム');
+    ok('거절이 60번 쌓여도 한도가 안 준다', (env6.DB._ytq.get(day) || 0) === 0, { 남은값: env6.DB._ytq.get(day) });
+
+    // ⑧-2 망이 끊기면 fetch 가 던진다 — 500 이 아니라 실패 답이어야 한다
+    globalThis.fetch = async () => { throw new TypeError('fetch failed'); };
+    const env8 = { DB: fakeDB(), YT_API_KEY: 'dummy' };
+    let r8, threw = null;
+    try { r8 = await call(mod, env8, 'ドム'); } catch (e) { threw = e.message; }
+    const j8 = r8 ? await r8.json() : null;
+    ok('망이 끊겨도 던지지 않고 network 로 답한다', !threw && j8 && j8.err === 'network', threw || j8);
+    ok('그때도 유닛을 돌려준다', (env8.DB._ytq.get(day) || 0) === 0, { 남은값: env8.DB._ytq.get(day) });
 
     /* ⑨ 상세 조회를 **50개씩 끊는가.** 검색을 둘(각 50) 하므로 최대 100개가 오는데,
        videos.list 는 한 번에 50까지다. 안 끊으면 요청이 통째로 거절돼 **영상이 0개**가 된다

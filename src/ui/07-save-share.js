@@ -33,7 +33,14 @@
     const t = (text || '').trim();
     if (!t) return null;
     // 예전 JSON 형식도 그대로 받는다 (하위 호환)
-    if (t[0] === '{') { try { return JSON.parse(t); } catch { return null; } }
+    // 모양을 먼저 본다 — 예전엔 그대로 넘겨 `"parts":5` 같은 것이 불러오기에서 예외를 냈다(2026-10-19)
+    if (t[0] === '{') {
+      try {
+        const o = JSON.parse(t);
+        if (!o || typeof o !== 'object' || Array.isArray(o) || typeof o.ms !== 'string') return null;
+        return { ...o, parts: Array.isArray(o.parts) ? o.parts : [] };
+      } catch { return null; }
+    }
     const code = t.startsWith(SHARE_PREFIX) ? t.slice(SHARE_PREFIX.length) : t;
     try {
       const c = JSON.parse(b64urlDecode(code));

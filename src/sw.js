@@ -11,6 +11,10 @@
 const VERSION = '/*__VERSION__*/';
 const PAGE = 'gbo2-page-' + VERSION;
 const IMG = 'gbo2-img-v1';
+/* 그림 보관함의 상한. 지금 사이트 그림이 약 1,360장이다(2026-10-19). 그림 이름이 바뀌면 옛 것이 남아
+   보관함이 끝없이 늘었다 — 새 판이 깔릴 때(배포마다) 오래 넣은 것부터 지워 이 수로 맞춘다.
+   전부를 넉넉히 담는 값이라 평소엔 아무것도 안 지운다. */
+const IMG_MAX = 3000;
 
 self.addEventListener('install', e => {
   // 처음 깔릴 때 페이지를 미리 받아 둔다 — 그래야 다음에 인터넷 없이 열려도 뜬다
@@ -22,10 +26,19 @@ self.addEventListener('activate', e => {
   e.waitUntil((async () => {
     for (const k of await caches.keys()) if (k.startsWith('gbo2-page-') && k !== PAGE) await caches.delete(k);
     await self.clients.claim();
+    // keys() 는 넣은 차례다 — 앞쪽이 오래된 것
+    try {
+      const c = await caches.open(IMG), ks = await c.keys();
+      for (const r of ks.slice(0, Math.max(0, ks.length - IMG_MAX))) await c.delete(r);
+    } catch { /* 줄이기에 실패해도 워커는 돈다 */ }
   })());
 });
 
-const isPage = (req, url) => req.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('/index.html');
+/* 페이지는 **주소로만** 가린다. 예전엔 「이동하는 요청(navigate)이면 다 페이지」 였는데, 그러면 그림이나
+   robots.txt 를 새 탭에서 연 것도 페이지 보관본('./')을 덮어써, 다음에 오프라인으로 열면 앱 대신 그림이
+   떴다(2026-10-19 버그 탐색). 이 사이트의 페이지는 한 장뿐이다. */
+const isPage = (req, url) => url.pathname === '/' || url.pathname.endsWith('/index.html');
+const isHtml = res => /text\/html/i.test(res.headers.get('Content-Type') || '');
 const isImg = url => /\/(images|illust)\//.test(url.pathname);
 
 self.addEventListener('fetch', e => {
@@ -39,7 +52,8 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       try {
         const res = await fetch(req);
-        if (res.ok) { const c = await caches.open(PAGE); c.put('./', res.clone()); }
+        // HTML 일 때만 보관한다 — 혹시 다른 것이 같은 주소로 와도 보관본을 망치지 않게
+        if (res.ok && isHtml(res)) { const c = await caches.open(PAGE); c.put('./', res.clone()); }
         return res;
       } catch {
         const hit = await caches.match('./', { cacheName: PAGE }) || await caches.match('./');

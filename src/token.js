@@ -1001,7 +1001,8 @@
   memo.value = store.get('tc_memo', '');
   memo.addEventListener('input', () => store.set('tc_memo', memo.value));
 
-  function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  // 비어 있음은 null·undefined 만 — `s || ''` 였을 때 숫자 0 이 빈칸이 됐다(가져온 기록의 증감 0)
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   /* 픽업 이름에는 원문 사이트의 HTML 이 섞여 들어온다 — 「건담 <ruby>DX<rt>더블 엑스</rt></ruby>」
      처럼. 그대로 esc 하면 태그가 글자로 보인다(실제로 그렇게 나오고 있었다).

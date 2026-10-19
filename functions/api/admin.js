@@ -2,7 +2,7 @@
 //
 // 비밀번호는 서버에도 원문으로 두지 않는다. 시크릿에는 SHA-256 해시만 넣고,
 // 들어온 값의 해시와 맞춰 본다. 앱·저장소 어디에도 비밀번호가 없다.
-import { json, bad, CORS, sha256Hex, issueAdminToken, whoOf, sameSecret } from '../lib/util.js';
+import { json, bad, CORS, sha256Hex, issueAdminToken, whoOf, sameSecret, bumpTry } from '../lib/util.js';
 import { ensureSchema } from '../lib/schema.js';
 
 export const onRequestOptions = () => new Response(null, { status: 204, headers: CORS });
@@ -28,20 +28,17 @@ export async function onRequestPost({ request, env }) {
   if (!env.ADMIN_PW_SHA256) return bad('cfg', '관리자 비밀번호가 설정돼 있지 않습니다', 500);
 
   const key = 'adm|' + (await whoOf(request, env));
-  const now = Date.now();
-  const t = await env.DB.prepare('SELECT n, at FROM pwtry WHERE who = ?').bind(key).first();
-  const fresh = t && now - Number(t.at) < TRY_WINDOW_MS;
-  if (fresh && Number(t.n) >= TRY_MAX) {
+  // 비교하기 **전에** 센다 — 동시에 던진 요청도 저마다 다른 번호를 받는다(bumpTry 주석).
+  const n = await bumpTry(env, key, TRY_WINDOW_MS);
+  if (n > TRY_MAX) {
     return bad('rate', '비밀번호를 여러 번 틀렸습니다 — 15분 뒤에 다시 시도하세요', 429);
   }
 
   // 틀린 비밀번호를 빠르게 되묻는 것을 늦춘다 — 한 줄로 두드릴 때를 위한 보조 수단이다.
   await new Promise(r => setTimeout(r, 400));
   // 해시끼리라 길이가 같다. 다른 비밀 비교와 같은 방식으로 맞춘다.
-  if (!sameSecret(await sha256Hex(pw), env.ADMIN_PW_SHA256)) {
-    const n = fresh ? Number(t.n) + 1 : 1;
-    await env.DB.prepare('INSERT INTO pwtry (who, n, at) VALUES (?,?,?) ON CONFLICT(who) DO UPDATE SET n = excluded.n, at = excluded.at')
-      .bind(key, n, now).run();
+  // 소문자로 맞춘다 — 시크릿을 대문자 16진으로 넣으면 맞는 비밀번호도 영영 틀린다.
+  if (!sameSecret(await sha256Hex(pw), String(env.ADMIN_PW_SHA256).trim().toLowerCase())) {
     return bad('pw', `비밀번호가 다릅니다 (${TRY_MAX - n}번 남음)`, 401);
   }
   // 맞혔으면 센 것을 지운다 — 다음에 한 번 틀렸다고 잠기지 않게.

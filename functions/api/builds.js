@@ -60,7 +60,12 @@ export async function onRequestPost({ request, env }) {
   if (!AUTHOR_RE.test(author)) return bad('author', '작성자가 올바르지 않습니다 (1~12자)');
   const desc = String(b.desc || '').trim();
   if (!DESC_RE.test(desc)) return bad('desc', '설명이 올바르지 않습니다 (60자까지)');
-  const ver = String(b.ver || '').slice(0, 12);
+  // 데이터 날짜(stamp) — 아는 글자만 받고, 아니면 비운다. 화면은 textContent 로 그려 위험은 없지만,
+  // 검사 없이 받으면 갤러리 카드의 「데이터 …」 자리에 아무 글이나 적혔다(2026-10-19).
+  // 거절하지 않는 것은 앱 쪽 형식이 바뀌어도 올리기가 막히지 않게 하려는 것이다.
+  // 16자 — 앱의 stamp 는 「2026-10-17-0857」 15자다. 12 로 자르던 때는 「2026-10-17-0」 으로 적혔다.
+  const verRaw = String(b.ver || '').slice(0, 16);
+  const ver = /^[0-9A-Za-z._-]*$/.test(verRaw) ? verRaw : '';
 
   // ── 비밀번호 ── 올린 사람이 스스로 내릴 때 쓴다. 필수다 —
   // 선택으로 두면 대부분 안 걸고, 나중에 지우려 할 때 방법이 없다.
@@ -75,10 +80,6 @@ export async function onRequestPost({ request, env }) {
   const who = await whoOf(request, env);
   const ipHead = ipHeadOf(request);     // 화면에 적을 앞자리. 원본 IP 는 저장하지 않는다.
   const now = Date.now();
-  const prev = await env.DB.prepare('SELECT at FROM throttle WHERE who = ?').bind(who).first();
-  if (prev && now - Number(prev.at) < THROTTLE_MS) {
-    return bad('rate', '너무 빠릅니다 — 1분에 한 번만 올릴 수 있습니다', 429);
-  }
 
   // ── 지문 ── 같은 구성은 한 번만. 앱이 만든 값을 쓰지 않고 서버가 다시 만든다.
   const id = await fingerprint(ms, stage, exp, expLv, parts);
@@ -93,14 +94,25 @@ export async function onRequestPost({ request, env }) {
   try { pwHash = await pwHashOf(env, id, pw); }
   catch (e) { if (e instanceof ConfigMissing) return configBad(e); throw e; }
 
-  await env.DB.batch([
-    env.DB.prepare(`INSERT INTO builds (id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, who, ip_head, pw_hash, at)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .bind(id, ms, stage, exp, expLv, JSON.stringify(parts), title, author, desc || null, free, ver, who, ipHead,
-            pwHash, now),
-    env.DB.prepare('INSERT INTO throttle (who, at) VALUES (?,?) ON CONFLICT(who) DO UPDATE SET at = excluded.at')
-      .bind(who, now)
-  ]);
+  /* ── 속도 제한 ── (rules.json: throttle/$uid, 60초)
+     자리를 **잡는 것과 확인하는 것을 질의 하나로** 한다. 예전엔 읽고 나서 썼는데, 그러면
+     한꺼번에 던진 요청이 모두 「아직 안 올렸다」 를 읽어 1분 제한을 함께 지나갔다
+     (2026-10-19 버그 탐색). 1분이 안 지났으면 UPDATE 가 일어나지 않아 돌아오는 줄이 없다.
+     중복·차단 검사 뒤에 두는 것은 거절될 글로 1분을 잃지 않게 하려는 것이다. */
+  const slot = await env.DB.prepare(
+    `INSERT INTO throttle (who, at) VALUES (?, ?)
+       ON CONFLICT(who) DO UPDATE SET at = excluded.at WHERE excluded.at - throttle.at >= ?
+     RETURNING at`).bind(who, now, THROTTLE_MS).first();
+  if (!slot) return bad('rate', '너무 빠릅니다 — 1분에 한 번만 올릴 수 있습니다', 429);
+
+  /* 위 중복 검사는 안내용이다 — 같은 구성을 동시에 올리면 둘 다 그 검사를 지난다.
+     그때 두 번째 INSERT 가 열쇠 충돌로 터져 500 이 됐다. 충돌은 「이미 올라온 구성」 이 맞는 답이다. */
+  const ins = await env.DB.prepare(
+    `INSERT INTO builds (id, ms, stage, exp, exp_lv, parts, title, author, descr, free, ver, who, ip_head, pw_hash, at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`)
+    .bind(id, ms, stage, exp, expLv, JSON.stringify(parts), title, author, desc || null, free, ver, who, ipHead,
+          pwHash, now).run();
+  if (!(ins.meta && ins.meta.changes)) return bad('dup', '이미 올라온 구성입니다');
   return json({ ok: true, id, free: free === 1, msg: '갤러리에 올렸습니다' });
 }
 

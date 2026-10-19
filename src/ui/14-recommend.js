@@ -230,10 +230,13 @@
     clearAutoResults();         // 이전 기체의 자동 구성 후보가 남아 잘못 적용되지 않게 지운다
     clearTargets();             // 목표도 마찬가지 — 이전 기체 기준 절댓값이라 그대로 두면 못 맞춘다
     // expLevel 이 없던 시절의 저장본은 앱 기본값(최대 레벨)으로 맞춘다
-    state.expLevel = Number(obj.expLevel) || C.MAX_EXPANSION_LEVEL;
+    // 1~최대 사이의 정수만 받는다 — 2.5·99 를 그대로 두면 레벨 칸이 빈칸으로 보인다
+    const xl = Math.floor(Number(obj.expLevel));
+    state.expLevel = xl >= 1 && xl <= C.MAX_EXPANSION_LEVEL ? xl : C.MAX_EXPANSION_LEVEL;
     // 손상되거나 다른 기체·단계의 저장본이 들어와도 규칙(슬롯·중복·8개)을 지키도록,
     // 저장 순서대로 실제 장착 판정을 통과하는 파츠만 받는다.
-    const wanted = obj.parts || [];
+    // 배열이 아니면 빈 것으로 — 저장 목록·갤러리 어디서 와도 여기서 한 번 더 막는다
+    const wanted = Array.isArray(obj.parts) ? obj.parts : [];
     state.equipped = [];
     // 빠진 이유를 나눠 센다 — 「기본 제외」는 본인이 해 둔 설정인데 예전엔 이것까지
     // '알 수 없는 파츠' 로 뭉뚱그려서, 데이터가 잘못된 것처럼 읽혔다.

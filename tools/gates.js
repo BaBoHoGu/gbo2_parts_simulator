@@ -164,8 +164,11 @@ const run = f => new Promise(resolve => {
     if (!fs.existsSync(wrangler)) {
       console.log('  · wrangler 가 없어 갤러리 검사는 건너뜁니다 (npm install).');
     } else {
+      /* 관리자 해시는 **시험용 글자의 해시**를 넣는다(진짜 비밀번호와 무관 — 진짜는 Cloudflare 에만).
+         없으면 관리자 로그인이 비교 전에 「설정 없음」 으로 막혀 gallery_race_check 가 그 길을 못 잰다. */
+      const admHash = require('crypto').createHash('sha256').update('local-gate-only').digest('hex');
       srv = spawn(process.execPath, [wrangler, 'pages', 'dev', '--port', String(PORT),
-        '--local', '--persist-to', STATE], { cwd: ROOT, stdio: 'ignore' });
+        '--local', '--persist-to', STATE, '--binding', 'ADMIN_PW_SHA256=' + admHash], { cwd: ROOT, stdio: 'ignore' });
     }
     if (srv && !(await ready())) {
       console.log('  · 로컬 서버를 못 띄웠습니다 — 갤러리 검사는 건너뜁니다.');

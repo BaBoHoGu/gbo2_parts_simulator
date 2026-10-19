@@ -140,11 +140,18 @@ const EXPANSION_LEVELS = {
  * 그런데 무장 표·피탄 시뮬은 이 값을 써야 한다 — 그래서 여기 하나만 두고 화면들이 불러 쓴다.
  * (예전에는 아예 빠져 있어, 위키에 적힌 「シールドHPが300増加」 가 어디에도 반영되지 않았다)
  */
+/** 확장 스킬 레벨을 표의 칸 번호(1~len)로. 1 이상 숫자면 그대로, 아니면(0·NaN·미지정) 최대 레벨.
+ *  **정수로 자른다** — 공유 코드에 2.5 가 들어오면 def[1.5] 가 undefined 라 계산이 통째로
+ *  멈췄다(2026-10-19 버그 탐색). 레벨 칸을 읽는 곳은 모두 이 함수를 지난다. */
+function expLvOf(expLevel, len) {
+  const n = Math.floor(Number(expLevel));
+  return Math.min(Math.max(isFinite(n) && n >= 1 ? n : MAX_EXPANSION_LEVEL, 1), len);
+}
+
 function expansionShieldHp(expansion, expLevel, equipped) {
   const def = EXPANSION_LEVELS[expansion];
   if (!def) return 0;
-  const n = Number(expLevel);
-  const lv = Math.min(Math.max(isFinite(n) && n >= 1 ? n : MAX_EXPANSION_LEVEL, 1), def.length);
+  const lv = expLvOf(expLevel, def.length);
   const e = def[lv - 1];
   if (!e || !e.perExtra || !e.perExtra.shieldHp || !e.per) return 0;
   const cnt = (equipped || []).filter(p => p && e.per.cats.includes(p.category)).length;
@@ -669,9 +676,7 @@ function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLe
   };
   const expDef = EXPANSION_LEVELS[expansion];
   if (expDef) {
-    // expLevel 이 유효한 1 이상 숫자면 그대로, 아니면(0·NaN·미지정) 최대 레벨로 본다.
-    const n = Number(expLevel);
-    const lv = Math.min(Math.max(isFinite(n) && n >= 1 ? n : MAX_EXPANSION_LEVEL, 1), expDef.length);
+    const lv = expLvOf(expLevel, expDef.length);
     const e = expDef[lv - 1];
     if (e.add) {
       for (const [k, v] of Object.entries(e.add)) expansionBonus[k] += v;

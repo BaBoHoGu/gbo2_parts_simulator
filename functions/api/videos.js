@@ -59,19 +59,30 @@ function durText(sec) {
 }
 
 /** 오늘 쓸 유닛을 미리 잡아 둔다. 한도를 넘으면 false — 부르지 않는다. */
+/* 확인과 잡기를 **질의 하나로** 한다. 읽고 나서 쓰면 동시에 들어온 요청이 모두 「남았다」 를
+   읽고 함께 지나가 한도를 넘긴다 — 비밀번호 시도 수와 같은 병이다(2026-10-19 버그 탐색).
+   한도를 넘기면 UPDATE 가 일어나지 않아 돌아오는 줄이 없다. */
 async function takeQuota(env, cost = COST_PER_MS) {
-  const d = ptDay();
-  const row = await env.DB.prepare('SELECT n FROM ytq WHERE day = ?').bind(d).first();
-  const n = row ? Number(row.n) : 0;
-  if (n + cost > DAILY_UNITS) return false;
+  if (cost > DAILY_UNITS) return false;
+  const row = await env.DB.prepare(
+    `INSERT INTO ytq (day, n) VALUES (?, ?)
+       ON CONFLICT(day) DO UPDATE SET n = ytq.n + excluded.n WHERE ytq.n + excluded.n <= ?
+     RETURNING n`).bind(ptDay(), cost, DAILY_UNITS).first();
+  return !!row;
+}
+
+/** 잡아 둔 유닛을 돌려준다(0 아래로는 안 내려간다). */
+async function refundQuota(env, units) {
+  if (!(units > 0)) return;
   await env.DB.prepare(
-    'INSERT INTO ytq (day, n) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET n = n + excluded.n')
-    .bind(d, cost).run();
-  return true;
+    'INSERT INTO ytq (day, n) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET n = MAX(0, ytq.n + excluded.n)')
+    .bind(ptDay(), -units).run();
 }
 
 /** 유튜브에서 이 기체의 후보를 받아 온다. 실패하면 null(= 모른다), 성공하면 배열(빈 것 포함). */
-async function fetchFromYouTube(env, ms) {
+/** tally.spent 에 **실제로 쓴 유닛**을 더해 간다 — 실패했을 때 미리 잡은 몫에서 안 쓴 만큼을
+    돌려주려는 것이다(호출부). 성공한 요청만 센다: 거절된 요청은 구글이 유닛을 매기지 않는다. */
+async function fetchFromYouTube(env, ms, tally = { spent: 0 }) {
   /* 앞뒤 공백을 턴다. 비밀값은 사람 손을 거쳐 들어오고, 그 길에 줄바꿈이 붙기 쉽다 —
      실제로 그랬다: PowerShell 이 파이프에 붙인 줄바꿈을 `wrangler pages secret put` 이
      안 잘라 내서 40글자가 저장됐고, 유튜브는 「API key not valid」 라고만 답했다.
@@ -114,6 +125,7 @@ async function fetchFromYouTube(env, ms) {
         .replace(/AIza[0-9A-Za-z_\-]+/g, '(키)').slice(0, 160);
       return { err: reason, msg };
     }
+    tally.spent += UNIT_SEARCH;
     const j = await res.json();
     return { ids: (j.items || []).map(it => it.id && it.id.videoId).filter(Boolean) };
   };
@@ -143,6 +155,7 @@ async function fetchFromYouTube(env, ms) {
     });
     const vRes = await fetch(vUrl);
     if (!vRes.ok) return { err: 'videos' + vRes.status };
+    tally.spent += UNIT_VIDEOS;
     const vJson = await vRes.json();
     raw.push(...(vJson.items || []));
   }
@@ -195,8 +208,16 @@ export async function onRequestGet({ request, env }) {
     return json({ ok: true, ms, videos: [], busy: true });
   }
 
-  const got = await fetchFromYouTube(env, ms);
+  const tally = { spent: 0 };
+  let got;
+  /* 망이 끊기면 fetch 가 던진다 — 예전엔 그대로 500 이 됐다. 실패 답으로 바꿔 아래 길을 탄다. */
+  try { got = await fetchFromYouTube(env, ms, tally); }
+  catch (e) { got = { err: 'network', msg: String((e && e.message) || e).slice(0, 160) }; }
   if (got.err) {
+    /* 미리 잡은 몫에서 **안 쓴 만큼을 돌려준다.** 실패는 결과를 적어 두지 않으므로 다음 사람이
+       또 부르는데, 돌려주지 않으면 그때마다 202유닛씩 쌓여 — 키가 틀린 날은 47번 만에
+       그날 몫이 바닥나고, 키를 고쳐도 그날은 영상이 안 떴다(2026-10-19 버그 탐색). */
+    await refundQuota(env, COST_PER_MS - tally.spent);
     /* 할당량은 우리가 세고 있었는데도 넘었다면 구글 쪽 계산이 다른 것이다 — 오늘은 접는다. */
     /* 거절당했을 때 **저장된 키가 어떤 꼴인지**만 함께 알린다.
        값은 절대 내보내지 않는다 — 꼴만 본다. 이게 없어서 「등록은 됐는데 유튜브는

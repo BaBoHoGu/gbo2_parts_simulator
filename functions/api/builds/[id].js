@@ -11,7 +11,7 @@
 //
 // 관리자는 ①만 탄다. 토큰이 맞으면 비밀번호 검사에 아예 들어가지 않으므로,
 // 관리자 동작은 이 기능이 생기기 전과 똑같다.
-import { json, bad, CORS, isAdmin, whoOf, pwHashOf, sameSecret, PW_RE, ConfigMissing, configBad } from '../../lib/util.js';
+import { json, bad, CORS, isAdmin, whoOf, pwHashOf, sameSecret, bumpTry, PW_RE, ConfigMissing, configBad } from '../../lib/util.js';
 import { ensureSchema } from '../../lib/schema.js';
 
 export const onRequestOptions = () => new Response(null, { status: 204, headers: CORS });
@@ -46,13 +46,7 @@ export async function onRequestDelete({ request, env, params }) {
   if (!PW_RE.test(pw)) return bad('pw', '비밀번호를 입력하세요 (공백 없이 4~20자)');
 
   const who = await whoOf(request, env);
-  const now = Date.now();
-  const t = await env.DB.prepare('SELECT n, at FROM pwtry WHERE who = ?').bind(who).first();
-  const fresh = t && now - Number(t.at) < TRY_WINDOW_MS;
-  if (fresh && Number(t.n) >= TRY_MAX) {
-    return bad('rate', '비밀번호를 여러 번 틀렸습니다 — 10분 뒤에 다시 시도하세요', 429);
-  }
-
+  // 없는 구성·옛 구성에는 시도를 쓰지 않는다 — 비교할 비밀번호 자체가 없다.
   const row = await env.DB.prepare('SELECT pw_hash FROM builds WHERE id = ?').bind(id).first();
   if (!row) return bad('none', '이미 없는 구성입니다', 404);
   if (!row.pw_hash) {
@@ -64,10 +58,12 @@ export async function onRequestDelete({ request, env, params }) {
   try { given = await pwHashOf(env, id, pw); }
   catch (e) { if (e instanceof ConfigMissing) return configBad(e); throw e; }
 
+  // 비교하기 **전에** 센다 — 동시에 던진 요청도 저마다 다른 번호를 받는다(bumpTry 주석).
+  const n = await bumpTry(env, who, TRY_WINDOW_MS);
+  if (n > TRY_MAX) {
+    return bad('rate', '비밀번호를 여러 번 틀렸습니다 — 10분 뒤에 다시 시도하세요', 429);
+  }
   if (!sameSecret(row.pw_hash, given)) {
-    const n = fresh ? Number(t.n) + 1 : 1;
-    await env.DB.prepare('INSERT INTO pwtry (who, n, at) VALUES (?,?,?) ON CONFLICT(who) DO UPDATE SET n = excluded.n, at = excluded.at')
-      .bind(who, n, now).run();
     return bad('pw', `비밀번호가 다릅니다 (${TRY_MAX - n}번 남음)`, 403);
   }
 

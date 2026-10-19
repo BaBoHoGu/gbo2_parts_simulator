@@ -6,9 +6,9 @@
  * 그래서 규칙이 하나 있다: **여기서 나는 실패는 절대 앱을 멈추지 않는다.**
  * 모든 함수는 던지지 않고 { ok, ... } 를 돌려준다.
  *
- * 서버는 사이트와 같은 Cloudflare 다 — Pages Functions(worker/functions) + D1.
+ * 서버는 사이트와 같은 Cloudflare 다 — Pages Functions(functions/) + D1.
  * 예전에는 Firebase Realtime Database 였고 보안 규칙이 검사를 맡았다. 지금은 그 검사가
- * 서버 코드에 있다(worker/functions/api/builds.js 주석에 옛 규칙 항목을 짝지어 뒀다).
+ * 서버 코드에 있다(functions/api/builds.js 주석에 옛 규칙 항목을 짝지어 뒀다).
  *
  * 서버가 막아 주는 것
  *   · 1분에 1건 · 같은 구성 두 번 금지 · 기체·파츠·확장 이름을 사전과 대조
@@ -22,7 +22,7 @@
 'use strict';
 
 const CFG = {
-  // 사이트와 같은 Cloudflare — Pages Functions(worker/functions) + D1.
+  // 사이트와 같은 Cloudflare — Pages Functions(functions/) + D1.
   // 절대 주소인 이유: 앱은 file:// 로도 열린다(APK·PC 완전판). 그때는 상대 경로에
   // 붙일 출처가 없다. 서버가 CORS 를 * 로 열어 두어 file:// 에서도 통한다.
   api: 'https://gbo2-parts.pages.dev/api',

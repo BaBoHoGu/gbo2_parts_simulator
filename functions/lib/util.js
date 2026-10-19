@@ -143,6 +143,23 @@ export async function pwHashOf(env, id, pw) {
 export const configBad = e =>
   bad('cfg', '서버 설정이 끝나지 않았습니다 (' + (e.key || '?') + ') — 관리자에게 알려 주세요', 503);
 
+/** 비밀번호 시도를 **비교하기 전에** 하나 세고, 센 뒤의 횟수를 돌려준다.
+ *
+ *  예전엔 「횟수 읽기 → 비교 → 횟수+1 쓰기」 를 따로 했다. 그러면 한꺼번에 던진 요청
+ *  100개가 모두 같은 옛 횟수(0)를 읽고 모두 1 을 써서, 「5번」 이 「한 묶음에 수백 번」 이
+ *  됐다(2026-10-19 버그 탐색). 올리기와 읽기를 질의 하나로 묶으면 동시 요청도 저마다
+ *  다른 번호를 받는다 — D1 은 쓰기를 한 줄로 세운다.
+ *  창(windowMs)은 마지막 시도부터 잰다. 잠긴 동안 또 누르면 그만큼 잠김이 늘어난다. */
+export async function bumpTry(env, key, windowMs, now = Date.now()) {
+  const row = await env.DB.prepare(
+    `INSERT INTO pwtry (who, n, at) VALUES (?, 1, ?)
+       ON CONFLICT(who) DO UPDATE SET
+         n  = CASE WHEN excluded.at - pwtry.at < ? THEN pwtry.n + 1 ELSE 1 END,
+         at = excluded.at
+     RETURNING n`).bind(key, now, windowMs).first();
+  return Number(row && row.n) || 1;
+}
+
 /** 길이가 같을 때만 상수 시간으로 비교한다(관리자 토큰과 같은 방식). */
 export function sameSecret(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
