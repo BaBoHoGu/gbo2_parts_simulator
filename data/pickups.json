@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-10-17",
+ "pickupsUpdated": "2026-10-19",
  "pickups": [
   {
    "name": "밴디트",
@@ -218,7 +218,7 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=194588"
   }
  ],
- "steamUpdated": "2026-10-17",
+ "steamUpdated": "2026-10-19",
  "steamNews": [
   {
    "name": "양산형 사이코 건담",
@@ -240,27 +240,6 @@
    "end": "2026-10-01",
    "tokens": 75,
    "url": "https://store.steampowered.com/news/app/1367080/view/699902693745886288?l=koreana"
-  },
-  {
-   "name": "플린트",
-   "start": "2026-09-17",
-   "end": "2026-09-24",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/690894858003415053?l=koreana"
-  },
-  {
-   "name": "건담 발바토스 루프스 LV1 & LV2",
-   "start": "2026-09-17",
-   "end": "2026-09-24",
-   "tokens": null,
-   "url": "https://store.steampowered.com/news/app/1367080/view/690894858003415053?l=koreana"
-  },
-  {
-   "name": "건담 발바토스 루프스 LV2",
-   "start": "2026-09-17",
-   "end": "2026-09-24",
-   "tokens": 180,
-   "url": "https://store.steampowered.com/news/app/1367080/view/690894858003415053?l=koreana"
   }
  ]
 }
