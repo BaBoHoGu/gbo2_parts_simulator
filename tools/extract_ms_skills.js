@@ -67,6 +67,9 @@ function parseSkills(seg) {
 // wiki_url 이 빈 신기체(ゴトラタン 등)를 override 로 보정 — 페이지↔기체 매핑에 필요.
 const msData = require('./lib/msdata.js').applyWikiOverride(
   JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')), ROOT);
+// additions 기체도 페이지↔기체 매핑에 넣는다 — 무장(extract_weapons)은 합치는데 여기만 빠져,
+// 마그나 마텔(2026-10-19)이 무장은 있고 스킬은 없었다.
+require('./lib/dataset.js').mergeMsAdditions(ROOT, msData);
 const byPage = new Map();
 for (const m of msData) {
   const id = (String(m.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];

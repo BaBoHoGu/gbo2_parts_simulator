@@ -20,6 +20,9 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 // gbo2.jp 가 wiki_url 을 비워 보낸 기체(ゴトラタン 등)를 override 로 보정 — 그래야 페이지를 받는다.
 const msData = require('./lib/msdata.js').applyWikiOverride(
   JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')), ROOT);
+// 미러보다 먼저 위키 값으로 넣은 기체(additions)도 받는다 — 안 넣으면 그 기체의 무장·스킬이 영영 빈다
+// (마그나 마텔 2026-10-19). extract_weapons · extract_ms_skills 는 이미 additions 를 합친다.
+require('./lib/dataset.js').mergeMsAdditions(ROOT, msData);
 
 // --pages=ID,ID : 이 페이지들만 받는다 (배포본 증분 업데이트 — 캐시 전체를 받지 않음)
 const pagesArg = process.argv.find(a => a.startsWith('--pages='));

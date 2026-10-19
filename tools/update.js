@@ -186,10 +186,18 @@ async function detectPatch(msList) {
   let attempts = {}; try { attempts = rdJson('data', 'wiki_attempts.json'); } catch { /* 없어도 됨 */ }
   const triedRecently = key => attempts[key] && (Date.now() - attempts[key] < RETRY_MS);
 
+  /* 위키 점검(무장 누락 · 감시 · 순회)은 **additions 기체까지** 본다. 예전엔 gbo2.jp 목록만 봐서,
+     미러보다 먼저 위키 값으로 넣은 기체(마그나 마텔 2026-10-19)는 위키 페이지를 한 번도 받지 않아
+     무장·스킬이 영영 비었다. 신규·삭제 비교(added/removed)에는 넣지 않는다 — 그건 미러 기준이다.
+     같은 이름이 미러에 생기면 additions 쪽은 빠진다(mergeMsAdditions 와 같은 규칙). */
+  const { mergeMsAdditions } = require('./lib/dataset.js');
+  const wikiList = remote.slice();
+  mergeMsAdditions(ROOT, wikiList);
+
   const emptyUrlAll = remote.filter(m => !String(urlOf(m)).trim());
   const emptyUrlMechs = emptyUrlAll.filter(m => !triedRecently('n:' + m.MS名));   // 이번에 조회할 것
   const seenBase = new Set();
-  const staleAll = remote.filter(m => {
+  const staleAll = wikiList.filter(m => {
     const b = baseName(m.MS名); if (seenBase.has(b)) return false; seenBase.add(b);
     const id = pageId(urlOf(m)); if (!id) return false;      // 빈 url 은 emptyUrl 이 담당
     return !weapNow[id] || !(weapNow[id].weapons || []).length || !sklNow[b];
@@ -204,7 +212,7 @@ async function detectPatch(msList) {
      규칙과 끝나는 조건은 lib/wikiwatch.js 에 있다. */
   const WW = require('./lib/wikiwatch.js');
   const baseByPage = new Map();
-  for (const m of remote) {
+  for (const m of wikiList) {
     const id = pageId(urlOf(m));
     if (id && !baseByPage.has(id)) baseByPage.set(id, baseName(m.MS名));
   }
