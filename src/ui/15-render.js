@@ -86,7 +86,8 @@
     const envChip = t => ({ t, cls: 'env-' + (t === '지상' ? 'g' : t === '우주' ? 's' : 'w') });
 
     const sortie = [m['出撃_地上可'] !== false && '지상', m['出撃_宇宙可'] !== false && '우주'].filter(Boolean);
-    add('출격', sortie.length ? sortie.map(envChip) : ['—']);
+    // sortie — 접힌 기체 칸(낮은 데스크톱)에서는 이 칩만 뺀다(style.css 「낮은 데스크톱」 절)
+    add('출격', sortie.length ? sortie.map(envChip) : ['—'], 'sortie');
     const adapt = [m['環境適正_地上'] && '지상', m['環境適正_宇宙'] && '우주', m['環境適正_水中'] && '수중'].filter(Boolean);
     add('적성', adapt.length ? adapt.map(envChip) : ['없음'], adapt.length ? 'on' : '');
 

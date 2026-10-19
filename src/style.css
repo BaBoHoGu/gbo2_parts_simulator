@@ -4262,7 +4262,13 @@ body.info-open .sel-info { display: flex; }
     margin: 0; font-size: var(--fs-lg);
   }
   :where(body:not(.compact)) .hero .h-sub { flex-wrap: nowrap; white-space: nowrap; flex-shrink: 0; gap: 5px; }
-  :where(body:not(.compact)) .h-facts { display: none; }
+  /* 출격·적성 줄 — 예전엔 여기서 통째로 감췄는데, 창이 낮으면 **적성·격투 판정력을 볼 곳이 없었다**
+     (2026-10-19 사용자 요청). 감추지 않고 줄 상자를 풀어(contents) 칩을 이름·분류 뒤 같은 흐름에 끼운다.
+     자리가 모자라면 한 줄 내려간다 — 그 한 줄만큼은 herofit_check 의 파츠 목록 하한 안에 들어온다.
+     출격 칩은 뺀다(거의 모든 기체가 지상·우주 둘 다라 뜻이 적다). 기체 정보 화면은 스크롤 판이라 그대로 둔다. */
+  :where(body:not(.compact)) .hero .h-facts { display: contents; }
+  :where(body:not(.compact)) .hero .h-facts .hf { padding: 0 6px; line-height: 1.35; }
+  :where(body:not(.compact)) .hero .h-facts .hf.sortie { display: none; }
   :where(body:not(.compact)) .hero .h-controls { align-items: center; gap: 6px 12px; flex-wrap: nowrap; }
   :where(body:not(.compact)) .hero .h-controls > div { display: flex; align-items: center; gap: 6px; min-width: 0; }
   /* 라벨 글자는 눈에서만 감춘다(font-size 0) — 낭독기는 그대로 읽고, 「?」 단추는 제 글자 크기가 있어 남는다.

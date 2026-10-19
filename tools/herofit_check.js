@@ -96,6 +96,11 @@ const CONTROLS = ['#backToSelect', '#msSwapBtn', '#clearParts', '#stageHelp', '#
         name: name.innerText.trim(),
         expW: Math.round(R(document.querySelector('#expansion')).width),
         factsShown: !!(facts && facts.textContent.trim() && R(facts).height > 0),
+        /* 접힌 칸에서도 보여야 하는 칩 — 예전엔 접으면 줄째 감춰 적성·판정력을 볼 곳이 없었다(2026-10-19 사용자 요청).
+           줄 상자는 contents 로 풀리므로 상자 높이가 아니라 칩 하나하나가 그려졌는지 본다. */
+        chips: [...document.querySelectorAll('#heroFacts .hf, #heroFacts2 .hf')]
+          .filter(x => R(x).height > 0 && getComputedStyle(x).visibility !== 'hidden')
+          .map(x => x.querySelector('i') ? x.querySelector('i').textContent : ''),
         bad,
       };
     }, CONTROLS);
@@ -106,6 +111,7 @@ const CONTROLS = ['#backToSelect', '#msSwapBtn', '#clearParts', '#stageHelp', '#
     if (v.fold) {
       ok(t + ' — 기체 칸이 접혔다 (' + r.hero + 'px ≤ 135)', r.hero <= 135, r.hero);
       ok(t + ' — 확장 선택칸이 쓸 만한 폭이다 (' + r.expW + 'px ≥ 90)', r.expW >= 90, r.expW);
+      ok(t + ' — 접혀도 적성 · 격투 판정력이 보인다', r.chips.includes('적성') && r.chips.includes('격투 판정력'), r.chips);
     } else {
       ok(t + ' — 높이가 넉넉하면 안 접는다 (출격·적성 줄이 보인다)', r.factsShown, r);
     }
