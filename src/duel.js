@@ -91,7 +91,12 @@
     form: 'normal',        // 'normal' | 'transform' — 변형 · 변신(NT-D) · 시스템 발동(트랜잠). 앱의 state.form 과 같은 뜻
     step: 1                // 이 쪽 무장으로 상대를 몇 발 맞혔는지 (게이지 미리보기)
   });
-  const S = { L: mkSide('L'), R: mkSide('R'), tab: 'L' };
+  const S = { L: mkSide('L'), R: mkSide('R'), tab: 'L', late: false };
+  /* 「4분 경과」 — 한 판의 시간이라 양쪽 공통. 대결 안에 체크를 따로 둔다(앱 화면의 체크는 내 구성에
+     해당 파츠가 있을 때만 보여, 상대 쪽 교육형은 켤 길이 없었다 — 2026-10-20 사용자 지적).
+     어느 쪽에도 그런 파츠가 없으면 체크가 안 보이고 **꺼진 것으로** 친다(안 보이는 체크가 수를 바꾸지 않게). */
+  const hasModePart = () => [S.L, S.R].some(s => (s.parts || []).some(p => C.MODE_PARTS && C.MODE_PARTS[p.name]));
+  const lateOn = () => !!S.late && hasModePart();
   const other = side => (side.who === 'L' ? S.R : S.L);
 
   /* ---------- 스킬 ---------- */
@@ -191,7 +196,7 @@
     /* 모드도 넘긴다 — 유니콘 NT-D 는 사격 46 → 13 · 격투 22 → 65, 더블오 라이저 트랜잠은 사격 46 → 61 ·
        격투 30 → 60 이다. 예전엔 form 자리에 null 을 넘겨 늘 통상 수치로 셌다(사용자 지적 2026-10-15). */
     const run = skill => C.calcStats(side.ms, side.parts, side.stage, side.exp, G.parts, G.fullst,
-      side.expLv, side.form === 'transform' ? 'transform' : 'normal', skill, null).total;
+      side.expLv, side.form === 'transform' ? 'transform' : 'normal', skill, null, lateOn()).total;
     const bare = run(null);
     const sk = skillStatBonus(side, bare);
     return sk ? run(sk) : bare;
@@ -288,7 +293,10 @@
        간이판은 **꺼져 있다 · 없다**고 답한다(지어내 켜면 앱과 다른 수가 나온다). */
     weaponSkillOn: () => false,
     wikiPending: () => null,
-    foeArmorSkills: () => []
+    foeArmorSkills: () => [],
+    /* 「4분 경과」 — 한 판의 시간이라 **양쪽 공통**이다. 앱의 체크를 따른다(교육형 컴퓨터의 4분 뒤 값 ·
+       의문의 전자 회로의 전환). 간이판은 초반으로 답한다. */
+    lateMode: () => false
   };
 
   /* ---------- 한 방향의 계산 (공격 측 A → 대상 B) ---------- */
@@ -335,7 +343,8 @@
     const raw = kind === 'melee'
       ? D.meleeDamage(power, corr, { attr: att, ccd })
       : D.shootingDamage(power, corr, { attr: att, etcA });
-    const wm = D.weaponModsOf(A.parts, msLv(A.ms), A.ms.属性);
+    const late = lateOn();
+    const wm = D.weaponModsOf(C.partsAt(A.parts, late), msLv(A.ms), A.ms.属性);
     const partPct = D.damagePctFor(wm, wp.w, kind) || 0;
     const skPcts = skillDmgPcts(A, kind);
     const boosted = D.applyDamagePct(raw, [partPct, ...skPcts]);
@@ -349,7 +358,7 @@
     const isBuffer = nm => bi && (bi.special ? /特殊緩衝材/ : /緩衝材/).test(String(nm || ''));
     // 대상의 피해 경감 — 파츠 + 켠 방어 스킬 (이름을 지닌 채 — 계산식에 하나씩 적는다)
     const allCuts = [
-      ...C.partDamageCuts(B.parts, msLv(B.ms)).map(c => ({ ...c, label: '파츠 경감' })),
+      ...C.partDamageCuts(C.partsAt(B.parts, late), msLv(B.ms)).map(c => ({ ...c, label: '파츠 경감' })),
       ...HOOK.defSkills(B).filter(s => s.always || B.defs.has(s.name))
         .map(s => ({ scope: s.scope, pct: s.pct, label: s.ko || s.name, ignored: biOn && isBuffer(s.name) })),
       ...(HOOK.extraCuts(A, B, wp) || []).map(c => ({ ...c, label: c.label || '조건부 경감' }))];
@@ -942,6 +951,16 @@
       vs.append(v);
     }
     box.append(vs);
+    /* 「4분 경과」 — 어느 쪽이든 때가 되면 바뀌는 파츠(교육형 컴퓨터 · 의문의 전자 회로)를 달았을 때만 */
+    if (hasModePart()) {
+      const names = [S.L, S.R].flatMap(s => (s.parts || []).filter(p => C.MODE_PARTS[p.name]).map(p => T.partName(p.name)));
+      const lb = el('label', 'dc-late');
+      const ck = el('input'); ck.type = 'checkbox'; ck.checked = !!S.late;
+      ck.onchange = () => { S.late = ck.checked; renderAll(); };
+      lb.append(ck, el('span', null, '4분 경과'), el('span', 'dc-late-s', '양쪽 공통 · ' + [...new Set(names)].join(' · ')));
+      lb.title = '작전 개시 4분 뒤의 효과로 계산합니다 — 한 판의 시간이라 양쪽에 같이 걸립니다';
+      box.append(lb);
+    }
     box.append(dirCard(S.L, S.R, 'LR'), dirCard(S.R, S.L, 'RL'));
     box.append(el('div', 'dc-foot',
       '※ 실피해식 [Wp·Att·(1+자세·스코프)·상성] × 파츠·스킬 피해% × 상대 피해 경감, 내성은 실효 HP 로 반영. '
@@ -1303,7 +1322,7 @@
       else if (!on && root.open) root.close();
     }
     document.documentElement.style.overflow = on ? 'hidden' : '';
-    if (on) { HOOK.seed(S.L, setMs); renderAll(); }
+    if (on) { S.late = !!HOOK.lateMode(); HOOK.seed(S.L, setMs); renderAll(); }   // 열 때는 앱 화면의 체크를 이어받는다
   }
 
   function mountButton() {

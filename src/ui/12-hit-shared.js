@@ -351,6 +351,8 @@
       weaponSkillOn: side => weaponSkillOn(side),
       /** 위키 미수록이면 빈칸 안내 문구 · 아니면 null */
       wikiPending: ms => (wikiPending(ms) ? WIKI_PENDING_TXT : null),
+      /** 「4분 경과」 체크 — 한 판의 시간이라 대결 양쪽에 같이 건다 */
+      lateMode: () => !!state.lateMode,
       /** 상대 내성만 깎는 스킬(명경지수 · 롱 레인지 어댑터 …) — 스탯 축이 없어 칩 목록에서 빠졌다.
           어느 무장에 걸리는지 원문으로 정해지는 것만 돌려준다(태클·카운터 전용은 안 준다). */
       foeArmorSkills: side => {

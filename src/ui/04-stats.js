@@ -319,7 +319,7 @@
     const bareR = skillEffect() ? stats(null) : null;
     const corrBare = bareR ? { shooting: bareR.total.shoot, melee: bareR.total.meleeCorrection } : corr;
     const dmgKey = w => (w.attr === 'melee' || w.type === 'melee') ? 'melee' : 'shooting';
-    const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性, state.expansion);
+    const wm = D.weaponModsOf(C.partsAt(state.equipped, state.lateMode), state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性, state.expansion);
     const sk = skillEffect();
     const postureEtc = w => {
       if (dmgKey(w) === 'melee') return 0;

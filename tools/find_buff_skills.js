@@ -21,6 +21,9 @@ const parseTable = html => parseGrid(html, clean);
 const { applyWikiOverride } = require('./lib/msdata.js');
 const MS = applyWikiOverride(
   JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')), ROOT);
+// additions 기체(위키 값으로 먼저 넣은 것)도 센다 — 빠지면 그 기체의 버프 스킬이 체크 목록에서 통째로 빠진다
+// (마그나 마텔 サイコミュシステム共振（C） · 2026-10-20 사용자 지적). fetch_wiki · extract_ms_skills 와 같은 병합.
+require('./lib/dataset.js').mergeMsAdditions(ROOT, MS);
 const I18N = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'ms.json'), 'utf8'));
 const SKILL = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'i18n', 'skills.json'), 'utf8'));
 // 수동 사전에 없는 스킬명은 MT 캐시(skill_text.json, MS 스킬 패널용)로 폴백한다.

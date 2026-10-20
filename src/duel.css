@@ -271,6 +271,11 @@
 .dc-verdict .lose { color: var(--bad-soft); }
 .dc-verdict .even { color: var(--accent); }
 .dc-foot { font-size: var(--fs-xs); color: var(--dim); line-height: 1.6; padding: 0 2px; }
+/* 「4분 경과」 — 양쪽 공통 체크(때가 되면 바뀌는 파츠가 어느 쪽에든 있을 때만) */
+.dc-late { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 4px 8px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); font-size: var(--fs-sm); }
+.dc-late input { margin: 0; }
+.dc-late-s { color: var(--dim); font-size: var(--fs-xs); }
 
 /* 기체 고르기 오버레이 (패널 안) */
 .ds-mspick { display: flex; flex-direction: column; gap: 6px; }
@@ -310,7 +315,7 @@ body.vm-wide .duel { inset: 0; border-radius: 0; border: none; }
     overflow-y: auto;
   }
   .duel-center { grid-area: c; overflow: visible; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .duel-center .dc-vs, .duel-center .dc-foot { grid-column: 1 / -1; }
+  .duel-center .dc-vs, .duel-center .dc-foot, .duel-center .dc-late { grid-column: 1 / -1; }
   .duel-side[data-side="L"] { grid-area: l; }
   .duel-side[data-side="R"] { grid-area: r; }
   .duel-side { overflow: visible; }

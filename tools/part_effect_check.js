@@ -88,8 +88,11 @@ const CONDITIONAL = new Set([
     const after = await pg.evaluate(SNAP);
     const moved = before !== after;
     const marked = await pg.evaluate(() => !!document.querySelector('#partDetail .d-unmod, .d-unmod'));
+    // 일부만 빠진 파츠(d-unmod-partial — 교육형[特防]: 기본 −10% 는 계산, 4분 뒤 경직 중 몫만 빠짐)는
+    // 수치가 바뀌는 것이 맞다. 그 밖의 고지는 「아무것도 안 바뀐다」 는 뜻이다(2026-10-20).
+    const partial = await pg.evaluate(() => !!document.querySelector('.d-unmod.d-unmod-partial'));
     if (!moved && !marked && !CONDITIONAL.has(p.name)) bad1.push(koOf(p.name));
-    if (moved && marked) bad2.push(koOf(p.name));
+    if (moved && marked && !partial) bad2.push(koOf(p.name));
   }
   /* ── 「※ 위키」 메모는 게임 안 설명이 아니다 ──
      번역문 끝에 「※ 위키: 상한이 50 → 70 이 된다」처럼 **우리가 조사해 적어 둔 배경**이

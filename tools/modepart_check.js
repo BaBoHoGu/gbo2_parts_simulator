@@ -38,7 +38,10 @@ for (const [name, m] of Object.entries(C.MODE_PARTS || {})) {
   const miss = [...m.early, ...m.late].filter(k => typeof p[k] !== 'number');
   ok('적어 둔 스탯이 모두 그 파츠에 있다: ' + name, miss.length === 0, miss);
   /* 설명에 「바뀐다」가 적혀 있는가 — 자료가 바뀌어 더 이상 전환형이 아니면 알아야 한다. */
-  ok('설명이 여전히 「바뀐다」다: ' + name, /切り替わ|切替わ|に変わる/.test(String(p.description || '')),
+  /* 교육형 컴퓨터(lateDesc)는 「바뀐다」 가 아니라 「4분 경과하면 효과가 상승」 이다(2026-10-20) —
+     그 꼴은 그 문구가 그대로 있는지 본다. 값 대조는 edu_late_check 가 한다. */
+  const want = m.lateDesc ? /4分経過すると効果が上昇/ : /切り替わ|切替わ|に変わる/;
+  ok('설명이 여전히 「' + (m.lateDesc ? '4분 뒤 상승' : '바뀐다') + '」다: ' + name, want.test(String(p.description || '')),
     { desc: String(p.description || '').slice(0, 40) });
 }
 

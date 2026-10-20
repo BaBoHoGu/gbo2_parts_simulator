@@ -81,6 +81,7 @@ const norm = s => String(s)
   console.log(`  공식 기체 ${official.length}기`);
 
   const msData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8'));
+  require('./lib/dataset.js').mergeMsAdditions(ROOT, msData);   // additions 기체도 일러스트를 찾는다(2026-10-20)
   const bases = [...new Set(msData.map(m => m.MS名.replace(/_LV\d+$/i, '')))];
   console.log(`  우리 기체 ${bases.length}기 (LV 뺀 것)`);
 

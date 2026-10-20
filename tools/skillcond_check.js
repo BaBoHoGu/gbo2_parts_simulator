@@ -183,6 +183,22 @@ for (const [ms, forms] of Object.entries(MSK)) {
     const rm = res2.out.find(x => x.base === 'ゲルググJ' && x.name === 'レジストムーブ');
     ok('ゲルググJ 의 レジストムーブ = 발동중   (was 상시 — 사용자가 짚음)', !!rm && rm.cond === '발동중', rm || '(목록에 없다)');
 
+    /* 2026-10-20 — 「끝난 뒤 · 생긴 뒤 일정 시간」 · 「무장을 든 동안」 이 조건 낱말 목록에 없어 상시로 샜다.
+       カウンターブースト 는 사용자가 짚었고 나머지 둘은 같은 날 전수 검수에서 나왔다. */
+    const after = await pg.evaluate(() => {
+      const A = window.GBO2UiTest, G = window.GBO2_DATA;
+      const by = n => G.msData.filter(m => m.MS名.replace(/_LV\d+$/, '') === n).pop();
+      return [['ガンダム試作1号機', 'カウンターブースト'], ['ゴールドスモー', 'MFEガンディウムFGI複合材'],
+        ['ガンダム・端白星', '白兵戦プログラム']].map(([b, n]) => {
+        const ms = by(b); if (!ms) return { b, n, cond: '(기체 없음)' };
+        const sk = A.staggerSkillsOf(ms, A.msLevel(ms), 'normal').find(x => x.name === n);
+        return { b, n, cond: sk ? sk.cond : '(목록에 없음)' };
+      });
+    });
+    const WANT = { 'カウンターブースト': '발동후', 'MFEガンディウムFGI複合材': '발동후', '白兵戦プログラム': '장비중' };
+    for (const x of after)
+      ok(x.b + ' 의 ' + x.n + ' = ' + WANT[x.n] + '   (was 상시)', x.cond === WANT[x.n], x);
+
     /* 수가 달라지는가 — 겔구그J 를 맞는 쪽에 두고 아무것도 안 켠다. 예전엔 −50% 가 늘 걸렸다 */
     const rnum = await pg.evaluate(() => {
       const G = window.GBO2_DATA, S = window.GBO2Duel.state;

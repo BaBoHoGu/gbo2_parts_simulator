@@ -219,7 +219,9 @@
     // 계산에 안 들어가는 효과가 있으면 밝힌다. 설명만 보고 슬롯을 쓰는 일이 없게.
     const un = unmodelledOf(part);
     if (un.length) {
-      const w = el('div', 'd-unmod');
+      // partial — 효과 일부는 계산되고 일부만 빠진 파츠(교육형[特防]). 검사(part_effect_check)가 「고지가 있으면
+      // 수치가 안 바뀐다」 를 이것으로 가른다. 겉모습은 같다.
+      const w = el('div', 'd-unmod' + (un.every(x => x.partial) ? ' d-unmod-partial' : ''));
       w.append(el('b', '', '계산에 반영되지 않는 효과'));
       for (const x of un) {
         const row = el('div', 'd-unmod-row');

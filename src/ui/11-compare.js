@@ -25,7 +25,7 @@
     if (!bs) return [];
     const msLv = C.msLevel(bs.ms.MS名);
     const corr = { shooting: bs.r.total.shoot, melee: bs.r.total.meleeCorrection };
-    const wm = D.weaponModsOf(bs.equipped, msLv, bs.ms.属性, bs.expansion);
+    const wm = D.weaponModsOf(C.partsAt(bs.equipped, state.lateMode), msLv, bs.ms.属性, bs.expansion);
     const out = [];
     for (const w of weaponsOfMs(bs.ms)) {
       if (w.type === 'shield') continue;

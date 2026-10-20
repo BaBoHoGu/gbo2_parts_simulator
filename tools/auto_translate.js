@@ -35,6 +35,8 @@ function purgeStale(obj, val) {
 
   // ── 1) 기체명 ──
   const msData = rd('data', 'msData.json');
+  // 위키 값으로 먼저 넣은 기체(additions)도 이름을 옮긴다 — 수동 사전에 안 넣으면 일본어로 남는다(2026-10-20)
+  require('./lib/dataset.js').mergeMsAdditions(ROOT, msData);
   const msDict = rd('data', 'i18n', 'ms.json');
   const msAuto = rdSafe('data', 'i18n', 'ms.auto.json');
   const staleMs = purgeStale(msAuto, v => String(v));

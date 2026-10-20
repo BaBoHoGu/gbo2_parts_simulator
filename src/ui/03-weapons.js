@@ -988,7 +988,7 @@
     const sCls = skillCls();
     // 무장에 붙는 파츠 보정 (집속·리로드·OH·피해 %·실드 HP).
     // 효과마다 걸리는 무장 범위가 달라 무장별로 다시 뽑아 쓴다.
-    const wm = D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1,
+    const wm = D.weaponModsOf(C.partsAt(state.equipped, state.lateMode), state.ms ? msLevel(state.ms) : 1,
       state.ms && state.ms.属性, state.expansion);
     // 오버로드류 스킬을 쓴 뒤 무장 OH 가 2배가 되는 기체인가 (기체당 한 번만 판정)
     const ohX2 = weaponOhX2Of(state.ms, state.ms ? msLevel(state.ms) : 1);
@@ -1677,5 +1677,5 @@
   }
 
   /** 현재 장착 기준 파츠 무장 보정 (상세 패널에서도 쓴다). */
-  const wm0 = () => D.weaponModsOf(state.equipped, state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性, state.expansion);
+  const wm0 = () => D.weaponModsOf(C.partsAt(state.equipped, state.lateMode), state.ms ? msLevel(state.ms) : 1, state.ms && state.ms.属性, state.expansion);
 

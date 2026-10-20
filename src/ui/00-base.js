@@ -217,6 +217,13 @@
        (ビーム撹乱シールド · 胸部ビーム撹乱フィールド — 메가 입자포를 모으는 동안만). */
     if (/発動中|使用中|モード中|効果中|動作中|集束中|ハイパーモード/.test(blob)) return '발동중';
     if (/能力UP|NT-D|覚醒/.test(blob)) return '발동중';   // 「NT-D」·「覚醒」 상태 한정 효과
+    /* 「무엇이 끝난/생긴 **뒤** 일정 시간」 — 그 일이 있어야 걸린다. 몰라서 '상시' 로 떨어져
+       カウンターブースト(카운터 공격 종료 후 30초 · 15기)의 사격 −20% · 격투 −15% 가 늘 걸린 것으로,
+       MFEガンディウムFGI複合材(경직 이상 리액션 발생 후 5초)의 −25% 도 상시로 잡혔다(2026-10-20 사용자 지적 · 전수 검수). */
+    if (/終了後|後の一定時間|リアクション(?:が)?発生(?:する|時)|のいずれかが発生すると/.test(blob)) return '발동후';
+    /* 「格闘兵装を装備している場合」 — 격투 무장을 **들고 있는 동안**. 시뮬레이터는 무엇을 들었는지 모르므로
+       조건부로 둔다(모르면 조건 있음). 白兵戦プログラム(ガンダム・端白星) 사격 −20% 가 상시로 샜다. */
+    if (/兵装を装備している場合|兵装装備中/.test(blob)) return '장비중';
     return '상시';
   }
 
@@ -480,7 +487,9 @@
   const STG_AXIS = {
     '정지중': 'act', '이동중': 'act', '격투중': 'act',
     '부위피격': 'part', '공중': 'air', '변형중': 'form',
-    'HP조건': 'hp', '발동중': 'buff'
+    'HP조건': 'hp', '발동중': 'buff',
+    // 2026-10-20 — 「끝난 뒤 일정 시간」 은 버프와 같은 축(효과가 걸려 있는 동안), 「무장을 든 동안」 은 따로
+    '발동후': 'buff', '장비중': 'equip'
   };
   const STG_CATS = [
     { key: '통상', conds: [] },
@@ -565,7 +574,8 @@
    *  오르는데 공격 지표만 그대로인 불일치가 났다(교육형 컴퓨터·화기관제·CP내장 등 5종).
    *  속성 한정(빔 전용 코넥팅 등)은 실탄·빔 중 한쪽만 오르므로 min 으로 자연히 빠진다. */
   function partAttackBonus(equipped, msLv) {
-    const mods = D.weaponModsOf(equipped, msLv, state.ms && state.ms.属性, state.expansion);
+    // 「4분 경과」 시점을 따른다(교육형 컴퓨터의 4분 뒤 값 — C.partsAt). 두 번 거쳐도 같다.
+    const mods = D.weaponModsOf(C.partsAt(equipped, state.lateMode), msLv, state.ms && state.ms.属性, state.expansion);
     return {
       shoot: Math.min(D.damagePctFor(mods, PROBE_SOLID, 'shoot'), D.damagePctFor(mods, PROBE_BEAM, 'shoot')),
       melee: D.damagePctFor(mods, PROBE_MELEE, 'melee')
@@ -583,7 +593,7 @@
     const attr = state.ms && state.ms.属性;
     const out = {};
     for (const p of allParts) {
-      const mods = D.weaponModsOf([p], lv, attr, state.expansion);
+      const mods = D.weaponModsOf([C.applyPartMode(p, state.lateMode)], lv, attr, state.expansion);
       const s = D.damagePctFor(mods, PROBE_SOLID, 'shoot');
       const b = D.damagePctFor(mods, PROBE_BEAM, 'shoot');
       const m = D.damagePctFor(mods, PROBE_MELEE, 'melee');
@@ -617,7 +627,7 @@
    */
   function damageCutsOf(equipped, opt = {}) {
     const lv = opt.lv != null ? opt.lv : (state.ms ? msLevel(state.ms) : 1);
-    const cuts = partDamageCuts(equipped, lv);
+    const cuts = partDamageCuts(C.partsAt(equipped, state.lateMode), lv);   // 「4분 경과」 시점(교육형)
     /* opt.form — 대결은 쪽마다 모드가 다르다. 안 넘기면 앱 화면의 state.form 을 따라가 버렸다(2026-10-15) */
     if (opt.skillMs) cuts.push(...boostBufferCuts(activeStaggerMods(opt.skillMs, lv, opt.skills, opt.form).cuts, equipped));
     if (opt.weapon) cuts.push(...conditionalPartCuts(equipped, opt.weapon));
@@ -1039,7 +1049,11 @@
     { re: /部位ダメージ量/, ko: '부위 피해량',
       why: '부위 파괴 쪽 값이라 기체 HP 피해에는 영향이 없습니다.' },
     { re: /状態異常の回復時間/, ko: '상태이상 회복 시간',
-      why: '상태이상의 시간 축은 다루지 않습니다.' }
+      why: '상태이상의 시간 축은 다루지 않습니다.' },
+    /* 교육형 컴퓨터[特防] — 4분 뒤 「자기가 경직 중일 때만」 받는 피해 −10% 추가(2026-10-20 판단).
+       상시 수치가 아니고, 대결에도 「경직 중인가」 상태가 없어 넣으면 늘 걸리거나 늘 안 걸리는 거짓이 된다. */
+    { re: /4分経過すると[、,]?\s*自機がよろけている場合/, ko: '4분 뒤 경직 중 피해 경감', partial: true,
+      why: '자기가 경직 중일 때만 걸리는 값이라 반영하지 않습니다. 「4분 경과」 를 켜도 기본 −10% 만 계산합니다.' }
   ];
 
   /** 이 파츠 설명에서 계산에 안 들어가는 효과들. 없으면 빈 배열. */

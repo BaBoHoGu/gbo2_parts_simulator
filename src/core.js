@@ -515,6 +515,25 @@ const MODE_PARTS = {
     label: '4분 경과',
     early: ['speed', 'turnPerformanceGround', 'turnPerformanceSpace', 'highSpeedMovement'],
     late: ['shoot', 'melee']
+  },
+  /* 교육형 컴퓨터 — 「4분 경과하면 효과가 상승」(2026-10-20). 원문 설명엔 상승 폭이 없고
+     위키 상세 페이지 備考 의 실측값이다: 기본 3→8% · [特射] 4→8%(주는·받는 둘 다, 사용자 확인) ·
+     [特格] 주는 5→8% · 받는 7→13%. 피해 % 파서(damage.js)와 경감 파서(partDamageCuts)는
+     **설명을 읽으므로** 4분 뒤에는 설명의 수치를 바꿔 넘긴다(lateDesc). 치환이 하나라도 안 걸리면
+     원문이 바뀐 것이라 edu_late_check 가 운다.
+     [特防] 의 4분 뒤 효과는 「자기가 경직 중일 때만」 이라 상시 수치가 아니다 — 넣지 않고
+     「계산 안 함」(UNMODELLED_FX)으로 밝힌다. */
+  '教育型コンピューター_LV1': {
+    label: '4분 경과', early: [], late: [],
+    lateDesc: [['ダメージを3%増加', 'ダメージを8%増加'], ['ダメージを3%軽減', 'ダメージを8%軽減']]
+  },
+  '教育型コンピューター[特射]_LV1': {
+    label: '4분 경과', early: [], late: [],
+    lateDesc: [['ダメージを4%増加', 'ダメージを8%増加'], ['ダメージを4%軽減', 'ダメージを8%軽減']]
+  },
+  '教育型コンピューター[特格]_LV1': {
+    label: '4분 경과', early: [], late: [],
+    lateDesc: [['ダメージを5%増加', 'ダメージを8%増加'], ['ダメージを7%軽減', 'ダメージを13%軽減']]
   }
 };
 
@@ -525,8 +544,17 @@ function applyPartMode(p, lateOn) {
   const drop = lateOn ? m.early : m.late;
   const q = { ...p };
   for (const k of drop) delete q[k];
+  if (lateOn && m.lateDesc) {
+    let d = String(q.description || '');
+    for (const [from, to] of m.lateDesc) d = d.split(from).join(to);
+    q.description = d;
+  }
   return q;
 }
+
+/** 장착 목록 전체를 지금 시점(초반 / 4분 뒤)의 사본으로. 피해 % · 경감을 읽는 곳은 이것을 거친다 —
+ *  스탯(calcStats)만 시점을 따르고 피해 쪽이 안 따르면, 교육형의 4분 뒤 값이 체크를 켜도 안 들어간다. */
+const partsAt = (equipped, lateOn) => (equipped || []).map(p => applyPartMode(p, lateOn));
 
 function calcStats(ms, equipped, stage, expansion, partsByCat, fullstDefs, expLevel, form, skill, weaponLv, lateMode) {
   if (!ms) {
@@ -874,7 +902,7 @@ function checkEquip(part, ms, equipped, slots) {
 /* ---------- 내보내기 ---------- */
 
 const GBO2Core = {
-  STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL, MODE_PARTS, applyPartMode, HIGHSPEED_EXCLUSIVE, SPEED_TURN_EXCLUSIVE, raisesHighSpeed,
+  STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL, MODE_PARTS, applyPartMode, partsAt, HIGHSPEED_EXCLUSIVE, SPEED_TURN_EXCLUSIVE, raisesHighSpeed,
   EXPANSION_SKILLS, EXPANSION_LABEL, EXPANSION_LEVELS, MAX_EXPANSION_LEVEL, MAX_PARTS,
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
