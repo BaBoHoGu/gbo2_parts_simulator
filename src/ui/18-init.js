@@ -800,6 +800,14 @@
      **두 줄(91px)** 이 됐다 — topbar_check 가 잡았다. 메뉴는 누를 때 선택자를 다시 찾으므로
      나중에 생기는 버튼도 여기 적어 두면 ⋯ 로 닿는다. */
   const MOBILE_FOLD = ['#compareBtn', '#galleryBtn', '#codexBtn', '#tokenBtn', '#planBtn', '#duelBtn'];
+  /** 「⋯」 메뉴에 들어갈 접힌 버튼인가 — 메뉴(openTopbarMenu)와 숫자 배지(fitTopbar)가 **같은 판정**을 쓴다.
+   *  예전엔 배지가 폭 0 만 봐서, 기체 선택 화면에서 뜻이 없어 숨은 「비교」(step-only)까지 세어
+   *  메뉴에는 없는 버튼 「1」 을 띄웠다(2026-10-20 사용자 질문). */
+  const isMenuFolded = sel => {
+    const b = $(sel);
+    if (!b || b.getBoundingClientRect().width !== 0) return false;
+    return !(document.body.classList.contains('view-select') && b.classList.contains('step-only'));
+  };
 
   /** 원본 버튼들을 항목으로 하는 메뉴를 연다. 이미 열려 있으면 닫는다. */
   function openTopbarMenu(anchor, selectors) {
@@ -870,10 +878,7 @@
        접혀 사라진 버튼을 찾는 사람이 「⋯」 를 열어 볼 이유를 준다. */
     const more = document.getElementById('topbarMore');
     if (more) {
-      const n = MOBILE_FOLD.filter(sel => {
-        const b = $(sel);
-        return b && b.getBoundingClientRect().width === 0;
-      }).length;
+      const n = MOBILE_FOLD.filter(isMenuFolded).length;
       more.dataset.folded = n ? String(n) : '';
       more.setAttribute('aria-label', n ? '더보기 — 접힌 버튼 ' + n + '개' : '더보기');
     }
@@ -905,10 +910,7 @@
          예전엔 「폰 폭이냐」로 전부냐 아니냐를 정했는데, 그러면 중간 폭(바가 두 줄로
          넘칠 만큼만 좁은 자리)에서 접힌 버튼이 메뉴에도 없어 **아무 데서도 못 누르는**
          버튼이 된다. 폭이 0 인지 직접 보는 쪽이 접힘 규칙과 어긋나지 않는다. */
-      const list = MOBILE_FOLD.filter(s => {
-        const b = $(s);
-        return b && b.getBoundingClientRect().width === 0;
-      }).concat(MORE_MENU);
+      const list = MOBILE_FOLD.filter(isMenuFolded).concat(MORE_MENU);
       openTopbarMenu(btn, list);
     };
     fitTopbar();

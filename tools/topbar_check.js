@@ -42,6 +42,24 @@ const MUST_REACH = ['#openAuto', '#duelBtn', '#compareBtn', '#save', '#share', '
     await pg.setViewport({ width: w, height: 950 });
     await pg.goto(URL, { waitUntil: 'load', timeout: 180000 });
     await sleep(3500);
+    /* 「⋯」 의 숫자 배지 = 메뉴에 실제로 들어간 접힌 버튼 수. 기체 선택 화면에서 뜻이 없어 숨은
+       「비교」(step-only)까지 세어 메뉴에 없는 「1」 을 띄웠다(2026-10-20 사용자 질문).
+       배지와 메뉴가 같은 판정(isMenuFolded)을 쓰는지 **두 화면 모두에서** 대조한다. */
+    const badgeVsMenu = () => pg.evaluate(async () => {
+      const more = document.querySelector('#topbarMore');
+      const badge = Number(more.dataset.folded || 0);
+      more.click();
+      await new Promise(r => setTimeout(r, 250));
+      const m = document.querySelector('.more-menu');
+      const items = m ? [...m.querySelectorAll('.pm-t')].map(x => x.textContent.trim()) : [];
+      if (m) m.remove();
+      const labels = ['#compareBtn', '#galleryBtn', '#codexBtn', '#tokenBtn', '#planBtn', '#duelBtn']
+        .map(s => (document.querySelector(s) || {}).textContent || '').map(t => t.trim()).filter(Boolean);
+      return { badge, inMenu: items.filter(t => labels.includes(t)) };
+    });
+    const bs = await badgeVsMenu();
+    ok(w + 'px 기체 선택 화면 — ⋯ 배지(' + bs.badge + ')가 메뉴 속 접힌 버튼 수와 같다',
+      bs.badge === bs.inMenu.length, bs);
     await pg.evaluate(() => {
       const i = document.querySelector('#msQuery');
       i.value = '건담 Ez8'; i.dispatchEvent(new Event('input', { bubbles: true }));
@@ -58,6 +76,9 @@ const MUST_REACH = ['#openAuto', '#duelBtn', '#compareBtn', '#save', '#share', '
     });
     // 한 줄이면 60px 을 안 넘는다(두 줄이면 90px 을 넘었다)
     ok(w + 'px 에서 상단바가 한 줄이다', bar.h <= 60, '높이 ' + bar.h + 'px · 버튼 ' + bar.n + '개');
+    const bb = await badgeVsMenu();
+    ok(w + 'px 파츠 화면 — ⋯ 배지(' + bb.badge + ')가 메뉴 속 접힌 버튼 수와 같다',
+      bb.badge === bb.inMenu.length, bb);
 
     if (w === 1500) {
       // 상단바에 보이거나, 두 메뉴 중 하나에 있어야 한다
