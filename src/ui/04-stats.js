@@ -512,17 +512,33 @@
         ctx.fillStyle = '#10151c'; ctx.textAlign = 'left'; ctx.fillText(bt, bx + 9, byy + 14);
       }
       ly += TH + 14;
-      const headTxt = '강화 ' + STAGE_LABEL[state.stage] + '    확장 ' + expLabel
-        + (formLabel ? '    ' + formLabel : '');
-      lt(headTxt, lx, ly + 4, fnt(12), CO.muted);
-      // 주무장 LV 를 낮춰 둔 채 카드를 내보내면, 받아 본 사람은 기체 LV 로 읽는다.
-      // 무장 위력만이 아니라 레벨링크 파츠가 기본값만 붙어 **성능 수치까지** 달라지므로
-      // 요약 카드에도 반드시 적어야 한다. 기본값(기체와 같음)일 때는 적지 않는다 —
-      // 늘 붙어 있으면 눈에 안 들어와 경고 구실을 못 한다.
-      if (wlvNote) {
-        lt(wlvNote, lx + textW(headTxt + '    ', fnt(12), 0), ly + 4, fnt(12, '700'), CO.accent);
+      /* 강화 · 확장 · 모드 · 주무장 LV — 조각마다 재서 **왼쪽 패널 폭 안에서** 줄을 바꾼다.
+         예전엔 한 줄로 그대로 그려, 긴 확장 스킬(「파츠확장[슬러스터] (방어/보조/특수 1개당 슬러·고속) LV5」)이
+         왼쪽 패널을 132px 넘어 오른쪽 성능표 위에 겹쳤다(2026-10-21 사용자 지적).
+         확장은 카드에선 짧은 이름만 쓴다 — 괄호 속은 우리가 붙인 해설이지 게임 표기가 아니다(저장 목록과 같은 꼴).
+         주무장 LV 를 낮춰 둔 채 카드를 내보내면, 받아 본 사람은 기체 LV 로 읽는다 — 레벨링크 파츠까지 달라지므로
+         요약 카드에도 반드시 적는다(기체와 같으면 안 적는다 — 늘 붙어 있으면 경고 구실을 못 한다). */
+      {
+        const expShortLb = state.expansion === C.EXPANSION_NONE ? '없음'
+          : (C.EXPANSION_LABEL[state.expansion] || state.expansion).replace(/\s*\(.*\)$/, '') + ' LV' + state.expLevel;
+        const pieces = [['강화 ' + STAGE_LABEL[state.stage], fnt(12), CO.muted], ['확장 ' + expShortLb, fnt(12), CO.muted]];
+        if (formLabel) pieces.push([formLabel, fnt(12), CO.muted]);
+        if (wlvNote) pieces.push([wlvNote, fnt(12, '700'), CO.accent]);
+        const GAPX = 20, LH = 17, maxW = lR - lx;
+        let hx = lx, lines = 1;
+        for (const [t, font, col] of pieces) {
+          // 조각 하나가 패널보다 길면 낱말 단위로 접는다(그래도 한 낱말이 길면 자른다)
+          const segs = wrapLines(ctx, t, font, maxW).map(s => clip(ctx, s, maxW, font));
+          segs.forEach((s, si) => {
+            ctx.font = font; const w = ctx.measureText(s).width;
+            if (hx > lx && (si > 0 || hx + w > lR)) { hx = lx; lines++; }
+            lt(s, hx, ly + 4 + (lines - 1) * LH, font, col);
+            hx += w + GAPX;
+          });
+        }
+        ly += 16 + (lines - 1) * LH;
       }
-      ly += 16; rule(ly, lx, lR); ly += 14;
+      rule(ly, lx, lR); ly += 14;
 
       // 파츠 슬롯 게이지 (근/중/원)
       lt('파츠 슬롯', lx, ly + 2, fnt(12, '700'), CO.muted); ly += 16;
@@ -613,43 +629,46 @@
 
       // 공격 지표 — 화면 성능표와 같은 '실효 보정'(보정에 피해% 를 접은 값).
       // 카드에 이 행이 아예 없어서, 파츠·스킬의 공격 % 효과가 이미지로는 보이지 않았다.
+      /* 지표 한 줄 — 항목(「내실탄 106,652 피해 −60%」)을 하나씩 **재서**, 오른쪽 패널을 넘으면 다음 줄로 내린다.
+         예전엔 재지 않고 이어 그려, 경감 태그가 붙으면 내구 지표 끝이 패널 밖으로 43~70px 나가 잘렸다
+         (2026-10-21 사용자 지적). 높이만 재는 1패스에서도 같은 폭으로 재야 줄 수가 맞는다 — 폰트를 걸고 잰다. */
+      const mw = (t, font) => { ctx.font = font; return ctx.measureText(t).width; };
+      const flowRow = (title, items) => {
+        lt(title, rxi, ry + 4, fnt(12, '700'), CO.muted);
+        const x0 = rxi + 78, LH = 20;
+        let x = x0, line = 0;
+        for (const pcs of items) {
+          const w = pcs.reduce((s, [t, f]) => s + mw(t, f) + 5, -5);
+          if (x > x0 && x + w > rR) { x = x0; line++; }
+          for (const [t, f, c] of pcs) { lt(t, x, ry + 4 + line * LH, f, c); x += mw(t, f) + 5; }
+          x += 9;
+        }
+        ry += 24 + line * LH;
+      };
+
+      // 공격 지표 — 화면 성능표와 같은 '실효 보정'(보정에 피해% 를 접은 값).
+      // 카드에 이 행이 아예 없어서, 파츠·스킬의 공격 % 효과가 이미지로는 보이지 않았다.
       {
         const ab = partAttackBonus(state.equipped, lv);
-        lt('공격 지표', rxi, ry + 4, fnt(12, '700'), CO.muted);
-        let ax = rxi + 78;
-        for (const [key, lb, corr] of [['shoot', '사격', r.total.shoot], ['melee', '격투', r.total.meleeCorrection]]) {
+        flowRow('공격 지표', [['shoot', '사격', r.total.shoot], ['melee', '격투', r.total.meleeCorrection]].map(([key, lb, corr]) => {
           const mult = (1 + ab[key] / 100) * skillDmgPctList(key).reduce((s2, q) => s2 * (1 + q / 100), 1);
           const pct = Math.round((mult - 1) * 100);
           const eff = Math.round(((1 + corr / 100) * (1 + pct / 100) - 1) * 100);
-          lt(lb, ax, ry + 4, fnt(12), CO.muted); ax += textW(lb, fnt(12), 26) + 5;
-          const v = eff.toLocaleString();
-          lt(v, ax, ry + 4, fnt(13, '700'), CO.info); ax += (draw ? ctx.measureText(v).width : 40) + 5;
-          if (pct !== 0) {
-            const tg = '피해 ' + (pct > 0 ? '+' : '') + pct + '%';
-            lt(tg, ax, ry + 4, fnt(11, '700'), pct < 0 ? CO.bad : CO.ok);
-            ax += (draw ? ctx.measureText(tg).width : 52) + 14;
-          } else ax += 14;
-        }
-        ry += 24;
+          const pcs = [[lb, fnt(12), CO.muted], [eff.toLocaleString(), fnt(13, '700'), CO.info]];
+          if (pct !== 0) pcs.push(['피해 ' + (pct > 0 ? '+' : '') + pct + '%', fnt(11, '700'), pct < 0 ? CO.bad : CO.ok]);
+          return pcs;
+        }));
       }
 
-      lt('내구 지표', rxi, ry + 4, fnt(12, '700'), CO.muted);
-      let dx = rxi + 78;
       // 화면과 같이 피해경감(파츠 % · 체크한 방어 스킬)을 실효 HP 에 접는다.
       // 이게 빠져 있어서 경감 파츠를 껴도 카드의 내구 지표가 경감 전 값으로 나갔다.
       const pngCuts = damageCutsOf(state.equipped, { lv, skillMs: m });
-      for (const [dattr, lb] of DURA_ATTRS) {
-        lt(lb, dx, ry + 4, fnt(12), CO.muted); dx += textW(lb, fnt(12), 30) + 5;
+      flowRow('내구 지표', DURA_ATTRS.map(([dattr, lb]) => {
         const cutPct = cutPctOf(pngCuts, dattr);
-        const v = enduranceOf(r.total, dattr, pngCuts).toLocaleString();
-        lt(v, dx, ry + 4, fnt(13, '700'), CO.info); dx += (draw ? ctx.measureText(v).width : 48) + 5;
-        if (cutPct) {
-          const tg = '피해 -' + cutPct + '%';
-          lt(tg, dx, ry + 4, fnt(11, '700'), CO.ok);
-          dx += (draw ? ctx.measureText(tg).width : 52) + 9;
-        } else dx += 13;
-      }
-      ry += 24;
+        const pcs = [[lb, fnt(12), CO.muted], [enduranceOf(r.total, dattr, pngCuts).toLocaleString(), fnt(13, '700'), CO.info]];
+        if (cutPct) pcs.push(['피해 -' + cutPct + '%', fnt(11, '700'), CO.ok]);
+        return pcs;
+      }));
       lt('누적치', rxi, ry + 4, fnt(12, '700'), CO.muted);
       lt('내성 ' + Math.round(stg.threshold / stg.mult) + '%    임계 ' + stg.threshold + '%'
         + (stg.mult < 1 ? '    받는 누적 ×' + (+stg.mult.toFixed(3)) : ''), rxi + 78, ry + 4, fnt(13), CO.text);
@@ -806,23 +825,36 @@
         dtext(wp.kind, cType, ry, vf, tc);
         // 피해 칸 — 화면 무장 표와 같이 「기본 (+파츠) (+스킬)」 로 쪼개 오른쪽 정렬로 쌓는다.
         // 조사·산탄·동시발사는 1발 값만으로는 세기를 못 재니 아래 줄에 전탄 합계를 적는다.
-        const dmgAt = (v, x, bold) => {
-          if (!v) { dtext('—', x, ry, vf, CO.dim, 'right'); return; }
+        /* 오른쪽 끝(x)에서 왼쪽으로 쌓는다 — **minLeft 를 넘지 않게.** 예전엔 한계가 없어 「기본 (+파츠) (+스킬)」 이
+           길면 왼쪽 칸(유형)의 글자 위로 올라갔다(2026-10-21 사용자 지적). 넘치면 다른 칸(dfit)처럼 글자를 한 단계씩
+           줄이고(최대 3단계), 그래도 남는 넘침은 cardFit.over 에 적어 cardfit_check 가 운다. */
+        const stack = (segs, x, y, minLeft) => {      // segs: [글자, px, 굵기, 색] — 오른쪽 것부터
+          const widthAt = k => segs.reduce((s, [t, px, w]) => { ctx.font = fnt(px - k, w); return s + ctx.measureText(t).width + 3; }, -3);
+          let k = 0;
+          while (k < 3 && x - widthAt(k) < minLeft) k++;
+          cardFit.over = Math.max(cardFit.over, Math.round(minLeft - (x - widthAt(k))));
+          if (k) cardFit.shrunk++;
           let rx = x;
-          const seg = (t, font, col) => { dtext(t, rx, ry, font, col, 'right'); ctx.font = font; rx -= ctx.measureText(t).width + 3; };
-          if (v.skillGain) seg('(' + (v.skillGain > 0 ? '+' : '') + v.skillGain.toLocaleString() + ')', fnt(10), skillCol);
-          if (v.gain) seg('(' + (v.gain > 0 ? '+' : '') + v.gain.toLocaleString() + ')', fnt(10), v.gain > 0 ? CO.ok : CO.bad);
-          seg(v.base.toLocaleString(), bold ? vfb : vf, CO.text);
+          for (const [t, px, w, col] of segs) { dtext(t, rx, y, fnt(px - k, w), col, 'right'); ctx.font = fnt(px - k, w); rx -= ctx.measureText(t).width + 3; }
+        };
+        const dmgAt = (v, x, bold, minLeft) => {
+          if (!v) { dtext('—', x, ry, vf, CO.dim, 'right'); return; }
+          const segs = [];
+          if (v.skillGain) segs.push(['(' + (v.skillGain > 0 ? '+' : '') + v.skillGain.toLocaleString() + ')', 10, '', skillCol]);
+          if (v.gain) segs.push(['(' + (v.gain > 0 ? '+' : '') + v.gain.toLocaleString() + ')', 10, '', v.gain > 0 ? CO.ok : CO.bad]);
+          segs.push([v.base.toLocaleString(), 12, bold ? '700' : '', CO.text]);
+          stack(segs, x, ry, minLeft);
           if (v.n > 1) {
-            let sx = x;
-            const sub = (t, col) => { dtext(t, sx, ry + 12, fnt(10), col, 'right'); ctx.font = fnt(10); sx -= ctx.measureText(t).width + 3; };
-            if (v.skillGain) sub('(' + (v.skillGain > 0 ? '+' : '') + (v.skillGain * v.n).toLocaleString() + ')', skillCol);
-            if (v.gain) sub('(' + (v.gain > 0 ? '+' : '') + (v.gain * v.n).toLocaleString() + ')', v.gain > 0 ? CO.ok : CO.bad);
-            sub('전탄 ' + (v.base * v.n).toLocaleString() + ' ×' + v.n, CO.muted);
+            const sub = [];
+            if (v.skillGain) sub.push(['(' + (v.skillGain > 0 ? '+' : '') + (v.skillGain * v.n).toLocaleString() + ')', 10, '', skillCol]);
+            if (v.gain) sub.push(['(' + (v.gain > 0 ? '+' : '') + (v.gain * v.n).toLocaleString() + ')', 10, '', v.gain > 0 ? CO.ok : CO.bad]);
+            sub.push(['전탄 ' + (v.base * v.n).toLocaleString() + ' ×' + v.n, 10, '', CO.muted]);
+            stack(sub, x, ry + 12, minLeft);
           }
         };
-        dmgAt(wp.nc, cNC, true);
-        dmgAt(wp.ch, cCH, false);
+        ctx.font = vf;
+        dmgAt(wp.nc, cNC, true, cType + ctx.measureText(wp.kind).width + 8);   // 유형 글자 뒤까지
+        dmgAt(wp.ch, cCH, false, cNC + 8);                                   // 논차지 칸 오른쪽 끝 뒤까지
         const dim = t => (t === '—' ? CO.dim : CO.muted);
         /* 누적치·사거리는 「비집속 (집속)」 꼴이 많다 — 「15% x2발 x2발 (25% x2발 x4발)」.
            한 줄에 안 들어가면 **괄호를 아랫줄로 내린다.** 아랫줄은 이 칸에서 비어 있고,
