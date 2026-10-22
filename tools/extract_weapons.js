@@ -362,10 +362,11 @@ if (!files.length) {
 // 그래야 페이지↔기체 매핑이 서서 무장이 추출된다.
 // 미러에 없어 손으로 넣은 기체·LV(msData.additions.json)도 함께 봐야 한다 —
 // 빼면 그 LV 가 names 에 안 들어가 무장이 안 붙는다 (ギラ・ズール（EH） LV3·LV4).
-let addData = [];
-try { addData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.additions.json'), 'utf8')); } catch { /* 없어도 됨 */ }
+/* 공용 병합(mergeMsAdditions)을 쓴다 — 같은 이름이 미러에 이미 있으면 건너뛴다. 예전엔 concat 으로 그냥 붙여,
+   마그나 마텔이 미러에 올라온 뒤 names 에 같은 이름이 두 번 들어갔다(2026-10-22). */
 const msData = require('./lib/msdata.js').applyWikiOverride(
-  JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')).concat(addData), ROOT);
+  JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.json'), 'utf8')), ROOT);
+require('./lib/dataset.js').mergeMsAdditions(ROOT, msData);
 const namesByPage = new Map();
 for (const m of msData) {
   const id = (String(m.wiki_url || '').match(/pages\/(\d+)\.html/) || [])[1];

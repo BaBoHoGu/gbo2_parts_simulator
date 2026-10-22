@@ -66,7 +66,9 @@ try { override = JSON.parse(fs.readFileSync(OVERRIDE, 'utf8')); } catch { /* 처
 // 주의: 아래 official 판정은 순수 미러(msData)로 해야 하므로 msData 는 건드리지 않는다.
 let addData = [];
 try { addData = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'msData.additions.json'), 'utf8')); } catch { /* 없어도 됨 */ }
-const msAll = msData.concat(addData);
+// 미러에 같은 이름이 생긴 것은 뺀다(mergeMsAdditions 와 같은 규칙) — 안 빼면 한 기체를 두 번 대조한다(마그나 마텔 2026-10-22)
+const inMirror = new Set(msData.map(m => m.MS名));
+const msAll = msData.concat(addData.filter(a => a && a.MS名 && !inMirror.has(a.MS名)));
 
 const byPage = new Map();
 for (const m of msAll) {
