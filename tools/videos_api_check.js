@@ -225,6 +225,21 @@ const call = (mod, env, ms) =>
     const j4 = await r4.json();
     ok('키가 없으면 off 로 답한다', j4.ok && j4.off === true && j4.videos.length === 0, j4);
 
+    /* ⑥-2 0개로 받아 둔 것은 7일 뒤 다시 받는다 — 신기체가 출시 직후 받혀 빈 결과가 30일 굳었다(밴디트, 2026-10-22).
+       결과가 있는 것은 30일 그대로(할당량). 세 경우를 따로 잰다. */
+    {
+      const day8 = Date.now() - 8 * 86400e3, day3 = Date.now() - 3 * 86400e3;
+      const cases = [['0개 · 8일 전 → 다시 받는다', 0, day8, true], ['0개 · 3일 전 → 받아 둔 것', 0, day3, false],
+        ['5개 · 8일 전 → 받아 둔 것(30일)', 5, day8, false]];
+      for (const [lb, n, at, refetch] of cases) {
+        const envX = { DB: fakeDB(), YT_API_KEY: 'dummy' };
+        envX.DB._videos.set('ドム', { data: '[]', n, at, diag: null });
+        const before = calls.length;
+        await call(mod, envX, 'ドム');
+        ok('빈 결과 재수신 — ' + lb, (calls.length > before) === refetch, { 추가호출: calls.length - before });
+      }
+    }
+
     // ⑦ 하루 한도 — 넘으면 유튜브를 안 부르고 busy 로 답한다
     const env2 = { DB: fakeDB(), YT_API_KEY: 'dummy' };
     const day = Math.floor((Date.now() - 8 * 3600e3) / 86400e3);

@@ -19,6 +19,10 @@ import { PATCHED } from '../lib/dict.js';
 
 /** 받아 둔 자료를 쓸 수 있는 기간. 유튜브 약관이 30일로 묶어 둔다 — 늘리면 안 된다. */
 const VIDEO_TTL = 30 * 86400e3;
+/** **0개로 받아 둔 것**은 7일 뒤 다시 받는다. 30일은 약관의 최대 기한이지 채워야 하는 기한이 아니다.
+    신기체는 영상이 생기기 전에 한 번 받히면 빈 결과가 30일 굳었다 — 밴디트가 출시 직후(10-15) 받혀
+    「영상이 없다」 가 이어졌다(2026-10-22 사용자 지적). 결과가 있는 것은 그대로 30일(할당량을 아낀다). */
+const EMPTY_TTL = 7 * 86400e3;
 /** 어디까지 거슬러 볼 것인가 (사용자 결정: 2년) */
 const WITHIN = 730 * 86400e3;
 /* 하루 한도는 **유닛으로 센다.** 기체 수로 세면 한 기체에 드는 값이 바뀔 때마다
@@ -196,8 +200,9 @@ export async function onRequestGet({ request, env }) {
   await ensureSchema(env);
   const now = Date.now();
 
-  const row = await env.DB.prepare('SELECT data, at, diag FROM videos WHERE ms = ?').bind(ms).first();
-  if (row && now - Number(row.at) < VIDEO_TTL) {
+  const row = await env.DB.prepare('SELECT data, at, diag, n FROM videos WHERE ms = ?').bind(ms).first();
+  const ttl = row && Number(row.n) === 0 ? EMPTY_TTL : VIDEO_TTL;
+  if (row && now - Number(row.at) < ttl) {
     return json({ ok: true, ms, cached: true, at: Number(row.at), videos: byNewest(JSON.parse(row.data)),
       ...(want.why && row.diag ? { diag: JSON.parse(row.diag) } : {}) });
   }

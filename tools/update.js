@@ -101,7 +101,7 @@ async function detectPatch(msList) {
 
   const added = remote.filter(m => !localByName.has(m.MS名));
   const removed = local.filter(m => !remoteNames.has(m.MS名));
-  const changed = [];
+  const changed = [], otherChanged = [];
   for (const m of remote) {
     const o = localByName.get(m.MS名);
     if (!o) continue;
@@ -109,6 +109,14 @@ async function detectPatch(msList) {
     // 강화리스트(fullst)만 리밸런싱돼도 감지되도록 함께 비교한다.
     if (JSON.stringify(m.fullst) !== JSON.stringify(o.fullst)) diff.push('fullst');
     if (diff.length) changed.push({ ms: m, diff });
+    /* 위 16칸 밖만 바뀐 것(카운터 · 필요 계급 · DP · 리사이클 티켓 · 레어도 …) — 예전엔 아무도 안 봐서 파일을
+       안 받았고, 옛값이 계속 남았다. 밴디트 카운터 「特殊」 가 gbo2.jp·위키는 「連続格闘」 인데 며칠째 그대로였고,
+       같은 식으로 17기가 옛값이었다(2026-10-22 검증). 스탯 변경과 섞지 않는다 — changed 는 위키 재수신에도 쓰인다. */
+    else {
+      const other = [...new Set([...Object.keys(m), ...Object.keys(o)])]
+        .filter(k => JSON.stringify(m[k]) !== JSON.stringify(o[k]));
+      if (other.length) otherChanged.push({ ms: m, diff: other });
+    }
   }
 
   // 2) 앱 번들(파츠·강화) 변경 확인 — 번들을 받아 임시 폴더에 추출하고 내용을 실제 대조한다
@@ -168,6 +176,11 @@ async function detectPatch(msList) {
     console.log(`     ~ ${c.ms.MS名}: ${parts.join(', ')}`);
   });
   if (changed.length > 20) console.log(`     … 외 ${changed.length - 20}건`);
+  if (otherChanged.length) {
+    console.log(`  기타 칸 변경  ${otherChanged.length}  (카운터 · 필요 계급 · DP 등 — 스탯 아님)`);
+    otherChanged.slice(0, 8).forEach(c => console.log(`     · ${c.ms.MS名}: ${c.diff.join(', ')}`));
+    if (otherChanged.length > 8) console.log(`     … 외 ${otherChanged.length - 8}건`);
+  }
   console.log(`  삭제  ${removed.length}` + (removed.length ? '  ' + removed.slice(0, 5).map(m => m.MS名).join(', ') : ''));
   console.log(`  파츠 변경  ${partsChanged ? '있음' : '없음'}`);
   console.log(`  밸런스 패치  ${patch.date || '(확인 실패)'}`
@@ -243,14 +256,14 @@ async function detectPatch(msList) {
     + ` (감시 ${Object.keys(watch).length}개 — data/wiki_watch.json)`);
   if (rollIds.length) console.log(`  · 캐시가 가장 오래된 ${rollIds.length}개도 돌아봅니다 (순회 — 전체 한 바퀴에 약 ${Math.ceil(baseByPage.size / ROLL)}번)`);
 
-  const nothing = !added.length && !changed.length && !removed.length && !partsChanged && !patchNew
+  const nothing = !added.length && !changed.length && !otherChanged.length && !removed.length && !partsChanged && !patchNew
     && !emptyUrlMechs.length && !staleMechs.length && !watchIds.length && !rollIds.length;
   if (nothing) { console.log('\n✔ 이미 최신 상태입니다.'); return; }
   if (CHECK_ONLY) { console.log('\n(--check: 감지만 하고 반영하지 않았습니다. 반영하려면 --check 없이 실행하세요.)'); return; }
 
   // 4) 반영 — 변경 종류에 따라 필요한 단계만 실행한다.
   console.log('\n■ 변경을 반영합니다…');
-  const msChanged = added.length || changed.length || removed.length;
+  const msChanged = added.length || changed.length || otherChanged.length || removed.length;
 
   // (a) 파츠·강화 (앱 번들이 바뀐 경우)
   if (partsChanged && fs.existsSync(path.join(REMOTE, 'app.js'))) {

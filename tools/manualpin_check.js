@@ -29,7 +29,10 @@ const byName = new Map(ms.map(m => [m.MS名, m]));
 const manual = rd('data', 'msData.manual.json') || {};
 const fix = manual.fix || {};
 
-const same = (a, b) => String(a == null ? '' : a) === String(b == null ? '' : b);
+/* 배열·객체(강화리스트 fullst)는 JSON 으로 맞춘다 — String() 으로 바꾸면 전부 「[object Object],…」 가 되어
+   **무엇이든 같다고** 판정한다(2026-10-22, 밴디트 강화리스트를 박다가 발견). */
+const str = v => v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+const same = (a, b) => str(a) === str(b);
 
 const moved = [], useless = [], missing = [];
 let cells = 0;
