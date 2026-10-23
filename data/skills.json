@@ -14807,5 +14807,38 @@
     }
    ]
   }
+ ],
+ "レコードブレイカー": [
+  {
+   "name": "試作型M・D・ユニット制御機構",
+   "nameKo": "프로토 타입 M · D · 유닛 제어기구",
+   "forever": false,
+   "secs": 20,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 1,
+     "dmgMelee": 10,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
  ]
 }

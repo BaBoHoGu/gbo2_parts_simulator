@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-21",
+ "updated": "2026-10-23",
  "seen": {
   "건담 <ruby>DX<rt>더블 엑스</rt></ruby>": {
    "firstSeen": "2026-08-29",
@@ -245,6 +245,13 @@
    "end": "2026-12-31",
    "consoleStart": "2026-10-15",
    "tokens": null
+  },
+  "레코드 브레이커": {
+   "firstSeen": "2026-10-23",
+   "start": "2026-12-24",
+   "end": "2026-12-31",
+   "consoleStart": "2026-10-22",
+   "tokens": 120
   }
  }
 }

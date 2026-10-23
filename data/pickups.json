@@ -1,6 +1,15 @@
 {
- "pickupsUpdated": "2026-10-21",
+ "pickupsUpdated": "2026-10-23",
  "pickups": [
+  {
+   "name": "레코드 브레이커",
+   "consoleStart": "2026-10-22",
+   "consoleEnd": "2026-10-29",
+   "start": "2026-12-24",
+   "end": "2026-12-31",
+   "tokens": 120,
+   "url": "https://bo2.ggame.jp/kr/info/?p=199726"
+  },
   {
    "name": "밴디트",
    "consoleStart": "2026-10-15",
@@ -191,15 +200,6 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=195244"
   },
   {
-   "name": "겔구그 R",
-   "consoleStart": "2026-08-20",
-   "consoleEnd": "2026-08-27",
-   "start": "2026-10-22",
-   "end": "2026-10-29",
-   "tokens": 120,
-   "url": "https://bo2.ggame.jp/kr/info/?p=194548"
-  },
-  {
    "name": "【8주년 대감사제】 제5탄",
    "consoleStart": "2026-08-20",
    "consoleEnd": "2026-08-27",
@@ -218,8 +218,29 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=194588"
   }
  ],
- "steamUpdated": "2026-10-22",
+ "steamUpdated": "2026-10-23",
  "steamNews": [
+  {
+   "name": "겔구그 R",
+   "start": "2026-10-22",
+   "end": "2026-10-29",
+   "tokens": 120,
+   "url": "https://store.steampowered.com/news/app/1367080/view/713416027239616575?l=koreana"
+  },
+  {
+   "name": "스사노오 LV1 & LV2",
+   "start": "2026-10-22",
+   "end": "2026-10-29",
+   "tokens": null,
+   "url": "https://store.steampowered.com/news/app/1367080/view/713416027239616575?l=koreana"
+  },
+  {
+   "name": "스사노오 LV2",
+   "start": "2026-10-22",
+   "end": "2026-10-29",
+   "tokens": 180,
+   "url": "https://store.steampowered.com/news/app/1367080/view/713416027239616575?l=koreana"
+  },
   {
    "name": "양산형 사이코 건담",
    "start": "2026-10-15",
