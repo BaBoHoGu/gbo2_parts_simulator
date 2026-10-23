@@ -1079,7 +1079,9 @@
   renderDataFresh();
   updateOwnedUi();        // 버튼 배지·모달 노트 초기화
   // 빌드 화면이 곧바로 채워지도록 기본 기체를 잡아두되, 시작 화면은 ① 기체 선택.
-  state.ms = msData.find(m => T.msName(m.MS名).startsWith('건담 ')) || msData[0];
+  // 원문 이름으로 찾는다 — 한국어 이름(「건담 …」)으로 찾으면 일본어 모드(사전이 빈다)에서 맨 첫 기체로 바뀐다
+  state.ms = msData.find(m => T.norm(m.MS名) === 'ガンダムEz8_LV1')
+    || msData.find(m => T.msName(m.MS名).startsWith('건담 ')) || msData[0];
   renderAll();
   setView('select');
 

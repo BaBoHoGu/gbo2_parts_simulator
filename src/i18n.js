@@ -109,7 +109,9 @@
   const alt = ks => ks.length ? new RegExp(ks.sort(byLen).map(esc).join('|'), 'g') : null;
   const WORDY = /^[가-힣A-Za-z0-9]/;      // 낱말로 시작하는 키(「MS전 복합확장」 · 「2단 집속」 도)
   const PH_RES = [alt(PH_KEYS.filter(k => WORDY.test(k))), alt(PH_KEYS.filter(k => !WORDY.test(k)))].filter(Boolean);
-  const PH1_RE = PH1_KEYS.length ? new RegExp('(?<![가-힣])(?:' + PH1_KEYS.map(esc).join('|') + ')(?![가-힣])', 'g') : null;
+  // 뒷보기((?<!…)) 대신 앞 글자를 잡아 되돌려 붙인다 — iOS 16.4 미만 Safari 는 뒷보기를 몰라 정규식을 만드는
+  // 순간 이 파일이 죽는다(한국어 모드에서도 만든다). 앞 글자는 소비해도 한글이 아니므로 다음 맞춤을 막지 않는다.
+  const PH1_RE = PH1_KEYS.length ? new RegExp('(^|[^가-힣])(' + PH1_KEYS.map(esc).join('|') + ')(?![가-힣])', 'g') : null;
   const PATS = (UI_JA.patterns || []).map(([re, to]) => { try { return [new RegExp(re), to]; } catch (e) { return null; } }).filter(Boolean);
   const jaCache = new Map();
   function jaText(s) {
@@ -122,7 +124,7 @@
       out = core;
       for (const [re, to] of PATS) if (re.test(out)) { out = out.replace(re, to); break; }
       for (const re of PH_RES) if (HANGUL.test(out)) out = out.replace(re, m => PH[m]);
-      if (HANGUL.test(out) && PH1_RE) out = out.replace(PH1_RE, m => PH[m]);
+      if (HANGUL.test(out) && PH1_RE) out = out.replace(PH1_RE, (m, pre, k) => pre + PH[k]);
     }
     out = lead + out + tail;
     if (jaCache.size > 20000) jaCache.clear();

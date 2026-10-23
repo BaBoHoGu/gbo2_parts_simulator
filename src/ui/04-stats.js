@@ -472,7 +472,15 @@
       const out = []; let line = '';
       for (const word of String(text).split(' ')) {
         const test = line ? line + ' ' + word : word;
-        if (ctx.measureText(test).width > maxW && line) { out.push(line); line = word; } else line = test;
+        if (ctx.measureText(test).width <= maxW) { line = test; continue; }
+        if (line) { out.push(line); line = ''; }
+        if (ctx.measureText(word).width <= maxW) { line = word; continue; }
+        /* 낱말 하나가 칸보다 길면 글자 단위로 끊는다 — 일본어 원문(파츠·스킬 이름)은 띄어쓰기가 없어
+           통째로 한 낱말이 되고, 그러면 줄을 못 나눠 「…」로 잘렸다(일본어 모드, 2026-10-24 버그 탐색). */
+        for (const ch of word) {
+          const t2 = line + ch;
+          if (ctx.measureText(t2).width > maxW && line) { out.push(line); line = ch; } else line = t2;
+        }
       }
       if (line) out.push(line);
       return out.length ? out : [''];

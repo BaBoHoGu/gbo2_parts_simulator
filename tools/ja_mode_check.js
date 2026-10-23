@@ -222,8 +222,15 @@ const ok = (label, cond, extra) => {
   ok('화면을 고루 들렀다 (15곳 이상)', res.out.length >= 15, { 들른곳: res.out.length });
   ok('화면마다 글자를 실제로 읽었다 (200자 이상)', res.out.every(s => s.chars < 200 ? false : true),
     res.out.filter(s => s.chars < 200).map(s => s.where + ' ' + s.chars + '자'));
-  /* 바닥만 막는다 — 남은 한글이 보이는 칸의 3% 를 넘으면 표가 크게 빠진 것이다(새 화면 · 추출 고장). */
-  ok('남은 한글이 보이는 칸의 3% 이하', total <= nodes * 0.03, { 남은칸: total, 전체칸: nodes });
+  /* 바닥만 막는다. 처음엔 3%(약 450칸)였는데 그러면 새 화면 하나쯤은 통째로 한국어여도 통과했다 —
+     지금 0칸이라 0.5% 로 조인다. 빠진 문구 자체는 아래 소스 검사가 한 건도 놓치지 않는다. */
+  ok('남은 한글이 보이는 칸의 0.5% 이하', total <= nodes * 0.005, { 남은칸: total, 전체칸: nodes });
+  /* 소스 기준 — 화면을 돌며 보는 것은 열어 본 화면뿐이다. 생성기에게 직접 묻는다(규칙을 여기 베끼지 않는다). */
+  const src = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'build_ui_ja.js'), '--check'], { encoding: 'utf8' });
+  let miss = null;
+  try { miss = JSON.parse(String(src.stdout).trim().split('\n').pop()).missing; } catch (e) { /* 아래에서 실패로 */ }
+  ok('소스의 한국어 문구가 번역 표에 다 있다 (node tools/build_ui_ja.js --todo=… 로 채울 것)',
+    src.status === 0 && Array.isArray(miss) && !miss.length, miss ? miss.slice(0, 10) : String(src.stdout).slice(-300));
   ok('?lang 없이 열면 한국어 모드 (일본어 모드가 새지 않는다)', ko.lang === 'ko' && ko.htmlLang !== 'ja' && ko.hangul > 200, ko);
   ok('일본어 모드에서 갤러리 올리기는 막히고 일본어로 알린다',
     res.upload && !res.upload.modal && /日本語モードではご利用いただけない/.test(res.upload.toast), res.upload);

@@ -167,6 +167,11 @@ const MEASURE = () => {
       const tb = tgt && tgt.getBoundingClientRect();
       if (tb && tb.width >= 24 && tb.height >= 24) continue;
     }
+    /* 하단 출처 링크는 WCAG 2.5.8 의 「문장 안의 링크」 예외다 — 「공식 사이트 · gbo2.jp · 위키 …」 처럼 글줄 안에
+       이어져 있어 크기가 그 줄 높이로 정해진다. 폰에서 두 줄로 접히면 줄 사이가 15px 이라 두 줄이 다 24px 를 가질
+       수 없고, 줄을 벌리면 하단 고지 높이 한도(foot_height_check, 운영자 결정)를 넘는다. 그동안은 이 검사가 클래스 없는
+       A 를 **처음 하나만** 재서 GitHub 링크만 보고 지나갔다 — 2026-10-24 그 링크를 지우자 드러났다. */
+    if (el.matches('.app-foot .foot-links a')) continue;
     /* 「?」 단추를 감싼 라벨은 그 단추와 같은 일을 한다 — 단추가 기준을 넘으면 된다. */
     if (el.matches('label') && !el.getAttribute('for') && el.querySelector('button')) continue;
     const cls2 = (el.id ? '#' + el.id : String(el.className || el.tagName)).slice(0, 40);

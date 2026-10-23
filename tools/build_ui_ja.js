@@ -2,6 +2,7 @@
 //   node tools/build_ui_ja.js                   개수와 아직 표에 없는 문구 수를 보인다
 //   node tools/build_ui_ja.js --todo=<파일>      표에 없는 문구를 {한국어: ""} JSON 으로 내보낸다(짧은 것부터)
 //   node tools/build_ui_ja.js --merge=<파일>     {한국어: 일본어} JSON 을 표에 보탠다(빈 값은 건너뛴다)
+//   node tools/build_ui_ja.js --check           표에 빠진 문구가 있으면 실패(ja_mode_check 가 부른다 · 표를 고치지 않는다)
 //
 // 왜 소스에서 뽑나 — 화면을 돌며 줍는 방식은 열어 보지 않은 상태·화면이 빠진다. 문자열은 소스에 다 있다.
 // 문자열이 + 로 이어지거나 템플릿 ${} 로 끊긴 조각은 조각째 뽑는다 — 화면 층(jaText)이 글자 안에서
@@ -73,6 +74,10 @@ const sources = [
   ['ui', readUi(ROOT)],
   ...['duel.js', 'token.js', 'share.js', 'core.js', 'damage.js', 'icons.js'].filter(f => fs.existsSync(path.join(ROOT, 'src', f))).map(f => [f, read('src', f)])
 ];
+// 서버(functions/)가 돌려주는 거절 메시지도 화면에 그대로 뜬다(「이미 올라온 구성입니다」 등) — 같이 뽑는다
+const walkJs = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(d =>
+  d.isDirectory() ? walkJs(path.join(dir, d.name)) : /\.js$/.test(d.name) ? [path.join(dir, d.name)] : []);
+for (const f of walkJs(path.join(ROOT, 'functions'))) if (!/[\\/]dict\.js$/.test(f)) sources.push([f, fs.readFileSync(f, 'utf8')]);
 const raw = [];
 for (const [, src] of sources) raw.push(...jsStrings(src));
 for (const f of ['index.html', 'token.body.html']) if (fs.existsSync(path.join(ROOT, 'src', f))) raw.push(...htmlStrings(read('src', f)));
@@ -95,6 +100,17 @@ const table = JSON.parse(fs.readFileSync(dest, 'utf8'));
 table.phrases = table.phrases || {};
 const todo = all.filter(s => !(s in table.phrases));
 console.log('한국어 조각 ' + all.length + '개 · 표에 있음 ' + (all.length - todo.length) + ' · 새로 옮길 것 ' + todo.length);
+/* 일부러 옮기지 않는 문구 — 한국어로 돌아가는 단추, 두 말을 같이 적은 칸, 추천 영상 진단(?why=1)의 내부 글자.
+   한 글자 조각(조사·단위)은 따로 센다: 글자 안에서 찾으면 낱말을 쪼개 표에 일부만 둔다. */
+const KEEP_KO = new Set(['한국어', '✓ 한국어', '🌐 언어 /', '화면 언어 · 表示言語',
+  '모름', '(키)', '이름→', '게임아님', 'u0000애매함']);
+const CHECK = process.argv.includes('--check');
+if (CHECK) {
+  // 검사용(ja_mode_check) — 표를 고치지 않고, 두 글자 이상인데 표에 없는 문구가 있으면 실패로 끝낸다
+  const missing = todo.filter(s => s.length > 1 && !KEEP_KO.has(s));
+  console.log(JSON.stringify({ total: all.length, missing }));
+  process.exit(missing.length ? 1 : 0);
+}
 const save = () => fs.writeFileSync(dest, JSON.stringify(table, null, 1) + '\n');
 if (arg('todo')) {
   const o = {};

@@ -14,7 +14,9 @@
     }
     const expansion = C.EXPANSION_SKILLS.includes(bld.expansion) ? bld.expansion : C.EXPANSION_NONE;
     const expLevel = Number(bld.expLevel) || C.MAX_EXPANSION_LEVEL;
-    const r = C.calcStats(ms, equipped, stage, expansion, partsByCat, fullst, expLevel, null, null);
+    // 「4분 경과」 시점을 따른다 — 아래 무장 피해(partsAt)도 같은 시점이다. 한쪽만 따르면
+    // 4분 뒤 피해 % 에 초반 보정을 곱한 값이 나온다(2026-10-24 버그 탐색).
+    const r = C.calcStats(ms, equipped, stage, expansion, partsByCat, fullst, expLevel, null, null, null, state.lateMode);
     // wanted: 저장된 파츠 수. equipped 보다 많으면 슬롯 초과·규칙 위반으로 빠진 것이 있다는 뜻
     // (불러오기와 달리 비교는 조용히 빠지면 "저장이 반영 안 됐다"로 보이므로 헤더에 알린다)
     return { ms, equipped, stage, expansion, expLevel, r, wanted: (bld.parts || []).length };

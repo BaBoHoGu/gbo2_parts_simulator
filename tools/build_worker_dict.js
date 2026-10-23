@@ -59,6 +59,8 @@ export const PAID = new Set(${JSON.stringify(paid)});
 `;
 const dst = path.join(ROOT, 'functions', 'lib', 'dict.js');
 fs.mkdirSync(path.dirname(dst), { recursive: true });
-fs.writeFileSync(dst, out, 'utf8');
+/* CRLF 로 쓴다 — 이 저장소는 core.autocrlf=true 라 작업본이 LF 면 내용이 같아도 git 이 「바뀜」 으로 본다.
+   배포마다 이 파일을 다시 쓰니 「코드 쪽에 커밋 안 된 변경」 경고가 늘 떠서 진짜 경고를 묻었다(2026-10-24). */
+fs.writeFileSync(dst, out.replace(/\r?\n/g, '\r\n'), 'utf8');
 console.log(`사전 생성 — 기체 ${msData.length} · 파츠 ${parts.length} · 확장 ${exp.length} · 과금 ${paid.length}`);
 console.log('→ ' + path.relative(ROOT, dst));

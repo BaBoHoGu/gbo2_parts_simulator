@@ -4080,9 +4080,10 @@ body.info-open .sel-info { display: flex; }
      「줄 사이가 넉넉하다」고 적었지만 틀렸다 — foot_height 가 전체 검사에 안 걸려 있어 몰랐다.
      폰에서만 나오는 짧은 고지 줄의 GitHub 링크가 바로 위에 붙는다. 둘 다 위아래로 넓히면
      겹친 곳을 아래 줄이 가져가 GitHub 이 15px 로 줄었다(a11y_check). 그래서 서로 **반대로** 넓힌다 —
-     GitHub 은 위로(그 위는 링크 없는 © 줄), 출처 링크는 아래로(그 아래는 안내문 바닥). */
-  .app-foot .foot-links a { display: inline-block; padding: 0 0 10px; margin: 0 0 -10px; }
-  .app-foot .foot-short a { display: inline-block; padding: 10px 0 0; margin: -10px 0 0; }
+     GitHub 은 위로(그 위는 링크 없는 © 줄), 출처 링크는 아래로(그 아래는 안내문 바닥).
+     2026-10-24 GitHub 링크를 지웠다. 위가 비었으니 위로 넓힌다 — 폰에서 두 줄로 접히면 윗줄은 아랫줄에 덮여 여전히
+     15px 인데, 줄을 벌리면 하단 높이 한도를 넘어 「문장 안의 링크」 예외로 둔다(a11y_check 주석). */
+  .app-foot .foot-links a { display: inline-block; padding: 10px 0 0; margin: -10px 0 0; }
   .hero-wiki { display: inline-block; padding: 3px 0; }   /* 2px 로는 23 — 한 칸 더 */
 }
 

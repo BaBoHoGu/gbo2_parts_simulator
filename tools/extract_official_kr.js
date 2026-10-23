@@ -104,16 +104,22 @@ const okName = s => s && s.length <= 34 && /[가-힣A-Za-z]/.test(s) && !NOT_NAM
     partSet.add(norm(ko));
   }
 
+  // 무장 사전과도 맞댄다. 예전엔 「~용 한 낱말」 로 끝나는 것만 무장으로 보고 건너뛰어서,
+  // 「실버 불릿 서프레서용 빔 매그넘」(용 뒤가 두 낱말)은 기체·파츠에서 못 찾아 늘 경고가 됐다(2026-10-24).
+  let WI = {}; try { WI = rd('data', 'i18n', 'weapons.json'); } catch { /* 없어도 됨 */ }
+  const weaponSet = new Set(Object.values(WI).map(norm));
+
   const miss = [];
-  let okMs = 0, okPart = 0, weapon = 0;
+  let okMs = 0, okPart = 0, okWeapon = 0, weapon = 0;
   for (const n of names) {
-    if (/용 [^ ]+$/.test(n)) { weapon++; continue; }        // 무장은 사전이 따로다
     const k = norm(n);
     if (msSet.has(k)) { okMs++; continue; }
     if (partSet.has(k)) { okPart++; continue; }
+    if (weaponSet.has(k)) { okWeapon++; continue; }
+    if (/용 [^ ]+$/.test(n)) { weapon++; continue; }        // 사전에 없는 무장 — 무장명은 규칙(weapon_terms)으로 만든다
     miss.push(n);
   }
-  console.log('  일치 — 기체 ' + okMs + ' · 파츠 ' + okPart + ' · 무장(대조 안 함) ' + weapon);
+  console.log('  일치 — 기체 ' + okMs + ' · 파츠 ' + okPart + ' · 무장 ' + okWeapon + ' · 무장(사전 밖, 대조 안 함) ' + weapon);
   if (!miss.length) { console.log('  공식과 다른 이름 없음.'); return; }
   // 파일에도 남긴다 — 이 로그는 갱신 파이프라인 한가운데서 나와 그대로 흘러가 버린다.
   // (실제로 「긴급 수복 모듈」 을 정확히 짚어 줬는데도 못 보고 배포가 나갔다)

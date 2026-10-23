@@ -27,6 +27,8 @@
   const C = window.GBO2Core, D = window.GBO2Damage, T = window.GBO2i18n;
   const G = window.GBO2_DATA, WP = window.GBO2_WEAPONS || {}, SK = window.GBO2_SKILLS || {};
   const IM = window.GBO2_IMAGES || {};
+  /** 검색어 — 히라가나를 가타카나로(「ざく」 → 「ザク」). 앱 쪽 matches 와 같은 규칙. */
+  const searchQ = v => String(v).trim().toLowerCase().replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
   const SKT = (window.GBO2_I18N && window.GBO2_I18N.skillText) || {};
   if (!C || !D || !T || !G) return;
 
@@ -529,7 +531,7 @@
       };
       const fill = () => {
         list.innerHTML = '';
-        const s = q.value.trim().toLowerCase();
+        const s = searchQ(q.value);
         let rows = [...byBase.entries()].map(([bn, arr]) => ({ bn, rep: pickOf(arr) })).filter(r => r.rep);
         if (mf.attr.size) rows = rows.filter(r => mf.attr.has(r.rep.属性));
         if (s) rows = rows.filter(r => (T.msName(r.rep.MS名) + ' ' + r.rep.MS名).toLowerCase().includes(s));
@@ -796,7 +798,7 @@
     const list = el('div', 'ds-plist'); list.dataset.keep = 'parts';
     const fill = () => {
       list.innerHTML = '';
-      const s = q.value.trim().toLowerCase();
+      const s = searchQ(q.value);
       const sl = slotsOf(side);
       for (const p of allParts) {
         if (side.pcat !== 'all' && p.category !== side.pcat) continue;

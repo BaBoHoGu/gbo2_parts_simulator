@@ -104,18 +104,24 @@ export async function onRequestPost({ request, env }) {
   // 방향을 바꾸면 오던 쪽 한 자리가 비고 가는 쪽이 한 자리를 쓴다. usedToday 는
   // 지금 놓여 있는 표를 세므로, 바꾸려는 표는 아직 반대쪽에 잡혀 있다 —
   // 그래서 가려는 쪽 수치를 그대로 견주면 맞다.
-  const used = await usedToday(env, kind, dev);
+  /* 한도를 **세는 것과 놓는 것을 질의 하나로** 한다. 예전엔 usedToday 로 센 뒤 따로 넣어, 한꺼번에 던진
+     요청이 모두 「아직 4개」 를 읽고 함께 지나갔다(2026-10-24 버그 탐색 — 올리기 1분 제한과 같은 꼴).
+     D1 은 쓰기를 한 줄로 세우므로, 문장 안의 COUNT 는 앞 요청이 넣은 표까지 본다. 한도면 넣지 않아 돌아오는 줄이 없다. */
   const key = dir > 0 ? 'up' : 'down';
-  if (used[key] >= LIMIT[key]) {
+  const since = dayOf() * 86400e3 - 9 * 3600e3;   // 오늘 0시(KST) — usedToday 와 같은 기준
+  const who = await whoOf(request, env);   // 남용 조사용. 화면에는 안 나온다.
+  const put = await env.DB.prepare(
+    `INSERT INTO votes (kind, target, dev, dir, who, at)
+       SELECT ?, ?, ?, ?, ?, ?
+        WHERE (SELECT COUNT(*) FROM votes
+                WHERE dev = ? AND kind = ? AND at >= ? AND (CASE WHEN dir > 0 THEN 1 ELSE -1 END) = ?) < ?
+       ON CONFLICT(kind, target, dev) DO UPDATE SET dir = excluded.dir, at = excluded.at
+     RETURNING dir`)
+    .bind(kind, target, dev, dir, who, Date.now(), dev, kind, since, dir > 0 ? 1 : -1, LIMIT[key]).first();
+  if (!put) {
     return bad('limit',
       (dir > 0 ? '추천' : '비추') + '은 하루 ' + LIMIT[key] + '번까지입니다 (자정에 되돌아옵니다)', 429);
   }
-
-  const who = await whoOf(request, env);   // 남용 조사용. 화면에는 안 나온다.
-  await env.DB.prepare(
-    `INSERT INTO votes (kind, target, dev, dir, who, at) VALUES (?,?,?,?,?,?)
-       ON CONFLICT(kind, target, dev) DO UPDATE SET dir = excluded.dir, at = excluded.at`)
-    .bind(kind, target, dev, dir, who, Date.now()).run();
 
   return json({ ok: true, kind, ...(await snapshot(env, kind, dev)) });
 }

@@ -69,6 +69,19 @@ const N = 20, MAX = 5;
     ok(MAX + '번까지만 비교된다', tried <= MAX, { 비교됨: tried, 상태: [...new Set(adm.map(r => r.status))] });
   }
 
+  /* 투표 하루 한도(추천 5) — 서로 다른 기체 10개에 한 기기로 동시에 추천한다. 예전엔 「센 다음 넣기」 라
+     10개가 모두 「아직 0개」 를 읽어 다 들어갔다(2026-10-24 버그 탐색). 기기 id 는 돌릴 때마다 새로. */
+  console.log('\n== 투표 하루 한도 (서로 다른 기체 10개를 동시에 추천) ==');
+  const DEV = 'race' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  const msNames = [...new Set(require('../data/msData.json').map(m => m.MS名.normalize('NFC').replace(/_LV\d+$/i, '')))].slice(0, 10);
+  const vs = await Promise.all(msNames.map(t =>
+    jf('/votes', { method: 'POST', headers: { 'X-GBO2-Device': DEV }, body: JSON.stringify({ kind: 'ms', target: t, dir: 1 }) })));
+  const placed = vs.filter(r => r.status === 200).length;
+  ok('추천은 5개까지만 들어간다', placed <= 5 && placed >= 1, { 들어감: placed, 상태: vs.map(r => r.status) });
+  ok('500 이 없다', vs.every(r => r.status < 500), vs.map(r => r.status));
+  const after = await jf('/votes?kind=ms', { headers: { 'X-GBO2-Device': DEV } });
+  ok('남은 추천 횟수가 음수가 아니다', after.json && after.json.left && after.json.left.up >= 0, after.json && after.json.left);
+
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
