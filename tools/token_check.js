@@ -247,8 +247,14 @@ const ok = (label, cond, extra) => {
       const a = P[i], b = P[j];
       if (!a.start || !a.end || !b.start || !b.end) continue;
       const as = t(a.start), ae = t(a.end), bs = t(b.start), be = t(b.end);
-      if ((bs > as && bs < ae) || (as > bs && as < be))
-        out.push(a.name + '(' + a.start + ') × ' + b.name + '(' + b.start + ')');
+      const mid = (s1, e1, s2, e2) => (s2 > s1 && s2 < e1) || (s1 > s2 && s1 < e2);
+      if (!mid(as, ae, bs, be)) continue;
+      /* **콘솔에서도 똑같이 겹쳤으면 정상**이다. 2주짜리 행사(【배틀 오퍼레이션 가을 축제】 MS, 콘솔 10-15~10-29)
+         기간에 매주 픽업(레코드 브레이커 10-22~)이 함께 열렸고, PC 예상은 그 일정을 그대로 옮긴 것이다
+         (2026-10-23 배포가 여기서 멈췄다). 잡으려는 것은 날짜를 잘못 읽어 **PC 쪽만** 겹치는 경우다. */
+      if (a.consoleStart && a.consoleEnd && b.consoleStart && b.consoleEnd
+        && mid(t(a.consoleStart), t(a.consoleEnd), t(b.consoleStart), t(b.consoleEnd))) continue;
+      out.push(a.name + '(' + a.start + ') × ' + b.name + '(' + b.start + ')');
     }
     return out;
   });
