@@ -1069,7 +1069,12 @@
     setTimeout(() => $('#uploadAuthor').focus(), 30);
   }
 
-  function uploadCurrent() { if (S) openUpload(true); }
+  /* 일본어 모드에서는 올리기를 막는다(2026-10-24 사용자 결정) — 서버의 제목·작성자·설명 검사가 한글·영숫자만
+     받아 일본어 글은 거절된다. 열어 놓고 거절하느니 처음부터 이용할 수 없다고 알린다. 둘러보기·가져오기는 된다. */
+  function uploadCurrent() {
+    if (JA) { toast('現在、日本語モードではご利用いただけない機能です。'); return; }
+    if (S) openUpload(true);
+  }
 
   async function uploadSubmit() {
     if (!S) return;

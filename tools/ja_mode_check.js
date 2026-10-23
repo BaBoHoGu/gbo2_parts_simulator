@@ -94,7 +94,14 @@ const ok = (label, cond, extra) => {
     if (document.body.classList.contains('info-open')) await click('#infoClose', 400);
     out.push(scan('기체 선택'));
 
-    await click('#galleryBtn', 1300); out.push(scan('갤러리')); await click('#galleryBack', 600);
+    await click('#galleryBtn', 1300); out.push(scan('갤러리'));
+    // 일본어 모드는 올리기를 막고 일본어로 알린다(서버가 일본어 글을 거절하므로)
+    await click('#galleryUpload', 500);
+    const upload = {
+      modal: !!document.querySelector('#uploadModal') && !document.querySelector('#uploadModal').hidden,
+      toast: (document.querySelector('#toast') || {}).textContent || ''
+    };
+    await click('#galleryBack', 600);
     await click('#tokenBtn', 1300);   out.push(scan('토큰'));   await click('#tokenBack', 600);
 
     await click('#codexBtn', 1000);
@@ -153,7 +160,7 @@ const ok = (label, cond, extra) => {
         out.push(scan('대결 · 무장 고른 뒤'));
       }
     }
-    return { out, lang, kept, left: [...left].sort((a, b) => b[1] - a[1]) };
+    return { out, lang, kept, upload, left: [...left].sort((a, b) => b[1] - a[1]) };
   });
 
   // 한국어 모드가 그대로인가 — 고른 말을 지우고 ?lang 없이 다시 연다
@@ -218,6 +225,8 @@ const ok = (label, cond, extra) => {
   /* 바닥만 막는다 — 남은 한글이 보이는 칸의 3% 를 넘으면 표가 크게 빠진 것이다(새 화면 · 추출 고장). */
   ok('남은 한글이 보이는 칸의 3% 이하', total <= nodes * 0.03, { 남은칸: total, 전체칸: nodes });
   ok('?lang 없이 열면 한국어 모드 (일본어 모드가 새지 않는다)', ko.lang === 'ko' && ko.htmlLang !== 'ja' && ko.hangul > 200, ko);
+  ok('일본어 모드에서 갤러리 올리기는 막히고 일본어로 알린다',
+    res.upload && !res.upload.modal && /日本語モードではご利用いただけない/.test(res.upload.toast), res.upload);
   ok('⋯ → 🌐 → 日本語 를 누르면 일본어로 바뀐다', toJa === 'ja', menu[0]);
   ok('⋯ → 🌐 → 한국어 를 누르면 한국어로 돌아온다', toKo === 'ko', menu[1]);
   ok('스크립트 오류 없음', errs.length === 0, [...new Set(errs)].join(' / '));
