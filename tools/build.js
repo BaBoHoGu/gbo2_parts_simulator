@@ -165,7 +165,8 @@ const i18n = {
   attr: misc.attr,
   kind: misc.kind,
   fullst: misc.fullst,             // 강화리스트 항목 이름
-  fullstEffect: misc.fullstEffect  // 강화리스트 효과 키
+  fullstEffect: misc.fullstEffect, // 강화리스트 효과 키
+  uiJa: autoJson('ui_ja.json')     // 일본어 모드의 화면 문구 표(ko→ja) — i18n.js 의 jaText 가 쓴다
 };
 
 // </script> 가 데이터 안에 들어가도 파서가 깨지지 않도록 이스케이프한다.

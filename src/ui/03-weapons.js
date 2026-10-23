@@ -15,13 +15,13 @@
    *  글자 사전은 射 를 発 과 똑같이 「발」로 옮겨 「x2발 x3발」이 됐다 — 두 수가 뭐가 다른지
    *  알 수 없었다(사용자 지적). 여기서만 「사격」으로 갈라 준다.
    *  탄/히트 칸의 「2射OH」·「2連射OH」는 OH 까지의 **발수**라 「발」이 맞으므로 건드리지 않는다. */
-  const staggerKo = s => jaUnits(String(s).replace(/([x×]\s*\d+)\s*射/g, '$1사격'));
+  const staggerKo = s => JA ? String(s) : jaUnits(String(s).replace(/([x×]\s*\d+)\s*射/g, '$1사격'));
 
   // 전각 괄호·중점은 그대로 두면 표에서 일본어처럼 보여 반각으로 맞춘다.
   const jaPunct = s => String(s)
     .replace(/（/g, '(').replace(/）/g, ')').replace(/・/g, '·').replace(/：/g, ':')
     .replace(/＋/g, '+').replace(/－/g, '-').replace(/％/g, '%').replace(/×/g, 'x');
-  const jaUnits = s => jaPunct(JA_UNIT.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s)));
+  const jaUnits = s => JA ? String(s) : jaPunct(JA_UNIT.reduce((t, [ja, ko]) => t.split(ja).join(ko), String(s)));
 
   /** 칩 안의 「/」에서 줄이 바뀌면 「180발/」+「분」, 「<통상시/」+「변형시>」가 된다.
    *  칩 전체를 nowrap 하면 50자짜리가 폰에서 넘치므로, 「/」 자리만 이음표로 묶는다.
@@ -1529,10 +1529,12 @@
       // 항목이 하나뿐이어도 칩으로 둔다. 예외를 두면 무장마다 생김새가 달라져
       // 「여기는 왜 다르지」가 된다. 한 항목짜리도 전부 짧은 불릿이다(중앙값 14자).
       const items = noteText(w.info['備考']).split(' / ').map(t => t.trim()).filter(Boolean);
+      // 일본어 모드는 원문 조각을 보인다 — 칩 색(noteChipCls)은 한국어 조각으로 정한다. 조각 수가 다르면 한국어 그대로(화면 층이 옮긴다)
+      const raws = JA ? String(w.info['備考']).split(/\s*\/\s*/).map(t => t.trim()).filter(Boolean) : [];
       if (items.length) {
         const wrap = el('div', 'wd-note-chips');
-        for (const t of items) {
-          const c = el('span', 'wd-chip' + noteChipCls(t), noKeepSlash(t));
+        for (const [k, t] of items.entries()) {
+          const c = el('span', 'wd-chip' + noteChipCls(t), noKeepSlash(raws.length === items.length ? raws[k] : t));
           ICON.prepend(c, chipIcon(t));
           wrap.append(c);
         }

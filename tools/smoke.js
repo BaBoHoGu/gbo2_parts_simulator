@@ -96,6 +96,8 @@ setTimeout(async () => {
   const walk = node => {
     if (node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE') return;
     if (node.nodeType === 3) {
+      // lang="ja" 로 표시한 글은 일부러 일본어다(언어 고르기의 「日本語」 · 「言語」)
+      if (node.parentElement && node.parentElement.closest('body [lang="ja"]')) return;
       if (kana.test(node.nodeValue)) leaks.push(node.nodeValue.trim().slice(0, 40));
       return;
     }

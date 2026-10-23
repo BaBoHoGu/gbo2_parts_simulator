@@ -5,6 +5,9 @@
   const C = window.GBO2Core;
   const O = window.GBO2Optimizer;
   const T = window.GBO2i18n;
+  /** 일본어 모드(?lang=ja · ⋯ → 언어). 원문을 한국어로 바꿔 보이던 칸(무장 단위 · 備考)은 원문을 그대로 보인다 —
+   *  한국어로 바꾼 것을 다시 일본어로 옮기면 원문과 다른 말이 된다(よろけ有 → 비틀 있음 → ?). 판정은 한국어 그대로. */
+  const JA = !!(T && T.lang === 'ja');
   const D = window.GBO2Damage;
   const weaponData = window.GBO2_WEAPONS || {};
   const skillData = window.GBO2_SKILLS || {};

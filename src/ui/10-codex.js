@@ -208,7 +208,9 @@
         it.append(lvs);
         /* 같은 스킬이 조건만 달라 여러 줄로 나온다(플랩 부스터 LV1 이 열두 줄).
            이름만 적으면 전부 같은 줄로 보이므로, 가르는 대목을 한 줄 붙인다. */
-        const short = e.why.replace(/\*\*/g, '').replace(/ — .*$/, '').replace(/합니다\.?$/, '');
+        // 일본어 모드는 문장째 옮긴 뒤 줄인다 — 줄인 꼴(「…계산」)은 문구 표에 없다
+        const short = JA ? T.jaText(e.why.replace(/\*\*/g, '')).replace(/ — .*$/, '')
+          : e.why.replace(/\*\*/g, '').replace(/ — .*$/, '').replace(/합니다\.?$/, '');
         it.append(el('div', 'unmod-line', short));
         it.append(el('div', 'codex-cnt', e.n + (e.kind === '파츠' ? '종' : '기')));
         it.onclick = () => { codexSel = key; $('#codex2col').classList.add('sel'); renderCodexList(); renderCodexPane(); };
@@ -625,17 +627,24 @@
     head.append(close);
     box.append(head);
 
-    for (const s of a.sections || []) {
+    /* 일본어 모드 — 공식 **일본어 공지**의 같은 자리 줄을 보인다(번역하지 않는다). 추출기가 섹션·행·줄 수와
+       숫자 나열이 다 맞을 때만 a.ja 를 담는다. 없으면 한국어 그대로. 위키 수치(fill)는 자리가 같아 그대로 붙는다. */
+    const J = JA && a.ja ? a.ja : null;
+    (a.sections || []).forEach((s, si) => {
+      const sj = J && J.sections[si];
       /* 변형·변신 서브섹션은 같은 기체의 다른 모드다 — 제목을 그대로 보여 준다. */
-      if (s.isSub) box.append(el('div', 'pn-sub', s.header));
-      for (const r of s.rows || []) {
+      if (s.isSub) box.append(el('div', 'pn-sub', sj ? sj.header : s.header));
+      (s.rows || []).forEach((r, ri) => {
+        const rj = sj && sj.rows[ri];
         const row = el('div', 'pn-row');
         const lb = el('div', 'pn-rl');
-        lb.append(el('span', 'pn-cat', r.category || '-'));
-        if (r.weapon) lb.append(el('span', 'pn-wp', r.weapon));
+        lb.append(el('span', 'pn-cat', (rj ? rj.category : r.category) || '-'));
+        const wp = rj ? rj.weapon : r.weapon;
+        if (wp) lb.append(el('span', 'pn-wp', wp));
         row.append(lb);
         const ch = el('div', 'pn-rc');
-        (r.changes || []).forEach((line, i) => {
+        (r.changes || []).forEach((kline, i) => {
+          const line = rj ? rj.changes[i] : kline;
           /* 【통상 사격】 같은 소제목은 글머리가 아니라 묶음 표시다 — 따로 보이게 한다. */
           const ln = el('div', /^[【[]/.test(line) ? 'pn-ln head' : 'pn-ln', line);
           /* 공식이 수치를 안 적은 줄에는 위키에서 찾은 값을 **따로 달아** 준다.
@@ -666,12 +675,13 @@
         });
         row.append(ch);
         box.append(row);
-      }
-    }
-    if ((a.intent || []).length) {
+      });
+    });
+    const intent = J && J.intent.length ? J.intent : (a.intent || []);
+    if (intent.length) {
       const d = el('details', 'pn-intent');
       d.append(el('summary', '', '조정 의도 (공식)'));
-      for (const line of a.intent) d.append(el('div', 'pn-ln', line));
+      for (const line of intent) d.append(el('div', 'pn-ln', line));
       box.append(d);
     }
 
@@ -679,24 +689,26 @@
     /* 참조 데이터 — 공식이 「왜 바꿨나」의 근거로 붙이는 전적.
        「조정 후」 행과 판정은 **한 달 뒤**(다음 밸런스 패치 때) 공식이 덧붙인다.
        아직 안 붙은 패치는 그 행이 없다 — 없는 것을 지어내지 않고 그대로 비워 둔다. */
-    if (a.ref && (a.ref.rows || []).length) {
+    const ref = J && J.ref ? J.ref : a.ref;
+    const AFTER = /조정\s*후|調整後/;
+    if (ref && (ref.rows || []).length) {
       const d = el('details', 'pn-ref');
       d.append(el('summary', '', '참조 데이터 (공식)'
-        + (a.ref.cost ? ' — COST ' + a.ref.cost : '')));
+        + (ref.cost ? ' — COST ' + ref.cost : '')));
       const t = el('table', 'pn-rt');
       const hr = el('tr');
       hr.append(el('th', '', ''));
-      for (const c of a.ref.cols || []) hr.append(el('th', '', c));
+      for (const c of ref.cols || []) hr.append(el('th', '', c));
       t.append(hr);
-      for (const r of a.ref.rows) {
+      for (const r of ref.rows) {
         const tr = el('tr');
-        if (/조정\s*후/.test(r.label)) tr.classList.add('after');
+        if (AFTER.test(r.label)) tr.classList.add('after');
         tr.append(el('th', '', r.label));
         for (const v of r.values) tr.append(el('td', '', v));
         t.append(tr);
       }
       d.append(t);
-      if (!a.ref.rows.some(r => /조정\s*후/.test(r.label)))
+      if (!ref.rows.some(r => AFTER.test(r.label)))
         d.append(el('div', 'pn-note', '※ 「조정 후」 전적은 다음 밸런스 패치 때 공식이 덧붙입니다.'));
       box.append(d);
     }
@@ -710,9 +722,10 @@
          공식 389개, 위키 423개(2026-10-10 실측). 옮기기 전에는 일본어라 접어 둘 수밖에 없었다. */
       d.append(el('summary', '', '상세 수치 — 위키 기록'));
       for (const w of a.wiki) {
-        const ln = el('div', 'pn-wl d' + Math.min(3, w.depth), w.ko || w.text);
+        // 일본어 모드는 위키 원문(일본어) 그대로
+        const ln = el('div', 'pn-wl d' + Math.min(3, w.depth), JA ? w.text : (w.ko || w.text));
         /* 원문을 숨기지 않는다 — 옮긴 말이 미덥지 않을 때 확인할 길이 있어야 한다. */
-        if (w.ko && w.ko !== w.text) ln.title = w.text;
+        if (!JA && w.ko && w.ko !== w.text) ln.title = w.text;
         if (w.buff === true) ln.classList.add('up');
         if (w.buff === false) ln.classList.add('down');
         d.append(ln);

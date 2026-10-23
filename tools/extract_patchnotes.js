@@ -103,6 +103,31 @@ async function findNotices(lang) {
   return [...seen.values()].sort((a, b) => b.date.localeCompare(a.date));
 }
 
+/** 한 기체의 한국어 공지(u)와 같은 순번의 일본어 공지(jp)를 자리째 맞댄다.
+ *  섹션 수 · 행 수 · 줄 수가 다 같고, 줄마다 **숫자 나열**까지 같아야 짝으로 본다 —
+ *  수만 같으면 밀린 자리가 우연히 통과한다(memory: jp-official-bridge). 아니면 null. */
+const digitsOf = s => (String(s).normalize('NFKC').match(/\d+(?:\.\d+)?/g) || []).join(',');
+function mirrorJa(u, jp) {
+  const ks = u.sections || [], js = jp.sections || [];
+  if (ks.length !== js.length) return null;
+  for (let i = 0; i < ks.length; i++) {
+    const kr = ks[i].rows || [], jr = js[i].rows || [];
+    if (kr.length !== jr.length) return null;
+    for (let j = 0; j < kr.length; j++) {
+      const kc = kr[j].changes || [], jc = jr[j].changes || [];
+      if (kc.length !== jc.length) return null;
+      for (let k = 0; k < kc.length; k++) if (digitsOf(kc[k]) !== digitsOf(jc[k])) return null;
+    }
+  }
+  const ref = u.ref && jp.ref && (jp.ref.rows || []).length === (u.ref.rows || []).length ? jp.ref : null;
+  return {
+    name: jp.name,
+    sections: js.map(s => ({ header: s.header, rows: (s.rows || []).map(r => ({ category: r.category, weapon: r.weapon, changes: r.changes })) })),
+    intent: jp.intent || [],
+    ...(ref ? { ref } : {})
+  };
+}
+
 /* ── 추가 기체의 **진짜 날짜** ───────────────────────────────────────
    우리 events 의 at 은 「업데이트를 돌린 날」이다 — 실측해 보니 위키가 적은 실제 날짜보다
    0~14 일 늦다(07-26 일요일, 08-31 월요일처럼 게임이 갱신하지 않는 요일에도 찍힌다).
@@ -183,6 +208,7 @@ function realAddDate(ms, ourDate) {
   let wikiHit = 0, wikiMiss = [];
   let fillOk = 0, fillTry = 0;
   let jpUsed = 0; const jpSkip = [];
+  let jaMirrored = 0; const jaOff = [];
   for (const a of notices) {
     const html = await fetchWikiUrl(BASE + 'info/?p=' + a.id);
     if (!html) { console.log('  ⚠ p=' + a.id + ' 를 받지 못했습니다.'); continue; }
@@ -219,7 +245,11 @@ function realAddDate(ms, ourDate) {
       }
       if (!f) f = FILL.fillSections(u.sections, wiki, jaToKo);
       fillOk += f.filled; fillTry += f.tried;
-      e.adjusted.push({ ko: u.name, ms: ja, sections: f.sections, intent: u.intent, ref: u.ref, wiki });
+      /* 일본어 모드(?lang=ja)가 보일 **공식 일본어 원문**을 같이 담는다 — 번역하지 않는다.
+         같은 자리(섹션·행·줄)로 짝지으므로 줄 수와 숫자 나열이 다 맞을 때만 담는다. 어긋나면 없다(화면은 한국어). */
+      const jaSide = jpUnit ? mirrorJa(u, jpUnit) : null;
+      if (jaSide) jaMirrored++; else if (jpUnit) jaOff.push(a.date + ' ' + u.name);
+      e.adjusted.push({ ko: u.name, ms: ja, sections: f.sections, intent: u.intent, ref: u.ref, wiki, ...(jaSide ? { ja: jaSide } : {}) });
     }
   }
 
@@ -283,6 +313,8 @@ function realAddDate(ms, ourDate) {
     + '  (' + (fillTry ? (fillOk / fillTry * 100).toFixed(1) : 0) + '%)');
   console.log('  그 가운데 일본어판을 거친 기체 ' + jpUsed + '기'
     + (jpSkip.length ? ' · 자리가 어긋나 한국어로 물러선 기체 ' + jpSkip.length + '기: ' + jpSkip.join(', ') : ''));
+  console.log('  일본어 원문을 같이 담은 기체 ' + jaMirrored + '기'
+    + (jaOff.length ? ' · 자리가 어긋나 못 담은 기체 ' + jaOff.length + '기: ' + jaOff.join(', ') : ''));
   console.log('  추가 기체 날짜 — 위키 날짜로 고친 것 ' + fixed + '건 · 우리 날짜를 그대로 쓴 것 ' + kept + '건');
   if (wikiMiss.length) console.log('  위키 수치를 못 찾은 기체 (앞 6): ' + wikiMiss.slice(0, 6).join(' | '));
   if (unmatched.length) {

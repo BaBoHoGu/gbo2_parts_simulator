@@ -65,6 +65,11 @@ ui · token.js · duel.js**. 빌드는 JS·CSS 의 주석·공백을 esbuild 로
 **번역 사전 `data/i18n/*.json` 은 생성물이다.** 손으로 고치지 말고 규칙을 고친다: 무장명은 `weapon_terms.json` + `node tools/build_weapon_i18n.js`,
 MT 앞단 용어 보호는 `tools/lib/glossary.js`. 수동 사전(`ms.json`·`parts.json`)이 자동(`*.auto.json`)을 이긴다. 공식 한국어 표기가 기준이다.
 
+**일본어 모드(`?lang=ja` · ⋯ → 🌐).** 데이터는 원문(일본어)이라 `i18n.js` 가 JA 일 때 한국어 사전을 비운다(weaponNote 는 판정용이라 남김).
+화면 문구는 그려진 글자를 `data/i18n/ui_ja.json` 표로 바꾼다(`jaText` + MutationObserver). 표는 **사람이 번역한 것** — 기계번역 금지,
+빠진 문구는 `node tools/build_ui_ja.js --todo=<f>` → 번역 → `--merge=<f>`. 원문을 한국어로 바꿔 보이던 칸(`jaUnits` 등)은 ui 의 `JA` 로 원문을 그대로 보인다.
+패치노트 본문은 공식 일본어 공지(`adjusted[].ja`, `extract_patchnotes` 의 `mirrorJa`). 검사 `ja_mode_check`. 새 화면 문구를 쓰면 표도 채운다.
+
 **사이트(Cloudflare Pages).** `wrangler.toml` 의 출력은 `dist/web`, 서버는 `functions/api/*`(공유 갤러리 `builds` · 추천 `votes` · 추천 영상 `videos`, D1 바인딩 `DB`).
 추천 영상의 고르기 값은 `functions/lib/videos.js` 의 `RULES` 한 곳, 진단은 `/api/videos?why=1&ms=…`(할당량 안 씀).
 `functions/lib/dict.js` 는 `tools/build_worker_dict.js` 의 생성물. 공유 구성은 `.github/workflows/backup-shared-builds.yml` 이 6시간마다 `share-backup/` 으로 뜬다.

@@ -452,6 +452,21 @@
 
     // 기본 파츠 설정 — 기본 제외 파츠 관리 (영구 저장, 우클릭과 동일 세트)
     $('#ownedBtn').onclick = () => openOwnedModal(true);
+    /* 화면 언어(2026-10-23) — 「⋯ → 언어」 를 누르면 한국어 / 日本語 를 고르는 작은 메뉴. 지금 언어에 ✓.
+       고르면 기억하고 새로 연다(i18n.setLang). */
+    {
+      const I = window.GBO2i18n, cur = I && I.lang === 'ja' ? 'ja' : 'ko';
+      const ko = $('#langKo'), ja = $('#langJa');
+      if (ko && ja) {
+        if (cur === 'ko') ko.textContent = '✓ 한국어'; else ja.textContent = '✓ 日本語';
+        ko.onclick = () => { if (cur !== 'ko') I.setLang('ko'); };
+        ja.onclick = () => { if (cur !== 'ja') I.setLang('ja'); };
+        $('#langBtn').onclick = () => {
+          const anchor = $('#topbarMore') || $('#langBtn');
+          setTimeout(() => openTopbarMenu(anchor, ['#langKo', '#langJa']), 0);   // 앞 메뉴가 닫힌 뒤에 연다
+        };
+      }
+    }
     $('#ownedModalClose').onclick = () => openOwnedModal(false);
     $('#ownedModalBack').onclick = () => openOwnedModal(false);
     $('#ownedQuery').oninput = () => renderOwnedList();
@@ -704,9 +719,17 @@
     if (typeof e.onclick !== 'function' || KBD_NATIVE.test(e.tagName)) return;
     if (e.hasAttribute('tabindex') || e.dataset.kbdPress || e.matches(KBD_SKIP)) return;
     const name = e.getAttribute('aria-label') || (e.title || '').split('\n')[0].trim()
-      || (e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      || (JA ? jaTextOf(e) : (e.textContent || '')).replace(/\s+/g, ' ').trim().slice(0, 60);
     kbdPressable(e, name);
     if (!e.hasAttribute('role')) e.setAttribute('role', 'button');
+  }
+  /** 일본어 모드 — 글자 마디를 하나씩 옮긴 뒤 잇는다. textContent 로 통째로 이으면 마디 경계가 사라져
+   *  (「2격」+「투」 → 「2격투」) 문구 표가 엉뚱한 자리를 맞춘다. */
+  function jaTextOf(e) {
+    const out = [];
+    const w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) { const t = n.nodeValue.trim(); if (t) out.push(T.jaText(t)); }
+    return out.join(' ');
   }
   function kbdAutoTree(root) {
     if (root.nodeType !== 1) return;
@@ -794,7 +817,7 @@
      `in-more` 는 좁은 화면에서만 접힌다(기존 규칙 그대로).
      어느 쪽이든 메뉴 항목이 원본을 click() 하므로 동작·비활성 상태가 한 벌이다. */
   const EXPORT_MENU = ['#save', '#share', '#pngBtn', '#uploadBtn'];
-  const MORE_MENU = ['#load', '#importBtn', '#ownedBtn', '#updateBtn', '#viewModeBtn'];
+  const MORE_MENU = ['#load', '#importBtn', '#ownedBtn', '#updateBtn', '#langBtn', '#viewModeBtn'];
   // 좁은 화면에서는 이것들도 「⋯」로 접는다 — 폰 상단바에 여덟 개는 못 선다
   /* #duelBtn 은 duel.js 가 뒤에 다는 버튼이다. 목록에 안 넣었더니 폰 상단바가
      **두 줄(91px)** 이 됐다 — topbar_check 가 잡았다. 메뉴는 누를 때 선택자를 다시 찾으므로

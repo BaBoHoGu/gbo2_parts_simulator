@@ -25,9 +25,9 @@ const THEAD_TH_RE = /<thead[\s\S]*?<th[^>]*>([\s\S]*?)<\/th>/i;
 const TD_RE = /<td\b([^>]*)>([\s\S]*?)(?=<\/td>|<td\b|<\/tr>|<\/table>|$)/gi;
 
 /** 본문이 아닌 표 — 참조데이터(COST·승률) */
-const REF_KEYWORDS = ['참조데이터', '참조 데이터', 'COST'];
-/** 본문이 아니지만 **따로 담는** 표 — 조정 의도 */
-const INTENT_PREFIXES = ['조정 의도', '조정의도'];
+const REF_KEYWORDS = ['참조데이터', '참조 데이터', 'COST', '参照データ'];
+/** 본문이 아니지만 **따로 담는** 표 — 조정 의도. 일본어판(일본어 모드가 보인다)은 「調整意図」 */
+const INTENT_PREFIXES = ['조정 의도', '조정의도', '調整意図'];
 const BULLET = ['・', '･', '•', '·', '【'];
 
 const unesc = s => String(s)
@@ -123,8 +123,8 @@ function parseRef(tableHtml) {
   if (!rows.length) return null;
   const drop = c => c.v === '–' || c.v === '-' || c.v === '—' || c.v === '';
   /* 첫 행은 머리글. 맨 앞의 「참조 데이터」(rowspan) 와 「COST」·「기체 LV」를 뗀 나머지가 칸 이름이다. */
-  const head = rows[0].filter(c => !/^참조\s*데이터$/.test(c.v)).filter(c => !drop(c)).map(c => c.v);
-  const cols = head.filter(c => c !== 'COST' && c !== '기체 LV');
+  const head = rows[0].filter(c => !/^(참조\s*데이터|参照データ)$/.test(c.v)).filter(c => !drop(c)).map(c => c.v);
+  const cols = head.filter(c => c !== 'COST' && !/^(기체 LV|機体\s*LV)$/.test(c));
   let cost = '';
   const out = [];
   for (const r of rows.slice(1)) {
