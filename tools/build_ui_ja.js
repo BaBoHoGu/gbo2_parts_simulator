@@ -2,7 +2,6 @@
 //   node tools/build_ui_ja.js                   개수와 아직 표에 없는 문구 수를 보인다
 //   node tools/build_ui_ja.js --todo=<파일>      표에 없는 문구를 {한국어: ""} JSON 으로 내보낸다(짧은 것부터)
 //   node tools/build_ui_ja.js --merge=<파일>     {한국어: 일본어} JSON 을 표에 보탠다(빈 값은 건너뛴다)
-//   node tools/build_ui_ja.js --prune           소스에서 사라진 문구를 표에서 뺀다
 //
 // 왜 소스에서 뽑나 — 화면을 돌며 줍는 방식은 열어 보지 않은 상태·화면이 빠진다. 문자열은 소스에 다 있다.
 // 문자열이 + 로 이어지거나 템플릿 ${} 로 끊긴 조각은 조각째 뽑는다 — 화면 층(jaText)이 글자 안에서
@@ -151,11 +150,6 @@ if (arg('merge')) {
   }
   if (n) { save(); console.log('머리·강조를 뗀 꼴 ' + n + '개'); }
 }
-if (process.argv.includes('--prune')) {
-  const keep = new Set(all);
-  let n = 0;
-  for (const k of Object.keys(table.phrases)) if (!keep.has(k)) { delete table.phrases[k]; n++; }
-  save();
-  console.log('뺌 ' + n);
-}
+// 소스에서 사라진 문구를 지우는 --prune 은 두지 않는다 — 화면에서 이어 붙어 생기는 꼴(「파츠확장[장갑]」 · 「히트당」)과
+// 머리를 뗀 꼴은 소스 문자열로는 안 보여, 지우면 일본어 모드에 한글이 새는데 아무도 모른다(2026-10-23 실제로 74개를 지웠다).
 
