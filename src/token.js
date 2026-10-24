@@ -409,15 +409,42 @@
      처럼 몇 주마다 되풀이되는 품목이 매번 걸린다. 그건 벗어난 게 아니라 원래 반복이다.
      사용자가 말한 것은 「벗어난 **기체**」이므로, 기체로 아는 이름만 본다.
      목록을 새로 만들지 않는다 — 두 곳에 같은 목록을 두면 언젠가 어긋난다. */
+  // 일본어 모드는 i18n.js 가 ms 를 비우고 원래 사전을 msKo 로 남긴다 — ms 만 보면 기체 목록이 비어 판정이 죽었다
+  const MS_KO = (window.GBO2_I18N && (window.GBO2_I18N.msKo || window.GBO2_I18N.ms)) || {};
   const MS_NAMES = (() => {
     const out = new Set();
-    const src = (window.GBO2_I18N && window.GBO2_I18N.ms) || {};
+    const src = MS_KO;
     for (const ja of Object.keys(src)) {
       const ko = src[ja];
       if (typeof ko === 'string' && ko) out.add(looseKey(ko));
     }
     return out;
   })();
+
+  /* ── 화면에 보일 픽업 이름 (일본어 모드) ──
+     픽업 이름은 한국 Steam 공지에서 온 한국어다. 일본어 화면의 문구 층이 그 안의 낱말만 바꿔 「캐논 ガンダム」 처럼
+     섞였다(2026-10-24 일괄 검사). 기체 이름이면 한국어 사전을 거꾸로 찾아 **원문(일본어)** 으로 바꾸고, 못 바꾸는
+     것(행사명 · 「【복각】」 등)은 한국어 그대로 두되 옮기지 말라고 표시한다 — HTML 은 lang="ko", 캔버스는 표시 글자.
+     판정(looseKey)은 늘 pickName(한국어)으로 한다 — 이 셋은 **보이는 곳에만** 쓴다. */
+  const TJ = window.GBO2i18n;
+  const JA_T = !!(TJ && TJ.lang === 'ja');
+  const nk = s => String(s).replace(/[\s·・]/g, '').replace(/［/g, '[').replace(/］/g, ']');
+  const KO2JA = (() => {
+    const m = new Map();
+    if (JA_T) for (const [ja, ko] of Object.entries(MS_KO)) if (typeof ko === 'string' && ko) m.set(nk(ko), ja);
+    return m;
+  })();
+  function dispName(s) {
+    const n = pickName(s);
+    if (!JA_T) return n;
+    const lv = n.match(/((?:\s*LV\s*\d+)(?:\s*&\s*LV\s*\d+)*)$/);    // 「스사노오 LV1 & LV2」 의 LV 꼬리
+    const base = lv ? n.slice(0, n.length - lv[1].length) : n;
+    const parts = base.split(/\s*&\s*/).map(x => KO2JA.get(nk(x)));  // 「카풀(CN) & 카풀」 처럼 둘인 것
+    return parts.length && parts.every(Boolean) ? parts.join(' & ') + (lv ? lv[1] : '') : n;
+  }
+  const koLeft = d => JA_T && /[가-힣]/.test(d);
+  const nameHtml = s => { const d = dispName(s); return koLeft(d) ? '<span lang="ko">' + esc(d) + '</span>' : esc(d); };
+  const canvasText = d => (koLeft(d) ? (TJ.KEEP_MARK || '') + d : d);
 
   /* 이력에서 「약속한 날이 지났는데 스팀에 안 나온 기체」를 찾는다.
    *
@@ -522,7 +549,7 @@
       const mech = isMech(p.name);
       rows += '<div class="fw-row">'
         + '<div class="fw-label' + (past ? ' past' : '') + (mech ? ' mech' : '') + '" title="'
-        + esc(pickName(p.name)) + '">' + esc(pickName(p.name)) + '</div>'
+        + esc(dispName(p.name)) + '"' + (koLeft(dispName(p.name)) ? ' lang="ko"' : '') + '>' + esc(dispName(p.name)) + '</div>'
         + '<div class="fw-track"><div class="fw-bar' + (past ? ' past' : '')
         + '" style="left:' + left.toFixed(3) + '%;width:' + Math.min(width, 100 - left).toFixed(3) + '%">'
         + (p.tokens != null ? '<span class="fw-tok">' + p.tokens + '</span>' : '')
@@ -587,7 +614,7 @@
     if (!off.length) return '';
     let h = '<div class="future-off"><b>⚠ 미래시에서 벗어난 기체 ' + off.length + '건</b>';
     for (const o of off) {
-      h += '<div class="future-off-row"><span class="fo-nm">' + esc(o.name) + '</span>'
+      h += '<div class="future-off-row"><span class="fo-nm">' + nameHtml(o.name) + '</span>'
         + '<span class="fo-d">' + (o.real
           ? '예상 ' + esc(o.want) + ' → 실제 <b>' + esc(o.real) + '</b>'
           : '예상 ' + esc(o.want) + ' 이 지났는데 스팀에 안 나왔습니다') + '</span>'
@@ -660,7 +687,7 @@
       let oy = y + 38;
       for (const o of off) {
         g.fillStyle = C.text; g.font = '700 13px ' + F;
-        g.fillText(o.name, PAD + 14, oy);
+        g.fillText(canvasText(dispName(o.name)), PAD + 14, oy);
         g.fillStyle = C.muted; g.font = '12px ' + F;
         g.fillText(o.real ? ('예상 ' + o.want + ' → 실제 ' + o.real)
           : ('예상 ' + o.want + ' 이 지났는데 스팀에 안 나왔습니다'), PAD + 14 + 160, oy);
@@ -719,7 +746,7 @@
         const mech = isMech(p.name);
         g.fillStyle = past ? C.dim : C.text;
         g.font = (mech && !past ? '700 ' : '') + '13px ' + F;
-        let nm = pickName(p.name);
+        let nm = canvasText(dispName(p.name));
         while (g.measureText(nm).width > LAB - 12 && nm.length > 4) nm = nm.slice(0, -2) + '…';
         g.fillText(nm, PAD, y + 15);
         g.fillStyle = past ? C.panel2 : 'rgba(255,201,60,.18)';
@@ -775,7 +802,7 @@
     body.innerHTML = ordered.map(({ p, i }) => {
       // url은 갱신된 저장본에만 있음 — 없으면 링크 없이 이름만 (구버전 데이터 호환)
       const safe = /^https?:\/\//.test(p.url || '') ? p.url : '';
-      const nameCell = safe ? `<a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${esc(pickName(p.name))}</a>` : esc(pickName(p.name));
+      const nameCell = safe ? `<a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${nameHtml(p.name)}</a>` : nameHtml(p.name);
       return `<tr>
       <td>${nameCell}</td>
       <td>${esc(p.start)} ~ ${esc(p.end)}${ddayBadge(p)}<div class="goal-eta">콘솔 개최 ${esc(p.consoleStart || '?')} · 추정</div></td>
@@ -793,7 +820,7 @@
       const safe = /^https?:\/\//.test(s.url || '') ? s.url : '#';
       const period = esc(s.start || '?') + (s.end ? ' ~ ' + esc(s.end) : '');
       return `<tr>
-        <td><a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${esc(pickName(s.name || s.title || ''))}</a></td>
+        <td><a href="${encodeURI(safe)}" target="_blank" rel="noopener noreferrer">${nameHtml(s.name || s.title || '')}</a></td>
         <td>${period}${ddayBadge(s)}</td>
         <td class="num">${(s.tokens != null) ? s.tokens : '-'}</td>
       </tr>`;
@@ -823,7 +850,7 @@
       const ok = proj >= p.tokens;
       const badge = ok ? '<span class="badge-ok">가능</span>' : `<span class="badge-no">${p.tokens - proj} 부족</span>`;
       return `<tr>
-        <td>${esc(pickName(p.name))}<div class="goal-eta">${p.from} · 예상 ${proj}</div></td>
+        <td>${nameHtml(p.name)}<div class="goal-eta">${p.from} · 예상 ${proj}</div></td>
         <td>${esc(p.start)}${ddayBadge(p)}</td>
         <td class="num">${p.tokens}</td>
         <td>${badge}</td>
@@ -870,7 +897,7 @@
     if (i === null) return;
     const p = PICKUPS[+i];
     resetGoalForm();
-    $('goalName').value = pickName(p.name);
+    $('goalName').value = dispName(p.name);
     $('goalStart').value = p.start;
     $('goalEnd').value = p.end;
     // 토큰 미확정 픽업이면 비움 (이전 클릭 값이 남아 잘못 저장되는 것 방지)
@@ -1015,6 +1042,7 @@
       .replace(/\s+/g, ' ')
       .trim();
   }
+
 
   /* ---------- 데이터 백업/복원 ---------- */
   $('exportBtn').addEventListener('click', () => {

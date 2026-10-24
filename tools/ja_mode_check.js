@@ -66,7 +66,7 @@ const ok = (label, cond, extra) => {
           if (!p || !shown(p)) return;
           nodes++; chars += t.length;
           // 사람이 쓴 글(갤러리 제목·작성자·설명)과 한국 Steam 공지에서 뽑은 픽업 이름은 옮기지 않는다 — 따로 센다
-          if (p.closest('.sc-name, .sc-author, .sc-desc') || (p.tagName === 'A' && p.closest('td'))) { if (HANGUL.test(t)) kept++; return; }
+          if (p.closest('.sc-name, .sc-author, .sc-desc') || p.closest('[lang="ko"]')) { if (HANGUL.test(t)) kept++; return; }
           one(t, String(p.className || p.tagName).slice(0, 26));
           return;
         }
@@ -102,7 +102,14 @@ const ok = (label, cond, extra) => {
       toast: (document.querySelector('#toast') || {}).textContent || ''
     };
     await click('#galleryBack', 600);
-    await click('#tokenBtn', 1300);   out.push(scan('토큰'));   await click('#tokenBack', 600);
+    await click('#tokenBtn', 1300);   out.push(scan('토큰'));
+    /* 토큰 계산기의 「이 픽업이 기체인가」 판정은 한국어 기체 사전을 쓴다. 일본어 모드가 그 사전을 비워
+       판정이 죽었었다(미래시 강조 0개 · 벗어난 기체 못 찾음 — 2026-10-24). 강조가 하나라도 있어야 산 것이다. */
+    await click('#pickView [data-v="chart"]', 800);       // 미래시 막대는 「막대」 보기에서만 그려진다
+    const tokenMech = document.querySelectorAll('.fw-label.mech').length;
+    const tokenMixed = [...document.querySelectorAll('.fw-label, td a, .fo-nm')].map(e => e.textContent.trim())
+      .filter(t => /[가-힣]/.test(t) && /[぀-ヿ]/.test(t));      // 한국어·가나가 섞인 이름(「캐논 ガンダム」)
+    await click('#tokenBack', 600);
 
     await click('#codexBtn', 1000);
     out.push(scan('스킬 도감'));
@@ -164,7 +171,7 @@ const ok = (label, cond, extra) => {
        자동 구성 프리셋(「격투 강습」 등)이 그렇게 한국어로 남았다(2026-10-24 사용자 제보). 문서 전체를 본다. */
     const optLeft = [...document.querySelectorAll('option')]
       .map(o => o.textContent.trim()).filter(t => HANGUL.test(t) && !OK_KO.test(t));
-    return { out, lang, kept, upload, optLeft, left: [...left].sort((a, b) => b[1] - a[1]) };
+    return { out, lang, kept, upload, optLeft, tokenMech, tokenMixed, left: [...left].sort((a, b) => b[1] - a[1]) };
   });
 
   // 한국어 모드가 그대로인가 — 고른 말을 지우고 ?lang 없이 다시 연다
@@ -236,6 +243,8 @@ const ok = (label, cond, extra) => {
   ok('소스의 한국어 문구가 번역 표에 다 있다 (node tools/build_ui_ja.js --todo=… 로 채울 것)',
     src.status === 0 && Array.isArray(miss) && !miss.length, miss ? miss.slice(0, 10) : String(src.stdout).slice(-300));
   ok('?lang 없이 열면 한국어 모드 (일본어 모드가 새지 않는다)', ko.lang === 'ko' && ko.htmlLang !== 'ja' && ko.hangul > 200, ko);
+  ok('토큰 계산기 — 일본어 모드에서도 기체 판정이 산다 (미래시 기체 강조 1개 이상)', res.tokenMech > 0, { 강조: res.tokenMech });
+  ok('토큰 계산기 — 한국어·일본어가 섞인 픽업 이름이 없다 (「캐논 ガンダム」)', res.tokenMixed && !res.tokenMixed.length, res.tokenMixed && res.tokenMixed.slice(0, 6));
   ok('선택 상자 항목(자동 구성 프리셋·확장 스킬 등)에 한글이 없다', res.optLeft && res.optLeft.length === 0 && true, res.optLeft && res.optLeft.slice(0, 10));
   ok('일본어 모드에서 갤러리 올리기는 막히고 일본어로 알린다',
     res.upload && !res.upload.modal && /日本語モードではご利用いただけない/.test(res.upload.toast), res.upload);

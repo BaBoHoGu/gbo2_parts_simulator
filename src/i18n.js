@@ -38,6 +38,9 @@
      보이는 備考 는 화면 쪽(ui/03-weapons.js 의 JA)이 원문으로 바꿔 끼운다. */
   const UI_JA = raw.uiJa || {};
   if (JA) {
+    /* 한국어 기체 사전은 따로 남긴다 — 토큰 계산기가 「이 픽업이 기체인가」 를 한국어 이름으로 판정하고(벗어난 기체·
+       미래시 강조), 한국 Steam 공지의 기체 이름을 원문으로 되돌리는 데도 쓴다. 비우기만 하면 둘 다 조용히 죽었다(2026-10-24). */
+    raw.msKo = raw.ms;
     for (const k of ['ms', 'parts', 'weapons', 'skillText', 'attr', 'kind', 'fullst', 'fullstEffect', 'terms']) raw[k] = {};
     const S = window.GBO2_SKILLS;
     if (S) for (const list of Object.values(S)) for (const s of (Array.isArray(list) ? list : [])) if (s && s.name) s.nameKo = s.name;
@@ -114,7 +117,11 @@
   const PH1_RE = PH1_KEYS.length ? new RegExp('(^|[^가-힣])(' + PH1_KEYS.map(esc).join('|') + ')(?![가-힣])', 'g') : null;
   const PATS = (UI_JA.patterns || []).map(([re, to]) => { try { return [new RegExp(re), to]; } catch (e) { return null; } }).filter(Boolean);
   const jaCache = new Map();
+  /* 옮기지 말 것 표시(U+2063, 보이지 않는 글자) — 캔버스처럼 lang="ko" 를 달 수 없는 자리에서 한국어 원문을
+     그대로 그리게 한다(토큰 계산기 이미지의 한국 Steam 픽업 이름). 표시는 떼고 돌려준다. */
+  const KEEP_MARK = '⁣';
   function jaText(s) {
+    if (JA && typeof s === 'string' && s.charCodeAt(0) === 0x2063) return s.slice(1);
     if (!JA || typeof s !== 'string' || !HANGUL.test(s)) return s;
     const hit = jaCache.get(s);
     if (hit !== undefined) return hit;
@@ -132,8 +139,11 @@
     return out;
   }
   const ATTRS = ['title', 'placeholder', 'aria-label', 'alt'];
+  // lang="ko" 로 표시한 곳은 한국어 원문이라 옮기지 않는다 — 반만 옮기면 「캐논 ガンダム」 처럼 섞인다
+  const keepKo = e => !!(e && e.closest && e.closest('[lang="ko"]'));
   function jaNode(n) {
     if (n.nodeType === 3) {
+      if (keepKo(n.parentElement)) return;
       const v = n.nodeValue;
       if (v && HANGUL.test(v)) { const t = jaText(v); if (t !== v) n.nodeValue = t; }
       return;
@@ -141,12 +151,14 @@
     if (n.nodeType !== 1) return;
     const tag = n.tagName;
     if (tag === 'SCRIPT' || tag === 'STYLE') return;
+    if (n.getAttribute('lang') === 'ko') return;
     for (const a of ATTRS) jaAttr(n, a);
     if (tag === 'INPUT' && (n.type === 'button' || n.type === 'submit') && HANGUL.test(n.value)) n.value = jaText(n.value);
     if (tag === 'TEXTAREA') return;      // 안의 글은 사용자가 쓴 것 — 안내(placeholder)만 옮긴다
     for (let c = n.firstChild; c; c = c.nextSibling) jaNode(c);
   }
   function jaAttr(n, a) {
+    if (keepKo(n)) return;
     const v = n.getAttribute && n.getAttribute(a);
     if (v && HANGUL.test(v)) { const t = jaText(v); if (t !== v) n.setAttribute(a, t); }
   }
@@ -180,5 +192,5 @@
   }
 
   window.GBO2i18n = { msName, partName, partDesc, kindName, attrName, weaponName, weaponTerms,
-    fullstName, fullstEffect, norm, lang: LANG, setLang, jaText };
+    fullstName, fullstEffect, norm, lang: LANG, setLang, jaText, KEEP_MARK };
 })();
