@@ -160,7 +160,11 @@ const ok = (label, cond, extra) => {
         out.push(scan('대결 · 무장 고른 뒤'));
       }
     }
-    return { out, lang, kept, upload, left: [...left].sort((a, b) => b[1] - a[1]) };
+    /* 선택 상자 항목 — 닫힌 <select> 의 <option> 은 그려지지 않아 위 화면 훑기에 안 걸린다.
+       자동 구성 프리셋(「격투 강습」 등)이 그렇게 한국어로 남았다(2026-10-24 사용자 제보). 문서 전체를 본다. */
+    const optLeft = [...document.querySelectorAll('option')]
+      .map(o => o.textContent.trim()).filter(t => HANGUL.test(t) && !OK_KO.test(t));
+    return { out, lang, kept, upload, optLeft, left: [...left].sort((a, b) => b[1] - a[1]) };
   });
 
   // 한국어 모드가 그대로인가 — 고른 말을 지우고 ?lang 없이 다시 연다
@@ -232,6 +236,7 @@ const ok = (label, cond, extra) => {
   ok('소스의 한국어 문구가 번역 표에 다 있다 (node tools/build_ui_ja.js --todo=… 로 채울 것)',
     src.status === 0 && Array.isArray(miss) && !miss.length, miss ? miss.slice(0, 10) : String(src.stdout).slice(-300));
   ok('?lang 없이 열면 한국어 모드 (일본어 모드가 새지 않는다)', ko.lang === 'ko' && ko.htmlLang !== 'ja' && ko.hangul > 200, ko);
+  ok('선택 상자 항목(자동 구성 프리셋·확장 스킬 등)에 한글이 없다', res.optLeft && res.optLeft.length === 0 && true, res.optLeft && res.optLeft.slice(0, 10));
   ok('일본어 모드에서 갤러리 올리기는 막히고 일본어로 알린다',
     res.upload && !res.upload.modal && /日本語モードではご利用いただけない/.test(res.upload.toast), res.upload);
   ok('⋯ → 🌐 → 日本語 를 누르면 일본어로 바뀐다', toJa === 'ja', menu[0]);

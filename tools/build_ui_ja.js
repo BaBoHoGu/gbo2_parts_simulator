@@ -72,7 +72,9 @@ function htmlStrings(src) {
 const read = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
 const sources = [
   ['ui', readUi(ROOT)],
-  ...['duel.js', 'token.js', 'share.js', 'core.js', 'damage.js', 'icons.js'].filter(f => fs.existsSync(path.join(ROOT, 'src', f))).map(f => [f, read('src', f)])
+  /* src/ 의 .js 를 **훑어** 담는다 — 손으로 적은 목록에 optimizer.js 가 빠져 자동 구성 프리셋(「격투 강습」 등)이
+     일본어 모드에서 한국어로 남았다(2026-10-24 사용자 제보). sw.js 는 화면 글이 없다. */
+  ...fs.readdirSync(path.join(ROOT, 'src')).filter(f => /\.js$/.test(f) && f !== 'sw.js').sort().map(f => [f, read('src', f)])
 ];
 // 서버(functions/)가 돌려주는 거절 메시지도 화면에 그대로 뜬다(「이미 올라온 구성입니다」 등) — 같이 뽑는다
 const walkJs = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(d =>
@@ -91,6 +93,7 @@ for (const r of raw) {
   for (let s of r.split(/<[^>]*>|^[^<]*>|<[^>]*$/)) {
     s = s.replace(/&[a-z]+;/g, e => ENT[e] || e).replace(/\s+/g, ' ').trim();
     if (!s || !HANGUL.test(s) || s.length > 400) continue;
+    if (/가-힣|\(\?[!=<:]/.test(s)) continue;     // 정규식 조각(i18n.js 의 한글 범위 등) — 화면 글이 아니다
     frags.add(s);
   }
 }
@@ -160,8 +163,10 @@ if (arg('merge')) {
   const put = (k, v) => { if (k && v && k !== v && HANGUL.test(k) && !HANGUL.test(v) && !(k in table.phrases)) { table.phrases[k] = v; n++; } };
   for (const [k, v] of Object.entries(table.phrases)) {
     if (!v) continue;
-    const m = k.match(/^([—·※‹]\s*)/);
-    if (m) { const vm = v.match(/^([—·※‹]\s*)/); put(k.slice(m[1].length).trim(), vm ? v.slice(vm[1].length).trim() : v); }
+    // 낱말이 아닌 머리(기호·그림 글자·괄호 등) 전부 — 「● 현재 구성 —」 의 ● 를 몰라 「● 현재 構成」 이 됐다(2026-10-24)
+    const HEAD = /^([^가-힣A-Za-z0-9぀-ヿ一-鿿]+)/;   // 가나·한자는 머리가 아니다(「ハイ・マニューバーアーマー(부여)」)
+    const m = k.match(HEAD);
+    if (m) { const vm = v.match(/^([^぀-ヿ一-鿿A-Za-z0-9０-９]+)/); put(k.slice(m[1].length).trim(), vm ? v.slice(vm[1].length).trim() : v); }
     if (k.includes('**')) put(k.split('**').join(''), v.split('**').join(''));
   }
   if (n) { save(); console.log('머리·강조를 뗀 꼴 ' + n + '개'); }
