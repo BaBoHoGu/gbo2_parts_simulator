@@ -769,6 +769,23 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   white-space: nowrap;
 }
 
+/* 첫 접속의 「불러오는 중」(index.html 의 #msList 안) — 목록이 그려지면 통째로 지워진다 */
+.ms-loading {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 48px 16px;
+  color: var(--muted); font-size: var(--fs-md);
+}
+.ms-spin {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--accent);
+  animation: ms-spin .8s linear infinite;
+}
+@keyframes ms-spin { to { transform: rotate(360deg); } }
+.ms-loading .ld-ja { display: none; }
+:root.lang-ja .ms-loading .ld-ja { display: inline; }
+:root.lang-ja .ms-loading .ld-ko { display: none; }
+
 .ms-grid {
   flex: 1;
   overflow-y: auto;

@@ -42,7 +42,9 @@ const DIST = path.join(ROOT, 'dist', 'gbo2-simulator.html');
       const st = getComputedStyle(s);
       if (st.display !== 'none' && r.width > 0 && r.height > 0) out.push(s.id);
     }
-    return { visible: out, bodyClass: document.body.className, docH: document.documentElement.scrollHeight };
+    const ld = document.querySelector('#msList .ms-loading');
+    return { visible: out, bodyClass: document.body.className, docH: document.documentElement.scrollHeight,
+      loading: ld && ld.getClientRects().length ? ld.innerText.trim() : null };
   });
 
   ok('body 가 처음부터 화면을 하나 정해 둔다', /view-\w+/.test(seen.bodyClass), { class: seen.bodyClass });
@@ -53,6 +55,19 @@ const DIST = path.join(ROOT, 'dist', 'gbo2-simulator.html');
   /* 쌓이면 문서가 세로로 길어진다 — 개수와 따로 재서, 한쪽이 거짓이어도 다른 쪽이 잡게 한다. */
   ok('문서가 한 화면 높이에서 크게 벗어나지 않는다', seen.docH < 915 * 3,
     { 높이: seen.docH, 한화면: 915 });
+
+  /* 「불러오는 중」 — 첫 접속에서 목록이 그려지기 전 몇 초 동안 목록 자리가 그냥 비어 「안 뜬다 → F5」 가 됐다
+     (2026-10-24 사용자 제보 · 느린 4G+폰 CPU 로 약 5초). JS 전에는 보이고, 목록이 그려지면 사라져야 한다. */
+  ok('JS 전에 목록 자리에 「불러오는 중」 이 보인다', !!seen.loading && /불러오는 중/.test(seen.loading), { 글: seen.loading });
+  const pg2 = await br.newPage();
+  await pg2.setViewport({ width: 412, height: 915, deviceScaleFactor: 1 });
+  await pg2.goto('file:///' + DIST.replace(/\\/g, '/').replace(/ /g, '%20'), { waitUntil: 'load', timeout: 120000 });
+  await new Promise(r => setTimeout(r, 1500));
+  const after = await pg2.evaluate(() => ({
+    loading: !!document.querySelector('.ms-loading'),
+    cards: document.querySelectorAll('#msList .ms-card').length
+  }));
+  ok('목록이 그려지면 「불러오는 중」 이 사라진다', !after.loading && after.cards > 0, after);
 
   await br.close();
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

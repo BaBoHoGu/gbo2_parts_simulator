@@ -7,6 +7,9 @@
 <!-- 탭 아이콘. 빌드가 assets/favicon.png 를 data URI 로 심는다 — 파일을 따로 두면
      사이트에서 /favicon.ico 404 가 나고, 오프라인 단일 파일에는 실을 곳이 없다. -->
 <link rel="icon" href="/*__FAVICON__*/">
+<!-- 화면 언어를 **맨 먼저** 표시한다 — 「불러오는 중」 문구가 데이터·코드(약 9MB)를 받기 전에 그려지는데,
+     i18n.js 는 그 뒤에 돈다. 일본어 모드에서 로딩 중에 한국어가 보이지 않게(규칙은 i18n.js 의 LANG 과 같다). -->
+<script>try { if (/[?&]lang=ja(?:&|$)/.test(location.search) || localStorage.getItem('gbo2.lang') === 'ja') document.documentElement.classList.add('lang-ja'); } catch (e) {}</script>
 <!-- CSS 층(@layer) — 세 파일을 통째로 app 층에 넣는다(CSS 10단계).
      안의 겨룸(순서·특이도·!important)은 그대로다 — 모두 같은 층이라서. 색·크기 토큰(:root)만 그 안의
      app.tokens 층으로 뗐다. 앞으로 「어떤 규칙보다 이겨야 하는 것」 은 특이도를 올리지 말고
@@ -113,7 +116,10 @@
       </span>
     </div>
   </div>
-    <div class="ms-grid" id="msList"></div>
+    <!-- 「불러오는 중」 — 첫 접속은 압축 0.9MB(풀면 9MB)를 받아 다 읽어야 목록이 그려진다. 느린 폰·망에서는
+         그 몇 초 동안 목록 자리가 그냥 비어 「안 뜬다 → F5」 가 됐다(F5 는 304 라 바로 뜬다, 2026-10-24 사용자 제보).
+         목록을 그리는 코드가 이 칸을 비우므로(innerHTML = '') 따로 지울 일은 없다. -->
+    <div class="ms-grid" id="msList"><div class="ms-loading" role="status"><span class="ms-spin" aria-hidden="true"></span><span class="ld-ko">기체 목록을 불러오는 중…</span><span class="ld-ja" lang="ja">機体一覧を読み込み中…</span></div></div>
     <!-- 기체 티어 — 투표(kind:'ms')로 매긴 순위. 위 필터·검색을 그대로 쓴다. -->
     <div class="tier-list" id="tierResults" hidden></div>
    </div>
