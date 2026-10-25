@@ -10,6 +10,77 @@
 <!-- 화면 언어를 **맨 먼저** 표시한다 — 「불러오는 중」 문구가 데이터·코드(약 9MB)를 받기 전에 그려지는데,
      i18n.js 는 그 뒤에 돈다. 일본어 모드에서 로딩 중에 한국어가 보이지 않게(규칙은 i18n.js 의 LANG 과 같다). -->
 <script>try { if (/[?&]lang=ja(?:&|$)/.test(location.search) || localStorage.getItem('gbo2.lang') === 'ja') document.documentElement.classList.add('lang-ja'); } catch (e) {}</script>
+<!-- 첫 로딩 감시(2026-10-26) — 모바일에서 「불러오는 중」 에 멈춘 채 끝나지 않고, 앱을 완전히 끄고 다시 열어야 뜨던 것.
+     9MB 한 장을 받다 연결이 오류 없이 멈추면(와이파이↔LTE 전환 등) 브라우저는 영원히 기다리고, 탭을 다시 열면 그 반쯤 받은
+     상태를 되살린다. 그래서 여기서 지켜본다:
+       · 받는 중인데 15초 동안 진척이 없으면 → 한 번은 저절로 새로 받는다(주소에 _r 를 붙여 보관본을 피한다). 그다음은 단추.
+       · 다 받았는데 앱이 4초 안에 시작을 못 하면(스크립트 오류) → 오류 글을 보여 주고 같은 처리.
+     앱은 시작을 마치면 window.GBO2_READY 를 세운다(ui/18-init.js). 그 뒤로는 아무 일도 하지 않는다.
+     ES5 로 쓴다 — 이것이 죽으면 지켜볼 것이 없다. -->
+<script>
+(function () {
+  var errs = [], lastP = -1, lastAt = Date.now(), parsedAt = 0, gave = false;
+  window.GBO2_BOOT_ERRORS = errs;
+  window.addEventListener('error', function (e) {
+    if (window.GBO2_READY) return;
+    var t = e && e.target, m = e && (e.message || (e.error && e.error.message));
+    if (!m && t && t.tagName === 'SCRIPT') m = 'script: ' + (t.src || '');      // 그림 실패는 모으지 않는다 — 원인을 가린다
+    if (m) errs.push(String(m).slice(0, 200));
+  }, true);
+  document.addEventListener('DOMContentLoaded', function () { parsedAt = Date.now(); });
+  var KEY = 'gbo2.bootRetry';
+  function fresh() {
+    var u = location.href.replace(/([?&])_r=\d+&?/, '$1').replace(/[?&]$/, '');
+    return u + (u.indexOf('?') < 0 ? '?' : '&') + '_r=' + Date.now();
+  }
+  function giveUp(why) {
+    if (gave) return; gave = true;
+    var tried = false;
+    try { tried = sessionStorage.getItem(KEY) === '1'; } catch (e) { tried = true; }
+    if (!tried) {
+      try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+      location.replace(fresh());
+      return;
+    }
+    var box = document.querySelector('#msList .ms-loading');
+    if (!box) return;
+    var ja = document.documentElement.className.indexOf('lang-ja') >= 0;
+    var msg = why === 'stall'
+      ? (ja ? '読み込みが止まりました。通信状態を確認して、もう一度お試しください。' : '불러오기가 멈췄습니다. 연결 상태를 확인하고 다시 불러와 주세요.')
+      : (ja ? '起動できませんでした。もう一度お試しください。' : '시작하지 못했습니다. 다시 불러와 주세요.');
+    box.innerHTML = '';
+    box.className += ' ms-load-fail';
+    box.setAttribute('lang', ja ? 'ja' : 'ko');
+    var p = document.createElement('div'); p.className = 'ms-load-msg'; p.textContent = msg; box.appendChild(p);
+    if (errs.length) { var d = document.createElement('div'); d.className = 'ms-load-err'; d.textContent = errs[0]; box.appendChild(d); }
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn-primary';
+    b.textContent = ja ? '再読み込み' : '다시 불러오기';
+    b.onclick = function () { location.replace(fresh()); };
+    box.appendChild(b);
+  }
+  /* 앱이 시작을 마치면 부른다(ui/18-init.js) — 그 자리에서 바로 감시를 끄고 주소의 _r 을 지운다 */
+  var iv = 0;
+  window.GBO2_bootDone = function () {
+    window.GBO2_READY = true;
+    clearInterval(iv);
+    try { sessionStorage.removeItem(KEY); } catch (e) {}
+    if (/[?&]_r=\d+/.test(location.search) && history.replaceState) {
+      try { history.replaceState(history.state, '', location.href.replace(/([?&])_r=\d+&?/, '$1').replace(/[?&]$/, '')); } catch (e) {}
+    }
+  };
+  iv = setInterval(function () {
+    if (window.GBO2_READY) { window.GBO2_bootDone(); return; }
+    var now = Date.now();
+    if (document.readyState === 'loading') {
+      // 진척 — 붙은 <script> 수와 마지막 것의 글자 수(받는 대로 자란다)
+      var s = document.scripts, n = s.length, last = n ? s[n - 1] : null;
+      var p = n * 1e9 + (last ? (last.text || '').length : 0);
+      if (p !== lastP) { lastP = p; lastAt = now; return; }
+      if (now - lastAt > 15000) { clearInterval(iv); giveUp('stall'); }
+    } else if (parsedAt && now - parsedAt > 4000) { clearInterval(iv); giveUp('error'); }
+  }, 1000);
+})();
+</script>
 <!-- CSS 층(@layer) — 세 파일을 통째로 app 층에 넣는다(CSS 10단계).
      안의 겨룸(순서·특이도·!important)은 그대로다 — 모두 같은 층이라서. 색·크기 토큰(:root)만 그 안의
      app.tokens 층으로 뗐다. 앞으로 「어떤 규칙보다 이겨야 하는 것」 은 특이도를 올리지 말고

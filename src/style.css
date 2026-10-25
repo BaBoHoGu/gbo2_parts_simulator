@@ -782,6 +782,9 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
   animation: ms-spin .8s linear infinite;
 }
 @keyframes ms-spin { to { transform: rotate(360deg); } }
+/* 멈췄을 때(index.html 머리의 감시) — 안내 · 오류 글 · 다시 불러오기 단추를 세로로 */
+.ms-loading.ms-load-fail { flex-direction: column; text-align: center; }
+.ms-load-err { font-size: var(--fs-sm); color: var(--text-faint); word-break: break-all; max-width: 520px; }
 .ms-loading .ld-ja { display: none; }
 :root.lang-ja .ms-loading .ld-ja { display: inline; }
 :root.lang-ja .ms-loading .ld-ko { display: none; }

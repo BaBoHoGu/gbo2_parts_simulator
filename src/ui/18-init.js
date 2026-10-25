@@ -1084,6 +1084,8 @@
     || msData.find(m => T.msName(m.MS名).startsWith('건담 ')) || msData[0];
   renderAll();
   setView('select');
+  // 첫 로딩 감시(index.html 머리)에게 「시작을 마쳤다」 — 이 줄에 못 닿으면 감시가 오류 글을 보여 준다
+  if (typeof window.GBO2_bootDone === 'function') window.GBO2_bootDone(); else window.GBO2_READY = true;
 
   /* 점검 도구용 최소 창구. 화면을 거치지 않고는 전 기체를 훑을 수 없는데,
      파서를 도구 쪽에 베껴 두면 앱과 조용히 갈라진다(09-08 교훈의 같은 부류).
