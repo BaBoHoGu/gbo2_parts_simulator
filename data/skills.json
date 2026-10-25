@@ -14833,7 +14833,7 @@
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 0,
+     "hispeed": 15,
      "thruster": 0,
      "turn": 0,
      "hpUp": 0

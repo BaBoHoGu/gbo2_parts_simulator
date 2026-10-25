@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-10-24",
+ "pickupsUpdated": "2026-10-26",
  "pickups": [
   {
    "name": "레코드 브레이커",
@@ -218,7 +218,7 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=194588"
   }
  ],
- "steamUpdated": "2026-10-24",
+ "steamUpdated": "2026-10-26",
  "steamNews": [
   {
    "name": "겔구그 R",
@@ -254,13 +254,6 @@
    "end": "2026-10-15",
    "tokens": 120,
    "url": "https://store.steampowered.com/news/app/1367080/view/698778060405605256?l=koreana"
-  },
-  {
-   "name": "제간[고기동 사양]",
-   "start": "2026-09-24",
-   "end": "2026-10-01",
-   "tokens": 75,
-   "url": "https://store.steampowered.com/news/app/1367080/view/699902693745886288?l=koreana"
   }
  ]
 }
