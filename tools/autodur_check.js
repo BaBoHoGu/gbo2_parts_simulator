@@ -69,7 +69,20 @@ ok('탱커 프리셋 12기 — 경감 파츠를 하나라도 고른다 (예전 0
 /* 몰아주기 — 예전엔 최대·최소 내성 차가 50 을 넘는 기체가 흔했다(17/16/70). 바닥만 막는다: 절반을 넘지 않는다. */
 ok('탱커 프리셋 12기 — 내성 차가 50 을 넘는 몰아주기가 절반을 넘지 않는다', spread.filter(d => d > 50).length <= 6, { 내성차: spread });
 
-// ④ 화면이 경감 표를 넘긴다 — 자동 구성과 「왜 이 파츠?」 기여도 둘 다(같은 자로 재야 한다)
+/* ④ 경감 표를 넘겨도 **더 좋은 구성을 놓치지 않는다** — 경감을 넣자 빔 탐색이 경감 파츠 쪽으로 끌려가
+   격투 강습 5/40기가 나빠졌다(Ex-S 건담 실효 HP −19.9%). 같은 점수로 매겨 「경감 없이 찾은 구성」 보다 낮으면 놓친 것이다. */
+const missed = [];
+for (const ms of [MS('Ex-Sガンダム_LV3'), ...sample].filter(Boolean)) {
+  const o = { stage: 6, expansion: C.EXPANSION_NONE, expLevel: 1, weights: { ...O.PRESETS['격투 강습'] }, restarts: 1 };
+  const cuts = cutsMapOf(ms);
+  const sc = O.makeScorer(ms, { ...o, partCuts: cuts }, byCat, fullst);
+  const withCuts = sc(O.optimize(ms, { ...o, partCuts: cuts }, byCat, fullst).parts).value;
+  const noCuts = sc(O.optimize(ms, o, byCat, fullst).parts).value;
+  if (noCuts > withCuts + 1e-9) missed.push(ms.MS名 + ' ' + withCuts.toFixed(3) + ' < ' + noCuts.toFixed(3));
+}
+ok('격투 강습 13기 — 경감 표를 넘겨 찾은 구성이 경감 없이 찾은 구성보다 (같은 점수로) 낮지 않다', !missed.length, missed);
+
+// ⑤ 화면이 경감 표를 넘긴다 — 자동 구성과 「왜 이 파츠?」 기여도 둘 다(같은 자로 재야 한다)
 const ui = readUi(ROOT);
 ok('화면의 자동 구성이 partCuts 를 넘긴다', /partCuts:\s*partCutsMap\(\)/.test(ui) && (ui.match(/partCuts:\s*partCutsMap\(\)/g) || []).length >= 2,
   { 횟수: (ui.match(/partCuts:\s*partCutsMap\(\)/g) || []).length });

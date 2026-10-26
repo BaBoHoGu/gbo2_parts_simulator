@@ -590,12 +590,28 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
     }
   }
 
-  for (let r = 0; r < restarts; r++) {
+  /* **경감 없이 찾은 구성을 출발점 하나로 더 쓴다.** 경감 파츠(partCuts)를 넣었더니 빔 탐색이
+     교육형[特防] 쪽으로 끌려가, 격투 강습 40기 중 5기가 옛 엔진보다 나쁜 구성을 냈다
+     (Ex-S 건담 실효 HP −19.9%, 옛 구성이 새 점수로도 더 높은데 못 찾음 — 2026-10-26 실측).
+     경감 없이 찾은 최적에서 출발해 같은 점수로 다듬으면 그 구성을 놓치지 않는다(최저 −1.1%, 놓침 0).
+     값은 엔진 한 번 더 — 내구 가중이 있을 때만 치른다(내구를 안 보면 경감이 점수에 안 닿는다).
+     cutFallback:false 로 끌 수 있다 — 화면의 확장 고르기 스캔은 끈다(스캔이 호출의 대부분이라 켜면 자동 구성이 약 1.4배). */
+  let altStart = null;
+  if (opts.partCuts && opts.cutFallback !== false && DEF_WEIGHTS.reduce((s, k) => s + (Number((opts.weights || {})[k]) || 0), 0) > 0) {
+    const alt = optimize(ms, { ...opts, partCuts: null, restarts: 1, onProgress: null }, partsByCat, fullstDefs);
+    evaluations += alt.evaluations || 0;
+    if (alt.parts && alt.parts.length) altStart = alt.parts;
+  }
+  const runs = restarts + (altStart ? 1 : 0);
+
+  for (let r = 0; r < runs; r++) {
     // --- 초기해 ---
     // 목표(하한/상한)가 있으면 앞쪽 재시작은 '충족 우선 구성'에서 출발해 좁은 실현영역을 잡는다.
     // 나머지 재시작은 무작위로 채워 다양성을 준다.
     let cur;
-    if (r === 0 && beamStart) {
+    if (altStart && r === restarts) {
+      cur = altStart.slice();
+    } else if (r === 0 && beamStart) {
       // 첫 판은 빔 서치가 찾아 둔 곳에서 시작해 국소탐색으로 다듬는다
       cur = beamStart.slice();
     } else if (hasTargets && r < Math.max(2, Math.ceil(restarts / 3))) {
@@ -670,7 +686,7 @@ function optimize(ms, opts, partsByCat, fullstDefs) {
     }
 
     if (!best || curScore.value > best.score.value) best = { set: cur, score: curScore };
-    if (opts.onProgress) opts.onProgress((r + 1) / restarts);
+    if (opts.onProgress) opts.onProgress((r + 1) / runs);
   }
 
   if (!best) return { parts: [], stats: null, score: 0, feasible: false, evaluations, droppedLocks };

@@ -180,8 +180,15 @@
     const total = objectives.length * (1 + perExps.length + optRounds);
     let evals = 0, step = 0;
     const cands = [];
+    /* 같은 조건은 한 번만 돌린다. restarts:1 이면 씨앗은 결과를 안 바꾼다(무작위는 두 번째 재시작부터 쓰인다) —
+       본 탐색 optRounds 번이 같은 구성을 되풀이해, 자동 구성 한 번 엔진 30회 중 9회가 중복이었다(2026-10-26 실측). */
+    const memo = new Map();
     const opt = (weights, exp, seed, iters) => {
-      const r = O.optimize(state.ms, { ...opts, weights, expansion: exp, expLevel, seed, iters }, partsByCat, fullst);
+      const mk = JSON.stringify([weights, exp, iters || 0, opts.restarts === 1 ? 0 : seed]);
+      if (memo.has(mk)) return memo.get(mk);
+      /* 확장 고르기 스캔(iters 를 준 것)은 「경감 없이 찾은 출발점」(optimizer cutFallback)을 끈다 —
+         스캔은 확장만 고르고 후보로는 안 나가는데, 호출 21회 중 18회라 켜 두면 자동 구성이 6.5초 → 9.3초(실측). */
+      const r = O.optimize(state.ms, { ...opts, weights, expansion: exp, expLevel, seed, iters, cutFallback: !iters }, partsByCat, fullst);
       evals += r.evaluations || 0;
       // usedWeights: '왜 이 파츠?' 기여도 계산에 그 후보를 만든 가중치를 쓴다.
       // usedOpts: 기여도를 **점수와 똑같은 자**로 재려고 그 후보를 만든 설정을 그대로 들고 간다
@@ -191,6 +198,7 @@
         r.usedOpts = { ...opts, weights, expansion: exp, expLevel };
         r.abs = absScore(r.stats.total, weights);
       }
+      memo.set(mk, r);
       return r;
     };
     const yieldMaybe = async () => { bar.style.width = (++step / total * 100) + '%'; if (step % 3 === 0) await nextFrame(); };
@@ -222,7 +230,7 @@
       const results = [];
       for (let i = 0; i < optRounds; i++) {
         const r = opt(obj.weights, exp, (i + 3) * 7919);
-        if (r.parts.length || r.feasible) results.push(r);
+        if ((r.parts.length || r.feasible) && !results.includes(r)) results.push(r);
         await yieldMaybe();
       }
       // 각 목표(축)의 최고 후보에 라벨을 달아 대표 빌드로 보이게 하고, 변형 몇 개를 함께 담는다.
