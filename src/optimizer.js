@@ -7,7 +7,7 @@
  * ------------------------------------------------------------------ */
 
 const { STAT_KEYS, MAX_PARTS, EXPANSION_NONE, calcSlots, calcStats, conflictsWithMovement, categoryRestricted, effectConflict,
-  durabilityOf, boostSecFrom } =
+  durabilityOf, boostSecFrom, staggerDmgFactor } =
   (typeof require !== 'undefined' && typeof module !== 'undefined') ? require('./core.js') : window.GBO2Core;
 
 /** 가중치 1.0이 "괜찮은 파츠 한 장 분량"이 되도록 하는 스탯별 환산 단위. */
@@ -88,7 +88,7 @@ function isValidSet(ms, set, stage, fullstDefs) {
    잘못된 파츠를 골랐다.** 표본 12기로 재 보니 실효 HP 를 직접 노린 구성이
    12기 전부 더 튼튼했다(평균 +4,869 · 최대 +11,754 실효 HP).
 
-   값은 core 의 durabilityOf 로 구한다 — 화면과 같은 자를 쓰고, 이미 계산된 total 위의
+   값은 아래 durMix 로 구한다(세 속성을 섞어 맞는 조화 평균 + 미리 구한 파츠 % 경감) — 이미 계산된 total 위의
    산술이라 **공짜다.** (처음엔 화면의 derivedMetrics 훅을 평가마다 불렀는데, 이득은
    그대로이면서 자동 구성이 6.9초 → 12.5초가 됐다. 그 훅은 목표 판정에만 쓴다.)
 
@@ -147,9 +147,25 @@ function shareOf(weights, keys) {
   return out;
 }
 
-/** 세 속성의 실효 HP 를 가중치 몫대로 섞은 값. */
-const durMix = (total, share) =>
-  DEF_ARMOR.reduce((s, k) => s + share[k] * durabilityOf(total, k), 0);
+/** 세 속성이 **섞여 들어올 때** 버티는 실효 HP — 내성 가중치의 몫을 피격 비율로 본다.
+ *    HP ÷ Σ 몫 × (1 − 내성) × (파츠 % 경감 배수)
+ *
+ *  예전엔 속성별 실효 HP 의 **산술 평균**이었다. 그러면 한 내성을 끝까지 몰수록 점수가 크게 올라,
+ *  「탱커 (범용 방어)」 인데도 17/16/70 처럼 한쪽만 올리고 나머지를 비웠다(2026-10-26 실측, 40기 중 30기가
+ *  다른 구성). 실제로는 세 속성을 섞어 맞으므로 받는 피해의 합으로 재야 한다(조화 평균 — 일본 도구들의 내구 지수와 같은 식).
+ *  같은 실측에서 섞여 맞을 때 평균 +5.7% · 가장 약한 속성 +14% 더 버텼다.
+ *
+ *  % 경감 파츠(오버튠 장갑·교육형[特防]·신형 완충재 …)도 넣는다 — 안 넣으면 160번 돌려 **한 번도** 안 골랐다.
+ *  경감 표(cutsOf: 파츠 이름 → cuts[])는 부르는 쪽이 **한 번만** 만들어 넘긴다(opts.partCuts) —
+ *  평가마다 설명을 읽으면 느려진다(예전에 6.9초 → 12.5초). 없으면 내성만 본다. 합치는 법은 화면과 같은 staggerDmgFactor. */
+const ATTR_OF_ARMOR = { armorRange: 'solid', armorBeam: 'beam', armorMelee: 'melee' };
+const durMix = (total, share, set, cutsOf) => {
+  const cs = [];
+  if (set && cutsOf) for (const p of set) { const c = p && cutsOf[p.name]; if (c) cs.push(...c); }
+  const taken = DEF_ARMOR.reduce((s, k) => s + share[k] * (1 - Math.min(total[k] || 0, 99) / 100)
+    * (cs.length ? staggerDmgFactor(cs, ATTR_OF_ARMOR[k]) : 1), 0);
+  return taken > 0 ? (total.hp || 0) / taken : 0;
+};
 
 function makeScorer(ms, opts, partsByCat, fullstDefs) {
   const { stage, expansion, expLevel, weights = {}, minimums, maximums, skill, derived, form, weaponLv,
@@ -246,7 +262,7 @@ function makeScorer(ms, opts, partsByCat, fullstDefs) {
       if (mobAlive && MOB_WEIGHTS.includes(k)) continue;
       value += w * (res.total[k] - base[k]) / UNIT[k];
     }
-    if (useDef) value += wDef * (durMix(res.total, defShare) - baseDefMix) / UNIT.ehpSolid;
+    if (useDef) value += wDef * (durMix(res.total, defShare, set, opts.partCuts) - baseDefMix) / UNIT.ehpSolid;
     if (useAtk) value += atkValue(res.total, set) - baseAtk;
     if (mobAlive) value += wMob * MOB_SCALE * (mobDist(res.total, set) / baseMob - 1);
     /* 하한·상한 목표는 강한 페널티로 표현해 탐색이 충족 방향으로 흐르게 한다.

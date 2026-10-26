@@ -622,6 +622,18 @@
     return out;
   }
 
+  /* 파츠별 % 피해 경감 표 — 같은 꼴. 자동 구성의 내구 점수(optimizer durMix)가 쓴다.
+     「4분 경과」 를 켜면 교육형의 4분 뒤 값으로(applyPartMode), 오버튠은 기체 LV 로 커진 값으로 — 화면의 실효 HP 와 같은 자. */
+  function partCutsMap() {
+    const lv = msLevel(state.ms);
+    const out = {};
+    for (const p of allParts) {
+      const c = C.partDamageCuts([C.applyPartMode(p, state.lateMode)], lv);
+      if (c.length) out[p.name] = c;
+    }
+    return out;
+  }
+
   // 피해경감 계산은 core 에 있다 — 자동 구성과 같은 자를 써야 해서 옮겼다.
   const staggerDmgFactor = C.staggerDmgFactor;
 

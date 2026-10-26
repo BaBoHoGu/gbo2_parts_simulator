@@ -132,6 +132,9 @@
       /* 파츠별 슬러스터 소비경감 — 자동 구성이 「연소효율 보조장치」처럼 스탯을 하나도
          안 올리면서 부스트를 늘려 주는 파츠를 볼 수 있게 한다. 위와 같은 이유로 한 번만. */
       partThrFx: partThrFxMap(),
+      /* 파츠별 % 피해 경감 — 내구 점수(optimizer durMix)가 오버튠 장갑·교육형[特防] 같은 경감 파츠를 볼 수 있게 한다.
+         안 넘기면 내성만 봐서 경감 파츠를 한 번도 안 골랐다(2026-10-26 실측). 위와 같은 이유로 한 번만. */
+      partCuts: partCutsMap(),
       banned: [...state.banned],   // 기본 제외한 파츠는 자동 구성에서도 빠진다
       skill: skillStatBonus(),      // 스킬을 켠 상태면 그 보정까지 감안해 구성한다
       form: state.form,             // 변형 화면을 보고 있으면 변형 수치로 최적화한다
@@ -384,7 +387,8 @@
         weights: anyW ? w : EVEN_WEIGHTS,
         minimums: state.minimums, maximums: state.maximums,
         skill, form: state.form, weaponLv: wantWeaponLv(),
-        partDmgPct: partDmgPctMap(), partThrFx: partThrFxMap()
+        partDmgPct: partDmgPctMap(), partThrFx: partThrFxMap(), partCuts: partCutsMap(),
+        lateMode: state.lateMode
       };
     if ([...Object.keys(state.minimums), ...Object.keys(state.maximums)].some(k => DERIVED_KEYS.includes(k)))
       scorerOpts.derived = (set, total) => derivedMetrics(set, total);
