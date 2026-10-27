@@ -1,12 +1,17 @@
 // 공식 조정 공지의 「바뀐 뒤 값」 이 지금 데이터와 같은가.
 //
-//   node tools/official_check.js            어긋나면 실패로 끝낸다(전체 검사에서 돌아 배포를 막는다)
-//   node tools/official_check.js --all      맞은 것까지 다 보인다
-//   node tools/official_check.js --warn     알리기만 하고 통과시킨다
+//   node tools/official_check.js                  어긋남이 공지 뒤 21일을 넘기면 실패(전체 검사에서 돌아 배포를 막는다)
+//   node tools/official_check.js --all            맞은 것까지 다 보인다
+//   node tools/official_check.js --warn           유예가 지나도 알리기만 하고 통과시킨다
+//   node tools/official_check.js --today=YYYY-MM-DD  오늘 날짜를 바꿔 잰다(유예 판정 시험용)
 //
-// 실패하면 — 위키가 새 공지를 덜 반영한 것이다. 같은 기체 위키 페이지의 이력 줄로 LV2 이상 값을 확인해
+// ■ 유예 21일 — 위키는 공지 뒤 며칠~한 달(30기 규모 패치)에 걸쳐 표를 고친다. 패치 직후가 배포가 가장
+//   필요한 때인데 그때 막으면 안 된다(사용자 결정 2026-10-27). 그래서
+//     공지 뒤 21일 안  → 배포는 진행. 어긋난 칸을 「NOTICE」 줄로 내고, gates.js 가 마지막 요약 위에 모아 띄운다
+//     21일이 지남     → 실패(배포 멈춤). 위키가 계속 안 고치는 칸이다
+//
+// 실패하면 — 같은 기체 위키 페이지의 이력 줄로 LV2 이상 값을 확인해
 // data/official.override.json 에 was(지금 위키 값)와 함께 박는다. 2026-10-27 첫 대조의 어긋남 5건(11칸)이 그렇게 들어갔다.
-// 처음엔 경고만 냈다가, 그 5건을 고쳐 0 이 된 뒤 실패로 올렸다.
 //
 // ■ 왜 — 수치의 근거는 「공식 조정 공지 > 위키 > gbo2.jp」 다(사용자 확인 2026-10-27).
 //   데이터는 위키에서 오는데, 위키 표는 사람이 옮겨 적어 반영이 빠진다.
@@ -31,6 +36,11 @@ const ROOT = path.join(__dirname, '..');
 const { nz, noCnt } = require('./lib/patchnote_jp.js');
 const ALL = process.argv.includes('--all');
 const STRICT = !process.argv.includes('--warn');
+const GRACE_DAYS = 21;
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+// 환경 변수 OFFICIAL_TODAY 도 받는다 — gates.js 를 거쳐 돌릴 때는 인자를 못 넘겨서(알림 모으기 시험용)
+const TODAY = ((process.argv.find(a => a.startsWith('--today=')) || '').slice(8)) || process.env.OFFICIAL_TODAY || ymd(new Date());
+const deadlineOf = date => { const d = new Date(String(date) + 'T00:00:00'); d.setDate(d.getDate() + GRACE_DAYS); return ymd(d); };
 
 const rd = f => JSON.parse(fs.readFileSync(path.join(ROOT, 'data', f), 'utf8'));
 const patches = rd('patchnotes.json').patches || [];
@@ -193,8 +203,21 @@ const show = ([it, why]) => '  ' + it.date + ' ' + it.base + (it.kind === 'weapo
 console.log('공식 조정 공지 ' + patches.length + '개 · 변경 줄 ' + lines + ' · 잴 수 있는 줄 ' + used + ' → 항목 ' + items.size + '개');
 console.log('  맞음 ' + res.ok.length + ' · 어긋남 ' + res.bad.length + ' · 못 맞춤 ' + res.miss.length
   + '  (공식값 고정 ' + PIN.applied + '칸 얹음' + (PIN.caught ? ' · 위키가 따라잡은 고정 ' + PIN.caught : '') + ')');
-if (res.bad.length) { console.log('\n어긋남 — 데이터가 공식과 다르다:'); res.bad.forEach(x => console.log(show(x))); }
+// 유예 — 마감(공지 + 21일)이 오늘보다 앞이면 넘긴 것
+const overdue = res.bad.filter(([it]) => deadlineOf(it.date) < TODAY);
+const pending = res.bad.filter(([it]) => deadlineOf(it.date) >= TODAY);
+if (overdue.length) {
+  console.log('\n어긋남 — 공지 뒤 ' + GRACE_DAYS + '일이 지났는데 데이터가 공식과 다르다:');
+  overdue.forEach(x => console.log((STRICT ? '  FAIL' : '  WARN') + show(x).slice(1) + ' · 마감 ' + deadlineOf(x[0].date)));
+}
+if (pending.length) {
+  // 「NOTICE」 로 시작하는 줄은 gates.js 가 통과한 검사에서도 모아 마지막 요약 위에 띄운다
+  console.log('\n어긋남 — 유예 중(위키가 아직 따라오는 중일 수 있다):');
+  pending.forEach(x => console.log('NOTICE 공식 대조 · ' + show(x).trim() + ' · 마감 ' + deadlineOf(x[0].date)));
+}
 if (res.miss.length) { console.log('\n못 맞춤 — 잴 대상을 데이터에서 못 찾았다:'); res.miss.forEach(x => console.log(show(x))); }
 if (ALL) { console.log('\n맞음:'); res.ok.forEach(x => console.log(show(x))); }
-console.log('\n' + (res.bad.length ? (STRICT ? 'FAIL' : 'WARN') : 'PASS') + ' 공식 대조');
-process.exit(STRICT && res.bad.length ? 1 : 0);
+const fails = STRICT ? overdue.length : 0;
+console.log('\n' + res.ok.length + ' PASS / ' + fails + ' FAIL  공식 대조 (오늘 ' + TODAY + ' · 유예 중 어긋남 ' + pending.length
+  + (overdue.length && !STRICT ? ' · 유예 지남 ' + overdue.length + ' — --warn 이라 통과' : '') + ')');
+process.exit(fails ? 1 : 0);

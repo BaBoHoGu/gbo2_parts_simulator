@@ -236,7 +236,19 @@ const run = f => new Promise(resolve => {
       for (const i of [...show].sort((a, b) => a - b)) console.log('   ' + lines[i]);
     }
   }
+  /* 통과했지만 사람이 봐야 하는 것 — 검사가 「NOTICE 」 로 시작하는 줄을 내면 여기 모은다.
+     통과한 검사는 한 줄로만 보여 주므로, 안 모으면 배포 로그에 묻힌다.
+     예: official_check 의 「공식 조정과 다른데 아직 유예(21일) 중」 인 칸 — 배포는 막지 않는다. */
+  const notices = [];
+  for (const r of results.filter(x => x.code === 0))
+    for (const l of r.out.split('\n')) if (/^NOTICE /.test(l)) notices.push(r.f.replace('.js', '') + ' — ' + l.slice(7).trim());
+  if (notices.length) {
+    console.log('\n⚠ 알림 ' + notices.length + '건 (배포는 막지 않음)');
+    for (const n of notices.slice(0, 30)) console.log('   · ' + n);
+    if (notices.length > 30) console.log('   · …외 ' + (notices.length - 30) + '건');
+  }
   const okN = results.length - bad.length;
-  console.log(`\n${bad.length ? '✗' : '✔'} 검사 ${results.length}개 — 통과 ${okN} · 실패 ${bad.length}`);
+  console.log(`\n${bad.length ? '✗' : '✔'} 검사 ${results.length}개 — 통과 ${okN} · 실패 ${bad.length}`
+    + (notices.length ? ` · 알림 ${notices.length}` : ''));
   process.exit(bad.length ? 1 : 0);
 })();
