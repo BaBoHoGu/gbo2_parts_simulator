@@ -14627,7 +14627,7 @@
      "from": 1,
      "to": null,
      "shoot": 25,
-     "melee": 35,
+     "melee": 25,
      "shootPct": 0,
      "meleePct": 0,
      "crouchPct": 0,
