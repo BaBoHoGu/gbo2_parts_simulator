@@ -4,7 +4,7 @@
   "표 값이 이력의 「바뀌기 전」 값일 때만 「바뀐 뒤」 값으로(was). 빌드는 공식값 고정 뒤에 얹는다.",
   "enabled 를 true 로 해야 빌드가 얹는다 — 목록을 사람이 확인한 뒤 켠다(2026-10-27)."
  ],
- "enabled": false,
+ "enabled": true,
  "pins": [
   {
    "kind": "weapon",
