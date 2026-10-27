@@ -87,6 +87,8 @@ function curated(b) {
 
 (async () => {
   const weapons = rd('data', 'weapons.json');
+  // 앱이 보는 문구로 번역한다 — 공식 고정 · 이력 반영이 備考 를 고친 칸(집속 시간 등)은 문구가 바뀐다(dataset.js applyAllPins)
+  require('./lib/dataset.js').applyAllPins(ROOT, { weapons });
   const cache = rdSafe('data', 'i18n', 'weapon_note.json');
 
   // 고유 備考 수집 (info + 레벨별 raw)

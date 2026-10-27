@@ -53,6 +53,8 @@ function nullCells() {
 function noteCoverage() {
   const dict = rd('data', 'i18n', 'weapon_note.json');
   const weapons = rd('data', 'weapons.json');
+  // 앱이 보는 문구로 잰다 — 고정이 備考 를 고친 칸은 문구가 바뀐다(원본만 보면 그 번역이 빠져도 통과했다)
+  require('./lib/dataset.js').applyAllPins(ROOT, { weapons });
   let tot = 0;
   const miss = [], ja = [];
   for (const v of Object.values(weapons)) {

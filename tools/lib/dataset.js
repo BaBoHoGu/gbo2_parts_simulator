@@ -173,7 +173,7 @@ function pinTarget(pin, { weapons, msSkills, msData }) {
     const rows = [];
     const walk = v => { if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object') {
       if (typeof v.name === 'string' && 'lv' in v) rows.push(v); else Object.values(v).forEach(walk); } };
-    walk(msSkills[pin.ms]);
+    walk((msSkills || {})[pin.ms]);   // 스킬 데이터를 안 넘긴 도구(무장 설명 번역 등)는 스킬 고정을 건너뛴다
     const hit = rows.filter(r => r.name === pin.name
       && Object.entries(pin.row || {}).every(([k, v]) => r[k] === v || (k === pin.field && r[k] === pin.value)));
     if (hit.length === 0) return null;
@@ -200,6 +200,14 @@ function applyHistoryReflect(root, data) {
   const h = historyReflectOf(root);
   return h.enabled ? applyPins(h.pins, data) : { applied: 0, caught: 0, moved: [], missing: [], off: true };
 }
+/**
+ * 빌드와 같은 순서로 두 고정을 다 얹는다(공식 → 이력). 무장 데이터를 읽는 도구는 이걸 거쳐야 앱과 같은 글을 본다 —
+ * 備考 를 고친 칸(집속 시간 등)은 문구가 바뀌어, 원본만 보던 translate_notes · dict_check 가 그 문구를 몰라
+ * 앱에서 일본어로 나올 뻔했다(2026-10-27).
+ */
+function applyAllPins(root, data) {
+  return { official: applyOfficialPins(root, data), history: applyHistoryReflect(root, data) };
+}
 function applyPins(pins, data) {
   const out = { applied: 0, caught: 0, moved: [], missing: [] };
   for (const pin of pins) {
@@ -215,4 +223,4 @@ function applyPins(pins, data) {
 
 module.exports = { mergeMsAdditions, mergePartAdditions, mergeFullstAdditions, applyFullstOverride,
   applyMsOverride, applyMsManual,
-  officialPinsOf, applyOfficialPins, historyReflectOf, applyHistoryReflect, applyPins };
+  officialPinsOf, applyOfficialPins, historyReflectOf, applyHistoryReflect, applyPins, applyAllPins };
