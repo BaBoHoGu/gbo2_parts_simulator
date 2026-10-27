@@ -130,9 +130,17 @@ const sorted = patches.slice().sort((a, b) => String(a.date).localeCompare(Strin
 let lines = 0, used = 0;
 for (const pt of sorted) for (const a of (pt.adjusted || [])) {
   const base = NFC(a.ms || '');
-  for (const sec of ((a.ja && a.ja.sections) || [])) for (const r of (sec.rows || [])) for (const c0 of (r.changes || [])) {
+  for (const sec of ((a.ja && a.ja.sections) || [])) for (const r of (sec.rows || [])) {
+  /* 무장 줄 안의 「【…発動中】」 소제목 — 그 아래 줄은 위키에서 **다른 무장**이다.
+     X2改 「バスターランチャー[最大出力]」: 【通常射撃】 OH 18→15 는 위키 「…［最大出力］」(15),
+     【最大出力（Ｚ）発動中】 은 위키 「…［最大出力（Z）］」(10). 통상 쪽과 맞대면 거짓 어긋남이 난다(2026-10-27).
+     그 아래 숫자 줄은 이름에 그 모드가 든 무장과 맞대고, 그런 무장이 없으면 「못 맞춤」 으로 둔다. */
+  let mode = null;
+  for (const c0 of (r.changes || [])) {
     lines++;
     const c = String(c0).normalize('NFKC').replace(/^\s*・\s*/, '');
+    const hd = c.match(/^【(.+?)】\s*$/);
+    if (hd) { mode = /発動中/.test(hd[1]) ? hd[1].replace(/\s*発動中\s*$/, '') : null; continue; }
     const msLv = +((c.match(/^LV(\d+)機体の/) || [])[1] || 0);
     // 스킬 LV 상승
     let m = c.match(/スキル「\s*(.+?)\s*LV(\d+)\s*」\s*を\s*「\s*LV(\d+)\s*」\s*に(上昇|低下)/);
@@ -164,9 +172,10 @@ for (const pt of sorted) for (const a of (pt.adjusted || [])) {
       const st = WEAPON_STAT.find(([re]) => re.test(label));
       if (!st) continue;
       used++;
-      items.set([base, 'w', nz(r.weapon), label].join('|'),
-        { date: pt.date, base, kind: 'weapon', weapon: r.weapon, label, get: st[1], to, line: c });
+      items.set([base, 'w', nz(r.weapon), mode || '', label].join('|'),
+        { date: pt.date, base, kind: 'weapon', weapon: r.weapon, mode, label, get: st[1], to, line: c });
     }
+  }
   }
 }
 
@@ -174,7 +183,7 @@ for (const pt of sorted) for (const a of (pt.adjusted || [])) {
    SBS 「ダメージコントロール」: 6/25 「LV3機体の…LV2→LV3」 뒤 9/24 에 LV 지정 없이 「LV2→LV3(上位LVも上昇)」 로
    또 올라 데이터는 LV4 인데, 열쇠에 기체 LV 가 들어 있어 6/25 항목이 살아남아 틀렸다고 나왔다(2026-10-27). */
 {
-  const subj = it => [it.base, it.kind, it.kind === 'skill' ? nz(it.name) : it.kind === 'ms' ? it.field : nz(it.weapon) + '|' + it.label].join('|');
+  const subj = it => [it.base, it.kind, it.kind === 'skill' ? nz(it.name) : it.kind === 'ms' ? it.field : nz(it.weapon) + '|' + (it.mode || '') + '|' + it.label].join('|');
   const last = new Map();
   for (const it of items.values()) { const k = subj(it); if (!last.has(k) || it.date > last.get(k)) last.set(k, it.date); }
   for (const [k, it] of [...items]) if (it.date < last.get(subj(it))) items.delete(k);
@@ -209,8 +218,16 @@ for (const it of items.values()) {
   } else {
     const id = pageOf(it.base);
     const ws = (id && W[id] && W[id].weapons) || [];
-    let w = ws.filter(x => nz(x.name) === nz(it.weapon));
-    if (!w.length) w = ws.filter(x => noCnt(x.name) === noCnt(it.weapon));
+    let w;
+    if (it.mode) {
+      // 「【最大出力（Ｚ）発動中】」 아래 줄 — 이름에 그 모드(「最大出力(Z)」)가 든 무장. 괄호 꼴은 nz 가 맞춘다
+      const md = nz(it.mode).replace(/[()（）\[\]]/g, '');
+      w = ws.filter(x => nz(x.name).replace(/[()（）\[\]]/g, '').includes(md));
+      if (w.length !== 1) { res.miss.push([it, '「' + it.mode + '」 모드 무장을 못 맞춤(후보 ' + w.length + ')']); continue; }
+    } else {
+      w = ws.filter(x => nz(x.name) === nz(it.weapon));
+      if (!w.length) w = ws.filter(x => noCnt(x.name) === noCnt(it.weapon));
+    }
     if (w.length !== 1) { res.miss.push([it, '무장을 못 맞춤(후보 ' + w.length + ')']); continue; }
     const have = it.get(w[0]).filter(v => v != null);
     if (!have.length) { res.miss.push([it, '데이터에 그 칸이 없음 · ' + w[0].name]); continue; }
