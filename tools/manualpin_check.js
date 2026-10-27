@@ -104,5 +104,19 @@ try {
     /기본값이 달라 건너뜀/.test(src) && /stale\+\+/.test(src));
 }
 
+/* ④ 공식값 고정(official.override.json) — msData.manual.json 과 같은 병. was(박을 당시 위키 값)에서
+   데이터가 움직였으면 그 뒤 조정이 또 있었다는 뜻이라 고정이 **새 값을 덮지 않고 건너뛴다** — 사람이 봐야 한다.
+   대상(무장·스킬 행)을 못 찾는 고정도 헛돈다. */
+{
+  const D = require('./lib/dataset.js');
+  const r = D.applyOfficialPins(ROOT, { weapons: rd('data', 'weapons.json'), msSkills: rd('data', 'ms_skills.json') });
+  const pins = D.officialPinsOf(ROOT);
+  ok('공식값 고정이 모두 대상을 찾는다', r.missing.length === 0,
+    r.missing.map(p => (p.ms || p.weapon) + ' ' + (p.path || p.field)));
+  ok('공식값 고정 중 위키 값이 박을 당시(was)에서 움직인 것이 없다', r.moved.length === 0,
+    r.moved.map(p => ({ 대상: (p.ms || p.weapon) + ' ' + (p.path || p.field), 지금: p.now, 고정값: p.value, 박을당시: p.was })));
+  if (r.caught) console.log('  (알림) 위키가 공식값을 따라잡아 지워도 되는 고정 ' + r.caught + '개 (전체 ' + pins.length + ')');
+}
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

@@ -101,4 +101,61 @@ function applyFullstOverride(root, fullst) {
   return n;
 }
 
-module.exports = { mergeMsAdditions, mergePartAdditions, mergeFullstAdditions, applyFullstOverride };
+/**
+ * 공식 조정 값 고정 — 위키 표가 공식 조정 공지를 덜 반영했을 때 공식 쪽으로 맞춘다.
+ * 근거 순서는 「공식 조정 공지 > 위키 > gbo2.jp」(사용자 확인 2026-10-27). 어긋남은 tools/official_check.js 가 찾는다.
+ *
+ * 항목마다 was(박을 당시의 데이터 값)를 든다. **지금 값이 was 일 때만** 고친다 —
+ *   지금 == value → 위키가 따라잡았다. 할 일 없음(지워도 된다)
+ *   지금 == was   → 아직 필요하다. 고친다
+ *   그 밖        → 그 뒤 조정이 또 있었다. 손대지 않는다(manualpin_check 가 FAIL 로 알린다)
+ * msData.manual.json 이 새 조정을 옛 값으로 되돌렸던 사고(2026-10-05)를 되풀이하지 않으려고 이렇게 짰다.
+ *
+ * 꼴
+ *   무장 { kind:'weapon', page, weapon, path:'levels.1.power' | 'info.発射 間隔', value, was }
+ *   스킬 { kind:'skill',  ms, name, row:{ msLv, lv }(고칠 행을 지금 값으로 고른다), field:'lv'|'msLv', value, was }
+ * @returns {{ applied:number, caught:number, moved:object[], missing:object[] }}
+ */
+function officialPinsOf(root) {
+  const p = path.join(root, 'data', 'official.override.json');
+  if (!fs.existsSync(p)) return [];
+  return (JSON.parse(fs.readFileSync(p, 'utf8')).pins || []);
+}
+function pinTarget(pin, { weapons, msSkills }) {
+  if (pin.kind === 'weapon') {
+    const w = ((weapons[pin.page] || {}).weapons || []).find(x => x.name === pin.weapon);
+    if (!w) return null;
+    const keys = pin.path.split('.');
+    let o = w;
+    for (const k of keys.slice(0, -1)) { if (!o || typeof o !== 'object') return null; o = o[k]; }
+    if (!o || typeof o !== 'object' || !(keys[keys.length - 1] in o)) return null;
+    return { get: () => o[keys[keys.length - 1]], set: v => { o[keys[keys.length - 1]] = v; } };
+  }
+  if (pin.kind === 'skill') {
+    // ms_skills 는 기체 → 스킬 배열(또는 모드별 묶음). 이름 + 고를 행의 조건으로 한 행만 집는다
+    const rows = [];
+    const walk = v => { if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object') {
+      if (typeof v.name === 'string' && 'lv' in v) rows.push(v); else Object.values(v).forEach(walk); } };
+    walk(msSkills[pin.ms]);
+    const hit = rows.filter(r => r.name === pin.name
+      && Object.entries(pin.row || {}).every(([k, v]) => r[k] === v || (k === pin.field && r[k] === pin.value)));
+    if (hit.length === 0) return null;
+    return { get: () => hit[0][pin.field], set: v => { for (const r of hit) r[pin.field] = v; } };
+  }
+  return null;
+}
+function applyOfficialPins(root, data) {
+  const out = { applied: 0, caught: 0, moved: [], missing: [] };
+  for (const pin of officialPinsOf(root)) {
+    const t = pinTarget(pin, data);
+    if (!t) { out.missing.push(pin); continue; }
+    const now = t.get();
+    if (JSON.stringify(now) === JSON.stringify(pin.value)) { out.caught++; continue; }
+    if (JSON.stringify(now) !== JSON.stringify(pin.was)) { out.moved.push({ ...pin, now }); continue; }
+    t.set(pin.value); out.applied++;
+  }
+  return out;
+}
+
+module.exports = { mergeMsAdditions, mergePartAdditions, mergeFullstAdditions, applyFullstOverride,
+  officialPinsOf, applyOfficialPins };

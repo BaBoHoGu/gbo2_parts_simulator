@@ -158,6 +158,13 @@ const misc = readJson('data', 'i18n', 'misc.json');
 // 신규 기체·파츠 자동 번역(*.auto.json)을 밑에 깔고, 수작업 사전이 덮어쓴다(수작업 우선).
 const autoJson = f => fs.existsSync(path.join(ROOT, 'data', 'i18n', f)) ? readJson('data', 'i18n', f) : {};
 const msSkills = fs.existsSync(path.join(ROOT, 'data', 'ms_skills.json')) ? readJson('data', 'ms_skills.json') : {};
+// 공식 조정 값 고정 — 위키 표가 공식 공지를 덜 반영한 칸(data/official.override.json, 어긋남은 official_check 가 찾는다)
+{
+  const r = D.applyOfficialPins(ROOT, { weapons, msSkills });
+  if (r.applied || r.moved.length || r.missing.length)
+    console.log(`공식값 고정: ${r.applied}칸` + (r.caught ? ` · 위키가 따라잡음 ${r.caught}` : '')
+      + (r.moved.length ? ` · 값이 움직여 건너뜀 ${r.moved.length}` : '') + (r.missing.length ? ` · 대상 없음 ${r.missing.length}` : ''));
+}
 const i18n = {
   ms: { ...autoJson('ms.auto.json'), ...readJson('data', 'i18n', 'ms.json') },
   parts: { ...autoJson('parts.auto.json'), ...readJson('data', 'i18n', 'parts.json') },

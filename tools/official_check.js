@@ -1,8 +1,12 @@
 // 공식 조정 공지의 「바뀐 뒤 값」 이 지금 데이터와 같은가.
 //
-//   node tools/official_check.js            어긋난 것을 알린다(경고만 — 배포를 막지 않는다)
+//   node tools/official_check.js            어긋나면 실패로 끝낸다(전체 검사에서 돌아 배포를 막는다)
 //   node tools/official_check.js --all      맞은 것까지 다 보인다
-//   node tools/official_check.js --strict   어긋나면 실패로 끝낸다
+//   node tools/official_check.js --warn     알리기만 하고 통과시킨다
+//
+// 실패하면 — 위키가 새 공지를 덜 반영한 것이다. 같은 기체 위키 페이지의 이력 줄로 LV2 이상 값을 확인해
+// data/official.override.json 에 was(지금 위키 값)와 함께 박는다. 2026-10-27 첫 대조의 어긋남 5건(11칸)이 그렇게 들어갔다.
+// 처음엔 경고만 냈다가, 그 5건을 고쳐 0 이 된 뒤 실패로 올렸다.
 //
 // ■ 왜 — 수치의 근거는 「공식 조정 공지 > 위키 > gbo2.jp」 다(사용자 확인 2026-10-27).
 //   데이터는 위키에서 오는데, 위키 표는 사람이 옮겨 적어 반영이 빠진다.
@@ -26,13 +30,16 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const { nz, noCnt } = require('./lib/patchnote_jp.js');
 const ALL = process.argv.includes('--all');
-const STRICT = process.argv.includes('--strict');
+const STRICT = !process.argv.includes('--warn');
 
 const rd = f => JSON.parse(fs.readFileSync(path.join(ROOT, 'data', f), 'utf8'));
 const patches = rd('patchnotes.json').patches || [];
-const msData = rd('msData.json');
+// 미러가 wiki_url 을 비워 보낸 기체도 무장 페이지를 찾게 — 다른 도구와 같은 보정을 거친다
+const msData = require('./lib/msdata.js').applyWikiOverride(rd('msData.json'), ROOT);
 const S = rd('ms_skills.json');
 const W = rd('weapons.json');
+// 앱이 보는 것과 같은 데이터로 잰다 — 공식값 고정(data/official.override.json)을 빌드와 같은 함수로 얹는다
+const PIN = require('./lib/dataset.js').applyOfficialPins(ROOT, { weapons: W, msSkills: S });
 
 const NFC = s => String(s).normalize('NFC');
 const lvOfMs = n => Number((String(n).match(/_LV(\d+)$/) || [])[1] || 1);
@@ -184,7 +191,8 @@ for (const it of items.values()) {
 const show = ([it, why]) => '  ' + it.date + ' ' + it.base + (it.kind === 'weapon' ? ' / ' + it.weapon : '')
   + ' — 공식 「' + it.line + '」 · ' + why;
 console.log('공식 조정 공지 ' + patches.length + '개 · 변경 줄 ' + lines + ' · 잴 수 있는 줄 ' + used + ' → 항목 ' + items.size + '개');
-console.log('  맞음 ' + res.ok.length + ' · 어긋남 ' + res.bad.length + ' · 못 맞춤 ' + res.miss.length);
+console.log('  맞음 ' + res.ok.length + ' · 어긋남 ' + res.bad.length + ' · 못 맞춤 ' + res.miss.length
+  + '  (공식값 고정 ' + PIN.applied + '칸 얹음' + (PIN.caught ? ' · 위키가 따라잡은 고정 ' + PIN.caught : '') + ')');
 if (res.bad.length) { console.log('\n어긋남 — 데이터가 공식과 다르다:'); res.bad.forEach(x => console.log(show(x))); }
 if (res.miss.length) { console.log('\n못 맞춤 — 잴 대상을 데이터에서 못 찾았다:'); res.miss.forEach(x => console.log(show(x))); }
 if (ALL) { console.log('\n맞음:'); res.ok.forEach(x => console.log(show(x))); }
