@@ -68,10 +68,14 @@ const W_STAT = [
     if (l[k] == null) return null;
     return { get: l[k], path: 'levels.' + lv + '.' + k, was: l[k], write: to => to };
   } },
-  { re: /^リロード時間|^リロード/, cell: w => strCell(w, 'リロード時間') || strCell(w, 'リロード') },
-  { re: /^オーバーヒート復帰時間|^OH復帰時間/, cell: w => strCell(w, 'OH復帰時間') },
-  { re: /^クールタイム/, cell: w => strCell(w, 'クールタイム') },
-  { re: /^発射間隔/, cell: w => { const c = strCell(w, '発射間隔'); return c && /秒/.test(c.was) ? c : null; } },
+  // 리로드와 OH 복귀도 같은 대상 — 무장마다 둘 중 한 칸만 있고, E팩 빔은 리로드를 「OH復帰時間」 칸에 적는다
+  { re: /^リロード時間|^リロード|^オーバーヒート復帰時間|^OH復帰時間/,
+    cell: w => strCell(w, 'リロード時間') || strCell(w, 'リロード') || strCell(w, 'OH復帰時間') },
+  /* 「クールタイム」 와 「発射間隔」 은 **같은 대상**으로 묶는다 — 단발 무장의 쿨타임은 표의 「発射間隔」 칸에 초로 적히고,
+     이력은 같은 칸을 두 이름으로 부른다. 따로 묶었더니 ユニコーンガンダム ビーム・マグナム 이
+     2022 「発射間隔延長 5→6」 만 보고 2024 「クールタイム短縮 6→5」 를 못 봐 6초로 되돌릴 뻔했다(사용자 지적 2026-10-27). */
+  { re: /^クールタイム|^発射間隔/, cell: w => strCell(w, 'クールタイム')
+    || (c => c && /秒/.test(c.was) ? c : null)(strCell(w, '発射間隔')) },
   { re: /^集束時間|^チャージ時間/, cell: w => {
     const key = infoKey(w, '備考'); if (!key) return null; const was = w.info[key];
     const m = String(was).match(/集束時間[：:]\s*([\d.]+)/); if (!m) return null;
@@ -103,21 +107,33 @@ for (const [id, pg] of pages) {
       if (l.depth === 0) { top = t; label = null; qual = null; }
       else if (l.depth === 1) { label = t; qual = null; }
       const { pairs, ambiguous } = pairsOf(t);
-      if (l.depth === 2 && !pairs.length) qual = /非集束/.test(t) ? 'n' : /集束/.test(t) ? 'c' : qual;
+      /* 집속 단계 — 표에는 집속 값이 한 칸뿐(1단계째). 「集束2段階目」 등은 표에 칸이 없다 → 'x' 로 두고 안 잰다.
+         안 그러면 ハンマ・ハンマ 3連装メガ粒子砲 7/23 「2段階目 Lv1：1300 → 1400」 의 「바뀌기 전」 1300 이
+         1단계째의 바뀐 뒤 값(=표 1300)과 우연히 같아 「표가 낡음」 으로 잡혔다(2026-10-27). */
+      const qOf = s => /[2-9２-９]\s*段階/.test(s) ? 'x' : /非集束/.test(s) ? 'n' : /集束/.test(s) ? 'c' : null;
+      if (l.depth >= 2 && !pairs.length) qual = qOf(t) || qual;
       if (!pairs.length || !top) continue;
+      /* LV 표기 없는 한 값(「20000 → 18000」)은 가장 낮은 LV 로 본다 — 「Lv1：18000 → 20000」 과 **같은 대상**이어야
+         나중 것이 앞의 것을 덮는다. エンゲージゼロ・ヨンファヴィン HP 가 2025-01 하향 뒤 2025-12 원복됐는데
+         열쇠가 갈려 하향으로 되돌릴 뻔했다(2026-10-27). */
+      const low = Math.min(...pg.lv.keys());
       const st = l.depth === 1 && MS_STAT.find(([re]) => re.test(top));
       if (st) {
-        for (const p of pairs) items.set([id, 'ms', st[1], p.lv].join('|'),
-          { id, date: e.date, base: pg.base, kind: 'ms', field: st[1], ...p, ambiguous, line: top + ' ' + t });
+        for (const p0 of pairs) { const p = { ...p0, lv: p0.lv || low }; items.set([id, 'ms', st[1], p.lv].join('|'),
+          { id, date: e.date, base: pg.base, kind: 'ms', field: st[1], ...p, ambiguous, line: top + ' ' + t }); }
         continue;
       }
       const w = ws.filter(x => nz(x.name) === nz(top));
       if (w.length !== 1 || !label) continue;
       const k = W_STAT.findIndex(s => s.re.test(label));
       if (k < 0) continue;
-      const q = /非集束/.test(t) ? 'n' : (/集束/.test(t) ? 'c' : qual);
-      for (const p of pairs) items.set([id, 'w', w[0].name, k, q, p.lv].join('|'),
-        { id, date: e.date, base: pg.base, kind: 'w', w: w[0], stat: W_STAT[k], q, ...p, ambiguous, line: top + ' › ' + label + ' › ' + t });
+      const q = qOf(t) || qual;
+      if (q === 'x') continue;
+      // 위력은 LV 별 — LV 없는 한 값은 무장의 가장 낮은 LV 로(위와 같은 까닭). 시간 칸은 LV 가 없다(0)
+      const wLow = Math.min(...Object.keys(w[0].levels || { 1: 0 }).map(Number));
+      for (const p0 of pairs) { const p = { ...p0, lv: W_STAT[k].perLv ? (p0.lv || wLow) : 0 };
+        items.set([id, 'w', w[0].name, k, q, p.lv].join('|'),
+          { id, date: e.date, base: pg.base, kind: 'w', w: w[0], stat: W_STAT[k], q, ...p, ambiguous, line: top + ' › ' + label + ' › ' + t }); }
     }
   }
 }
