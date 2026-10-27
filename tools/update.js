@@ -392,6 +392,8 @@ async function detectPatch(msList) {
     run('build_weapon_i18n.js');
     // 위키 스탯·슬롯이 gbo2.jp 와 다르면(gbo2 가 아직 패치 미반영) 위키 값으로 교정한다.
     if (targetIds.length) run('extract_ms_wiki.js', ['--pages=' + targetIds.join(',')]);
+    // 위키 하단 이력에만 적고 표는 안 고친 칸을 찾는다(무장·스킬·기체 칸이 다 갱신된 뒤에 — 그 값과 맞대므로)
+    run('extract_history_reflect.js');
 
     // M1: 받아봤는데도 무장/스킬이 여전히 빈 페이지는 시도 시각을 남겨 24h 재시도 방지.
     //     채워진 것은 기록을 지운다(다음에 또 바뀌면 즉시 재시도되도록).

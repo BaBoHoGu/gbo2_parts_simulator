@@ -42,15 +42,9 @@ const msData = readJson('data', 'msData.json');
   if (n) console.log(`추가 기체 병합: ${n}기 (msData.additions.json)`);
 }
 // gbo2.jp 가 아직 반영 못 한 스탯·슬롯은 위키 값으로 교정한다 (extract_ms_wiki.js 가 만든 목록).
-const overridePath = path.join(ROOT, 'data', 'msData.override.json');
-if (fs.existsSync(overridePath)) {
-  const override = JSON.parse(fs.readFileSync(overridePath, 'utf8'));
-  let n = 0;
-  for (const m of msData) {
-    const ov = override[m.MS名];
-    if (ov) for (const [k, v] of Object.entries(ov)) { m[k] = v; n++; }
-  }
-  if (n) console.log(`위키 교정 적용: ${Object.keys(override).length}기 · ${n}개 필드`);
+{
+  const r = D.applyMsOverride(ROOT, msData);
+  if (r.n) console.log(`위키 교정 적용: ${r.ms}기 · ${r.n}개 필드`);
 }
 // 위키 「アップデート履歴」로 확인한 교정 — override 보다 **나중에** 얹는다.
 //
@@ -80,15 +74,9 @@ if (fs.existsSync(overridePath)) {
   if (filled) console.log(`등급 빈 칸을 형제 LV 에서 채움: ${filled}칸`);
 }
 
-const manualPath = path.join(ROOT, 'data', 'msData.manual.json');
-if (fs.existsSync(manualPath)) {
-  const fix = (JSON.parse(fs.readFileSync(manualPath, 'utf8')) || {}).fix || {};
-  let n = 0;
-  for (const m of msData) {
-    const f = fix[m.MS名];
-    if (f) for (const [k, d] of Object.entries(f)) { m[k] = d.value; n++; }
-  }
-  if (n) console.log(`이력 교정 적용: ${Object.keys(fix).length}기 · ${n}개 칸 (msData.manual.json)`);
+{
+  const r = D.applyMsManual(ROOT, msData);
+  if (r.n) console.log(`이력 교정 적용: ${r.ms}기 · ${r.n}개 칸 (msData.manual.json)`);
 }
 const parts = readJson('data', 'parts.json');
 // gbo2.jp 에 아직 없는 파츠를 위키에서 보강한다 — 기체의 msData.additions.json 과 같은 역할.
@@ -160,10 +148,15 @@ const autoJson = f => fs.existsSync(path.join(ROOT, 'data', 'i18n', f)) ? readJs
 const msSkills = fs.existsSync(path.join(ROOT, 'data', 'ms_skills.json')) ? readJson('data', 'ms_skills.json') : {};
 // 공식 조정 값 고정 — 위키 표가 공식 공지를 덜 반영한 칸(data/official.override.json, 어긋남은 official_check 가 찾는다)
 {
-  const r = D.applyOfficialPins(ROOT, { weapons, msSkills });
+  const r = D.applyOfficialPins(ROOT, { weapons, msSkills, msData });
   if (r.applied || r.moved.length || r.missing.length)
     console.log(`공식값 고정: ${r.applied}칸` + (r.caught ? ` · 위키가 따라잡음 ${r.caught}` : '')
       + (r.moved.length ? ` · 값이 움직여 건너뜀 ${r.moved.length}` : '') + (r.missing.length ? ` · 대상 없음 ${r.missing.length}` : ''));
+  // 위키 하단 이력에만 적고 표는 안 고친 칸(data/history.reflect.json, extract_history_reflect 가 만든다) — 공식 뒤에 얹는다
+  const h = D.applyHistoryReflect(ROOT, { weapons, msSkills, msData });
+  if (!h.off && (h.applied || h.moved.length || h.missing.length))
+    console.log(`위키 이력 반영: ${h.applied}칸` + (h.caught ? ` · 표가 따라잡음 ${h.caught}` : '')
+      + (h.moved.length ? ` · 표가 움직여 건너뜀 ${h.moved.length}` : '') + (h.missing.length ? ` · 대상 없음 ${h.missing.length}` : ''));
 }
 const i18n = {
   ms: { ...autoJson('ms.auto.json'), ...readJson('data', 'i18n', 'ms.json') },

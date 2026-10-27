@@ -102,7 +102,38 @@ function applyFullstOverride(root, fullst) {
 }
 
 /**
- * 공식 조정 값 고정 — 위키 표가 공식 조정 공지를 덜 반영했을 때 공식 쪽으로 맞춘다.
+ * gbo2.jp 가 아직 반영 못 한 스탯·슬롯을 위키 값으로 — data/msData.override.json(extract_ms_wiki.js 가 만든다).
+ * 빌드와 위키 이력 반영(extract_history_reflect)이 같은 기체 데이터를 봐야 해서 여기로 옮겼다(2026-10-27).
+ */
+function applyMsOverride(root, msData) {
+  const p = path.join(root, 'data', 'msData.override.json');
+  if (!fs.existsSync(p)) return { n: 0, ms: 0 };
+  const override = JSON.parse(fs.readFileSync(p, 'utf8'));
+  let n = 0;
+  for (const m of msData) {
+    const ov = override[m.MS名];
+    if (ov) for (const [k, v] of Object.entries(ov)) { m[k] = v; n++; }
+  }
+  return { n, ms: Object.keys(override).length };
+}
+/**
+ * 위키 「アップデート履歴」 로 확인한 손고정값 — data/msData.manual.json. override 보다 **나중에** 얹는다.
+ * (extract_ms_wiki 는 「위키 스탯표와 일치하면 교정 해제」 를 해서, 표가 낡은 칸은 override 에 두면 지워진다.)
+ */
+function applyMsManual(root, msData) {
+  const p = path.join(root, 'data', 'msData.manual.json');
+  if (!fs.existsSync(p)) return { n: 0, ms: 0 };
+  const fix = (JSON.parse(fs.readFileSync(p, 'utf8')) || {}).fix || {};
+  let n = 0;
+  for (const m of msData) {
+    const f = fix[m.MS名];
+    if (f) for (const [k, d] of Object.entries(f)) { m[k] = d.value; n++; }
+  }
+  return { n, ms: Object.keys(fix).length };
+}
+
+/**
+ * 공식 조정 값 고정 —위키 표가 공식 조정 공지를 덜 반영했을 때 공식 쪽으로 맞춘다.
  * 근거 순서는 「공식 조정 공지 > 위키 > gbo2.jp」(사용자 확인 2026-10-27). 어긋남은 tools/official_check.js 가 찾는다.
  *
  * 항목마다 was(박을 당시의 데이터 값)를 든다. **지금 값이 was 일 때만** 고친다 —
@@ -121,7 +152,13 @@ function officialPinsOf(root) {
   if (!fs.existsSync(p)) return [];
   return (JSON.parse(fs.readFileSync(p, 'utf8')).pins || []);
 }
-function pinTarget(pin, { weapons, msSkills }) {
+function pinTarget(pin, { weapons, msSkills, msData }) {
+  if (pin.kind === 'ms') {
+    // 기체 칸 { kind:'ms', ms:'X_LV3', field:'HP', value, was } — msData 가 없으면(공식 대조 등) 건너뛴다
+    const m = (msData || []).find(x => String(x.MS名).normalize('NFC') === pin.ms);
+    if (!m || !(pin.field in m)) return null;
+    return { get: () => m[pin.field], set: v => { m[pin.field] = v; } };
+  }
   if (pin.kind === 'weapon') {
     const w = ((weapons[pin.page] || {}).weapons || []).find(x => x.name === pin.weapon);
     if (!w) return null;
@@ -145,8 +182,27 @@ function pinTarget(pin, { weapons, msSkills }) {
   return null;
 }
 function applyOfficialPins(root, data) {
+  return applyPins(officialPinsOf(root), data);
+}
+/**
+ * 위키 이력 반영 — 위키 기체 페이지 하단 「アップデート履歴」 에만 적고 표는 안 고친 칸.
+ * data/history.reflect.json 은 tools/extract_history_reflect.js 가 만든다(위키 캐시는 커밋하지 않으니 결과를 파일로 남긴다).
+ * 공식값 고정 **뒤에** 얹는다 — 같은 칸이면 공식이 먼저 고쳐 놓아 여기서는 was 가 안 맞아 건너뛴다(공식이 이긴다).
+ * enabled 가 false 면 아무것도 안 한다(목록을 사람이 확인한 뒤 켠다).
+ */
+function historyReflectOf(root) {
+  const p = path.join(root, 'data', 'history.reflect.json');
+  if (!fs.existsSync(p)) return { enabled: false, pins: [] };
+  const o = JSON.parse(fs.readFileSync(p, 'utf8'));
+  return { enabled: !!o.enabled, pins: o.pins || [] };
+}
+function applyHistoryReflect(root, data) {
+  const h = historyReflectOf(root);
+  return h.enabled ? applyPins(h.pins, data) : { applied: 0, caught: 0, moved: [], missing: [], off: true };
+}
+function applyPins(pins, data) {
   const out = { applied: 0, caught: 0, moved: [], missing: [] };
-  for (const pin of officialPinsOf(root)) {
+  for (const pin of pins) {
     const t = pinTarget(pin, data);
     if (!t) { out.missing.push(pin); continue; }
     const now = t.get();
@@ -158,4 +214,5 @@ function applyOfficialPins(root, data) {
 }
 
 module.exports = { mergeMsAdditions, mergePartAdditions, mergeFullstAdditions, applyFullstOverride,
-  officialPinsOf, applyOfficialPins };
+  applyMsOverride, applyMsManual,
+  officialPinsOf, applyOfficialPins, historyReflectOf, applyHistoryReflect, applyPins };
