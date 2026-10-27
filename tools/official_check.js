@@ -33,7 +33,11 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
-const { nz, noCnt } = require('./lib/patchnote_jp.js');
+const JP = require('./lib/patchnote_jp.js');
+// 공식은 라틴 「Ｚ」(→Z), 위키는 그리스 「Ζ」 를 쓴다(量産型ＺＺガンダム ↔ 量産型ΖΖガンダム) — NFKC 로는 안 맞는다.
+// 공용 nz 는 다른 도구도 쓰므로 여기서만 덧씌운다.
+const gz = s => String(s).replace(/Ζ/g, 'Z');
+const nz = s => JP.nz(gz(s)), noCnt = s => JP.noCnt(gz(s));
 const ALL = process.argv.includes('--all');
 const STRICT = !process.argv.includes('--warn');
 const GRACE_DAYS = 21;
@@ -43,7 +47,10 @@ const TODAY = ((process.argv.find(a => a.startsWith('--today=')) || '').slice(8)
 const deadlineOf = date => { const d = new Date(String(date) + 'T00:00:00'); d.setDate(d.getDate() + GRACE_DAYS); return ymd(d); };
 
 const rd = f => JSON.parse(fs.readFileSync(path.join(ROOT, 'data', f), 'utf8'));
-const patches = rd('patchnotes.json').patches || [];
+// --notes=<파일> — data/patchnotes.json 에 없는 공지(목록에서 내려간 옛 조정 등)를 함께 잰다. 꼴은 patchnotes.json 의 patches 와 같다
+const EXTRA = (process.argv.find(a => a.startsWith('--notes=')) || '').slice(8);
+const patches = (rd('patchnotes.json').patches || [])
+  .concat(EXTRA ? (JSON.parse(fs.readFileSync(EXTRA, 'utf8')).patches || []) : []);
 // 미러가 wiki_url 을 비워 보낸 기체도 무장 페이지를 찾게 — 다른 도구와 같은 보정을 거친다
 const msData = require('./lib/msdata.js').applyWikiOverride(rd('msData.json'), ROOT);
 const S = rd('ms_skills.json');
@@ -106,7 +113,10 @@ const WEAPON_STAT = [
   // 단발 무장의 쿨타임은 위키 「発射間隔」 칸에 초로 적힌다(H・グレネード 공식 4.0 = 위키 発射間隔 4秒). 「発/分」 은 쿨타임이 아니다
   [/^クールタイム$/, w => [num(infoOf(w, ['クールタイム'])),
     /秒/.test(String(infoOf(w, ['発射間隔']) || '')) ? num(infoOf(w, ['発射間隔'])) : null]],
-  [/^弾数$/, w => [num(infoOf(w, ['弾数']))]],
+  // E팩 탄창 빔은 탄수가 「OHまでの弾数」 칸에 「4発OH」 · 「6射(12発)OH」 로 적힌다
+  // (量産型百式改 B・R 공식 3→4 = 위키 4発OH, キャノンガン B・R 공식 12 = 위키 6射(12発)OH — 발 수가 탄수다)
+  [/^弾数$/, w => [num(infoOf(w, ['弾数'])),
+    num((String(infoOf(w, ['OHまでの弾数']) || '').match(/(\d+)\s*発\s*[)）]?\s*OH/) || [])[1])]],
   [/^ヒート率$/, w => [infoOf(w, ['ヒート率']), infoOf(w, ['ヒート率/ノン']), infoOf(w, ['ヒート率/フル'])].map(num)],
   [/^射程距離$/, w => [num(infoOf(w, ['射程']))]],
   [/^シールドHP$/, w => [num(infoOf(w, ['シールドHP', 'HP']))]],
@@ -158,6 +168,16 @@ for (const pt of sorted) for (const a of (pt.adjusted || [])) {
         { date: pt.date, base, kind: 'weapon', weapon: r.weapon, label, get: st[1], to, line: c });
     }
   }
+}
+
+/* 같은 기체 · 같은 대상(스킬 이름 / 기체 칸 / 무장 + 항목)은 **가장 최근 공지 날짜의 항목만** 남긴다 — 기체 LV 지정이 달라도.
+   SBS 「ダメージコントロール」: 6/25 「LV3機体の…LV2→LV3」 뒤 9/24 에 LV 지정 없이 「LV2→LV3(上位LVも上昇)」 로
+   또 올라 데이터는 LV4 인데, 열쇠에 기체 LV 가 들어 있어 6/25 항목이 살아남아 틀렸다고 나왔다(2026-10-27). */
+{
+  const subj = it => [it.base, it.kind, it.kind === 'skill' ? nz(it.name) : it.kind === 'ms' ? it.field : nz(it.weapon) + '|' + it.label].join('|');
+  const last = new Map();
+  for (const it of items.values()) { const k = subj(it); if (!last.has(k) || it.date > last.get(k)) last.set(k, it.date); }
+  for (const [k, it] of [...items]) if (it.date < last.get(subj(it))) items.delete(k);
 }
 
 /* ── 데이터와 맞대기 ────────────────────────────────────────────── */
