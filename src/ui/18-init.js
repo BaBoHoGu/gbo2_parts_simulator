@@ -1104,6 +1104,7 @@
     parseStagger,           // 누적치 배수 — 게이트에서 재려고
     fireMult,               // 전탄(동시발사) 배수 — 누적치 쪽과 어긋나지 않는지 대조하려고
     weaponData: () => weaponData,
+    fixedDamageWithParts,   // 소이 고정 피해(파츠 반영) — 실측 조합이 한 값으로 나오는지 재려고
     thrusterSkillsOf,
     thrusterUnmodelled,     // 「계산 안 함」에 든 것과 그 이유를 게이트에서 재려고
     /* 그 기체·그 LV 에서 앱이 **실제로 고른** 스킬 목록.

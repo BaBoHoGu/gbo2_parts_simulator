@@ -128,7 +128,11 @@ const skills = readJson('data', 'skills.json');
     if (!w) continue;
     const m = ((w.info && w.info['備考']) || '').match(/(\d+)\s*固定ダメージ\s*[（(]\s*(\d+)\s*[x×ｘ]\s*(\d+)\s*HIT/i);
     if (!m || Number(m[2]) !== v.base[0] || Number(m[3]) !== v.base[1]) { stale++; continue; }
-    (w.mods = w.mods || {}).burnSoi = v.soi;
+    w.mods = w.mods || {};
+    w.mods.burnSoi = v.soi;
+    // 연소제 + 이레귤러 DBL · 연소제 + 탄약 강화 키트 실측(있는 무장만) — 같은 기본값 검사를 함께 받는다
+    if (v.dbl) w.mods.burnDbl = v.dbl;
+    if (v.kit) w.mods.burnKit = v.kit;
     n++;
   }
   if (n || stale) console.log(`소이 실측 반영: ${n}종` + (stale ? ` · 기본값이 달라 건너뜀 ${stale}종` : ''));

@@ -730,13 +730,16 @@
     let hits = Math.floor((fx.hits - 1) * b.dur) + 1;          // 최소
     let hitsMax = Math.floor((fx.hits - 1e-9) * b.dur) + 1;    // 최대
     let per2 = per, measured = false;
-    // 위키 5891 에 **실제로 재 본 값**이 있고, 지금 낀 소이 파츠가 특수 연소제 하나뿐이면
-    // 추정 대신 그 값을 쓴다(배율이 딱 dmg 1.25 · dur 1.1 이면 연소제 단독이다).
-    // 그 표는 연소제 단독 열만 조건이 분명해서, 다른 조합에는 쓰지 않는다.
-    const meas = w && w.mods && w.mods.burnSoi;
-    if (meas && Math.abs(b.dmg - 1.25) < 1e-9 && Math.abs(b.dur - 1.1) < 1e-9) {
-      per2 = meas[0]; hits = hitsMax = meas[1]; measured = true;
-    }
+    // 위키 5891 에 **실제로 재 본 값**이 있는 조합이면 추정 대신 그 값을 쓴다. 배율로 조합을 가린다 —
+    //   연소제 단독 dmg 1.25 · dur 1.1 / + 이레귤러 DBL(10%) dur 1.21 / + 탄약 강화 키트(20%) dur 1.32
+    // DBL 과 키트는 같이 못 낀다(위키 5891). 그 밖의 조합(연소제 없이 DBL 만 등)은 실측이 없어 범위로 낸다.
+    const mods = (w && w.mods) || {};
+    const near = (a, x) => Math.abs(a - x) < 1e-9;
+    const meas = !near(b.dmg, 1.25) ? null
+      : near(b.dur, 1.1) ? mods.burnSoi
+      : near(b.dur, 1.1 * 1.1) ? mods.burnDbl
+      : near(b.dur, 1.1 * 1.2) ? mods.burnKit : null;
+    if (meas) { per2 = meas[0]; hits = hitsMax = meas[1]; measured = true; }
     return { base: fx, per: per2, hits, hitsMax,
       total: per2 * hits, totalMax: per2 * hitsMax,
       ranged: hitsMax > hits, measured,

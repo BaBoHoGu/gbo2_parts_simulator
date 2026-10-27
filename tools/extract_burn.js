@@ -7,9 +7,11 @@
 // 결과가 두 정수에 걸친다. 그래서 앱은 「16~17히트」처럼 범위로 낸다.
 // 위키에 **실제로 재 본 값**이 있는 무장만은 그 값을 그대로 쓴다.
 //
-// 표에서 쓰는 건 「ダメージ（標準値）」와 「特殊燃焼剤装備」 두 열뿐이다.
-// 「イレギュラーDBL併用時」·「弾薬強化キット併用時」 은 **어느 파츠까지 겹친 값인지
-// 표에 적혀 있지 않아** 쓰지 않는다 — 잘못 붙이면 틀린 수치를 확신에 차서 보여 준다.
+// 표의 네 열을 쓴다 — 「ダメージ（標準値）」 · 「特殊燃焼剤装備」 · 「イレギュラーDBL併用時」 · 「弾薬強化キット併用時」.
+// 뒤의 두 열은 예전엔 어느 파츠까지 겹친 값인지 몰라 안 썼다. 지금 표(2026-09-26)는 본문에
+// 「イレギュラーDBL、または弾薬強化キットと併用可能。この2つは併用できない」 라 적었고, 두 열의 1틱이
+// 연소제가 붙은 값(×1.25)이라 각각 **연소제 + DBL**, **연소제 + 키트** 다. 「？」 칸은 비운다.
+// 칸 합치기(colspan)가 있어 — 「燃焼剤=DBL」 처럼 두 열이 같은 값이면 한 칸으로 묶인다 — 칸을 펼쳐 열 번호로 읽는다.
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -46,9 +48,14 @@ const FX = /(\d+)\s*固定ダメージ\s*[（(]\s*(\d+)\s*[x×ｘ]\s*(\d+)\s*HIT
   const miss = [];
   let rows = 0;
   for (const tr of (table.match(/<tr[\s\S]*?<\/tr>/gi) || [])) {
-    const cells = tr.match(/<t[dh][\s\S]*?<\/t[dh]>/gi) || [];
+    const cells = [];
+    for (const c of (tr.match(/<t[dh][\s\S]*?<\/t[dh]>/gi) || [])) {
+      const span = +((c.match(/colspan\s*=\s*["']?(\d+)/i) || [])[1] || 1);
+      for (let k = 0; k < span; k++) cells.push(c);
+    }
     if (cells.length < 3) continue;
     const base = cell(cells[1]), soi = cell(cells[2]);
+    const dbl = cells[3] ? cell(cells[3]) : null, kit = cells[4] ? cell(cells[4]) : null;
     if (!base || !soi) continue;
     rows++;
     for (const raw of clean(cells[0]).split(/[、,]/).map(x => x.trim()).filter(Boolean)) {
@@ -80,7 +87,15 @@ const FX = /(\d+)\s*固定ダメージ\s*[（(]\s*(\d+)\s*[x×ｘ]\s*(\d+)\s*HIT
             : ' · 그 기체에 固定ダメージ 무장이 없습니다'));
         continue;
       }
-      out[id + '|' + cand[0].name] = { base: [base.per, base.hits], soi: [soi.per, soi.hits] };
+      const e = { base: [base.per, base.hits], soi: [soi.per, soi.hits] };
+      /* DBL·키트는 지속시간만 늘린다 — 1틱이 연소제 단독과 다르면 표의 오기다
+         (GAU 의 DBL 칸이 「5000（5000×10）」, 2026-10-27). 고쳐 넣지 않고 비운다 — 앱은 범위로 낸다. */
+      for (const [k, c] of [['dbl', dbl], ['kit', kit]]) {
+        if (!c) continue;
+        if (c.per === soi.per) e[k] = [c.per, c.hits];
+        else miss.push(raw + ' — ' + k + ' 칸의 1틱 ' + c.per + ' 이 연소제 단독 ' + soi.per + ' 과 달라 뺍니다(표 오기?)');
+      }
+      out[id + '|' + cand[0].name] = e;
     }
   }
 
