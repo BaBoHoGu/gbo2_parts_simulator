@@ -110,7 +110,9 @@ for (const [id, pg] of pages) {
       /* 집속 단계 — 표에는 집속 값이 한 칸뿐(1단계째). 「集束2段階目」 등은 표에 칸이 없다 → 'x' 로 두고 안 잰다.
          안 그러면 ハンマ・ハンマ 3連装メガ粒子砲 7/23 「2段階目 Lv1：1300 → 1400」 의 「바뀌기 전」 1300 이
          1단계째의 바뀐 뒤 값(=표 1300)과 우연히 같아 「표가 낡음」 으로 잡혔다(2026-10-27). */
-      const qOf = s => /[2-9２-９]\s*段階/.test(s) ? 'x' : /非集束/.test(s) ? 'n' : /集束/.test(s) ? 'c' : null;
+      // 「※」 뒤는 「조정 없음」 쪽이다 — 「集束 ※非集束時は調整無し」 는 집속이 대상. 앞부분만 본다(통째로 보면 「非集束」 에 걸렸다)
+      const qOf = s0 => { const s = String(s0).split('※')[0];
+        return /[2-9２-９]\s*段階/.test(s) ? 'x' : /非集束/.test(s) ? 'n' : /集束/.test(s) ? 'c' : null; };
       if (l.depth >= 2 && !pairs.length) qual = qOf(t) || qual;
       if (!pairs.length || !top) continue;
       /* LV 표기 없는 한 값(「20000 → 18000」)은 가장 낮은 LV 로 본다 — 「Lv1：18000 → 20000」 과 **같은 대상**이어야
@@ -171,6 +173,17 @@ for (const it of items.values()) {
 const seen = new Set();
 const uniq = pins.filter(p => { const k = JSON.stringify([p.kind, p.ms, p.page, p.weapon, p.path, p.field]); if (seen.has(k)) return false; seen.add(k); return true; });
 
+/* 「그 밖에 다름」 을 방향으로 가른다 — 바뀐 방향(to − from)으로 봐서
+     앞섬: 표가 바뀐 뒤보다 더 나아갔다(그 뒤 조정이 또 있었는데 이력 꼴이 달라 못 읽었을 가능성이 크다 — 표가 맞을 공산)
+     뒤처짐: 표가 바뀌기 전보다도 더 뒤다(조정을 두 번 이상 놓친 칸일 수 있다 — 가장 의심스럽다)
+     엇갈림: 그 밖(단위 · 해석 · 이력 오기) */
+const dirOf = r => {
+  const d = r.it.to - r.it.from;
+  if (!d) return 'odd';
+  if (Math.sign(r.have - r.it.to) === Math.sign(d)) return 'ahead';
+  if (Math.sign(r.it.from - r.have) === Math.sign(d)) return 'behind';
+  return 'odd';
+};
 const show = r => '  ' + r.it.date + ' ' + r.it.base + (r.lv ? ' LV' + r.lv : '') + ' — 「' + r.it.line + '」 · 표 ' + r.have;
 console.log('위키 이력 항목 ' + items.size + ' · 맞음 ' + ok + ' · 반영 ' + uniq.length + '칸(' + new Set(uniq.map(p => p.ms)).size + '기)'
   + ' · 모호해서 뺌 ' + amb.length + ' · 그 밖에 다름 ' + other.length);
@@ -178,7 +191,15 @@ if (LIST || PRINT) {
   console.log('\n[반영]'); for (const p of uniq) console.log('  ' + p.date + ' ' + p.ms + ' · ' + (p.weapon ? p.weapon + ' ' + p.path : p.field)
     + ' : ' + JSON.stringify(p.was).slice(0, 30) + ' → ' + JSON.stringify(p.value).slice(0, 30));
   console.log('\n[모호해서 뺌 — 이력 줄 오기]'); amb.forEach(r => console.log(show(r)));
-  if (LIST) { console.log('\n[그 밖에 다름 — 손대지 않음]'); other.forEach(r => console.log(show(r))); }
+  if (LIST) {
+    const by = { behind: [], odd: [], ahead: [] };
+    for (const r of other) by[dirOf(r)].push(r);
+    console.log('\n[그 밖에 다름 — 손대지 않음] 뒤처짐 ' + by.behind.length + ' · 엇갈림 ' + by.odd.length + ' · 앞섬 ' + by.ahead.length);
+    for (const [k, name] of [['behind', '뒤처짐 — 표가 바뀌기 전보다도 뒤(조정을 여러 번 놓쳤을 수 있다)'], ['odd', '엇갈림 — 단위 · 해석 · 이력 오기'], ['ahead', '앞섬 — 표가 이력보다 더 나아감(표가 맞을 공산)']]) {
+      console.log('\n  ── ' + name);
+      by[k].sort((a, b) => b.it.date.localeCompare(a.it.date)).forEach(r => console.log(show(r)));
+    }
+  }
 }
 if (!PRINT) {
   const prev = fs.existsSync(DEST) ? JSON.parse(fs.readFileSync(DEST, 'utf8')) : {};
