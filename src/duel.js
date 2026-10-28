@@ -217,7 +217,8 @@
     if (!side.ms) return [];
     const page = WP[pageId(side.ms)];
     if (!page) return [];
-    const lv = msLv(side.ms), out = [];
+    const lv = msLv(side.ms), out = [], missing = [];
+    out.missing = missing;   // 이 LV 위력이 위키에 없어 뺀 무장 — weaponBlock 이 밝힌다
     (page.weapons || []).forEach((w, i) => {
       if (w.type === 'shield') return;
       /* ＜変身時＞使用可 · ＜通常時＞使用可 — 고른 모드에서 못 쓰는 무장은 뺀다(표기 없는 무장은 어느 모드나) */
@@ -228,7 +229,14 @@
       const k = String(fit.length ? fit[fit.length - 1] : lvs[0]);
       const d = w.levels[k];
       const power = Number(d && d.power) || 0, charged = Number(d && d.powerCharged) || 0;
-      if (!power && !charged) return;
+      if (!power && !charged) {
+        /* 이 LV 의 위력 칸이 위키에 비어 있는데 아래 LV 엔 있다 — 조용히 빼면 「무장이 왜 없지」 가 된다
+           (ウイングガンダムゼロ LV2 의 ZERO システム 무장 2개 등 9칸, 2026-10-28 점검). 다른 LV 값을 빌려 쓰지는 않는다
+           — 그 LV 의 값이 아니다. 뺀 것을 모아 무장 칸 밑에 밝힌다. */
+        const low = lvs.filter(l => l < +k).reverse().map(l => w.levels[l]).find(x => x && (x.power || x.powerCharged));
+        if (low) missing.push({ w, lv: +k });
+        return;
+      }
       const note = noteOf(w), attr = weaponAttr(w), melee = attr === 'melee';
       const two = !melee && isTwoStage(w);
       out.push({
@@ -869,6 +877,10 @@
       list.append(r);
     }
     b.append(list);
+    if (ws.missing && ws.missing.length) {
+      b.append(el('div', 'ds-empty', '위키에 LV' + ws.missing[0].lv + ' 위력이 없어 뺀 무장: '
+        + ws.missing.map(m => T.weaponName(m.w.name)).join(' · ')));
+    }
 
     const x = pickedWeapon(side);
     if (x) {

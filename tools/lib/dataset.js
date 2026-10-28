@@ -198,7 +198,12 @@ function historyReflectOf(root) {
 }
 function applyHistoryReflect(root, data) {
   const h = historyReflectOf(root);
-  return h.enabled ? applyPins(h.pins, data) : { applied: 0, caught: 0, moved: [], missing: [], off: true };
+  /* 사람이 확인한 칸(approved)만 얹는다 — 생성기가 배포 때마다 다시 돌아 새 칸을 찾는데, 그걸 바로 얹으면
+     오판(유니콘 빔 매그넘 5→6 같은)이 알림 없이 나간다(2026-10-28 점검). 확인 전 칸은 history_reflect_check 가 알린다. */
+  if (!h.enabled) return { applied: 0, caught: 0, moved: [], missing: [], off: true, pending: 0 };
+  const r = applyPins(h.pins.filter(p => p.approved === true), data);
+  r.pending = h.pins.filter(p => p.approved !== true).length;
+  return r;
 }
 /**
  * 빌드와 같은 순서로 두 고정을 다 얹는다(공식 → 이력). 무장 데이터를 읽는 도구는 이걸 거쳐야 앱과 같은 글을 본다 —
@@ -213,6 +218,17 @@ function applyPins(pins, data) {
   for (const pin of pins) {
     const t = pinTarget(pin, data);
     if (!t) { out.missing.push(pin); continue; }
+    /* 조각 고정 { sub: { from, to } } — 備考 같은 긴 문장은 **바꿀 조각만** 맞댄다.
+       문장 통째로 was 를 들고 있으면 위키가 다른 글자 하나만 고쳐도 「값이 움직였다」 가 되어
+       manualpin_check 가 배포를 세웠다(2026-10-28 점검). 조각이 그대로 남아 있으면 고치고,
+       바뀐 조각이 이미 있으면 따라잡은 것, 둘 다 없으면 움직인 것이다. */
+    if (pin.sub) {
+      const now = String(t.get() == null ? '' : t.get());
+      if (now.includes(pin.sub.to) && !now.includes(pin.sub.from)) { out.caught++; continue; }
+      if (!now.includes(pin.sub.from)) { out.moved.push({ ...pin, now }); continue; }
+      t.set(now.split(pin.sub.from).join(pin.sub.to)); out.applied++;
+      continue;
+    }
     const now = t.get();
     if (JSON.stringify(now) === JSON.stringify(pin.value)) { out.caught++; continue; }
     if (JSON.stringify(now) !== JSON.stringify(pin.was)) { out.moved.push({ ...pin, now }); continue; }

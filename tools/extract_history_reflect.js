@@ -78,8 +78,11 @@ const W_STAT = [
     || (c => c && /秒/.test(c.was) ? c : null)(strCell(w, '発射間隔')) },
   { re: /^集束時間|^チャージ時間/, cell: w => {
     const key = infoKey(w, '備考'); if (!key) return null; const was = w.info[key];
-    const m = String(was).match(/集束時間[：:]\s*([\d.]+)/); if (!m) return null;
-    return { get: Number(m[1]), path: 'info.' + key, was, write: to => String(was).replace(m[0], m[0].replace(m[1], fmt(to))) };
+    // 단위(秒)까지 조각에 넣는다 — 「集束時間：4」 로 끊으면 「集束時間：45秒」 에도 걸린다
+    const m = String(was).match(/集束時間[：:]\s*([\d.]+)秒?/); if (!m) return null;
+    // 備考 는 긴 문장이라 **조각만** 고정한다(dataset.js applyPins 의 sub) — 통째로 박으면 위키의 다른 글자 수정에 깨진다
+    return { get: Number(m[1]), path: 'info.' + key, was, write: to => String(was).replace(m[0], m[0].replace(m[1], fmt(to))),
+      sub: to => ({ from: m[0], to: m[0].replace(m[1], fmt(to)) }) };
   } },
 ];
 // 「Lv1：a → b Lv2-3：c → d」 또는 「a → b」. 한 줄에 같은 LV 가 두 번이면 모호하다
@@ -164,7 +167,8 @@ for (const it of items.values()) {
       const row = { it, lv, have: c.get };
       if (c.get !== it.from) { other.push(row); continue; }
       if (it.ambiguous) { amb.push(row); continue; }
-      pins.push({ kind: 'weapon', page: it.id, weapon: it.w.name, path: c.path, value: c.write(it.to), was: c.was,
+      pins.push({ kind: 'weapon', page: it.id, weapon: it.w.name, path: c.path,
+        ...(c.sub ? { sub: c.sub(it.to) } : { value: c.write(it.to), was: c.was }),
         date: it.date, ms: it.base, src: '위키 ' + it.id + ' 이력 ' + it.date + ' 「' + it.line + '」' });
     }
   }
@@ -203,15 +207,26 @@ if (LIST || PRINT) {
 }
 if (!PRINT) {
   const prev = fs.existsSync(DEST) ? JSON.parse(fs.readFileSync(DEST, 'utf8')) : {};
+  /* 확인 표시(approved)를 이어받는다. 열쇠는 칸 + 이력 날짜 — 값 꼴(통째 → 조각)이 바뀌어도 같은 칸 같은 이력이면 같은 것.
+     approved 가 없던 옛 파일은 켜져 있었으면(enabled) 그 칸들을 확인한 것으로 본다(2026-10-27 사람이 목록을 보고 켰다). */
+  const keyOf = p => JSON.stringify([p.kind, p.ms, p.page, p.weapon, p.path, p.field, p.date]);
+  const okPrev = new Set((prev.pins || []).filter(p => p.approved === true || (p.approved == null && prev.enabled)).map(keyOf));
+  const APPROVE = process.argv.includes('--approve');
+  for (const p of uniq) p.approved = APPROVE || okPrev.has(keyOf(p));
+  const pending = uniq.filter(p => !p.approved);
   fs.writeFileSync(DEST, JSON.stringify({
     _주석: [
       '위키 하단 이력에만 적고 표는 안 고친 칸 — tools/extract_history_reflect.js 가 만든다(손으로 고치지 말 것).',
-      '표 값이 이력의 「바뀌기 전」 값일 때만 「바뀐 뒤」 값으로(was). 빌드는 공식값 고정 뒤에 얹는다.',
+      '표 값이 이력의 「바뀌기 전」 값일 때만 「바뀐 뒤」 값으로(was · 備考 는 조각 sub). 빌드는 공식값 고정 뒤에 얹는다.',
       'enabled 를 true 로 해야 빌드가 얹는다 — 목록을 사람이 확인한 뒤 켠다(2026-10-27).',
+      '빌드는 approved 인 칸만 얹는다. 새로 찾은 칸은 false — history_reflect_check 가 배포 요약에 알리고,',
+      '사람이 목록(--list)을 보고 node tools/extract_history_reflect.js --approve 로 승인한다(2026-10-28).',
     ],
     enabled: !!prev.enabled,
     pins: uniq,
     ambiguous: amb.map(r => ({ ms: r.it.base, lv: r.lv, line: r.it.line, date: r.it.date, have: r.have })),
   }, null, 1) + '\n');
-  console.log('→ data/history.reflect.json (enabled ' + !!prev.enabled + ')');
+  console.log('→ data/history.reflect.json (enabled ' + !!prev.enabled + ' · 확인 ' + (uniq.length - pending.length) + ' · 확인 전 ' + pending.length + ')');
+  for (const p of pending) console.log('  · 확인 전: ' + p.date + ' ' + p.ms + ' · ' + (p.weapon ? p.weapon + ' ' + p.path : p.field)
+    + ' : ' + JSON.stringify(p.sub ? p.sub.from : p.was).slice(0, 30) + ' → ' + JSON.stringify(p.sub ? p.sub.to : p.value).slice(0, 30));
 }
