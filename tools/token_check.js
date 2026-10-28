@@ -29,7 +29,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 let pass = 0, fail = 0;
 const ok = (label, cond, extra) => {
   if (cond) { pass++; console.log('  PASS ' + label); }
-  else { fail++; console.log('  FAIL ' + label + (extra ? '  ' + extra : '')); }
+  // 객체는 펼쳐 찍는다 — 문자열로 이어 붙이면 「[object Object]」 만 남아 왜 걸렸는지 안 보였다(2026-10-28)
+  else { fail++; console.log('  FAIL ' + label + (extra ? '  ' + (typeof extra === 'object' ? JSON.stringify(extra) : extra) : '')); }
 };
 
 (async () => {

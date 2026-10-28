@@ -526,7 +526,7 @@
   }
 
   /** 한 달치 타임라인 한 덩이. 주 눈금은 그 달 안에서만 센다. */
-  function monthBlock(key, list, today) {
+  function monthBlock(key, list, today, todayHere = true) {
     const [Y, M] = key.split('-').map(Number);
     const mStart = new Date(Y, M - 1, 1), mEnd = new Date(Y, M, 0);
     const first = new Date(mStart);
@@ -559,7 +559,7 @@
     }
 
     const tl = (today - first) / (7 * MS_DAY) / weeks * 100;
-    const showToday = tl >= 0 && tl <= 100;
+    const showToday = todayHere && tl >= 0 && tl <= 100;
     const mechN = list.filter(p => isMech(p.name)).length;
     return '<div class="fw-month-block">'
       + '<div class="fw-mhead">' + M + '월 <span>' + list.length + '건'
@@ -606,7 +606,11 @@
     if (!PICKUPS.length) { chart.innerHTML = '<div class="empty">받아 둔 일정이 없습니다</div>'; return; }
     const { rows, today } = splitPickups();
     if (!rows.length) { chart.innerHTML = '<div class="empty">그릴 일정이 없습니다</div>'; return; }
-    chart.innerHTML = byMonth(rows).map(([k, v]) => monthBlock(k, v, today)).join('');
+    /* 「오늘」 은 오늘이 낀 **달의 덩이에만** 그린다. 달을 걸치는 주(10/28~11/3)는 10월 덩이의 끝 눈금이자
+       11월 덩이의 첫 눈금이라 범위만 보면 두 덩이에 다 붙었다(2026-10-28 token_check). 그 달 덩이가 없을 때만 범위로 고른다. */
+    const months = byMonth(rows), tKey = todayStr().slice(0, 7);
+    const own = months.some(([k]) => k === tKey);
+    chart.innerHTML = months.map(([k, v]) => monthBlock(k, v, today, !own || k === tKey)).join('');
   }
 
   /** 벗어난 것 알림 — 「나왔는데 날짜가 다르다」와 「지났는데 안 나왔다」 둘 다 적는다. */
