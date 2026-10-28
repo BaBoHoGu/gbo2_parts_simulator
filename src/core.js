@@ -353,6 +353,12 @@ const RELOAD_EXCLUSIVE_RE = /リロード時間を短縮できるパーツとは
 // 탄약 강화 키트의 문구는 「リロード時間を短縮できるパーツ」 이므로 리로드 시간만 본다.
 const RELOAD_TIME_RE = /リロード時間[^。]*?(?:短縮|上昇)/;
 const ASL_TEXT = ['ASL', '兵装の集束時間'];
+/* 「同一効果…のパーツとは同時装備不可」 의 **같은 효과** — 탄약 강화 키트의 「敵に与えた一部の状態異常の継続時間を20%増加」.
+   위키 7888: 同時装備不可は、クイックローダー、大容量補給パック、イレギュラーDBL、試験型イレギュラーDBL、コネクティングシステム［支援Ⅱ型］.
+   리로드 쪽(RELOAD_EXCLUSIVE_RE)만 읽어 DBL 둘이 함께 달렸다(사용자 보고 2026-10-28).
+   특수 연소제는 「焼夷効果の継続時間」 이라 걸리지 않는다 — 위키도 「焼夷効果限定のため同時装備可能」. */
+const STATUS_DUR_RE = /状態異常の継続時間/;
+const SAME_EFFECT_RE = /同一効果[^。]*同時装備不可/;
 const CONNECT_SUPPORT1 = 'コネクティングシステム[支援Ⅰ型]_LV1';
 
 /* ---------- 기본 유틸 ---------- */
@@ -780,13 +786,23 @@ function effectConflict(part, equipped) {
   // 원본 번들에 없는 신규 파츠라 원본 판정식이 알 수 없어, 위키 문구를 그대로 규칙으로 쓴다.
   // 이름이 아니라 문구로 판정하므로 기존 161개에는 걸리지 않는다(전수 확인: 0건).
   const reloadExclusive = RELOAD_EXCLUSIVE_RE.test(desc);
+  const carriesStatusDur = STATUS_DUR_RE.test(desc);
 
   // 대부분의 파츠는 어느 규칙에도 걸리지 않는다 — 장착 목록을 훑기 전에 끝낸다.
   // (탐색 루프에서 수만 번 호출되므로 이 조기 반환이 비용을 좌우한다)
-  if (!isSupply && !isFCS && !isConn1 && !carriesReload && !carriesAsl) return null;
+  // 상태 이상 지속 파츠(DBL)도 여기서 걸러지면 안 된다 — 빠뜨려 DBL 쪽에서 낄 때 키트를 못 봤다.
+  if (!isSupply && !isFCS && !isConn1 && !carriesReload && !carriesAsl && !carriesStatusDur) return null;
 
   const list = Array.isArray(equipped) ? equipped : [];
   const find = fn => list.find(fn) || null;
+
+  // 「같은 효과(상태 이상 지속 시간)로 함께 못 단다」 고 밝힌 파츠 ↔ 상태 이상 지속 시간을 늘리는 파츠(양방향)
+  if (carriesStatusDur) {
+    const sameMine = SAME_EFFECT_RE.test(desc);
+    const other = find(e => e.name !== name && STATUS_DUR_RE.test(e.description || '')
+      && (sameMine || SAME_EFFECT_RE.test(e.description || '')));
+    if (other) return other.name;
+  }
 
   // 설명이 그렇게 밝힌 파츠는 리로드를 줄이는 아무 파츠와도 함께 못 단다(양방향).
   if (reloadExclusive) {
