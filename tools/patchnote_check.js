@@ -144,6 +144,15 @@ if (!fs.existsSync(DATA)) {
     ps.map(p => p.date).filter(x => !/^\d{4}-\d{2}-\d{2}$/.test(x)));
 
   const ads = ps.flatMap(p => p.adjusted || []);
+  /* 일본어판 이름이 있는 항목은 **그 이름의 기체**로 이어져야 한다. 한국어 이름이 겹치는 기체(카풀 = カプル · カプール)는
+     한국어로 이으면 한쪽으로 몰린다 — 2026-10-29 의 カプル 조정이 カプール 에 붙었다(사용자 지적). */
+  {
+    const jn = s => String(s || '').normalize('NFKC').replace(/Ζ/g, 'Z').replace(/[\s·・]/g, '').replace(/[［【]/g, '[').replace(/[］】]/g, ']').toLowerCase();
+    const off = [];
+    for (const p of ps) for (const a of p.adjusted || [])
+      if (a.ja && a.ja.name && a.ms && jn(a.ja.name) !== jn(a.ms)) off.push(p.date + ' ' + a.ko + ': 일본어 「' + a.ja.name + '」 인데 ' + a.ms + ' 에 이었다');
+    ok('일본어판 이름과 이은 기체가 같다 (한국어 이름이 겹치는 기체)', !off.length, off.slice(0, 5));
+  }
   /* 위키 채움에 기대는 단언은 **공지 뒤 21일이 지난 패치**로만 잰다(공식 대조와 같은 유예).
      패치 다음 날엔 위키가 아직 수치를 안 적어, 조정 61기 패치(2026-10-29)에서 9건이 실패해 배포가 섰다.
      그 사이 빈칸은 실패가 아니라 NOTICE 로 알린다 — 21일이 지나면 다시 단언에 들어온다. */

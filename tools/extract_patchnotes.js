@@ -81,6 +81,18 @@ const NM = (() => {
   return ko => map.get(norm(ko)) || null;
 })();
 
+/* 공식 **일본어** 이름 → 우리 기체. 한국어 이름보다 먼저 쓴다.
+   한국어 이름은 겹친다 — カプル 와 カプール 가 둘 다 「카풀」이라, 한국어로 찾으면 늘 한쪽(맵에 나중에 든 쪽)으로 갔다.
+   2026-10-29 공지의 カプル 조정이 カプール 에 붙어 패치노트 화면 · 공식 대조가 다 틀렸다(사용자 지적으로 확인).
+   일본어끼리는 표기만 맞추면 된다: 전각→반각(NFKC) · 공백/가운뎃점 · 괄호꼴 · 그리스 Ζ ↔ 라틴 Z(공식은 Ｚ, 위키는 Ζ). */
+const JNM = (() => {
+  const norm = s => String(s).normalize('NFKC').replace(/Ζ/g, 'Z')
+    .replace(/[\s·・]/g, '').replace(/[［【]/g, '[').replace(/[］】]/g, ']').toLowerCase();
+  const map = new Map();
+  for (const m of msData) { const j = String(m['MS名']).normalize('NFC').replace(/_LV\d+$/, ''); map.set(norm(j), j); }
+  return ja => (ja ? map.get(norm(ja)) || null : null);
+})();
+
 /** 공지 목록에서 「유닛 관련 조정」 글. 한 패치가 타입별로 여러 글일 수 있다(실측: 2026-05-28).
  *  일본어판은 같은 틀에 제목만 다르다(실측: /jp/ 목록이 /kr/ 과 같은 HTML). */
 const TITLE = { kr: /유닛\s*(관련\s*)?조정/, jp: /ユニット\s*(関連の)?調整/ };
@@ -205,6 +217,7 @@ function realAddDate(ms, ourDate) {
   };
 
   const unmatched = [];
+  const nameSplit = [];   // 한국어 이름과 일본어 이름이 다른 기체를 가리킨 것
   let wikiHit = 0, wikiMiss = [];
   let fillOk = 0, fillTry = 0;
   let jpUsed = 0; const jpSkip = [];
@@ -220,7 +233,12 @@ function realAddDate(ms, ourDate) {
     const krUnits = P.parseNotice(html);
     for (let ui = 0; ui < krUnits.length; ui++) {
       const u = krUnits[ui];
-      const ja = NM(u.name);
+      /* 일본어판의 같은 순번 항목 이름으로 먼저 찾는다(JNM) — 한국어 이름이 겹치는 기체(카풀) 때문.
+         못 찾으면 한국어 이름으로 물러선다. 둘이 다른 기체를 가리키면 남겨 둔다(순번 짝이 어긋났을 수도 있다). */
+      const jpUnit = await jpSectionsOf(a.id, ui);
+      const byJp = jpUnit ? JNM(jpUnit.name) : null, byKo = NM(u.name);
+      const ja = byJp || byKo;
+      if (byJp && byKo && byJp !== byKo) nameSplit.push(a.date + ' 「' + u.name + '」 한국어→' + byKo + ' · 일본어 「' + jpUnit.name + '」→' + byJp + ' (일본어를 씀)');
       if (!ja) unmatched.push(a.date + ' 「' + u.name + '」');
       /* 위키에서 **그 날짜의 조정 내역**을 가져온다 — 공식이 생략한 수치가 여기 있다. */
       const id = ja ? pageOf.get(ja) : null;
@@ -236,7 +254,7 @@ function realAddDate(ms, ourDate) {
            게다가 한국어 경로가 **틀리게 채운 자리 셋**을 바로잡는다 —
            리미터 해제에 통상 값, 【헤비 어택】에 통상 격투 값(F89·기라 줄루).
          ■ 자리가 어긋나면 손대지 않고 한국어 경로로 물러선다. 틀린 수치는 없는 것만 못하다. */
-      const jpUnit = await jpSectionsOf(a.id, ui);
+      // jpUnit 은 위에서 받았다(기체 연결에 먼저 쓴다)
       let f = null;
       if (jpUnit && wiki && wiki.length) {
         const r = JPF.fillByJp(u.sections, jpUnit.sections, wiki);
@@ -317,6 +335,10 @@ function realAddDate(ms, ourDate) {
     + (jaOff.length ? ' · 자리가 어긋나 못 담은 기체 ' + jaOff.length + '기: ' + jaOff.join(', ') : ''));
   console.log('  추가 기체 날짜 — 위키 날짜로 고친 것 ' + fixed + '건 · 우리 날짜를 그대로 쓴 것 ' + kept + '건');
   if (wikiMiss.length) console.log('  위키 수치를 못 찾은 기체 (앞 6): ' + wikiMiss.slice(0, 6).join(' | '));
+  if (nameSplit.length) {
+    console.log('\n  · 한국어 이름과 일본어 이름이 다른 기체를 가리킨 것 ' + nameSplit.length + '건 (한국어 이름이 겹치는 기체 — 일본어로 이었다):');
+    for (const s of nameSplit) console.log('     ' + s);
+  }
   if (unmatched.length) {
     console.log('\n  ⚠ 우리 기체와 이름이 안 맞는 것 ' + unmatched.length + '건 — 사전을 공식 표기로 맞출 것');
     for (const u of unmatched) console.log('     ' + u);

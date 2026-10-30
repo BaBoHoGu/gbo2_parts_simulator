@@ -204,6 +204,9 @@ for (const it of items.values()) {
          (헤이즐 아우스라 「オーバーブースト」: 공식·위키 이력 모두 LV1-2 기체인데 표는 LV2～ 에만, 2026-10-27). */
       if (named.length) res.bad.push([it, '기체 LV' + n + ' 에 그 스킬이 없음 — 데이터에는 '
         + named.map(s => s.msLv + ' ' + s.lv).join(' / ') + ' 에만 있다']);
+      /* 「付与」 는 공식이 **그 스킬을 준다**고 못박은 줄이다 — 표에 없으면 잴 대상을 못 찾은 게 아니라
+         데이터가 안 따라온 것이다. 「못 맞춤」 으로 두면 유예가 지나도 FAIL 이 안 났다(2026-10-29 付与 21줄). */
+      else if (it.from == null) res.bad.push([it, '스킬 표에 부여된 스킬이 없음(기체 LV' + n + ')']);
       else res.miss.push([it, '스킬 표에 그 스킬 없음(기체 LV' + n + ')']);
       continue;
     }

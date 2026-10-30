@@ -236,7 +236,22 @@ async function detectPatch(msList) {
     watch = WW.seed([...baseByPage.keys()]);
     seeded = Object.keys(watch).length;
   }
+  /* 최근 조정 공지(data/patchnotes.json, 공지일 + HOLD_DAYS 안)의 기체 페이지는 감시에 **붙잡아 둔다**(WW.hold).
+     위키가 패치를 덜 고친 채 두 번 같은 값이 나와도 떼지 않는다 — 떼면 고친 뒤에도 몇 주를 못 본다(2026-10-30 점검). */
+  let held = 0;
+  try {
+    const pn = rdJson('data', 'patchnotes.json');
+    const pageByBase = new Map([...baseByPage].map(([id, b]) => [String(b).normalize('NFC'), id]));
+    const cutoff = new Date(Date.now() - WW.HOLD_DAYS * 864e5).toISOString().slice(0, 10);
+    for (const p of (pn && pn.patches) || []) {
+      if (!p.date || p.date < cutoff) continue;
+      const until = new Date(Date.parse(p.date + 'T00:00:00Z') + WW.HOLD_DAYS * 864e5).toISOString().slice(0, 10);
+      const ids = (p.adjusted || []).map(a => pageByBase.get(String(a.ms || '').normalize('NFC'))).filter(Boolean);
+      WW.hold(watch, ids, until); held += ids.length;
+    }
+  } catch (e) { console.log('  (패치 조정 페이지 붙잡기 건너뜀: ' + e.message + ')'); }
   const watchIds = WW.due(ROOT, watch);
+  if (held) console.log(`  · 최근 조정 공지의 기체 페이지 ${held}개는 위키가 따라올 때까지(공지일 + ${WW.HOLD_DAYS}일) 감시합니다`);
   /* 감시에서 뗀 뒤에도 아주 가끔 돌아본다 — 캐시가 가장 오래된 것부터 ROLL 개.
      감시는 「값이 굳으면」 끝나므로, 그 뒤 위키가 고친 것은 밸런스 패치에 이름이
      오르지 않는 한 영영 안 본다. 오래된 캐시는 조용히 썩는다(ガンダムDX 가 그랬다). */

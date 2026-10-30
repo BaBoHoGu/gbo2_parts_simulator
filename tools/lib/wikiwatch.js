@@ -89,6 +89,19 @@ function roll(ROOT, allIds, n, skip) {
   return rows.slice(0, n).map(r => r[0]);
 }
 
+/** 밸런스 패치로 조정된 기체 페이지는 **값이 같아도 until 까지 붙잡는다.**
+ *  「두 번 연속 같으면 다 채워졌다」 는 새 기체(위키가 틀부터 만들어 며칠에 걸쳐 채움)용 규칙이다.
+ *  패치 조정은 위키가 **아직 안 고친 상태로** 같은 값이 두 번 나온다 — 조정 61기 패치(2026-10-29)에서
+ *  이틀 만에 「다 채워짐」 으로 떼일 뻔했다. 그러면 위키가 고쳐도 순회(약 61번 배포에 한 바퀴)로만 다시 본다.
+ *  큰 패치는 위키가 따라오는 데 한 달까지 걸린다(사용자) — 공지일 + 30일까지 잡는다. */
+function hold(watch, ids, until) {
+  for (const id of ids) {
+    const w = watch[id] || (watch[id] = { since: today(), sig: '', same: 0 });
+    if (!w.until || w.until < until) w.until = until;
+  }
+  return watch;
+}
+
 /** 새로 받은 페이지를 감시 목록에 올린다(이미 있으면 그대로 둔다). */
 function add(watch, ids) {
   for (const id of ids) if (!watch[id]) watch[id] = { since: today(), sig: '', same: 0 };
@@ -109,10 +122,11 @@ function settle(ROOT, watch, ids, weapons, skills, baseByPage) {
     w.sig = sig;
     w.last = today();
     const aged = w.since && (now - Date.parse(w.since + 'T00:00:00Z')) >= MAX_DAYS * DAY;
-    if (w.same >= STABLE_HITS || aged) { delete watch[id]; done.push(id); }
+    const held = w.until && today() < w.until;   // 패치 조정 — until 전에는 값이 같아도 안 뗀다(hold)
+    if ((w.same >= STABLE_HITS && !held) || aged) { delete watch[id]; done.push(id); }
   }
   save(ROOT, watch);
   return { done, moved };
 }
 
-module.exports = { load, save, seed, due, roll, add, settle, sigOf, REFETCH_DAYS, STABLE_HITS, MAX_DAYS, SEED_NEWEST };
+module.exports = { load, save, seed, due, roll, add, hold, settle, sigOf, REFETCH_DAYS, STABLE_HITS, MAX_DAYS, SEED_NEWEST, HOLD_DAYS: 30 };
