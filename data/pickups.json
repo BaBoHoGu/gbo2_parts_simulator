@@ -1,6 +1,60 @@
 {
- "pickupsUpdated": "2026-10-28",
+ "pickupsUpdated": "2026-10-30",
  "pickups": [
+  {
+   "name": "【지원】 ★★★★ 이상 희소도 MS",
+   "consoleStart": "2026-11-19",
+   "consoleEnd": "2026-11-26",
+   "start": "2027-01-21",
+   "end": "2027-01-28",
+   "tokens": null,
+   "url": "https://bo2.ggame.jp/kr/info/?p=199585"
+  },
+  {
+   "name": "【범용】 ★★★★ 이상 희소도 MS",
+   "consoleStart": "2026-11-12",
+   "consoleEnd": "2026-11-19",
+   "start": "2027-01-14",
+   "end": "2027-01-21",
+   "tokens": null,
+   "url": "https://bo2.ggame.jp/kr/info/?p=199567"
+  },
+  {
+   "name": "【강습】 ★★★★ 이상 희소도 MS",
+   "consoleStart": "2026-11-05",
+   "consoleEnd": "2026-11-12",
+   "start": "2027-01-07",
+   "end": "2027-01-14",
+   "tokens": null,
+   "url": "https://bo2.ggame.jp/kr/info/?p=199552"
+  },
+  {
+   "name": "크로스본 건담 X-0",
+   "consoleStart": "2026-10-29",
+   "consoleEnd": "2026-11-05",
+   "start": "2026-12-31",
+   "end": "2027-01-07",
+   "tokens": 195,
+   "url": "https://bo2.ggame.jp/kr/info/?p=200218"
+  },
+  {
+   "name": "【복각】 크로스본 건담 X1 풀 클로스",
+   "consoleStart": "2026-10-29",
+   "consoleEnd": "2026-11-05",
+   "start": "2026-12-31",
+   "end": "2027-01-07",
+   "tokens": 285,
+   "url": "https://bo2.ggame.jp/kr/info/?p=200243"
+  },
+  {
+   "name": "【배틀 오퍼레이션 3】 발표 기념! MS",
+   "consoleStart": "2026-10-29",
+   "consoleEnd": "2026-11-12",
+   "start": "2026-12-31",
+   "end": "2027-01-14",
+   "tokens": null,
+   "url": "https://bo2.ggame.jp/kr/info/?p=200459"
+  },
   {
    "name": "레코드 브레이커",
    "consoleStart": "2026-10-22",
@@ -162,64 +216,17 @@
    "end": "2026-11-12",
    "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=196139"
-  },
-  {
-   "name": "건담 <ruby>DX<rt>더블 엑스</rt></ruby>",
-   "consoleStart": "2026-08-27",
-   "consoleEnd": "2026-09-03",
-   "start": "2026-10-29",
-   "end": "2026-11-05",
-   "tokens": 195,
-   "url": "https://bo2.ggame.jp/kr/info/?p=195347"
-  },
-  {
-   "name": "커스텀 파츠",
-   "consoleStart": "2026-08-27",
-   "consoleEnd": "2026-09-03",
-   "start": "2026-10-29",
-   "end": "2026-11-05",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=195167"
-  },
-  {
-   "name": "추첨 배급 MS 리퀘스트 스페셜",
-   "consoleStart": "2026-08-27",
-   "consoleEnd": "2026-09-03",
-   "start": "2026-10-29",
-   "end": "2026-11-05",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=195235"
-  },
-  {
-   "name": "추첨 배급 MS 리퀘스트 스페셜",
-   "consoleStart": "2026-08-27",
-   "consoleEnd": "2026-09-03",
-   "start": "2026-10-29",
-   "end": "2026-11-05",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=195244"
-  },
-  {
-   "name": "【8주년 대감사제】 제5탄",
-   "consoleStart": "2026-08-20",
-   "consoleEnd": "2026-08-27",
-   "start": "2026-10-22",
-   "end": "2026-10-29",
-   "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=194561"
-  },
-  {
-   "name": "하이젠슬레이Ⅱ LV2",
-   "consoleStart": "2026-08-20",
-   "consoleEnd": "2026-08-27",
-   "start": "2026-10-22",
-   "end": "2026-10-29",
-   "tokens": 195,
-   "url": "https://bo2.ggame.jp/kr/info/?p=194588"
   }
  ],
- "steamUpdated": "2026-10-28",
+ "steamUpdated": "2026-10-30",
  "steamNews": [
+  {
+   "name": "하이젠슬레이Ⅱ 라 LV2",
+   "start": "2026-10-29",
+   "end": "2026-11-05",
+   "tokens": 195,
+   "url": "https://store.steampowered.com/news/app/1367080/view/714542561332560437?l=koreana"
+  },
   {
    "name": "겔구그 R",
    "start": "2026-10-22",
