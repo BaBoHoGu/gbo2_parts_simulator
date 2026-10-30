@@ -51,12 +51,19 @@ const rd = f => JSON.parse(fs.readFileSync(path.join(ROOT, 'data', f), 'utf8'));
 const EXTRA = (process.argv.find(a => a.startsWith('--notes=')) || '').slice(8);
 const patches = (rd('patchnotes.json').patches || [])
   .concat(EXTRA ? (JSON.parse(fs.readFileSync(EXTRA, 'utf8')).patches || []) : []);
-// 미러가 wiki_url 을 비워 보낸 기체도 무장 페이지를 찾게 — 다른 도구와 같은 보정을 거친다
-const msData = require('./lib/msdata.js').applyWikiOverride(rd('msData.json'), ROOT);
+/* 앱이 보는 것과 같은 데이터로 잰다 — build.js 와 같은 함수 · 같은 순서로 얹는다.
+   예전엔 기체 교정(msData.override.json)에서 wiki_url 만 가져와, 위키가 고친 HP · 슬롯이 앱에는 나가는데
+   여기서는 옛 미러값과 대 「어긋남」 으로 남았다(ギャプラン（I0） · シルバー・ヘイズ改, 2026-10-31).
+   이력 반영(history.reflect.json 의 승인된 칸)도 빠져 있었다. */
+const D = require('./lib/dataset.js');
+const msData = rd('msData.json');
+D.mergeMsAdditions(ROOT, msData);
+D.applyMsOverride(ROOT, msData);
+D.applyMsManual(ROOT, msData);
 const S = rd('ms_skills.json');
 const W = rd('weapons.json');
-// 앱이 보는 것과 같은 데이터로 잰다 — 공식값 고정(data/official.override.json)을 빌드와 같은 함수로 얹는다
-const PIN = require('./lib/dataset.js').applyOfficialPins(ROOT, { weapons: W, msSkills: S });
+const PIN = D.applyOfficialPins(ROOT, { weapons: W, msSkills: S, msData });
+D.applyHistoryReflect(ROOT, { weapons: W, msSkills: S, msData });
 
 const NFC = s => String(s).normalize('NFC');
 const lvOfMs = n => Number((String(n).match(/_LV(\d+)$/) || [])[1] || 1);
