@@ -27,7 +27,10 @@ const fullst = rd('fullst.json');
 
 // 세 속성을 고르게 본 실효 HP. core 의 공식을 쓴다 — 여기서 베껴 쓰면 둘이 같이 틀린다.
 const ARM = ['armorRange', 'armorBeam', 'armorMelee'];
-const ehpMix = t => ARM.reduce((s, k) => s + C.durabilityOf(t, k), 0) / ARM.length;
+/* **조화 평균** — 세 속성을 고르게 섞여 맞을 때 실제로 버티는 양(HP ÷ 평균 (1−내성)). 자동 구성 점수(optimizer durMix)가
+   2026-10-26 부터 이 자로 잰다. 산술 평균으로 재면 한 내성 몰아주기가 높게 나와, 점수와 다른 자로 「1스왑 더 나음」 이
+   잡혔다(2026-10-30 큐베레이 Mk-Ⅱ LV3 — 패치로 데이터가 바뀌며 드러남). 같은 자로 재야 「점수가 그 축을 보는가」 를 잰다. */
+const ehpMix = t => ARM.length / ARM.reduce((s, k) => s + 1 / C.durabilityOf(t, k), 0);
 
 const W = { hp: 3, armorRange: 2, armorBeam: 2, armorMelee: 2 };
 const OPT = { stage: 6, restarts: 6, weights: W };

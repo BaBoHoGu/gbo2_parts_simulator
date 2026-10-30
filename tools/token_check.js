@@ -358,7 +358,9 @@ const ok = (label, cond, extra) => {
         v = x;
         try {
           const p = (x && x.pickups) || [];
-          const mech = p.find(q => q && q.name && q.start);
+          /* 기체인 픽업을 심는다 — 앱의 「벗어남」 은 기체만 잡는다. 묶음 상품(「【지원】 ★★★★ 이상 희소도 MS」)이
+             목록 첫머리에 오자 그걸 심어 실패했다(2026-10-30 픽업 갱신). 묶음은 【…】 · ★ 로 시작/포함한다. */
+          const mech = p.find(q => q && q.name && q.start && !/^\s*【|★/.test(String(q.name).replace(/<[^>]*>/g, '')));
           if (!mech) return;
           /* 예보의 날짜와 **다른** 날짜로 스팀에 나온 것처럼 */
           x.steamNews = [{ name: mech.name, start: '2026-01-02', end: '2026-01-09',

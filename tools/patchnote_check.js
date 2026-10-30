@@ -131,6 +131,7 @@ const markerKo = n => mk(n, '기');
 
 /* ── ② 쌓인 자료가 멀쩡한가 ──────────────────────────────────────── */
 const DATA = path.join(ROOT, 'data', 'patchnotes.json');
+let settledBal = null;   // 위키가 다 따라온(21일 지난) 가장 최근 조정 패치 날짜 — 아래 화면 검사가 그 날짜를 고른다
 if (!fs.existsSync(DATA)) {
   console.log('  (건너뜀) data/patchnotes.json 이 없다 — node tools/extract_patchnotes.js 먼저');
 } else {
@@ -143,6 +144,17 @@ if (!fs.existsSync(DATA)) {
     ps.map(p => p.date).filter(x => !/^\d{4}-\d{2}-\d{2}$/.test(x)));
 
   const ads = ps.flatMap(p => p.adjusted || []);
+  /* 위키 채움에 기대는 단언은 **공지 뒤 21일이 지난 패치**로만 잰다(공식 대조와 같은 유예).
+     패치 다음 날엔 위키가 아직 수치를 안 적어, 조정 61기 패치(2026-10-29)에서 9건이 실패해 배포가 섰다.
+     그 사이 빈칸은 실패가 아니라 NOTICE 로 알린다 — 21일이 지나면 다시 단언에 들어온다. */
+  const SETTLE_DAYS = 21;
+  const cutoff = (() => { const d = new Date(); d.setDate(d.getDate() - SETTLE_DAYS);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+  const settled = ps.filter(p => p.date <= cutoff);
+  const adsSettled = settled.flatMap(p => p.adjusted || []);
+  settledBal = (settled.find(p => (p.adjusted || []).length) || {}).date || null;   // 화면 검사가 고를 날짜
+  for (const p of ps.filter(p => p.date > cutoff)) for (const a of p.adjusted || [])
+    if (!(a.wiki || []).length) console.log('NOTICE 패치노트 · ' + p.date + ' ' + a.ko + ' — 위키 상세 수치가 아직 없다(유예 ' + SETTLE_DAYS + '일)');
   /* ③ 사용자가 정한 시작일(2026-08-27)보다 앞선 칸은 없어야 한다.
      옛 칸을 안 자르면 레일만 길어지고, 그 시절 추가 기체 기록은 우리에게 없어 반쪽이 된다. */
   ok('2026-08-27 보다 앞선 날짜가 없다', ps.every(p => p.date >= '2026-08-27'),
@@ -226,14 +238,14 @@ if (!fs.existsSync(DATA)) {
 
   /* ③ 위키 상세 수치 — 공식이 생략한 값을 채운다. */
   {
-    const withWiki = ads.filter(a => (a.wiki || []).length);
-    ok('조정 기체에 위키 상세 수치가 붙었다', withWiki.length === ads.length,
-      { 붙은것: withWiki.length, 전체: ads.length,
-        빠진것: ads.filter(a => !(a.wiki || []).length).map(a => a.ko).slice(0, 6) });
+    const withWiki = adsSettled.filter(a => (a.wiki || []).length);
+    ok('조정 기체에 위키 상세 수치가 붙었다 (' + SETTLE_DAYS + '일 지난 패치)', adsSettled.length > 0 && withWiki.length === adsSettled.length,
+      { 붙은것: withWiki.length, 전체: adsSettled.length,
+        빠진것: adsSettled.filter(a => !(a.wiki || []).length).map(a => a.ko).slice(0, 6) });
     /* 수치가 **실제로** 들어 있는가 — 줄만 있고 숫자가 없으면 값이 없는 것이다. */
     const num = withWiki.filter(a => a.wiki.some(w => /\d+\s*→\s*\d+/.test(w.text)));
-    ok('위키 줄에 「A → B」 수치가 있다', num.length > ads.length * 0.8,
-      { 수치있는기체: num.length, 전체: ads.length });
+    ok('위키 줄에 「A → B」 수치가 있다', num.length > adsSettled.length * 0.8,
+      { 수치있는기체: num.length, 전체: adsSettled.length });
     /* LV 별로 적혀 있는가 — 공식은 대표값 하나뿐이라 이게 위키를 쓰는 이유다. */
     const lv = withWiki.filter(a => a.wiki.some(w => /[Ll][Vv]\d.*[Ll][Vv]\d/.test(w.text)));
     ok('LV 별 수치가 들어 있다 (공식은 대표값 하나뿐)', lv.length > 0,
@@ -300,7 +312,7 @@ if (!fs.existsSync(DATA)) {
        위키가 적어 둔 LV 별 수치를 그 줄에 달아야 한다(사용자 지시). */
     let lvLines = 0, lvWant = 0;
     const lvBad = [];
-    for (const a2 of ads) for (const sec of a2.sections || []) for (const row of sec.rows || []) {
+    for (const a2 of adsSettled) for (const sec of a2.sections || []) for (const row of sec.rows || []) {   // 위키 LV 값 — 유예 지난 패치만
       (row.changes || []).forEach((line, i2) => {
         if (!/상위\s*LV/.test(line)) return;
         lvWant++;
@@ -684,8 +696,10 @@ if (!fs.existsSync(DATA)) {
         img: img ? Math.round(img.getBoundingClientRect().width) : 0 };
     });
     /* 화면에도 LV 줄이 나와야 한다 — 자료에만 있으면 아무 소용이 없다. */
-    const lvUi = await pg.evaluate(async () => {
-      const t = [...document.querySelectorAll("#pnRail .pn-date")].find(e => /조정/.test(e.textContent));
+    const lvUi = await pg.evaluate(async (settledBal) => {
+      // 위키가 다 따라온(21일 지난) 조정 패치를 고른다 — 가장 최근 패치는 위키 값이 아직 비어 있을 수 있다
+      const ds = [...document.querySelectorAll("#pnRail .pn-date")];
+      const t = (settledBal && ds.find(e => String(e.title || '').startsWith(settledBal))) || ds.find(e => /조정/.test(e.textContent));
       if (t) { t.click(); await new Promise(r => setTimeout(r, 600)); }
       const cards = [...document.querySelectorAll("#pnAdjusted .pn-card")];
       let best = 0, bn = -1;
@@ -706,7 +720,7 @@ if (!fs.existsSync(DATA)) {
         /* 공식 줄 **바로 아래**여야 한다 — 엉뚱한 데 붙으면 어느 줄 값인지 모른다. */
         afterLine: rows.every(e => e.previousElementSibling
           && e.previousElementSibling.classList.contains("pn-ln")) };
-    });
+    }, settledBal);
     ok("화면에 LV 별 수치가 나온다", lvUi.n > 0, lvUi);
 
     /* **하단 묶음 차례** — 조정 의도 → 참조 데이터 → 상세 수치 (사용자 지시).
@@ -851,6 +865,11 @@ if (!fs.existsSync(DATA)) {
        화면 밖이라 안 닿는다(실제로 그래서 자가 울었다). 누를 자리는 보이게 해 놓고 잰다. */
     await pg.setViewport({ width: 1500, height: 950, deviceScaleFactor: 1 });
     await sleep(700);
+    // 위키 상세 수치까지 재는 단계라, 위키가 다 따라온(21일 지난) 조정 패치로 옮겨 둔다
+    await pg.evaluate(async (settledBal) => {
+      const b = settledBal && [...document.querySelectorAll('#pnRail .pn-date')].find(e => String(e.title || '').startsWith(settledBal));
+      if (b && !b.classList.contains('on')) { b.click(); await new Promise(r => setTimeout(r, 600)); }
+    }, settledBal);
     const detail = await pg.evaluate(() => {
       const c = document.querySelector('#pnAdjusted .pn-card');
       c.scrollIntoView({ block: 'center' });

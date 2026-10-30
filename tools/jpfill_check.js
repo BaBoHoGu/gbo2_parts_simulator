@@ -459,9 +459,20 @@ if (!fs.existsSync(DATA)) {
   ok('묶인 행의 첫 비틀거림은 **통상** 값', !!(fa && fa.from === '5%' && fa.to === '9%'), fa);
 
   /* 덮는 비율 — 내려가면 운다. 실측 112/115 (97.4%). */
-  let tried = 0, filled = 0;
+  let tried = 0, filled = 0, pendTried = 0, pendFilled = 0;
   const NV = /(?:할 수 있게|할 수 있도록|가능하게|대응)\s*변경$|(?:추가|삭제|통합|변경)$/;
-  for (const p of pn.patches || []) for (const a of p.adjusted || [])
+  /* 공지 뒤 21일이 지난 패치만 센다(공식 대조 · patchnote_check 와 같은 유예). 패치 다음 날엔 위키가 아직 수치를
+     안 적어 비율이 69% 로 떨어져 배포가 섰다(2026-10-30, 조정 61기). 유예 중인 패치는 NOTICE 로 따로 알린다. */
+  const cut = (() => { const d = new Date(); d.setDate(d.getDate() - 21);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+  for (const p of pn.patches || []) if (p.date > cut) for (const a of p.adjusted || [])
+    for (const s of a.sections || []) for (const r of s.rows || [])
+      (r.changes || []).forEach((ln, i) => {
+        if (FILL.HAS_NUM.test(ln) || /^【/.test(ln) || NV.test(ln.trim()) || !FILL.keyOf(ln)) return;
+        pendTried++; if ((r.fill || [])[i]) pendFilled++;
+      });
+  if (pendTried) console.log('NOTICE 위키 채움 · 유예 중(21일)인 최근 패치 — ' + pendFilled + '/' + pendTried + '줄 채움(위키가 따라오는 중)');
+  for (const p of pn.patches || []) if (p.date <= cut) for (const a of p.adjusted || [])
     for (const s of a.sections || []) for (const r of s.rows || [])
       (r.changes || []).forEach((ln, i) => {
         if (FILL.HAS_NUM.test(ln) || /^【/.test(ln) || NV.test(ln.trim())) return;

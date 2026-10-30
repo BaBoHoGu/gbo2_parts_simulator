@@ -55,10 +55,19 @@ const touchedMs = new Set();   // 이번에 다시 뽑은 페이지에 속한 �
 
 const found = [];
 const grants = [];   // 「스킬「X」…付与」 — 다른 스킬 발동 시 부여되는 스킬 (F91[BC]·G도어즈 등)
+/* extract_ms_skills 가 **스텁으로 보고 건너뛴** 기체(ms_skills.json 에 없는 기체)는 여기서도 건너뛴다.
+   스텁 페이지엔 「スキル情報」 의 끝 제목이 없어 페이지 끝(메뉴 등)까지 스킬 구역으로 읽고, 남의 스킬을 주웠다 —
+   クロスボーン・ガンダムＸ-０(2026-10-30 신규, 위키 스텁)에 능력UP「바이오센서」 등 22개가 붙었다. 두 추출기의 판단을 맞춘다. */
+const MS_SKILLS = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'ms_skills.json'), 'utf8')); } catch { return null; } })();
+const stubSkipped = new Set();
 for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
   const id = f.replace('.html', '');
   const ms = byPage.get(id);
   if (!ms) continue;
+  if (MS_SKILLS && ms.every(m => !MS_SKILLS[baseName(String(m.MS名).normalize('NFC'))] && !MS_SKILLS[baseName(m.MS名)])) {
+    for (const m of ms) { stubSkipped.add(baseName(m.MS名)); touchedMs.add(baseName(m.MS名)); }   // touched — 옛 잘못 주운 것도 지운다
+    continue;
+  }
   for (const m of ms) touchedMs.add(baseName(m.MS名));
   const html = fs.readFileSync(path.join(WIKI, f), 'utf8').replace(/<script[\s\S]*?<\/script>/gi, '');
   const at = html.search(/<h[2-5][^>]*>[^<]*スキル情報/);

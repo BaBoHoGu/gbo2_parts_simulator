@@ -74,7 +74,7 @@ const render = names => `/* 자동 생성 — raw/app.js 에서 추출한 원본
  */
 ${names.map(declText).join('\n')}
 
-module.exports = { calcStatsOriginal: uf, calcSlotsOriginal: Tw };
+module.exports = { calcStatsOriginal: ${STAT_FN}, calcSlotsOriginal: ${SLOT_FN} };
 `;
 
 /** 추출본이 실제로 계산을 해내는지 — 기체 하나로 스탯·슬롯을 한 번씩 돌려 본다. */
@@ -87,7 +87,20 @@ function smoke(mod) {
 }
 const ROOT_DATA = path.join(__dirname, '..', 'data');
 
-let names = ['rL', 'AL', 'iL', 'uf', 'Tw'];
+/* 뿌리 두 개(스탯 · 슬롯)를 **이름이 아니라 본문 첫 모양으로** 찾는다. 번들이 재빌드되면 난독화 이름이 통째로 바뀐다 —
+   2026-10-30 재빌드에서 uf · Tw · rL · AL · iL 가 전부 React Router 함수에 재배정돼 「n.replace is not a function」 으로 멈췄다.
+     스탯: 「=(n,e,t,r,A,a)=>{if(!n){const E={hp:0,armorRange:0」   슬롯: 「=(n,e,t,r)=>{if(!n)return{close:0,mid:0,long:0,maxClose:0」
+   못 찾으면 옛 이름으로 물러선다. 의존성(rL·AL 같은 것)은 아래 반복이 「X is not defined」 로 스스로 채운다. */
+function rootBy(sig, fallback) {
+  const at = SRC.indexOf(sig);
+  if (at < 0) return fallback;
+  const m = SRC.slice(Math.max(0, at - 12), at).match(/[,;\s]([A-Za-z_$][\w$]*)$/);
+  return m ? m[1] : fallback;
+}
+const STAT_FN = rootBy('=(n,e,t,r,A,a)=>{if(!n){const E={hp:0,armorRange:0', 'uf');
+const SLOT_FN = rootBy('=(n,e,t,r)=>{if(!n)return{close:0,mid:0,long:0,maxClose:0', 'Tw');
+console.log('원본 계산 뿌리: 스탯 ' + STAT_FN + ' · 슬롯 ' + SLOT_FN);
+let names = [STAT_FN, SLOT_FN];
 let ok = false, added = [];
 for (let i = 0; i < 40 && !ok; i++) {
   fs.writeFileSync(dest, render(names));

@@ -107,10 +107,15 @@ if (!fs.existsSync(DATA)) {
     await pg.goto('file:///' + DIST.replace(/\\/g, '/').replace(/ /g, '%20'),
       { waitUntil: 'load', timeout: 180000 });
     await sleep(2500);
-    const r = await pg.evaluate(async () => {
+    /* 위키가 다 따라온(공지 뒤 21일 지난) 조정 패치를 고른다 — patchnote_check 와 같은 유예.
+       패치 다음 날엔 가장 최근 패치에 위키 이력이 아직 없어 「0줄」 로 실패했다(2026-10-30). */
+    const cut = (() => { const d = new Date(); d.setDate(d.getDate() - 21);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+    const r = await pg.evaluate(async (cut) => {
       document.querySelector('#patchBtn').click();
       await new Promise(x => setTimeout(x, 1000));
-      const t = [...document.querySelectorAll('#pnRail .pn-date')].find(e => /조정/.test(e.textContent));
+      const ds = [...document.querySelectorAll('#pnRail .pn-date')].filter(e => /조정/.test(e.textContent));
+      const t = ds.find(e => String(e.title || '').slice(0, 10) <= cut) || ds[0];
       if (!t) return null;
       t.click();
       await new Promise(x => setTimeout(x, 600));
@@ -129,7 +134,7 @@ if (!fs.existsSync(DATA)) {
         titled: rows.filter(e => e.title).length,
         summary: (box.querySelector('.pn-wiki summary') || {}).textContent || ''
       };
-    });
+    }, cut);
     ok('화면에 위키 이력이 나온다', !!r && r.n > 0, r);
     ok('화면 글줄에 일본어가 남지 않았다', !!r && r.ja === 0, r);
     /* 원문을 숨기지 않는다 — 옮긴 말이 미덥지 않을 때 확인할 길이 있어야 한다. */

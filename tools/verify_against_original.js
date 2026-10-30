@@ -33,7 +33,7 @@ function randomBuild(ms, stage) {
 
 const FIELDS = ['total', 'rawTotal', 'base', 'partBonus', 'fullStrengthenBonus', 'expansionBonus'];
 const SLOT_KEYS = ['close', 'mid', 'long', 'maxClose', 'maxMid', 'maxLong'];
-let checked = 0, mismatch = 0, slotMismatch = 0;
+let checked = 0, mismatch = 0, slotMismatch = 0, intendedN = 0;
 const slotByStage = {};
 const samples = [];
 
@@ -43,21 +43,33 @@ for (let i = 0; i < TARGET; i++) {
   const expansion = C.EXPANSION_SKILLS[Math.floor(rnd() * C.EXPANSION_SKILLS.length)];
   const eq = randomBuild(ms, stage);
 
-  const a = calcStatsOriginal(ms, eq, stage, expansion, partsByCat, fullst);
+  /* 의도한 차이 둘째 — 4분 뒤 효과가 **바뀌는** 파츠(core.js MODE_PARTS, 謎の電子回路 등). 원본은 두 효과를 다 더하고
+     우리는 지금 쓰는 쪽만 남긴다. 원본에도 같은 사본(초반 효과만)을 넘겨, 나머지 계산은 그대로 맞댄다(2026-10-30). */
+  const a = calcStatsOriginal(ms, eq.map(p => C.applyPartMode(p, false)), stage, expansion, partsByCat, fullst);
   const b = C.calcStats(ms, eq, stage, expansion, partsByCat, fullst, C.MAX_EXPANSION_LEVEL);
   checked++;
 
+  /* 의도한 차이 — 고속이동 상한. 원본(gbo2.jp)은 Infinity, 우리는 250(사용자 보고, core.js DEFAULT_LIMITS).
+     이걸 세면 30,000건이 전부 불일치가 되어 진짜 차이가 묻힌다(2026-10-30). 상한 칸과, 그 상한에 잘린 합계는 따로 센다. */
+  const intended = (f, k) => k === 'highSpeedMovement' && (
+    (f === 'limit' && a.currentLimits[k] === Infinity && b.currentLimits[k] < Infinity)
+    || (f === 'total' && b.total[k] === b.currentLimits[k] && a.total[k] > b.total[k]));
   const diffs = [];
+  let intendedHit = false;
   for (const f of FIELDS) {
     for (const k of C.STAT_KEYS) {
-      if (a[f][k] !== b[f][k]) diffs.push(`${f}.${k}: 원본 ${a[f][k]} / 우리 ${b[f][k]}`);
+      if (a[f][k] === b[f][k]) continue;
+      if (intended(f, k)) { intendedHit = true; continue; }
+      diffs.push(`${f}.${k}: 원본 ${a[f][k]} / 우리 ${b[f][k]}`);
     }
   }
   for (const k of C.STAT_KEYS) {
     if (a.currentLimits[k] !== b.currentLimits[k]) {
+      if (intended('limit', k)) { intendedHit = true; continue; }
       diffs.push(`limit.${k}: 원본 ${a.currentLimits[k]} / 우리 ${b.currentLimits[k]}`);
     }
   }
+  if (intendedHit) intendedN++;
 
   if (diffs.length) {
     mismatch++;
@@ -76,7 +88,8 @@ for (let i = 0; i < TARGET; i++) {
 }
 
 console.log(`대조 ${checked.toLocaleString()}건 (기체×강화×확장×무작위 구성)`);
-console.log(`  스탯  일치 ${(checked - mismatch).toLocaleString()} / 불일치 ${mismatch.toLocaleString()}`);
+console.log(`  스탯  일치 ${(checked - mismatch).toLocaleString()} / 불일치 ${mismatch.toLocaleString()}`
+  + `  (그중 의도한 차이 — 고속이동 상한 250 — 만 있는 건 일치로 셈: ${intendedN.toLocaleString()}건)`);
 console.log(`  슬롯  일치 ${(checked - slotMismatch).toLocaleString()} / 불일치 ${slotMismatch.toLocaleString()}`
   + (slotMismatch ? '  (강화단계별 ' + JSON.stringify(slotByStage) + ')' : ''));
 if (samples.length) {
