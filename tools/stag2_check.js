@@ -56,8 +56,9 @@ ok('일본어 원문도 같은 답 (피탄 시뮬이 보는 길)',
 /* ── ② DB 전체 ────────────────────────────────────────────────── */
 const W = rd('data', 'weapons.json');
 const NOTE = rd('data', 'i18n', 'weapon_note.json');
-const msData = rd('data', 'msData.json');
-const I = rd('data', 'i18n', 'ms.json');
+// 미러가 wiki_url 을 비워 보낸 기체(X-0)도 이름을 찾게 — 다른 도구와 같은 보정
+const msData = require('./lib/msdata.js').applyWikiOverride(rd('data', 'msData.json'), ROOT);
+const I = Object.assign({}, rd('data', 'i18n', 'ms.auto.json'), rd('data', 'i18n', 'ms.json'));   // 수동이 자동을 이긴다(앱과 같게)
 const page = new Map();
 for (const m of msData) {
   const id = (String(m.wiki_url || '').match(/pages\/(\d+)/) || [])[1];
@@ -92,9 +93,11 @@ ok('한국어와 원문이 같은 답을 낸다', diff.length === 0, diff.slice(
 ok('원문 쪽에서도 같은 수를 센다', jaRes.size === koRes.size,
   { 한국어: koRes.size, 원문: jaRes.size });
 
-/* 사용자가 짚은 셋 — 공중의 적에게만 걸리는 무장. 늘어나도 줄어도 알아야 한다. */
-ok('집속이 아닌 조건부가 셋이고 그 안에 F89·걍 개량형이 있다',
-  air.length === 3 && air.some(x => /F89/.test(x)) && air.some(x => /걍 개량형/.test(x)),
+/* 사용자가 짚은 셋 — 공중의 적에게만 걸리는 무장. 개수는 박지 않는다(바닥만) — 새 기체가 나오면 는다
+   (X-0 ヒート・ダガー 「攻撃対象が空中にいる場合、大よろけ有」, 2026-11-02). 짚은 셋이 빠지면 규칙이 좁아진 것이다. */
+console.log('  · 집속이 아닌 조건부 ' + air.length + '개: ' + air.join(' · '));
+ok('집속이 아닌 조건부에 사용자가 짚은 셋(F89 · 카풀(CN) · 걍 개량형)이 다 있다',
+  air.length >= 3 && air.some(x => /F89/.test(x)) && air.some(x => /카풀\(CN\)/.test(x)) && air.some(x => /걍 개량형/.test(x)),
   air);
 
 /* ── ③ 화면에서 **진짜로** 그렇게 적히는가 ───────────────────────── */
