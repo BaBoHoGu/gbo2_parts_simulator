@@ -61,6 +61,7 @@ D.mergeMsAdditions(ROOT, msData);
 D.applyMsOverride(ROOT, msData);
 D.applyMsManual(ROOT, msData);
 const S = rd('ms_skills.json');
+D.mergeMsSkillAdditions(ROOT, S);
 const W = rd('weapons.json');
 const PIN = D.applyOfficialPins(ROOT, { weapons: W, msSkills: S, msData });
 D.applyHistoryReflect(ROOT, { weapons: W, msSkills: S, msData });

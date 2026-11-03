@@ -146,6 +146,13 @@ const misc = readJson('data', 'i18n', 'misc.json');
 // 신규 기체·파츠 자동 번역(*.auto.json)을 밑에 깔고, 수작업 사전이 덮어쓴다(수작업 우선).
 const autoJson = f => fs.existsSync(path.join(ROOT, 'data', 'i18n', f)) ? readJson('data', 'i18n', f) : {};
 const msSkills = fs.existsSync(path.join(ROOT, 'data', 'ms_skills.json')) ? readJson('data', 'ms_skills.json') : {};
+// 위키 스킬 표가 빠뜨린 스킬(data/ms_skills.additions.json) — 위키에 생기면 저절로 빠진다
+{
+  const r = D.mergeMsSkillAdditions(ROOT, msSkills);
+  if (r.added || r.caught.length || r.missing.length)
+    console.log(`스킬 보탬: ${r.added}개` + (r.caught.length ? ` · 위키가 따라잡음 ${r.caught.join(', ')}` : '')
+      + (r.missing.length ? ` · 대상 없음 ${r.missing.join(', ')}` : ''));
+}
 // 공식 조정 값 고정 — 위키 표가 공식 공지를 덜 반영한 칸(data/official.override.json, 어긋남은 official_check 가 찾는다)
 {
   const r = D.applyOfficialPins(ROOT, { weapons, msSkills, msData });

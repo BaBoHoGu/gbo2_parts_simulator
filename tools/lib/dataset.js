@@ -25,6 +25,33 @@ function mergeMsAdditions(root, msData) {
 }
 
 /**
+ * 위키 스킬 표에 **빠진 스킬**을 보탠다 — data/ms_skills.additions.json.
+ * 위키가 출시 때부터 빠뜨린 칸은 갱신으로도 안 들어온다(건담 DX 의 ダメージコントロール LV2 — 인게임에는 있다, 2026-11-03).
+ * 위키 표에 같은 이름의 스킬이 생기면(LV 무관) 위키가 이기고 보탠 행은 저절로 빠진다(caught 로 알린다).
+ * 꼴: { "기체": [ { "mode": "", "after": "앞 스킬 이름", "row": { cat, name, lv, msLv, eff, desc }, "src": "근거" } ] }
+ * @returns {{ added: number, caught: string[], missing: string[] }}
+ */
+function mergeMsSkillAdditions(root, msSkills) {
+  const out = { added: 0, caught: [], missing: [] };
+  const p = path.join(root, 'data', 'ms_skills.additions.json');
+  if (!fs.existsSync(p)) return out;
+  const add = JSON.parse(fs.readFileSync(p, 'utf8'));
+  for (const [ms, list] of Object.entries(add)) {
+    if (ms.startsWith('_') || !Array.isArray(list)) continue;
+    const groups = msSkills[ms];
+    for (const a of list) {
+      const g = Array.isArray(groups) && groups.find(x => (x.mode || '') === (a.mode || ''));
+      if (!g || !Array.isArray(g.skills)) { out.missing.push(ms + ' / ' + a.row.name); continue; }
+      if (g.skills.some(s => s.name === a.row.name)) { out.caught.push(ms + ' / ' + a.row.name); continue; }
+      const i = a.after ? g.skills.findIndex(s => s.name === a.after) : -1;
+      g.skills.splice(i < 0 ? g.skills.length : i + 1, 0, { ...a.row });
+      out.added++;
+    }
+  }
+  return out;
+}
+
+/**
  * 미러에 아직 없는 파츠를 위키 값으로 보강한다.
  * 미러에 같은 이름이 생기면 그쪽이 이기고 추가분은 자동으로 빠진다.
  * @returns {number} 실제로 보탠 수
@@ -237,6 +264,6 @@ function applyPins(pins, data) {
   return out;
 }
 
-module.exports = { mergeMsAdditions, mergePartAdditions, mergeFullstAdditions, applyFullstOverride,
+module.exports = { mergeMsAdditions, mergeMsSkillAdditions, mergePartAdditions, mergeFullstAdditions, applyFullstOverride,
   applyMsOverride, applyMsManual,
   officialPinsOf, applyOfficialPins, historyReflectOf, applyHistoryReflect, applyPins, applyAllPins };
