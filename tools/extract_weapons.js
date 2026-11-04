@@ -290,10 +290,12 @@ function attachMeleeMods(weapons, grids) {
            이쪽은 통째로 버려졌다(데스티니의 최대가동 하격 270% 가 없었다).
            아무 열이나 받으면 다른 무장 것을 끌어오므로, **이 무장의 備考가
            「스킬「<열 이름>」대응」이라고 말할 때만** 받는다 — 전수에서 이 조건에
-           걸리는 것은 그 무장의 상태 열뿐이었다(2026-10-13, 1건). */
-        if (skillsInNote(note).includes(c)) {
+           걸리는 것은 그 무장의 상태 열뿐이었다(2026-10-13, 1건).
+           열 이름이 「「最大出力（C）」発動中」 꼴이어도 같은 스킬이다(X-0 B버스터[S모드] 하격 250%, 2026-11-04). */
+        const skillCol = c.replace(/^「(.+)」\s*発動中$/, '$1');
+        if (skillsInNote(note).includes(skillCol)) {
           const rows = dirRows(dir, i);
-          if (rows.length) variants.push({ label: stateLabel(c), direction: rows });
+          if (rows.length) variants.push({ label: stateLabel(skillCol), direction: rows });
         }
       }
     }
