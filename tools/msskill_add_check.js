@@ -35,6 +35,9 @@ if (typeof D.mergeMsSkillAdditions === 'function') {
   const dx = rowsOf(S['ガンダムDX']);
   ok('건담 DX 에 ダメージコントロール LV2 가 있다', dx.some(x => x.name === 'ダメージコントロール' && x.lv === 'LV2'), r);
   ok('건담 DX 스킬이 인게임처럼 16개다(바닥)', dx.length >= 16, { 개수: dx.length });
+  /* ②-2 같은 이름의 다른 LV 를 나누어 보탠 행(sameLv) — 공식 「LV3以上の機体スキル「強制噴射装置LV2」を「LV3」に上昇」, 위키 표는 LV2 한 줄뿐 */
+  const kp = rowsOf(S['カプール']).filter(x => x.name === '強制噴射装置' && x.lv === 'LV3');
+  ok('카풀 カプール 에 強制噴射装置 LV3 (LV3～) 행이 있다', kp.length === 1 && kp[0].msLv === 'LV3～', kp);
   /* ③ 위키가 따라잡으면 — 같은 이름이 이미 있으면 보태지 않는다(두 줄이 되면 안 된다) */
   const T = fs.mkdtempSync(path.join(os.tmpdir(), 'msadd-'));
   try {
@@ -45,6 +48,11 @@ if (typeof D.mergeMsSkillAdditions === 'function') {
     const r2 = D.mergeMsSkillAdditions(T, S2);
     ok('위키에 같은 이름이 생기면 보태지 않고 따라잡음으로 알린다',
       rowsOf(S2['ガンダムDX']).filter(x => x.name === 'ダメージコントロール').length === 1 && r2.caught.length >= 1, r2);
+    const S3 = rd('data', 'ms_skills.json');
+    S3['カプール'][0].skills.push({ name: '強制噴射装置', lv: 'LV3', msLv: 'LV3～' });   // 위키가 LV3 행을 적었다고 치자
+    D.mergeMsSkillAdditions(T, S3);
+    ok('sameLv 행은 같은 LV 가 위키에 생기면 저절로 빠진다',
+      rowsOf(S3['カプール']).filter(x => x.name === '強制噴射装置' && x.lv === 'LV3').length === 1);
   } finally { fs.rmSync(T, { recursive: true, force: true }); }
 }
 

@@ -149,7 +149,7 @@ for (const pt of sorted) for (const a of (pt.adjusted || [])) {
     const c = String(c0).normalize('NFKC').replace(/^\s*・\s*/, '');
     const hd = c.match(/^【(.+?)】\s*$/);
     if (hd) { mode = /発動中/.test(hd[1]) ? hd[1].replace(/\s*発動中\s*$/, '') : null; continue; }
-    const msLv = +((c.match(/^LV(\d+)機体の/) || [])[1] || 0);
+    const msLv = +((c.match(/^LV(\d+)(?:以上の)?機体/) || [])[1] || 0);   // 「LV3機体HP」 · 「LV3以上の機体スピード」 · 「LV2機体の…」
     // 스킬 LV 상승
     let m = c.match(/スキル「\s*(.+?)\s*LV(\d+)\s*」\s*を\s*「\s*LV(\d+)\s*」\s*に(上昇|低下)/);
     if (m) {
@@ -168,7 +168,7 @@ for (const pt of sorted) for (const a of (pt.adjusted || [])) {
       continue;
     }
     // 「X「a」→「b」」
-    m = c.match(/^(?:LV\d+機体の)?(.+?)「\s*([^」]*)\s*」\s*→\s*「\s*([^」]*)\s*」/);
+    m = c.match(/^(?:LV\d+(?:以上の)?機体の?)?(.+?)「\s*([^」]*)\s*」\s*→\s*「\s*([^」]*)\s*」/);
     if (!m) continue;
     const label = m[1].trim(), to = m[3];
     if (r.category === '機体性能') {

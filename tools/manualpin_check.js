@@ -109,7 +109,10 @@ try {
    대상(무장·스킬 행)을 못 찾는 고정도 헛돈다. */
 {
   const D = require('./lib/dataset.js');
-  const r = D.applyOfficialPins(ROOT, { weapons: rd('data', 'weapons.json'), msSkills: rd('data', 'ms_skills.json') });
+  // 빌드와 같은 기체 데이터로 잰다 — 기체 칸 고정(kind:'ms')은 msData 가 없으면 대상을 못 찾는다
+  const msData = require('./lib/msdata.js').applyWikiOverride(rd('data', 'msData.json'), ROOT);
+  D.mergeMsAdditions(ROOT, msData); D.applyMsOverride(ROOT, msData); D.applyMsManual(ROOT, msData);
+  const r = D.applyOfficialPins(ROOT, { weapons: rd('data', 'weapons.json'), msSkills: rd('data', 'ms_skills.json'), msData });
   const pins = D.officialPinsOf(ROOT);
   ok('공식값 고정이 모두 대상을 찾는다', r.missing.length === 0,
     r.missing.map(p => (p.ms || p.weapon) + ' ' + (p.path || p.field)));

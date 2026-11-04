@@ -42,7 +42,8 @@ function mergeMsSkillAdditions(root, msSkills) {
     for (const a of list) {
       const g = Array.isArray(groups) && groups.find(x => (x.mode || '') === (a.mode || ''));
       if (!g || !Array.isArray(g.skills)) { out.missing.push(ms + ' / ' + a.row.name); continue; }
-      if (g.skills.some(s => s.name === a.row.name)) { out.caught.push(ms + ' / ' + a.row.name); continue; }
+      // sameLv: 위키에 같은 이름의 다른 LV 행이 이미 있어 나누어 보탤 때 — 같은 LV 가 생겨야 따라잡은 것이다
+      if (g.skills.some(s => s.name === a.row.name && (!a.sameLv || s.lv === a.row.lv))) { out.caught.push(ms + ' / ' + a.row.name); continue; }
       const i = a.after ? g.skills.findIndex(s => s.name === a.after) : -1;
       g.skills.splice(i < 0 ? g.skills.length : i + 1, 0, { ...a.row });
       out.added++;
