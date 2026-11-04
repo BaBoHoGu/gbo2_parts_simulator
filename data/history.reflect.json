@@ -319,6 +319,36 @@
    "approved": true
   },
   {
+   "kind": "ms",
+   "ms": "FAガンダムMk-Ⅲ_LV2",
+   "field": "近スロット",
+   "value": 14,
+   "was": 13,
+   "date": "2026-10-29",
+   "src": "위키 4006 이력 2026-10-29 「近距離パーツスロット増加 Lv2:13 → 14 ※Lv1は調整無し」",
+   "approved": false
+  },
+  {
+   "kind": "ms",
+   "ms": "FAガンダムMk-Ⅲ_LV2",
+   "field": "中スロット",
+   "value": 18,
+   "was": 17,
+   "date": "2026-10-29",
+   "src": "위키 4006 이력 2026-10-29 「中距離パーツスロット増加 Lv2:17 → 18 ※Lv1は調整無し」",
+   "approved": false
+  },
+  {
+   "kind": "ms",
+   "ms": "FAガンダムMk-Ⅲ_LV2",
+   "field": "遠スロット",
+   "value": 27,
+   "was": 26,
+   "date": "2026-10-29",
+   "src": "위키 4006 이력 2026-10-29 「遠距離パーツスロット増加 Lv2:26 → 27 ※Lv1は調整無し」",
+   "approved": false
+  },
+  {
    "kind": "weapon",
    "page": "4627",
    "weapon": "メガ粒子砲x2",

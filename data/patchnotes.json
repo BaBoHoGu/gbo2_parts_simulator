@@ -1,5 +1,5 @@
 {
- "확인일": "2026-11-03",
+ "확인일": "2026-11-04",
  "출처": "공식 한국어 공지 bo2.ggame.jp/kr (유닛 관련 조정) + 위키 아카이브 업데이트 이력",
  "patches": [
   {
@@ -29,6 +29,67 @@
           "・원거리 파츠 슬롯 「10」→「11」로 증가(더불어 상위 LV도 증가)",
           "・스킬 「링크 샷 LV1」 추가",
           "・LV1 기체에 스킬 「추격 사격 보조 프로그램 LV1」 추가"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "15",
+             "to": "16"
+            },
+            {
+             "lv": "LV2",
+             "from": "19",
+             "to": "20"
+            },
+            {
+             "lv": "LV3",
+             "from": "21",
+             "to": "22"
+            }
+           ]
+          },
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "19",
+             "to": "20"
+            },
+            {
+             "lv": "LV2",
+             "from": "22",
+             "to": "23"
+            },
+            {
+             "lv": "LV3",
+             "from": "23",
+             "to": "24"
+            }
+           ]
+          },
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "10",
+             "to": "11"
+            },
+            {
+             "lv": "LV2",
+             "from": "13",
+             "to": "14"
+            },
+            {
+             "lv": "LV3",
+             "from": "14",
+             "to": "15"
+            }
+           ]
+          },
+          null,
+          null
          ]
         },
         {
@@ -38,6 +99,32 @@
           "・위력 「2200」→「2300」으로 상승(더불어 상위 LV도 상승)",
           "・비틀거림 축적치 상승",
           "・스킬 「링크 샷」 대응 무장으로 변경"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "2200",
+             "to": "2300"
+            },
+            {
+             "lv": "LV2",
+             "from": "2350",
+             "to": "2500"
+            },
+            {
+             "lv": "LV3",
+             "from": "2500",
+             "to": "2700"
+            }
+           ]
+          },
+          {
+           "from": "20%",
+           "to": "40%"
+          },
+          null
          ]
         },
         {
@@ -45,6 +132,12 @@
          "weapon": "ENGAGE ZERO 욘파빈용 빔 사벨",
          "changes": [
           "・하격투 보정 상승"
+         ],
+         "fill": [
+          {
+           "from": "140%",
+           "to": "1６0%"
+          }
          ]
         },
         {
@@ -58,6 +151,21 @@
           "【집속 사격】",
           "・히트율 경감",
           "・비틀거림 축적치 상승"
+         ],
+         "fill": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          {
+           "from": "80%",
+           "to": "70%"
+          },
+          {
+           "from": "40%",
+           "to": "60%"
+          }
          ]
         },
         {
@@ -73,6 +181,28 @@
          "changes": [
           "・위력 「250」→「300」으로 상승(더불어 상위 LV도 상승)",
           "・다음 공격에 들어가는 시간을 단축해 명중하기 쉽게 개선"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "250",
+             "to": "300"
+            },
+            {
+             "lv": "LV2",
+             "from": "335",
+             "to": "350"
+            },
+            {
+             "lv": "LV3",
+             "from": "400",
+             "to": "425"
+            }
+           ]
+          },
+          null
          ]
         },
         {
@@ -81,6 +211,28 @@
          "changes": [
           "・위력 「500」→「600」으로 상승(더불어 상위 LV도 상승)",
           "・오버 히트 「16.0」→「12.0」으로 단축"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "500",
+             "to": "600"
+            },
+            {
+             "lv": "LV2",
+             "from": "335",
+             "to": "700"
+            },
+            {
+             "lv": "LV3",
+             "from": "400",
+             "to": "800"
+            }
+           ]
+          },
+          null
          ]
         },
         {
@@ -175,7 +327,293 @@
        }
       ]
      },
-     "wiki": null,
+     "wiki": [
+      {
+       "depth": 0,
+       "text": "近距離パーツスロット増加",
+       "buff": true,
+       "ko": "근거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：15 → 16 Lv2：19 → 20 Lv3：21 → 22",
+       "buff": true,
+       "ko": "Lv1：15 → 16 Lv2：19 → 20 Lv3：21 → 22"
+      },
+      {
+       "depth": 0,
+       "text": "中距離パーツスロット増加",
+       "buff": true,
+       "ko": "중거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：19 → 20 Lv2：22 → 23 Lv3：23 → 24",
+       "buff": true,
+       "ko": "Lv1：19 → 20 Lv2：22 → 23 Lv3：23 → 24"
+      },
+      {
+       "depth": 0,
+       "text": "遠距離パーツスロット増加",
+       "buff": true,
+       "ko": "원거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：10 → 11 Lv2：13 → 14 Lv3：14 → 15",
+       "buff": true,
+       "ko": "Lv1：10 → 11 Lv2：13 → 14 Lv3：14 → 15"
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「サイコ・フィールド（P）」",
+       "buff": null,
+       "ko": "기체 스킬「사이코 필드 (P)」",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "滞空している又は空中にいる有利カテゴリの敵機に対して、サイコミュ兵装で与える蓄積値が上昇する効果付与",
+       "buff": true,
+       "ko": "체공 중이거나 공중에 있는 유리 카테고리 적기에 사이코뮤 무장으로 입히는 비틀거림 축적치가 상승하는 효과 추가",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「追撃射撃補助プログラム」付与",
+       "buff": true,
+       "ko": "기체 스킬「추격 사격 보조 프로그램」 부여",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：無し → LV1 ※LV2-3機体は調整無し",
+       "buff": true,
+       "ko": "LV1기체：없음 → LV1 ※LV2-3기체는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「リンクショット」付与",
+       "buff": true,
+       "ko": "기체 스킬「링크샷」 부여",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1-3機体：無し → LV1",
+       "buff": true,
+       "ko": "LV1-3기체：없음 → LV1",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "EZ・ヨンファヴィン用B・R",
+       "buff": null,
+       "ko": "EZ 욘파빈용 B·R",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：2200 → 2300 Lv2：2350 → 2500 Lv3：2500 → 2700",
+       "buff": true,
+       "ko": "Lv1：2200 → 2300 Lv2：2350 → 2500 Lv3：2500 → 2700"
+      },
+      {
+       "depth": 1,
+       "text": "よろけ値上昇",
+       "buff": true,
+       "ko": "비틀거림 축적치 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "20% → 40%",
+       "buff": true,
+       "ko": "20% → 40%"
+      },
+      {
+       "depth": 1,
+       "text": "機体スキル「リンクショット」対応兵装に変更",
+       "buff": true,
+       "ko": "기체 스킬「링크샷」 대응 무장으로 변경",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "EZ・ヨンファヴィン用B・S",
+       "buff": null,
+       "ko": "EZ 욘파빈용 B·S",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "下格闘補正上昇",
+       "buff": true,
+       "ko": "하격투 보정 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "140% → 1６0%",
+       "buff": true,
+       "ko": "140% → 1６0%"
+      },
+      {
+       "depth": 0,
+       "text": "バウ用ビーム・ライフル",
+       "buff": null,
+       "ko": "바우용 빔 라이플",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "ヒート率軽減",
+       "buff": true,
+       "ko": "히트율 경감",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "非集束時：60% → 55% 集束時：80% → 70%",
+       "buff": true,
+       "ko": "통상시：60% → 55% 집속시：80% → 70%",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "発射間隔短縮",
+       "buff": true,
+       "ko": "발사 간격 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "3秒 → 2.5秒",
+       "buff": true,
+       "ko": "3초 → 2.5초",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "オーバーヒート復帰時間短縮",
+       "buff": true,
+       "ko": "오버 히트 복귀 시간 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "20秒 → 15秒",
+       "buff": true,
+       "ko": "20초 → 15초",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "よろけ値上昇",
+       "buff": true,
+       "ko": "비틀거림 축적치 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "集束時：40% → 60% ※非集束時は調整無し",
+       "buff": true,
+       "ko": "집속시：40% → 60% ※통상시는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "R・ファンネルx2［追従］",
+       "buff": null,
+       "ko": "R 판넬 x2[추종]",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "ヒート率軽減",
+       "buff": true,
+       "ko": "히트율 경감",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "20% → 18%",
+       "buff": true,
+       "ko": "20% → 18%"
+      },
+      {
+       "depth": 0,
+       "text": "R・ファンネルx4［集中砲火］",
+       "buff": null,
+       "ko": "R 판넬 x4[집중포화]",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：250 → 300 Lv2：335 → 350 Lv3：400 → 425",
+       "buff": true,
+       "ko": "Lv1：250 → 300 Lv2：335 → 350 Lv3：400 → 425"
+      },
+      {
+       "depth": 1,
+       "text": "次の攻撃に入るまでの時間を短縮し、命中しやすく改善",
+       "buff": true,
+       "ko": "다음 공격에 들어가는 시간을 단축해 명중하기 쉽게 개선",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "R・ファンネルx2［照射］",
+       "buff": null,
+       "ko": "R 판넬 x2[조사]",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：500 → 600 Lv2：335 → 700 Lv3：400 → 800",
+       "buff": true,
+       "ko": "Lv1：500 → 600 Lv2：335 → 700 Lv3：400 → 800"
+      },
+      {
+       "depth": 1,
+       "text": "オーバーヒート復帰時間短縮",
+       "buff": true,
+       "ko": "오버 히트 복귀 시간 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "16秒 → 12秒",
+       "buff": true,
+       "ko": "16초 → 12초",
+       "left": false
+      }
+     ],
      "ja": {
       "name": "エンゲージゼロ・ヨンファヴィン",
       "sections": [
@@ -363,6 +801,72 @@
           "・스킬 「왼팔 장비 특수 완충재 LV3」→「LV5」로 상승",
           "・스킬 「다리 특수 완충재 LV1」→「LV3」으로 상승(더불어 상위 LV도 상승)",
           "・LV2 기체 스킬 「강제 분사 장치 LV2」→「LV3」으로 상승"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "20000",
+             "to": "24000"
+            },
+            {
+             "lv": "LV2",
+             "from": "22000",
+             "to": "26000"
+            }
+           ]
+          },
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "17",
+             "to": "19"
+            },
+            {
+             "lv": "LV2",
+             "from": "19",
+             "to": "21"
+            }
+           ]
+          },
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "15",
+             "to": "16"
+            },
+            {
+             "lv": "LV2",
+             "from": "16",
+             "to": "17"
+            }
+           ]
+          },
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "8",
+             "to": "10"
+            },
+            {
+             "lv": "LV2",
+             "from": "9",
+             "to": "11"
+            }
+           ]
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
          ]
         },
         {
@@ -372,6 +876,27 @@
           "・위력 「300」→「400」으로 상승(더불어 상위 LV도 상승)",
           "・재장전 「20.0」→「18.0」으로 단축",
           "・비틀거림 축적치 상승"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "300",
+             "to": "400"
+            },
+            {
+             "lv": "LV2",
+             "from": "330",
+             "to": "450"
+            }
+           ]
+          },
+          null,
+          {
+           "from": "17%",
+           "to": "20%"
+          }
          ]
         },
         {
@@ -379,6 +904,12 @@
          "weapon": "빔 소드",
          "changes": [
           "・하격투 보정 상승"
+         ],
+         "fill": [
+          {
+           "from": "130%",
+           "to": "150%"
+          }
          ]
         },
         {
@@ -387,6 +918,23 @@
          "changes": [
           "・위력 「2300」→「2600」으로 상승(더불어 상위 LV도 상승)",
           "・쿨타임 「5.0」→「4.0」으로 단축"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "2300",
+             "to": "2600"
+            },
+            {
+             "lv": "LV2",
+             "from": "2450",
+             "to": "2900"
+            }
+           ]
+          },
+          null
          ]
         },
         {
@@ -394,6 +942,22 @@
          "weapon": "기라 도가 개량형용 빔 액스",
          "changes": [
           "・위력 「2600」→「2800」으로 상승(더불어 상위 LV도 상승)"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "2600",
+             "to": "2800"
+            },
+            {
+             "lv": "LV2",
+             "from": "2750",
+             "to": "3100"
+            }
+           ]
+          }
          ]
         },
         {
@@ -403,6 +967,24 @@
           "・위력 「1500」→「1600」으로 상승(더불어 상위 LV도 상승)",
           "・쿨타임 「5.0」→「4.0」으로 단축",
           "・탄속 상승"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "1500",
+             "to": "1600"
+            },
+            {
+             "lv": "LV2",
+             "from": "1600",
+             "to": "1800"
+            }
+           ]
+          },
+          null,
+          null
          ]
         },
         {
@@ -419,6 +1001,27 @@
           "・위력 「1400」→「1800」으로 상승(더불어 상위 LV도 상승)",
           "・재장전 「10.0」→「8.0」으로 단축",
           "・무장 전환 시간 단축"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "1400",
+             "to": "1800"
+            },
+            {
+             "lv": "LV2",
+             "from": "1500",
+             "to": "2000"
+            }
+           ]
+          },
+          null,
+          {
+           "from": "1.0",
+           "to": "0.77"
+          }
          ]
         }
        ]
@@ -490,7 +1093,382 @@
        }
       ]
      },
-     "wiki": null,
+     "wiki": [
+      {
+       "depth": 0,
+       "text": "機体HP上昇",
+       "buff": true,
+       "ko": "기체 HP 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：20000 → 24000 Lv2：22000 → 26000",
+       "buff": true,
+       "ko": "Lv1：20000 → 24000 Lv2：22000 → 26000"
+      },
+      {
+       "depth": 0,
+       "text": "近距離パーツスロット増加",
+       "buff": true,
+       "ko": "근거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：17 → 19 Lv2：19 → 21",
+       "buff": true,
+       "ko": "Lv1：17 → 19 Lv2：19 → 21"
+      },
+      {
+       "depth": 0,
+       "text": "中距離パーツスロット増加",
+       "buff": true,
+       "ko": "중거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：15 → 16 Lv2：16 → 17",
+       "buff": true,
+       "ko": "Lv1：15 → 16 Lv2：16 → 17"
+      },
+      {
+       "depth": 0,
+       "text": "遠距離パーツスロット増加",
+       "buff": true,
+       "ko": "원거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：8 → 10 Lv2：9 → 11",
+       "buff": true,
+       "ko": "Lv1：8 → 10 Lv2：9 → 11"
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「高性能バランサー」LV1および「格闘連撃制御」LV1を「格闘戦複合システム」LV2に統合",
+       "buff": true,
+       "ko": "기체 스킬「고성능 밸런서」LV1 및 「격투 연격 제어」LV1를 「격투전 복합 시스템」LV2로 통합",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「緊急回避制御」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「긴급 회피 제어」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1-2機体：LV1 → LV2",
+       "buff": true,
+       "ko": "LV1-2기체：LV1 → LV2",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「強制噴射装置」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「강제 분사 장치」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV2機体：LV2 → LV3 ※LV1機体は調整無し",
+       "buff": true,
+       "ko": "LV2기체：LV2 → LV3 ※LV1기체는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「脚部特殊緩衝材」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「다리 특수 완충재」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：LV1 → LV2 LV2機体：LV1 → LV3",
+       "buff": true,
+       "ko": "LV1기체：LV1 → LV2 LV2기체：LV1 → LV3",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「左腕装備特殊緩衝材」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「왼팔 장비 특수 완충재」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1-2機体：LV3 → LV5",
+       "buff": true,
+       "ko": "LV1-2기체：LV3 → LV5",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「アンチステルス」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「안티 스텔스」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1-2機体：LV1 → LV2",
+       "buff": true,
+       "ko": "LV1-2기체：LV1 → LV2",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「追撃格闘補助プログラム」付与",
+       "buff": true,
+       "ko": "기체 스킬「추격 격투 보조 프로그램」 부여",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：無し → LV1 LV2機体：無し → LV2",
+       "buff": true,
+       "ko": "LV1기체：없음 → LV1 LV2기체：없음 → LV2",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "ギラ・ドーガ改用B・M［GN］",
+       "buff": null,
+       "ko": "기라 도가 개량형용 B·M[GN]",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：300 → 400 Lv2：330 → 450",
+       "buff": true,
+       "ko": "Lv1：300 → 400 Lv2：330 → 450"
+      },
+      {
+       "depth": 1,
+       "text": "リロード時間短縮",
+       "buff": true,
+       "ko": "재장전 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "20秒 → 18秒",
+       "buff": true,
+       "ko": "20초 → 18초",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "よろけ値上昇",
+       "buff": true,
+       "ko": "비틀거림 축적치 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "17% → 20%",
+       "buff": true,
+       "ko": "17% → 20%"
+      },
+      {
+       "depth": 0,
+       "text": "G・D改用B・M付属グレネード",
+       "buff": null,
+       "ko": "G·D 개량형용 B·M 부속 그레네이드",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：1400 → 1800 Lv2：1500 → 2000",
+       "buff": true,
+       "ko": "Lv1：1400 → 1800 Lv2：1500 → 2000"
+      },
+      {
+       "depth": 1,
+       "text": "リロード時間短縮",
+       "buff": true,
+       "ko": "재장전 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "10秒 → 8秒",
+       "buff": true,
+       "ko": "10초 → 8초",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "切り替え時間短縮",
+       "buff": true,
+       "ko": "무장 전환 시간 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "1秒 → 0.77秒",
+       "buff": true,
+       "ko": "1초 → 0.77초",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "ビーム・ソード",
+       "buff": null,
+       "ko": "빔 소드",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "下格闘補正上昇",
+       "buff": true,
+       "ko": "하격투 보정 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "130% → 150%",
+       "buff": true,
+       "ko": "130% → 150%"
+      },
+      {
+       "depth": 0,
+       "text": "ギラ・ドーガ改用電磁ワイヤー",
+       "buff": null,
+       "ko": "기라 도가 개량형용 전자 와이어",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：2300 → 2600 Lv2：2450 → 2900",
+       "buff": true,
+       "ko": "Lv1：2300 → 2600 Lv2：2450 → 2900"
+      },
+      {
+       "depth": 1,
+       "text": "クールタイム短縮",
+       "buff": true,
+       "ko": "쿨타임 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "5秒 → 4秒",
+       "buff": true,
+       "ko": "5초 → 4초",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "ギラ・ドーガ改用B・アックス",
+       "buff": null,
+       "ko": "기라 도가 개량형용 B 액스",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：2600 → 2800 Lv2：2750 → 3100",
+       "buff": true,
+       "ko": "Lv1：2600 → 2800 Lv2：2750 → 3100"
+      },
+      {
+       "depth": 0,
+       "text": "ギラ・ドーガ改用S・ファウスト",
+       "buff": null,
+       "ko": "기라 도가 개량형용 S 파우스트",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：1500 → 1600 Lv2：1600 → 1800",
+       "buff": true,
+       "ko": "Lv1：1500 → 1600 Lv2：1600 → 1800"
+      },
+      {
+       "depth": 1,
+       "text": "発射間隔短縮",
+       "buff": true,
+       "ko": "발사 간격 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "5秒 → 4秒",
+       "buff": true,
+       "ko": "5초 → 4초",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "弾速上昇",
+       "buff": true,
+       "ko": "탄속 상승",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "スモーク・ディスチャージャー",
+       "buff": null,
+       "ko": "스모크 디스차저",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "リロード時間短縮",
+       "buff": true,
+       "ko": "재장전 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "20秒 → 18秒",
+       "buff": true,
+       "ko": "20초 → 18초",
+       "left": false
+      }
+     ],
      "ja": {
       "name": "ギラ・ドーガ改",
       "sections": [
@@ -3480,6 +4458,13 @@
        "buff": true,
        "ko": "0.77초 → 0.5초",
        "left": false
+      },
+      {
+       "depth": 0,
+       "text": "DP交換窓口に ダブル・ビーム・ライフル Lv3追加",
+       "buff": null,
+       "ko": "DP 교환 창구에 더블 빔 라이플 Lv3 추가",
+       "left": false
       }
      ],
      "ja": {
@@ -5137,7 +6122,88 @@
        }
       ]
      },
-     "wiki": null,
+     "wiki": [
+      {
+       "depth": 0,
+       "text": "機体HP上昇",
+       "buff": true,
+       "ko": "기체 HP 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：23000 → 28000",
+       "buff": true,
+       "ko": "Lv1：23000 → 28000"
+      },
+      {
+       "depth": 0,
+       "text": "近距離パーツスロット増加",
+       "buff": true,
+       "ko": "근거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：14 → 16",
+       "buff": true,
+       "ko": "Lv1：14 → 16"
+      },
+      {
+       "depth": 0,
+       "text": "中距離パーツスロット増加",
+       "buff": true,
+       "ko": "중거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：22 → 23",
+       "buff": true,
+       "ko": "Lv1：22 → 23"
+      },
+      {
+       "depth": 0,
+       "text": "遠距離パーツスロット増加",
+       "buff": true,
+       "ko": "원거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：21 → 22",
+       "buff": true,
+       "ko": "Lv1：21 → 22"
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「左腕装備特殊緩衝材」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「왼팔 장비 특수 완충재」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：LV2 → LV3",
+       "buff": true,
+       "ko": "LV1기체：LV2 → LV3",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「左腕装備特殊緩衝材」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「왼팔 장비 특수 완충재」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：LV2 → LV3",
+       "buff": true,
+       "ko": "LV1기체：LV2 → LV3",
+       "left": false
+      }
+     ],
      "ja": {
       "name": "Ｆ９１[ＢＣ装備]",
       "sections": [
@@ -5432,6 +6498,32 @@
           "・LV2 기체 중거리 파츠 슬롯 「17」→「18」로 증가",
           "・LV2 기체 원거리 파츠 슬롯 「26」→「27」로 증가",
           "・LV2 기체 스킬 「정지 사격 자세 제어 LV1」→「LV2」로 상승"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "21000",
+             "to": "22000"
+            },
+            {
+             "lv": "LV2",
+             "from": "25000",
+             "to": "26000"
+            }
+           ]
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
          ]
         },
         {
@@ -5451,6 +6543,20 @@
           "【집속 사격】",
           "・위력 상승",
           "・비틀거림 축적치 상승"
+         ],
+         "fill": [
+          null,
+          null,
+          {
+           "from": "17% x2発 x2射",
+           "to": "20% x2発 x2射"
+          },
+          null,
+          null,
+          {
+           "from": "20% x2発 x3射",
+           "to": "25% x2発 x3射"
+          }
          ]
         },
         {
@@ -5459,6 +6565,23 @@
          "changes": [
           "・위력 「1300」→「1400」으로 상승(더불어 상위 LV도 상승)",
           "・오버 히트 「11.0」→「10.0」으로 단축"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "1300",
+             "to": "1400"
+            },
+            {
+             "lv": "LV2",
+             "from": "1450",
+             "to": "1600"
+            }
+           ]
+          },
+          null
          ]
         },
         {
@@ -5469,6 +6592,25 @@
           "・재장전 「15.0」→「13.0」으로 단축",
           "・탄속 상승",
           "・착탄 시 폭발 범위 확대"
+         ],
+         "fill": [
+          {
+           "lv": [
+            {
+             "lv": "LV1",
+             "from": "1500",
+             "to": "1600"
+            },
+            {
+             "lv": "LV2",
+             "from": "1800",
+             "to": "1900"
+            }
+           ]
+          },
+          null,
+          null,
+          null
          ]
         }
        ]
@@ -5537,7 +6679,304 @@
        }
       ]
      },
-     "wiki": null,
+     "wiki": [
+      {
+       "depth": 0,
+       "text": "機体HP上昇",
+       "buff": true,
+       "ko": "기체 HP 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：21000 → 22000 Lv2：25000 → 26000",
+       "buff": true,
+       "ko": "Lv1：21000 → 22000 Lv2：25000 → 26000"
+      },
+      {
+       "depth": 0,
+       "text": "スラスター上昇",
+       "buff": true,
+       "ko": "슬러스터 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv2：75 → 80 ※Lv1は調整無し",
+       "buff": true,
+       "ko": "Lv2：75 → 80 ※Lv1는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "近距離パーツスロット増加",
+       "buff": true,
+       "ko": "근거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv2：13 → 14 ※Lv1は調整無し",
+       "buff": true,
+       "ko": "Lv2：13 → 14 ※Lv1는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "中距離パーツスロット増加",
+       "buff": true,
+       "ko": "중거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv2：17 → 18 ※Lv1は調整無し",
+       "buff": true,
+       "ko": "Lv2：17 → 18 ※Lv1는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "遠距離パーツスロット増加",
+       "buff": true,
+       "ko": "원거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv2：26 → 27 ※Lv1は調整無し",
+       "buff": true,
+       "ko": "Lv2：26 → 27 ※Lv1는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「オーバーロード」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「오버로드」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1-2機体：LV1 → LV2",
+       "buff": true,
+       "ko": "LV1-2기체：LV1 → LV2",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「脚部特殊緩衝材」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「다리 특수 완충재」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：LV2 → LV3 LV2機体：LV2 → LV4",
+       "buff": true,
+       "ko": "LV1기체：LV2 → LV3 LV2기체：LV2 → LV4",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「肩部オプション特殊緩衝材」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「숄더 옵션 특수 완충재」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：LV2 → LV3 LV2機体：LV2 → LV4",
+       "buff": true,
+       "ko": "LV1기체：LV2 → LV3 LV2기체：LV2 → LV4",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「停止射撃姿勢制御」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「정지 사격 자세 제어」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV2機体：LV1 → LV2 ※LV1機体は調整無し",
+       "buff": true,
+       "ko": "LV2기체：LV1 → LV2 ※LV1기체는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「ダメージコントロール」付与",
+       "buff": true,
+       "ko": "기체 스킬「대미지 컨트롤」 부여",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：無し → LV1 LV2機体：無し → LV2",
+       "buff": true,
+       "ko": "LV1기체：없음 → LV1 LV2기체：없음 → LV2",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "FAGMk-Ⅲ用B・R［GN］",
+       "buff": null,
+       "ko": "FAGMk-Ⅲ용 B·R[GN]",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "リロード時間短縮",
+       "buff": true,
+       "ko": "재장전 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "12秒 → 11秒",
+       "buff": true,
+       "ko": "12초 → 11초",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "ビーム・ライフル付属グレネード",
+       "buff": null,
+       "ko": "빔 라이플 부속 그레네이드",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：1500 → 1600 Lv2：1800 → 1900",
+       "buff": true,
+       "ko": "Lv1：1500 → 1600 Lv2：1800 → 1900"
+      },
+      {
+       "depth": 1,
+       "text": "リロード時間短縮",
+       "buff": true,
+       "ko": "재장전 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "15秒 → 13秒",
+       "buff": true,
+       "ko": "15초 → 13초",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "弾速上昇",
+       "buff": true,
+       "ko": "탄속 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "着弾時の爆発範囲拡大",
+       "buff": true,
+       "ko": "착탄 시 폭발 범위 확대",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "装甲部ビーム・キャノンx2",
+       "buff": null,
+       "ko": "장갑부 빔 캐논 x2",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力",
+       "buff": null,
+       "ko": "위력",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "非集束時",
+       "buff": null,
+       "ko": "통상시",
+       "left": false
+      },
+      {
+       "depth": 3,
+       "text": "Lv1：400 → 450 Lv2：460 → 550",
+       "buff": true,
+       "ko": "Lv1：400 → 450 Lv2：460 → 550"
+      },
+      {
+       "depth": 2,
+       "text": "集束時",
+       "buff": null,
+       "ko": "집속시",
+       "left": false
+      },
+      {
+       "depth": 3,
+       "text": "Lv1：650 → 700 Lv2：700 → 800",
+       "buff": true,
+       "ko": "Lv1：650 → 700 Lv2：700 → 800"
+      },
+      {
+       "depth": 1,
+       "text": "よろけ値上昇",
+       "buff": true,
+       "ko": "비틀거림 축적치 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "非集束：17% x2発 x2射 → 20% x2発 x2射 集束：20% x2発 x3射 → 25% x2発 x3射",
+       "buff": true,
+       "ko": "통상：17% x2발 x2사 → 20% x2발 x2사 집속：20% x2발 x3사 → 25% x2발 x3사",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "ハイパー・ビーム・キャノンx2",
+       "buff": null,
+       "ko": "하이퍼 빔 캐논 x2",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：1300 → 1400 Lv2：1450 → 1600",
+       "buff": true,
+       "ko": "Lv1：1300 → 1400 Lv2：1450 → 1600"
+      },
+      {
+       "depth": 1,
+       "text": "オーバーヒート復帰時間短縮",
+       "buff": true,
+       "ko": "오버 히트 복귀 시간 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "11秒 → 10秒",
+       "buff": true,
+       "ko": "11초 → 10초",
+       "left": false
+      }
+     ],
      "ja": {
       "name": "ＦＡガンダムＭｋ－Ⅲ",
       "sections": [
@@ -5718,6 +7157,21 @@
           "・탄속 상승",
           "・비틀거림 축적치 상승",
           "・히트 판정을 확대해 명중하기 쉽게 개선"
+         ],
+         "fill": [
+          null,
+          null,
+          null,
+          {
+           "from": "17%",
+           "to": "20%"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
          ]
         },
         {
@@ -5728,6 +7182,15 @@
           "・비틀거림 축적치 상승",
           "・착탄 시 폭발 범위 확대",
           "・히트 판정을 확대해 명중하기 쉽게 개선"
+         ],
+         "fill": [
+          null,
+          {
+           "from": "13% x5",
+           "to": "15% x5"
+          },
+          null,
+          null
          ]
         }
        ]
@@ -5778,7 +7241,293 @@
        }
       ]
      },
-     "wiki": null,
+     "wiki": [
+      {
+       "depth": 0,
+       "text": "機体HP上昇",
+       "buff": true,
+       "ko": "기체 HP 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：19000 → 21000",
+       "buff": true,
+       "ko": "Lv1：19000 → 21000"
+      },
+      {
+       "depth": 0,
+       "text": "射撃補正上昇",
+       "buff": true,
+       "ko": "사격 보정 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：30 → 40",
+       "buff": true,
+       "ko": "Lv1：30 → 40"
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「空中制御プログラム」LV2および「空中制御プログラム」LV2を「高性能噴射制御装置」LV1に統合",
+       "buff": true,
+       "ko": "기체 스킬「공중 제어 프로그램」LV2 및 「공중 제어 프로그램」LV2를 「고성능 분사 제어 장치」LV1로 통합",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「ダメージコントロール」付与",
+       "buff": true,
+       "ko": "기체 스킬「대미지 컨트롤」 부여",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：無し → LV1",
+       "buff": true,
+       "ko": "LV1기체：없음 → LV1",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「停止射撃姿勢制御」付与",
+       "buff": true,
+       "ko": "기체 스킬「정지 사격 자세 제어」 부여",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：無し → LV1",
+       "buff": true,
+       "ko": "LV1기체：없음 → LV1",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "カプル用ハンドガン",
+       "buff": null,
+       "ko": "카풀용 핸드 건",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：110 → 125",
+       "buff": true,
+       "ko": "Lv1：110 → 125"
+      },
+      {
+       "depth": 1,
+       "text": "ASL(自動照準補正)の範囲拡大",
+       "buff": true,
+       "ko": "ASL(자동 조준 보정) 범위 확대",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "カプル用ハンドガンx2［斉射］",
+       "buff": null,
+       "ko": "카풀용 핸드 건 x2[제사]",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：90 → 100",
+       "buff": true,
+       "ko": "Lv1：90 → 100"
+      },
+      {
+       "depth": 0,
+       "text": "カプル用ハンドガンx2［斉射］（リミッター解除）",
+       "buff": null,
+       "ko": "카풀용 핸드 건 x2[제사](리미터 해제)",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：90 → 100",
+       "buff": true,
+       "ko": "Lv1：90 → 100"
+      },
+      {
+       "depth": 1,
+       "text": "リロード時間短縮",
+       "buff": true,
+       "ko": "재장전 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "20秒 → 18秒",
+       "buff": true,
+       "ko": "20초 → 18초",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "カプル用ミサイルx8",
+       "buff": null,
+       "ko": "카풀용 미사일 x8",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "リロード時間短縮",
+       "buff": true,
+       "ko": "재장전 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "12秒 → 11秒",
+       "buff": true,
+       "ko": "12초 → 11초",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "よろけ値上昇",
+       "buff": true,
+       "ko": "비틀거림 축적치 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "17% → 20%",
+       "buff": true,
+       "ko": "17% → 20%"
+      },
+      {
+       "depth": 1,
+       "text": "弾速上昇",
+       "buff": true,
+       "ko": "탄속 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "ヒット判定を拡大し命中しやすく改善",
+       "buff": true,
+       "ko": "히트 판정을 확대해 명중하기 쉽게 개선",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "カプル用ミサイルx8（リミッター解除）",
+       "buff": null,
+       "ko": "카풀용 미사일 x8(리미터 해제)",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "発射間隔短縮",
+       "buff": true,
+       "ko": "발사 간격 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "1.5秒 → 1秒",
+       "buff": true,
+       "ko": "1.5초 → 1초",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "よろけ値上昇",
+       "buff": true,
+       "ko": "비틀거림 축적치 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "17% x8 → 20% x8",
+       "buff": true,
+       "ko": "17% x8 → 20% x8"
+      },
+      {
+       "depth": 1,
+       "text": "弾速上昇",
+       "buff": true,
+       "ko": "탄속 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "ヒット判定を拡大し命中しやすく改善",
+       "buff": true,
+       "ko": "히트 판정을 확대해 명중하기 쉽게 개선",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "カプル用ミサイルx8［連続爆発］",
+       "buff": null,
+       "ko": "카풀용 미사일 x8[연속폭발]",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：200 → 250",
+       "buff": true,
+       "ko": "Lv1：200 → 250"
+      },
+      {
+       "depth": 1,
+       "text": "よろけ値上昇",
+       "buff": true,
+       "ko": "비틀거림 축적치 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "13% x5 → 15% x5",
+       "buff": true,
+       "ko": "13% x5 → 15% x5"
+      },
+      {
+       "depth": 1,
+       "text": "着弾時の爆発範囲拡大",
+       "buff": true,
+       "ko": "착탄 시 폭발 범위 확대",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "ヒット判定を拡大し命中しやすく改善",
+       "buff": true,
+       "ko": "히트 판정을 확대해 명중하기 쉽게 개선",
+       "left": false
+      }
+     ],
      "ja": {
       "name": "カプル",
       "sections": [

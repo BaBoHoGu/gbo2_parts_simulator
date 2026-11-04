@@ -9191,8 +9191,8 @@
    "manual": false,
    "levels": [
     {
-     "from": 2,
-     "to": null,
+     "from": 1,
+     "to": 2,
      "shoot": 0,
      "melee": 0,
      "shootPct": 0,
@@ -14874,6 +14874,37 @@
  ],
  "クロスボーン・ガンダムＸ-０": [
   {
+   "name": "最大出力（C）",
+   "nameKo": "최대 출력(C)",
+   "forever": false,
+   "secs": 60,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 10,
+     "melee": 10,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  },
+  {
    "name": "追撃阻止攻勢プログラム",
    "nameKo": "추격 저지 공세 프로그램",
    "forever": false,
@@ -14903,27 +14934,50 @@
      "hpUp": 0
     }
    ]
-  },
+  }
+ ],
+ "ギラ・ドーガ改": [
   {
-   "name": "最大出力（C）",
-   "nameKo": "최대 출력(C)",
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
    "forever": false,
-   "secs": 60,
+   "secs": null,
    "hp": null,
-   "manual": true,
+   "manual": false,
    "levels": [
     {
      "from": 1,
      "to": null,
-     "shoot": 10,
-     "melee": 10,
+     "shoot": 0,
+     "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
      "dmgShoot": 0,
-     "dmgMelee": 0,
+     "dmgMelee": 15,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
