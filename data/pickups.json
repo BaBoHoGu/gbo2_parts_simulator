@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-11-04",
+ "pickupsUpdated": "2026-11-05",
  "pickups": [
   {
    "name": "【지원】 ★★★★ 이상 희소도 MS",
@@ -18,6 +18,15 @@
    "end": "2027-01-21",
    "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=199567"
+  },
+  {
+   "name": "브룩켕",
+   "consoleStart": "2026-11-05",
+   "consoleEnd": "2026-11-12",
+   "start": "2027-01-07",
+   "end": "2027-01-14",
+   "tokens": 120,
+   "url": "https://bo2.ggame.jp/kr/info/?p=201432"
   },
   {
    "name": "【강습】 ★★★★ 이상 희소도 MS",
@@ -207,19 +216,38 @@
    "end": "2026-11-19",
    "tokens": 90,
    "url": "https://bo2.ggame.jp/kr/info/?p=196631"
-  },
+  }
+ ],
+ "steamUpdated": "2026-11-05",
+ "steamNews": [
   {
-   "name": "커스텀 파츠",
-   "consoleStart": "2026-09-03",
-   "consoleEnd": "2026-09-10",
+   "name": "더블오라이저 LV1 & LV2",
    "start": "2026-11-05",
    "end": "2026-11-12",
    "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196139"
-  }
- ],
- "steamUpdated": "2026-11-04",
- "steamNews": [
+   "url": "https://store.steampowered.com/news/app/1367080/view/714543305674719235?l=koreana"
+  },
+  {
+   "name": "더블오라이저 LV2",
+   "start": "2026-11-05",
+   "end": "2026-11-12",
+   "tokens": 180,
+   "url": "https://store.steampowered.com/news/app/1367080/view/714543305674719235?l=koreana"
+  },
+  {
+   "name": "커스텀 파츠",
+   "start": "2026-11-05",
+   "end": "2026-11-12",
+   "tokens": null,
+   "url": "https://store.steampowered.com/news/app/1367080/view/714543305674719235?l=koreana"
+  },
+  {
+   "name": "기라 줄루(CM)",
+   "start": "2026-11-05",
+   "end": "2026-11-12",
+   "tokens": 120,
+   "url": "https://store.steampowered.com/news/app/1367080/view/714543305674719235?l=koreana"
+  },
   {
    "name": "하이젠슬레이Ⅱ 라 LV2",
    "start": "2026-10-29",
