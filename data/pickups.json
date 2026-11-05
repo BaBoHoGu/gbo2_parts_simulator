@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-11-05",
+ "pickupsUpdated": "2026-11-06",
  "pickups": [
   {
    "name": "【지원】 ★★★★ 이상 희소도 MS",
@@ -79,7 +79,7 @@
    "consoleEnd": "2026-10-22",
    "start": "2026-12-17",
    "end": "2026-12-24",
-   "tokens": 120,
+   "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=198964"
   },
   {
@@ -218,7 +218,7 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=196631"
   }
  ],
- "steamUpdated": "2026-11-05",
+ "steamUpdated": "2026-11-06",
  "steamNews": [
   {
    "name": "더블오라이저 LV1 & LV2",
