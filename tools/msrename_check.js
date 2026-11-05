@@ -29,13 +29,12 @@ for (const [o, n] of pairs) {
 }
 (async () => {
   const FILE = path.join(ROOT, 'dist', 'gbo2-simulator.html');
-  const puppeteer = require('puppeteer-core');
   const { findChrome } = require('./lib/wiki_fetch.js');
   const GBO2Browser = require('./lib/browser.js');
   const br = await GBO2Browser.launch({ executablePath: findChrome(), headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
   try {
     const pg = await br.newPage();
-    const url = 'file:///' + FILE.replace(/\/g, '/').replace(/ /g, '%20');
+    const url = 'file:///' + FILE.replace(/\\/g, '/').replace(/ /g, '%20');
     await pg.goto(url, { waitUntil: 'load', timeout: 180000 });
     const [o, n] = pairs[0];
     const got = await pg.evaluate((o, n) => {

@@ -187,6 +187,12 @@ function pinTarget(pin, { weapons, msSkills, msData }) {
     if (!m || !(pin.field in m)) return null;
     return { get: () => m[pin.field], set: v => { m[pin.field] = v; } };
   }
+  if (pin.kind === 'skillGroup') {
+    // 스킬 묶음의 모드 { kind:'skillGroup', ms, index, field:'mode', value, was } — 위키가 표 제목을 잘못 적었을 때
+    const g = ((msSkills || {})[pin.ms] || [])[pin.index];
+    if (!g) return null;
+    return { get: () => g.mode, set: v => { g.mode = v; } };
+  }
   if (pin.kind === 'weapon') {
     const w = ((weapons[pin.page] || {}).weapons || []).find(x => x.name === pin.weapon);
     if (!w) return null;
