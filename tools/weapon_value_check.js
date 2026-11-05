@@ -43,7 +43,7 @@ const ok = (label, cond, extra) => {
    N格/横格 → mods.melee 로 들어감)이라 0 으로 만들 수 없다.
    그래서 **늘지 않는 것**을 가둔다 — 데이터가 갱신돼 새 표기가 들어오면 여기서 걸린다.
    국부·거점·부위 보정은 「넣지 않기로」 정한 자리라 세지 않는다. */
-const VOCAB_MAX = 455;
+const VOCAB_MAX = 456;   // was 455 — 2026-11-06 브룩켕: 倍率 2 · 最長 1, 새 종류 없음(33종류 그대로)
 function vocabMiss() {
   const src = [require('./lib/uisrc.js').readUi(), ...['src/damage.js', 'src/core.js']
     .map(f => fs.readFileSync(path.join(ROOT, f), 'utf8'))].join('\n');
