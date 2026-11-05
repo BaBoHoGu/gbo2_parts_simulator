@@ -208,7 +208,8 @@
   /** @returns {{ok: boolean, missing?: number}} missing = 사전에 없어 제외된 파츠 수 */
   function deserialize(obj) {
     if (!obj || !obj.ms) return { ok: false };
-    const ms = msData.find(m => m.MS名 === obj.ms);
+    const name = C.msRenamed(obj.ms);
+    const ms = msData.find(m => m.MS名 === name);
     if (!ms) return { ok: false };
     state.ms = ms;
     // 손상된 저장본이 들어와도 계산이 어긋나지 않게 아는 값만 받는다

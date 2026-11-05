@@ -106,7 +106,7 @@
       const raw = JSON.parse(localStorage.getItem(PLAN_KEY) || '[]');
       planItems = (Array.isArray(raw) ? raw : []).filter(x => x && x.ms).map(x => ({
         id: String(x.id || (Date.now() + '-' + Math.random().toString(36).slice(2, 7))),
-        ms: String(x.ms),
+        ms: C.msRenamed(String(x.ms)),
         stage: [0, 4, 6].includes(Number(x.stage)) ? Number(x.stage) : 6,
         /* 확장 스킬은 1~3순위로 **최대 셋**이다. 예전에 하나만 담던 저장분(exp/expLevel)도
            그대로 읽어 첫 칸에 넣는다 — 쓰던 플랜이 열었더니 비어 있으면 안 된다. */

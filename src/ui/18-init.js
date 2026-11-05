@@ -1091,6 +1091,11 @@
      파서를 도구 쪽에 베껴 두면 앱과 조용히 갈라진다(09-08 교훈의 같은 부류).
      여기로 내보내는 것은 **읽기 전용 조회**뿐이다 — 상태를 바꾸는 것은 넣지 않는다. */
   window.GBO2UiTest = {
+    /** 저장된 기체 이름이 입구마다 어떻게 읽히는가(tools/msrename_check.js) */
+    storedMsNames() {
+      loadFavRecent(); loadPlan();
+      return { builds: loadBuilds().map(b => b.ms), plan: planItems.map(x => x.ms), fav: [...state.favorites], recent: [...state.recent] };
+    },
     msData: () => msData,
     msLevel,
     // foeArmorOf 는 지금 고른 기체를 본다 — 게이트가 기체를 바꿔 가며 훑으려고 연다.

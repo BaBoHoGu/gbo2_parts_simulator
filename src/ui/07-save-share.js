@@ -69,7 +69,7 @@
       try { localStorage.removeItem(SAVE_KEY); } catch { /* 무시 */ }
       writeBuilds(list);
     }
-    return list;
+    return list.map(b => (b && b.ms ? { ...b, ms: C.msRenamed(b.ms) } : b));
   }
   function writeBuilds(list) {
     try { localStorage.setItem(BUILDS_KEY, JSON.stringify(list)); return true; } catch { return false; }

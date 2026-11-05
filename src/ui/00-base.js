@@ -890,8 +890,8 @@
   /** 즐겨찾기·최근 목록을 불러온다 — 사전에 없는(구버전) 기체명은 조용히 버린다. */
   function loadFavRecent() {
     const known = n => msData.some(m => m.MS名 === n);
-    try { state.favorites = new Set((JSON.parse(localStorage.getItem(FAV_KEY)) || []).filter(known)); } catch { state.favorites = new Set(); }
-    try { state.recent = (JSON.parse(localStorage.getItem(RECENT_KEY)) || []).filter(known).slice(0, RECENT_MAX); } catch { state.recent = []; }
+    try { state.favorites = new Set((JSON.parse(localStorage.getItem(FAV_KEY)) || []).map(n => C.msRenamed(n)).filter(known)); } catch { state.favorites = new Set(); }
+    try { state.recent = (JSON.parse(localStorage.getItem(RECENT_KEY)) || []).map(n => C.msRenamed(n)).filter(known).slice(0, RECENT_MAX); } catch { state.recent = []; }
   }
   function saveFav() { try { localStorage.setItem(FAV_KEY, JSON.stringify([...state.favorites])); } catch { /* 무시 */ } }
   function saveRecent() { try { localStorage.setItem(RECENT_KEY, JSON.stringify(state.recent)); } catch { /* 무시 */ } }

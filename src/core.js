@@ -917,6 +917,12 @@ function checkEquip(part, ms, equipped, slots) {
 
 /* ---------- 내보내기 ---------- */
 
+/* 원본이 기체 이름을 바꾼 표(옛 이름 → 새 이름). 저장 목록 · 플랜 · 즐겨찾기 · 공유 코드 · 갤러리에는 옛 이름이 그대로
+   남아 있고 기체는 이름 전체로 찾는다 — 안 거치면 쓰던 구성이 말없이 사라진다. 들어오는 입구에서 이 함수를 거친다.
+   gbo2.jp 2026-11-05: 전각 「Ｘ-０」 → 반각 「X-0」 */
+const MS_RENAMED = { 'クロスボーン・ガンダムＸ-０_LV1': 'クロスボーン・ガンダムX-0_LV1' };
+const msRenamed = name => MS_RENAMED[name] || name;
+
 const GBO2Core = {
   STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL, MODE_PARTS, applyPartMode, partsAt, HIGHSPEED_EXCLUSIVE, SPEED_TURN_EXCLUSIVE, raisesHighSpeed,
   EXPANSION_SKILLS, EXPANSION_LABEL, EXPANSION_LEVELS, MAX_EXPANSION_LEVEL, MAX_PARTS,
@@ -926,7 +932,7 @@ const GBO2Core = {
   durabilityOf, ARMOR_KEY_OF, partDamageCuts, staggerDmgFactor,
   THRUSTER_TBL, THR_RECOVER, isTankMs, thrusterCol, thrusterPartFx, boostSecOf, boostSecFrom,
   expansionShieldHp,
-  effectConflict, partBase
+  effectConflict, partBase, MS_RENAMED, msRenamed
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GBO2Core;

@@ -1289,7 +1289,8 @@
     try { return JSON.parse(localStorage.getItem('gbo2-offline-builds')) || []; } catch { return []; }
   }
   function applyBuild(side, bd) {
-    const ms = G.msData.find(m => m.MS名 === bd.ms);
+    const name = C.msRenamed(bd.ms);
+    const ms = G.msData.find(m => m.MS名 === name);
     if (!ms) return;
     side.stage = bd.stage != null ? bd.stage : 6;
     const wanted = (bd.parts || []).map(n => allParts.find(p => p.name === n)).filter(Boolean);

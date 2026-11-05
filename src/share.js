@@ -160,7 +160,7 @@ function toBuild(v) {
   return {
     id: v.id,
     name: v.title || '(제목 없음)',
-    ms: v.ms,
+    ms: typeof GBO2Core !== 'undefined' ? GBO2Core.msRenamed(v.ms) : v.ms,
     parts: Array.isArray(v.parts) ? v.parts : [],
     stage: Number(v.stage),
     expansion: v.exp,
