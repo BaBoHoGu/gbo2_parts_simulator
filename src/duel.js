@@ -380,7 +380,7 @@
     const pr = D.ATTR_BONUS[att] ?? 0;
     const cutHits = c => c.scope === 'all' || c.scope === (wp.attr === 'melee' ? 'melee' : 'shoot') || c.scope === wp.attr;
     const hit = Math.floor(boosted * factor);
-    const n = HOOK.hitsPerTrigger(wp, charged) || 1;
+    const n = HOOK.hitsPerTrigger(wp, charged, skillOn) || 1;
     const fixed = HOOK.fixedDamage(A, wp) || 0;           // 보정을 안 받는 고정 피해 — 경감도 안 건다
     const per = hit * n + fixed;
     /* 상대 내성을 깎는 몫 — **무장과 스킬 둘 다**. 「対象の耐ビーム補正を30%減でダメージ計算」

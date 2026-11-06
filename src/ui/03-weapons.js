@@ -630,7 +630,31 @@
   }
   // 동시발사(산탄) 배수를 모드별로 읽는다. 「非集束時N…」은 논차지만, 「集束時N…」은 풀차지만,
   // 접두가 없으면 두 모드 공통. (非集束時 이 集束時 를 부분포함하므로 非 를 먼저 가른다.)
-  function fireMult(w) {
+  /* 한 조각에서 방아쇠 한 번의 횟수를 읽는다. 괄호((400発/分) · 「（x4回攻撃）」)는 배수가 아니라 미리 뺀다.
+       「6発同時発射 x3回攻撃」 · 「2発同時発射 x2基 x2射 x3回攻撃」 · 「2発同時発射 x13発連続発射 x2回攻撃」
+       「15発連続発射 x2回攻撃」 — 그냥 「4発連続発射」 는 발수로 따로 세므로 여기서 안 곱한다.
+       「18回攻撃」 · 「着弾＆爆発の2回攻撃」 — 맨 앞에 횟수만 있는 꼴. 「累計46回攻撃」(설치형의 총량)은 아니다. */
+  function volleyCell(seg) {
+    const b = seg.replace(/[（(][^）)]*[）)]/g, '');
+    const sim = b.match(/([一二三四五六七八九十]|\d+)発?同時発射/);  // 바르길은 「7同時発射」로 発 이 빠져 있다
+    if (sim) {
+      const proj = cjkNum(sim[1]);
+      let r = 1, rep = false;
+      for (const m of b.slice(sim.index + sim[0].length).matchAll(/[x×]\s*(\d+)\s*(基|射|発連続発射|回攻撃)/g)) {
+        if (m[2] === '発連続発射' && !/回攻撃/.test(b)) continue;   // 「4発同時発射 x12発連続発射」 는 그냥 연속 발사(마 쿠베 구프 등)
+        r *= Number(m[1]); rep = true;
+      }
+      const n = proj * r;
+      return n > 1 ? { n, label: rep ? proj + '발 ×' + r + '연사' : proj + '발 동시' } : null;
+    }
+    const seq = b.match(/(\d+)発連続発射.*?[x×]\s*(\d+)\s*回攻撃/);
+    if (seq) return { n: seq[1] * seq[2], label: seq[1] + '발 ×' + seq[2] + '회' };
+    const bare = b.match(/^(?:着弾＆爆発の)?(\d+)回攻撃/);
+    if (bare && Number(bare[1]) > 1) return { n: Number(bare[1]), label: bare[1] + '회 공격' };
+    return null;
+  }
+  // skillOn: 「スキル発動中、…」 처럼 조건이 붙은 조각까지 셀까 — 대결이 weaponSkillOn 으로 넘긴다. 표는 평소 값.
+  function fireMult(w, skillOn) {
     const empty = { nc: null, ch: null };
     if (!w || w.type === 'melee') return empty;
     const note = (w.info && w.info['備考']) || '';
@@ -666,14 +690,9 @@
     if (rg && Number(rg[2]) > 1) { const x = { n: Number(rg[2]), label: rg[1] + '~' + rg[2] + '히트' }; return { nc: x, ch: x }; }
     let nc = null, ch = null, both = null;
     for (const b of note.split(' / ')) {
-      const m = b.match(/([一二三四五六七八九十]|\d+)発?同時発射/);  // 바르길은 「7同時発射」로 発 이 빠져 있다
-      if (!m) continue;
-      const proj = cjkNum(m[1]);
-      const rep = b.match(/[x×]\s*(\d+)\s*(?:回攻撃|射)/);           // 같은 불릿 안의 「x3回攻撃」「x3射」 연사만
-      const r = rep ? Number(rep[1]) : 1;
-      const n = proj * r;
-      if (n <= 1) continue;
-      const cell = { n, label: rep ? proj + '발 ×' + r + '연사' : proj + '발 동시' };
+      if (/発動(?:中|時)/.test(b) && !skillOn) continue;   // 켜졌을 때의 값이 평소 값을 덮으면 안 된다(뉴건담 협격 12 → 18)
+      const cell = volleyCell(b);
+      if (!cell) continue;
       if (/非集束時/.test(b)) nc = cell;
       else if (/集束時/.test(b)) ch = cell;
       else both = cell;

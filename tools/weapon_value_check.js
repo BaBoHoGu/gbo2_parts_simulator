@@ -124,7 +124,52 @@ function vocabMiss() {
         }
       }
     }
-    return { n, withStag, withFoe, stag, foe };
+    /* ── ③ 전각 표기 ──
+       MSN-04FF 사자비 「2発同時発射ｘ４回攻撃」 · 「40%ｘ2発ｘ4射」: 정규식 \d 는 전각 숫자를 못 읽고
+       [x×] 는 ｘ 를 못 읽어, 피해 2히트(실제 8) · 누적치 1히트(실제 8)로 나왔다(2026-11-06 사용자 지적).
+       ①의 대조식도 같은 눈을 가져 함께 통과했다 — 그래서 **문자 자체**가 없는지 본다. */
+    const wide = [];
+    for (const v of Object.values(W)) for (const w of (v.weapons || [])) {
+      const txt = [...Object.values(w.info || {}), ...Object.values(w.mods || {})].map(String).join(' ');
+      if (/[０-９ｘ]|Ｘ\s*\d/.test(txt)) wide.push(v.names[0] + ' ' + w.name);
+    }
+    const dh = Object.values(W).flatMap(v => v.names[0].startsWith('MSN-04FF') ? (v.weapons || []) : [])
+      .find(w => /［照射］/.test(w.name));
+    const dhFm = dh && T.fireMult(dh), dhSt = dh && T.parseStagger(dh);
+
+    /* ── ④ 방아쇠 한 번의 횟수를 다 세는가 ──
+       「18回攻撃」(하이뉴 집중포화 등 22종)을 1히트로, 「15発連続発射 x2回攻撃」을 1히트로,
+       「2発同時発射 x2基 x2射 x3回攻撃」을 4히트로 셌다(2026-11-06 사용자 지적에서 번짐).
+       반대로 조건이 붙은 값(「スキル発動中、… x3回攻撃」)은 평소 값이 아니다. */
+    const countBad = [];
+    let bareN = 0;
+    for (const v of Object.values(W)) for (const w of (v.weapons || [])) {
+      if (w.type === 'melee') continue;
+      const m = /(?:^| \/ )(\d+)回攻撃/.exec(String((w.info || {})['備考'] || ''));
+      if (!m) continue;
+      bareN++;
+      const got = (T.fireMult(w).nc || {}).n;
+      if (got !== Number(m[1])) countBad.push(v.names[0] + ' ' + w.name + ' ' + got + '≠' + m[1]);
+    }
+    const fmOf = (ms, name, on) => {
+      const v = Object.values(W).find(v => v.names[0] === ms + '_LV1');
+      const w = v && v.weapons.find(w => w.name === name);
+      const f = w && T.fireMult(w, on);
+      return f && f.nc ? f.nc.n : null;
+    };
+    const counts = {
+      '유니콘 각성 실드 판넬 15×2': [fmOf('ユニコーンガンダム［覚醒］', 'シールド・ファンネル［射出］'), 30],
+      '내러티브 B2 2×13×2': [fmOf('ナラティブガンダム［B2装備］', 'S・B・ガトリングx2［射出］'), 52],
+      '델타 카이 2×2×2×3': [fmOf('ガンダムデルタカイ', 'P・F・ファンネルx2［挟撃］'), 24],
+      '델타 카이 n_i_t_r_o 켬 2×2×2×5': [fmOf('ガンダムデルタカイ', 'P・F・ファンネルx2［挟撃］', true), 40],
+      '뉴건담 협격 평소 6×2': [fmOf('νガンダム', 'フィン・ファンネルx6［挟撃］'), 12],
+      '뉴건담 협격 스킬 켬 6×3': [fmOf('νガンダム', 'フィン・ファンネルx6［挟撃］', true), 18],
+      '밴시 노른 착탄·폭발 2회': [fmOf('バンシィ・ノルン', '［R・L］瞬光式徹甲榴弾'), 2],
+      '설치 판넬 「累計46回」 은 방아쇠 횟수가 아니다': [fmOf('ナイチンゲール', 'ファンネルx4［設置］'), 4],
+      '回攻撃 없는 연속 발사는 안 곱한다 (4発同時発射 x12発連続発射)': [fmOf('マ・クベ専用グフ', 'マ・クベ専用グフ用F・V［斉射］'), 4]
+    };
+    return { n, withStag, withFoe, stag, foe, wide, countBad, bareN, counts,
+      dh: dh ? { nc: dhFm.nc && dhFm.nc.n, ch: dhFm.ch && dhFm.ch.n, pct: dhSt.pct, pellets: dhSt.pellets } : null };
   });
 
   await br.close();
@@ -135,6 +180,12 @@ function vocabMiss() {
      이 한 건에서는 더 쓸모 있어 그대로 둔다 — 늘어나면 여기서 걸린다. */
   ok('누적치가 원문의 배수를 다 쓴다 (예외 1건)', r.stag.length <= 1, r.stag.slice(0, 5));
   ok('적 내성 감소 값이 원문에 있는 수다', r.foe.length === 0, r.foe.slice(0, 5));
+  ok('무장 값 칸에 전각 숫자·ｘ 가 없다 (수집 때 반각으로 바꾼다)', r.wide.length === 0, r.wide.slice(0, 5));
+  ok('D・H・ファンネル［照射］ = 2발 × 4회 (피해 8히트 · 누적치 40% × 8)',
+    r.dh && r.dh.nc === 8 && r.dh.ch === 8 && r.dh.pct === 40 && r.dh.pellets === 8, r.dh);
+  ok('「N回攻撃」 만 적힌 무장의 피해 히트가 N 이다', r.countBad.length === 0, r.countBad.slice(0, 5));
+  ok('「N回攻撃」 만 적힌 무장을 실제로 쟀다', r.bareN >= 20, r.bareN);
+  for (const [label, [got, want]] of Object.entries(r.counts)) ok(label + ' = ' + want, got === want, got);
   // 0 이면 「아무것도 안 쟀다」로도 통과한다 — 실제로 쟀는지 개수로 확인한다
   ok('잴 것이 실제로 있었다', r.withStag > 2000 && r.withFoe >= 30, { 누적치: r.withStag, 내성감소: r.withFoe });
 

@@ -282,8 +282,8 @@
       altMode: ms => altModeOf(ms),
       weaponMode: w => weaponModeOf(w),
       /* 방아쇠 한 번에 맞는 히트 수 — 무장표의 「전탄」과 같은 자. {nc,ch} 각각 null|{n}. */
-      hitsPerTrigger: (wp, charged) => {
-        const m = fireMult(wp.w);
+      hitsPerTrigger: (wp, charged, skillOn) => {
+        const m = fireMult(wp.w, skillOn);
         const c = charged ? (m.ch || m.nc) : m.nc;
         return (c && c.n) || 1;
       },

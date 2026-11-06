@@ -26,6 +26,14 @@ const clean = s => s
 
 const parseTable = html => parseGrid(html, clean);
 
+/* 값 칸의 전각 숫자 · 배수 기호를 반각으로 — 앱의 정규식은 \d 와 x 로 읽는다.
+   위키 작성자가 「2発同時発射ｘ４回攻撃」 처럼 적으면 파서마다 조용히 빠진다(MSN-04FF 사자비 조사 판넬:
+   피해 2히트 · 누적치 1히트, 실제는 둘 다 8). 읽는 곳이 여럿이라 **들어오는 입구** 한 곳에서 고친다.
+   무장 이름은 사전 키라 건드리지 않고, Ｘ 는 뒤에 숫자가 올 때만 배수로 본다(「ガンダムＸ」 같은 이름). */
+const halfDigits = s => String(s)
+  .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+  .replace(/[ｘＸ](?=\s*\d)/g, 'x');
+
 const LV = /^LV\s*(\d+)$/i;
 
 /**
@@ -479,7 +487,10 @@ for (const f of files) {
 
     const byName = new Map();
     for (const rawRow of sp.body) {
-      const row = rawRow.map((v, i) => (i === iNote ? v : unbreak(v)));
+      const row = rawRow.map((v, i) => {
+        const cell = i === iNote ? v : unbreak(v);
+        return i === iName ? cell : halfDigits(cell);
+      });
       const lvCell = row[iLv >= 0 ? iLv : row.findIndex(c => LV.test(c))];
       const lvm = LV.exec(lvCell || '');
       if (!lvm) continue;
