@@ -40,13 +40,15 @@ for (const [o, n] of pairs) {
     const got = await pg.evaluate((o, n) => {
       localStorage.setItem('gbo2-offline-builds', JSON.stringify([{ id: 'a', name: 'x', ms: o, parts: [], stage: 6 }]));
       localStorage.setItem('gbo2-offline-fav', JSON.stringify([o]));
-      localStorage.setItem('gbo2-offline-recent', JSON.stringify([o]));
+      // 옛 이름과 새 이름이 함께 있으면 둘 다 새 이름이 된다 — 한 칸만 남아야 한다
+      localStorage.setItem('gbo2-offline-recent', JSON.stringify([o, n]));
       localStorage.setItem('gbo2.plan', JSON.stringify([{ id: 'p', ms: o, stage: 6 }]));
       return window.GBO2UiTest.storedMsNames();
     }, o, n);
     ok('저장 목록의 옛 이름이 새 이름으로 읽힌다', got.builds[0] === n, got.builds);
     ok('즐겨찾기의 옛 이름이 살아 있다', got.fav[0] === n, got.fav);
     ok('최근 목록의 옛 이름이 살아 있다', got.recent[0] === n, got.recent);
+    ok('옛 이름 · 새 이름이 함께 있어도 최근 목록에 한 번만', got.recent.length === 1, got.recent);
     ok('플랜의 옛 이름이 새 이름으로 읽힌다', got.plan[0] === n, got.plan);
   } finally { await br.close(); }
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

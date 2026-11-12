@@ -639,13 +639,14 @@
     const sim = b.match(/([一二三四五六七八九十]|\d+)発?同時発射/);  // 바르길은 「7同時発射」로 発 이 빠져 있다
     if (sim) {
       const proj = cjkNum(sim[1]);
-      let r = 1, rep = false;
-      for (const m of b.slice(sim.index + sim[0].length).matchAll(/[x×]\s*(\d+)\s*(基|射|発連続発射|回攻撃)/g)) {
+      let r = 1, rep = false, burst = false;   // burst: 射 · 回攻撃 처럼 시간 차가 있는 배수 — 腕 · 丁 · 基 만이면 동시다
+      for (const m of b.slice(sim.index + sim[0].length).matchAll(/[x×]\s*(\d+)\s*(基|腕|丁|射|発連続発射|回攻撃)/g)) {   // 腕 · 丁: 「3発同時発射 x2腕」 · 「8発同時発射 x2丁」
         if (m[2] === '発連続発射' && !/回攻撃/.test(b)) continue;   // 「4発同時発射 x12発連続発射」 는 그냥 연속 발사(마 쿠베 구프 등)
         r *= Number(m[1]); rep = true;
+        if (!/^(基|腕|丁)$/.test(m[2])) burst = true;
       }
       const n = proj * r;
-      return n > 1 ? { n, label: rep ? proj + '발 ×' + r + '연사' : proj + '발 동시' } : null;
+      return n > 1 ? { n, label: !rep ? proj + '발 동시' : proj + '발 ×' + r + (burst ? '연사' : '') } : null;
     }
     const seq = b.match(/(\d+)発連続発射.*?[x×]\s*(\d+)\s*回攻撃/);
     if (seq) return { n: seq[1] * seq[2], label: seq[1] + '발 ×' + seq[2] + '회' };

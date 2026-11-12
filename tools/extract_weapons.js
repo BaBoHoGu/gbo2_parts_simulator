@@ -32,7 +32,9 @@ const parseTable = html => parseGrid(html, clean);
    무장 이름은 사전 키라 건드리지 않고, Ｘ 는 뒤에 숫자가 올 때만 배수로 본다(「ガンダムＸ」 같은 이름). */
 const halfDigits = s => String(s)
   .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-  .replace(/[ｘＸ](?=\s*\d)/g, 'x');
+  .replace(/[ｘＸ](?=\s*\d)/g, 'x')
+  // 가타카나 「ニ」 를 한자 「二」 로 잘못 쓴 「ニ発同時発射」(V2AB 베스버 등) — 앞이 가타카나면 낱말의 일부라 둔다
+  .replace(/(?<![ァ-ヺー])ニ(?=\s*発)/g, '二');
 
 const LV = /^LV\s*(\d+)$/i;
 

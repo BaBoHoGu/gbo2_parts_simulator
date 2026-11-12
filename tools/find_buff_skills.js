@@ -111,21 +111,31 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       // 「与ダメージ15%分のHP回復」은 회복량이라 ＋ 나 増加/上昇 표기를 요구해 걸러 낸다.
       // 「与えるダメージが 20% 上昇」「与えるダメージを 50% 増加」 — 조사가 が·を 로 갈린다
       let dmgShoot = 0, dmgMelee = 0, dmgAny = 0;
+      /* 「有利カテゴリーへの与ダメージ ＋10%」(グリモア（青）) · 「空中にいる有利カテゴリーの敵機に…50% 増加」(対空射撃補助) —
+         **유리한 병과를 칠 때만** 걸린다. 조건 없는 칸에 넣으면 같은 병과 · 불리한 상대에게도 걸렸다(2026-11-11 버그 탐색).
+         병과는 대결에서만 알 수 있어 따로 담고, 대결이 상성을 보고 건다. */
+      let dmgAdvShoot = 0, dmgAdvMelee = 0, dmgAdvAny = 0;
       const DMG_RE = /([^。]{0,26})(?:与ダメージ|与えるダメージ)\s*(?:[がをは]\s*)?([＋+]?)\s*(\d+)\s*[%％]\s*(増加|上昇)?/g;
       for (const m of line.matchAll(DMG_RE)) {
         if (!m[2] && !m[4]) continue;                    // 피해 상승이 아닌 표현
         const v = Number(m[3]);
-        if (/射撃(属性|兵装|攻撃)/.test(m[1])) dmgShoot = Math.max(dmgShoot, v);
-        else if (/格闘(属性|兵装|攻撃)/.test(m[1])) dmgMelee = Math.max(dmgMelee, v);
+        const adv = /有利カテゴリ/.test(m[1]);
+        if (/射撃(属性|兵装|攻撃)/.test(m[1])) { if (adv) dmgAdvShoot = Math.max(dmgAdvShoot, v); else dmgShoot = Math.max(dmgShoot, v); }
+        else if (/格闘(属性|兵装|攻撃)/.test(m[1])) { if (adv) dmgAdvMelee = Math.max(dmgAdvMelee, v); else dmgMelee = Math.max(dmgMelee, v); }
+        else if (adv) dmgAdvAny = Math.max(dmgAdvAny, v);
         else dmgAny = Math.max(dmgAny, v);
       }
+      /* 「有利カテゴリ補正 ＋20%」(ウェポンパージ) · 「有利カテゴリー補正＋15%」(能力UP「覚醒」) — 상성 배율 130% 에 더한다
+         (위키 7000 카테고리 특공: 「カテゴリ補正の130%に＋10%され、140%」). 다른 수치가 없는 각성은 이게 없어 스킬째 빠졌다. */
+      const catAdv = flat(0, /有利カテゴリー?補正\s*[＋+]\s*(\d+)\s*[%％]/);
       // 「攻撃力が N% 上昇」 — 대부분 「タックル発生時の攻撃力」이라 태클 전용이다.
       // 태클이 앞에 없는 것(고정밀 스나이프의 스나이프 모드 등)만 사격·격투 공통 피해로 받는다.
       const atk = line.match(/攻撃力(?:が|を)\s*(\d+)\s*[%％]\s*(?:上昇|増加)/);
       if (atk && !/タックル/.test(line.slice(Math.max(0, atk.index - 12), atk.index))) {
         dmgAny = Math.max(dmgAny, Number(atk[1]));
       }
-      const dmgPct = dmgAny || dmgShoot || dmgMelee;
+      // 표에 올릴지 · 무게를 잴 때 쓰는 값 — 유리 병과 한정분도 「피해를 올리는 스킬」 이다
+      const dmgPct = dmgAny || dmgShoot || dmgMelee || dmgAdvAny || dmgAdvShoot || dmgAdvMelee || catAdv;
       const powerPct = flat(0, /威力\s*[＋+]\s*(\d+)\s*[%％]/)
         || flat(0, /威力が\s*(\d+)\s*[%％]\s*(?:増加|上昇)/);
       // 방어·기동·HP 발동 버프 (능력UP「바이오센서」 등) — 스탯 패널에 반영한다.
@@ -173,6 +183,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         skill: (row.find(c => c && !/^(LV|Lv)\s*\d*\s*[～~]?$/.test(c) && c.length > 1) || '(무명)')
           .replace(/\?+$/, '').trim(),
         shoot, melee, shootPct, meleePct, crouchPct, limitUp, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
+        dmgAdvAny, dmgAdvShoot, dmgAdvMelee, catAdv,
         foeArmor,
         armorRange, armorBeam, armorMelee, speed, hispeed, thruster, turn, hpUp,
         forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
@@ -191,6 +202,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
 {
   const wOf = e => (e.shoot || 0) + (e.melee || 0) + (e.shootPct || 0) + (e.meleePct || 0)
     + (e.crouchPct || 0) + (e.dmgAny || 0) + (e.dmgShoot || 0) + (e.dmgMelee || 0)
+    + (e.dmgAdvAny || 0) + (e.dmgAdvShoot || 0) + (e.dmgAdvMelee || 0) + (e.catAdv || 0)
     + (e.armorRange || 0) + (e.armorBeam || 0) + (e.armorMelee || 0)
     + (e.speed || 0) + (e.hispeed || 0) + (e.thruster || 0) + (e.turn || 0) + (e.hpUp || 0);
   // 이름 → 표준 추출 수치(가장 높은 것). 이번 실행분(found) + 기존 skills.json(증분 실행 대비).
@@ -234,6 +246,8 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       shoot: src.shoot || 0, melee: src.melee || 0, shootPct: src.shootPct || 0, meleePct: src.meleePct || 0,
       crouchPct: src.crouchPct || 0, limitUp: src.limitUp || 0, dmgPct: src.dmgPct || 0,
       dmgShoot: src.dmgShoot || 0, dmgMelee: src.dmgMelee || 0, dmgAny: src.dmgAny || 0, powerPct: 0,
+      // 부여받은 대공 사격 보조(F91［BC装備］ · G・ドアーズ)도 「유리 병과 한정」 을 그대로 물려받는다
+      dmgAdvAny: src.dmgAdvAny || 0, dmgAdvShoot: src.dmgAdvShoot || 0, dmgAdvMelee: src.dmgAdvMelee || 0, catAdv: src.catAdv || 0,
       armorRange: src.armorRange || 0, armorBeam: src.armorBeam || 0, armorMelee: src.armorMelee || 0,
       speed: src.speed || 0, hispeed: src.hispeed || 0, thruster: src.thruster || 0,
       turn: src.turn || 0, hpUp: src.hpUp || 0,
@@ -284,7 +298,7 @@ if (process.argv.includes('--ui')) {
   // 시뮬레이터가 쓰는 형태 — 기체마다 고를 수 있는 버프 스킬 목록.
   // 태클·특정 무장의 위력만 올리는 스킬은 성능표·무장표에 얹을 자리가 없어 뺀다.
   const usable = found.filter(r =>
-    r.shoot || r.melee || r.shootPct || r.meleePct || r.crouchPct || r.dmgPct
+    r.shoot || r.melee || r.shootPct || r.meleePct || r.crouchPct || r.dmgPct   // dmgPct 에 유리 병과 한정분 · catAdv 도 들어 있다
     || r.armorRange || r.armorBeam || r.armorMelee || r.speed || r.hispeed || r.thruster || r.turn || r.hpUp
     // 상대 내성을 깎는 스킬 — 수치는 앱이 원문에서 읽는다. 여기서 빼면 고를 수가 없다.
     || r.foeArmor);
@@ -310,6 +324,9 @@ if (process.argv.includes('--ui')) {
           limitUp: r.limitUp,       // ZERO 시스템 — 사격·격투 상한 상승
           // 피해 % 는 걸리는 대상이 갈린다 — any 는 사격·격투 모두에 얹는다
           dmgAny: r.dmgAny, dmgShoot: r.dmgShoot, dmgMelee: r.dmgMelee,
+          // 유리한 병과를 칠 때만 — 대결만 센다(상대가 없는 표는 병과를 모른다). 0 이면 싣지 않아 표가 안 불어난다
+          ...(r.dmgAdvAny ? { dmgAdvAny: r.dmgAdvAny } : {}), ...(r.dmgAdvShoot ? { dmgAdvShoot: r.dmgAdvShoot } : {}),
+          ...(r.dmgAdvMelee ? { dmgAdvMelee: r.dmgAdvMelee } : {}), ...(r.catAdv ? { catAdv: r.catAdv } : {}),
           // 방어·기동·HP 발동 버프 — 성능표 스탯에 반영
           armorRange: r.armorRange, armorBeam: r.armorBeam, armorMelee: r.armorMelee,
           speed: r.speed, hispeed: r.hispeed, thruster: r.thruster, turn: r.turn, hpUp: r.hpUp
@@ -318,7 +335,7 @@ if (process.argv.includes('--ui')) {
         .filter(l => { const k = JSON.stringify(l); if (seen.has(k)) return false; seen.add(k); return true; });
       // 버프는 LV 로 감소하지 않는다. 위키 미공개(「射撃補正 ＋？」→0) 등으로 상위 LV 값이 0 이 되면
       // 하위 LV 값으로 올려 0/0 표시를 막는다(0→하위값). 음수 트레이드오프는 건드리지 않는다.
-      const LVF = ['shoot', 'melee', 'shootPct', 'meleePct', 'crouchPct', 'limitUp', 'dmgAny', 'dmgShoot', 'dmgMelee', 'armorRange', 'armorBeam', 'armorMelee', 'speed', 'hispeed', 'thruster', 'turn', 'hpUp'];
+      const LVF = ['shoot', 'melee', 'shootPct', 'meleePct', 'crouchPct', 'limitUp', 'dmgAny', 'dmgShoot', 'dmgMelee', 'dmgAdvAny', 'dmgAdvShoot', 'dmgAdvMelee', 'catAdv', 'armorRange', 'armorBeam', 'armorMelee', 'speed', 'hispeed', 'thruster', 'turn', 'hpUp'];
       for (let i = 1; i < levels.length; i++) for (const f of LVF)
         if (levels[i][f] === 0 && (levels[i - 1][f] || 0) > 0) levels[i][f] = levels[i - 1][f];
       const top = mine.reduce((a, b) => (weight(b) > weight(a) ? b : a));
@@ -331,6 +348,7 @@ if (process.argv.includes('--ui')) {
     // 효과가 큰 것부터 — 드롭다운에서 위에 오게 한다
     const lvWeight = l => l.shoot + l.melee + l.shootPct + l.meleePct + l.crouchPct
       + l.dmgAny + l.dmgShoot + l.dmgMelee
+      + (l.dmgAdvAny || 0) + (l.dmgAdvShoot || 0) + (l.dmgAdvMelee || 0) + (l.catAdv || 0)
       + (l.armorRange || 0) + (l.armorBeam || 0) + (l.armorMelee || 0)
       + (l.speed || 0) + (l.hispeed || 0) + (l.thruster || 0) + (l.turn || 0) + (l.hpUp || 0);
     skills.sort((a, b) => Math.max(...b.levels.map(lvWeight)) - Math.max(...a.levels.map(lvWeight)));

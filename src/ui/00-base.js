@@ -240,7 +240,19 @@
     // 피해 경감(被ダメージ －N%) — 속성별. 내구 지표 상승·격파 계산에 쓴다.
     // 표기 변형 허용: 実弾属性/実弾射撃/実弾攻撃 등. 「射撃」은 실탄+빔 공통(shoot).
     const cuts = [];
-    const cut = (re, scope) => { const m = blob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
+    /* 「汎用・支援カテゴリからの射撃属性被ダメージ －40%」 · 「強襲カテゴリからの被ダメージ －50%」(ν건담［DFF装備］) —
+       **때린 쪽 병과**에 따라 갈리는 경감이다. 아래 정규식은 병과를 몰라 앞의 것을 상대 가리지 않고 걸고,
+       뒤의 것은 「이미 하나 읽었다」 며 버렸다(사용자 지적 2026-11-11). 그 조각은 여기서 먼저 떼어
+       foeCat 을 붙여 두고, 나머지 글(cblob)만 아래 규칙에 넘긴다. 합칠 때는 staggerDmgFactor 가 병과를 본다. */
+    const CAT_CUT = /((?:汎用|強襲|支援)(?:・(?:汎用|強襲|支援))*)カテゴリー?からの(実弾|ビーム|格闘|射撃)?(?:属性)?(?:攻撃)?(?:による)?被ダメージ\s*[－-]\s*(\d+)\s*[%％]/;
+    const catCuts = [];
+    const cblob = blob.split(' / ').filter(seg => {
+      const m = seg.match(CAT_CUT);
+      if (!m) return true;
+      catCuts.push({ scope: { 実弾: 'solid', ビーム: 'beam', 格闘: 'melee', 射撃: 'shoot' }[m[2]] || 'all', pct: Number(m[3]), foeCat: m[1].split('・') });
+      return false;
+    }).join(' / ');
+    const cut = (re, scope) => { const m = cblob.match(re); if (m) cuts.push({ scope, pct: Number(m[1]) }); };
     cut(/実弾(?:属性|射撃|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'solid');
     cut(/ビーム(?:属性|射撃|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'beam');
     cut(/格闘(?:属性|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/, 'melee');
@@ -250,7 +262,7 @@
        앱이 통째로 안 떴다(2026-10-24 버그 탐색). 앞의 「実弾/ビーム」 을 잡아 두고, 잡힌 것은 건너뛴다.
        옛 정규식과 스킬 데이터 777 문장에서 결과가 같은 것을 확인했다. */
     {
-      const m = [...blob.matchAll(/(実弾|ビーム)?(?:属性)?射撃(?:属性|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/g)].find(x => !x[1]);
+      const m = [...cblob.matchAll(/(実弾|ビーム)?(?:属性)?射撃(?:属性|攻撃)*被ダメージ\s*[－-]\s*(\d+)\s*[%％]/g)].find(x => !x[1]);
       if (m) cuts.push({ scope: 'shoot', pct: Number(m[2]) });
     }
     // 받는 공격의 속성·종류로 일반 경감의 범위를 좁힌다.
@@ -271,8 +283,8 @@
     // '같은 경감'을 두 번 적은 스킬을 둘로 쪼개 이중 계산하는 것을 막는다.
     let extra = null;
     const GEN_BASE = /(?:機体HPへのダメージ|ダメージ)[がを]\s*(\d+)\s*[%％]\s*軽減/;
-    if (cuts.length && /追加で/.test(blob)) {
-      const seg = blob.split(/ \/ |。/).find(t => GEN_BASE.test(t));
+    if (cuts.length && /追加で/.test(cblob)) {
+      const seg = cblob.split(/ \/ |。/).find(t => GEN_BASE.test(t));
       const gm = seg && seg.match(GEN_BASE);
       if (gm) {
         const attrTxt = /(?:実弾|ビーム|格闘|射撃)(?:属性|射撃|攻撃)*被ダメージ/.test(sk.desc || '') ? (sk.desc || '') : (sk.eff || '');
@@ -287,10 +299,12 @@
     }
     // 속성 표기 없는 일반 被ダメージ / ダメージが N%軽減
     if (!cuts.length) {
-      const gm = blob.match(/被ダメージ\s*[－-]\s*(\d+)\s*[%％]/) || blob.match(/ダメージ[がを]\s*(\d+)\s*[%％]\s*軽減/)
-        || blob.match(/機体HPへのダメージと[^。]{0,24}?(\d+)\s*[%％]\s*軽減/);   // 부위 특수완충재(機体HPへのダメージと〇〇HPへの負荷を N%軽減)
-      if (gm) cuts.push({ scope: scopeOf(blob), pct: Number(gm[1]) });
+      const gm = cblob.match(/被ダメージ\s*[－-]\s*(\d+)\s*[%％]/) || cblob.match(/ダメージ[がを]\s*(\d+)\s*[%％]\s*軽減/)
+        || cblob.match(/機体HPへのダメージと[^。]{0,24}?(\d+)\s*[%％]\s*軽減/);   // 부위 특수완충재(機体HPへのダメージと〇〇HPへの負荷を N%軽減)
+      // 병과 조각을 뗀 뒤 남은 산문(「射撃属性による…被ダメージを軽減」)에는 수가 없어 여기 안 걸린다
+      if (gm) cuts.push({ scope: scopeOf(cblob), pct: Number(gm[1]) });
     }
+    cuts.push(...catCuts);
     // 누적치 감소·임계 또는 피해 경감 중 하나라도 있으면 방어 스킬로 본다.
     // (「リアクションを軽減」만 있는 기본 마뉴버아머처럼 수치 없는 것은 제외.)
     if (!mults.length && !tm && !cuts.length) return null;
@@ -758,7 +772,12 @@
       const tags = [];
       if (s.threshold != null) tags.push(`임계 ${s.threshold}%`);
       if (s.mult < 1) tags.push(`누적 ×${+s.mult.toFixed(3)}`);
-      if (s.cuts.length) tags.push(`피해 -${Math.max(...s.cuts.map(c => c.pct))}%`);
+      /* 병과가 붙은 경감(ν건담［DFF装備］ 「強襲カテゴリからの…」)은 상대가 정해진 대결에서만 센다 —
+         여기서 「피해 -50%」 만 적으면 내구 지표에 그만큼 들어간 줄 안다. 병과를 함께 적는다. */
+      const plain = s.cuts.filter(c => !c.foeCat), byCat = s.cuts.filter(c => c.foeCat);
+      if (plain.length) tags.push(`피해 -${Math.max(...plain.map(c => c.pct))}%`);
+      for (const c of byCat) tags.push(`${c.foeCat.map(a => T.attrName(a)).join('·')} 상대 피해 -${c.pct}%`);
+      if (byCat.length) lab.title += '\n상대 병과가 붙은 경감은 대결에서만 셉니다';
       lab.append(box, el('span', 'stg-nm', s.ko),
         el('span', 'stg-tag', tags.join(' · ')),
         el('span', 'stg-cond', s.cond));
@@ -891,7 +910,8 @@
   function loadFavRecent() {
     const known = n => msData.some(m => m.MS名 === n);
     try { state.favorites = new Set((JSON.parse(localStorage.getItem(FAV_KEY)) || []).map(n => C.msRenamed(n)).filter(known)); } catch { state.favorites = new Set(); }
-    try { state.recent = (JSON.parse(localStorage.getItem(RECENT_KEY)) || []).map(n => C.msRenamed(n)).filter(known).slice(0, RECENT_MAX); } catch { state.recent = []; }
+    // 이름 변경으로 옛 이름 · 새 이름이 같은 기체가 되면 한 칸만 남긴다(Set 이 순서를 지킨다)
+    try { state.recent = [...new Set((JSON.parse(localStorage.getItem(RECENT_KEY)) || []).map(n => C.msRenamed(n)).filter(known))].slice(0, RECENT_MAX); } catch { state.recent = []; }
   }
   function saveFav() { try { localStorage.setItem(FAV_KEY, JSON.stringify([...state.favorites])); } catch { /* 무시 */ } }
   function saveRecent() { try { localStorage.setItem(RECENT_KEY, JSON.stringify(state.recent)); } catch { /* 무시 */ } }

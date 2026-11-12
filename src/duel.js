@@ -118,6 +118,11 @@
       if (e.dmgAny) tags.push('피해+' + e.dmgAny + '%');
       if (e.dmgShoot) tags.push('사격피해+' + e.dmgShoot + '%');
       if (e.dmgMelee) tags.push('격투피해+' + e.dmgMelee + '%');
+      // 유리한 병과를 칠 때만 걸리는 몫(グリモア（青） · 対空射撃補助 · ウェポンパージ · 覚醒) — 셈은 skillDmgPcts · advCatBonus 가 상성을 보고 한다
+      if (e.dmgAdvAny) tags.push('유리 상대 피해+' + e.dmgAdvAny + '%');
+      if (e.dmgAdvShoot) tags.push('유리 상대 사격피해+' + e.dmgAdvShoot + '%');
+      if (e.dmgAdvMelee) tags.push('유리 상대 격투피해+' + e.dmgAdvMelee + '%');
+      if (e.catAdv) tags.push('유리 상성+' + e.catAdv + '%');
       if (e.armorRange || e.armorBeam || e.armorMelee) tags.push('내성+');
       if (e.hpUp) tags.push('HP+' + e.hpUp);
       if (!tags.length) continue;
@@ -149,14 +154,23 @@
     if (limitUp) o.limit = { shoot: limitUp, meleeCorrection: limitUp };
     return any ? o : null;
   }
-  function skillDmgPcts(side, kind) {
+  /** att 는 상성('advantage' 등) — 「有利カテゴリー…与ダメージ」 몫은 유리할 때만 더한다. */
+  function skillDmgPcts(side, kind, att) {
     const out = [];
     for (const s of buffSkills(side)) {
       if (!side.buffs.has(s.name)) continue;
-      const p = (s.e.dmgAny || 0) + (kind === 'melee' ? (s.e.dmgMelee || 0) : (s.e.dmgShoot || 0));
+      let p = (s.e.dmgAny || 0) + (kind === 'melee' ? (s.e.dmgMelee || 0) : (s.e.dmgShoot || 0));
+      if (att === 'advantage') p += (s.e.dmgAdvAny || 0) + (kind === 'melee' ? (s.e.dmgAdvMelee || 0) : (s.e.dmgAdvShoot || 0));
       if (p) out.push(p);
     }
     return out;
+  }
+  /** 「有利カテゴリ補正 ＋N%」 — 유리할 때 상성 배율(130%)에 더한다(위키 7000: 「130%に＋10%され、140%」). 여럿이면 더한다. */
+  function advCatBonus(side, att) {
+    if (att !== 'advantage') return 0;
+    let n = 0;
+    for (const s of buffSkills(side)) if (side.buffs.has(s.name)) n += s.e.catAdv || 0;
+    return n / 100;
   }
 
   /** ★ 피해 경감 스킬 — 설명문에서 「…受けるダメージを N% 軽減」을 읽는 간이판.
@@ -350,13 +364,16 @@
           + (air ? '공중 ' : '') + dirLabel(d.label) + ' ' + d.raw;
       }
     }
+    // 상성 배율 — 기본(유리 +0.3) 에 「有利カテゴリ補正」 스킬 몫을 더한다. 계산식 표시(pr)도 같은 값을 쓴다
+    // 0.3 + 0.15 = 0.44999… 라 그대로 곱하면 내림에서 1 이 빠진다 — 소수 셋째 자리로 맞춘다
+    const attrBonus = Math.round(((D.ATTR_BONUS[att] ?? 0) + advCatBonus(A, att)) * 1000) / 1000;
     const raw = kind === 'melee'
-      ? D.meleeDamage(power, corr, { attr: att, ccd })
-      : D.shootingDamage(power, corr, { attr: att, etcA });
+      ? D.meleeDamage(power, corr, { attr: att, attrBonus, ccd })
+      : D.shootingDamage(power, corr, { attr: att, attrBonus, etcA });
     const late = lateOn();
     const wm = D.weaponModsOf(C.partsAt(A.parts, late), msLv(A.ms), A.ms.属性);
     const partPct = D.damagePctFor(wm, wp.w, kind) || 0;
-    const skPcts = skillDmgPcts(A, kind);
+    const skPcts = skillDmgPcts(A, kind, att);
     const boosted = D.applyDamagePct(raw, [partPct, ...skPcts]);
     /* 「攻撃対象の(特殊)緩衝材系スキル無視」 — 맞는 쪽의 완충재 스킬 경감을 **안 받는다**.
        예전엔 이 줄이 없어 무장 34종에서 피해를 작게(발수를 많게) 셌다. 조건은 원문 그대로:
@@ -370,15 +387,17 @@
     const allCuts = [
       ...C.partDamageCuts(C.partsAt(B.parts, late), msLv(B.ms)).map(c => ({ ...c, label: '파츠 경감' })),
       ...HOOK.defSkills(B).filter(s => s.always || B.defs.has(s.name))
-        .map(s => ({ scope: s.scope, pct: s.pct, label: s.ko || s.name, ignored: biOn && isBuffer(s.name) })),
+        .map(s => ({ scope: s.scope, pct: s.pct, foeCat: s.foeCat, label: s.ko || s.name, ignored: biOn && isBuffer(s.name) })),
       ...(HOOK.extraCuts(A, B, wp) || []).map(c => ({ ...c, label: c.label || '조건부 경감' }))];
     const cuts = allCuts.filter(c => !c.ignored);
-    const factor = C.staggerDmgFactor(cuts, wp.attr);
+    // 때린 쪽 병과 — 「強襲カテゴリからの被ダメージ」 처럼 병과가 붙은 경감은 그 병과일 때만 걸린다
+    const foeCat = A.ms && A.ms['属性'];
+    const factor = C.staggerDmgFactor(cuts, wp.attr, foeCat);
     /* 계산식 표시용 중간값 — 셈을 다시 하지 않고 **위에서 쓴 값**을 그대로 넘긴다 */
     const atk = D.attackPower(corr);
     const tAtt = D.floorTo(atk * (1 + etcA), 2);
-    const pr = D.ATTR_BONUS[att] ?? 0;
-    const cutHits = c => c.scope === 'all' || c.scope === (wp.attr === 'melee' ? 'melee' : 'shoot') || c.scope === wp.attr;
+    const pr = attrBonus;
+    const cutHits = c => C.cutApplies(c, wp.attr, foeCat);   // 계산식에 적는 목록도 셈과 같은 자로 거른다
     const hit = Math.floor(boosted * factor);
     const n = HOOK.hitsPerTrigger(wp, charged, skillOn) || 1;
     const fixed = HOOK.fixedDamage(A, wp) || 0;           // 보정을 안 받는 고정 피해 — 경감도 안 건다

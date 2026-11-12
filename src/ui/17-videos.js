@@ -250,6 +250,11 @@
     if (e.dmgAny) num.push('피해 +' + e.dmgAny + '%');
     if (e.dmgShoot) num.push('사격 피해 +' + e.dmgShoot + '%');
     if (e.dmgMelee) num.push('격투 피해 +' + e.dmgMelee + '%');
+    // 유리한 병과를 칠 때만 — 상대가 없는 이 화면의 셈에는 안 들어가고 대결만 센다
+    if (e.dmgAdvAny) num.push('유리 상대 피해 +' + e.dmgAdvAny + '%');
+    if (e.dmgAdvShoot) num.push('유리 상대 사격 피해 +' + e.dmgAdvShoot + '%');
+    if (e.dmgAdvMelee) num.push('유리 상대 격투 피해 +' + e.dmgAdvMelee + '%');
+    if (e.catAdv) num.push('유리 상성 +' + e.catAdv + '%');
     if (e.crouchPct) num.push('앉기·정지 사격 +' + e.crouchPct + '%');
     const sg = n => (n > 0 ? '+' : '') + n;   // 음수(HADES 내성-5 등)는 부호 그대로
     if (e.armorRange && e.armorRange === e.armorBeam && e.armorBeam === e.armorMelee) num.push('내성 ' + sg(e.armorRange));

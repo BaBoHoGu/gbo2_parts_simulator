@@ -267,10 +267,16 @@ function boostSecOf(ms, thrusterVal, equipped, env) {
 }
 
 /** 무장 속성(solid/beam/melee)에 실제로 걸리는 피해 경감 배수. 경감은 **곱으로** 쌓인다. */
-function staggerDmgFactor(cuts, attr) {
+/** 이 경감이 지금 공격에 걸리는가. foeCat 은 때린 쪽 병과('汎用' 등) — 모르면(내구 지표 · 자동 구성) 비운다.
+ *  c.foeCat(「強襲カテゴリからの…」 처럼 병과가 붙은 경감)은 그 병과일 때만 — **모르면 안 건다**(모르는 조건은 상시가 아니다). */
+function cutApplies(c, attr, foeCat) {
   const kind = attr === 'melee' ? 'melee' : 'shoot';
+  if (!(c.scope === 'all' || c.scope === kind || c.scope === attr)) return false;
+  return !c.foeCat || (!!foeCat && c.foeCat.includes(foeCat));
+}
+function staggerDmgFactor(cuts, attr, foeCat) {
   let f = 1;
-  for (const c of cuts) if (c.scope === 'all' || c.scope === kind || c.scope === attr) f *= (1 - c.pct / 100);
+  for (const c of cuts) if (cutApplies(c, attr, foeCat)) f *= (1 - c.pct / 100);
   return f;
 }
 
@@ -929,7 +935,7 @@ const GBO2Core = {
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
-  durabilityOf, ARMOR_KEY_OF, partDamageCuts, staggerDmgFactor,
+  durabilityOf, ARMOR_KEY_OF, partDamageCuts, staggerDmgFactor, cutApplies,
   THRUSTER_TBL, THR_RECOVER, isTankMs, thrusterCol, thrusterPartFx, boostSecOf, boostSecFrom,
   expansionShieldHp,
   effectConflict, partBase, MS_RENAMED, msRenamed
