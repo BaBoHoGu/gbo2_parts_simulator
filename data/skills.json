@@ -5167,6 +5167,60 @@
    ]
   }
  ],
+ "ガルバルディβ高機動型［T仕様］": [
+  {
+   "name": "追撃射撃補助プログラム",
+   "nameKo": "추격 사격 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ガンダムデルタカイ": [
   {
    "name": "能力UP「n_i_t_r_o」",
@@ -6407,6 +6461,60 @@
    ]
   }
  ],
+ "ギラ・ドーガ改": [
+  {
+   "name": "追撃格闘補助プログラム",
+   "nameKo": "추격 격투 보조 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 15,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    },
+    {
+     "from": 2,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 20,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ジェガン重装型": [
   {
    "name": "追撃射撃補助プログラム",
@@ -7408,6 +7516,40 @@
    ]
   }
  ],
+ "バンシィ・ノルン": [
+  {
+   "name": "能力UP「覚醒」",
+   "nameKo": "능력UP「각성」",
+   "forever": true,
+   "secs": null,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "catAdv": 15,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
  "ロト": [
   {
    "name": "高精度砲撃",
@@ -7793,8 +7935,9 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
-     "dmgShoot": 50,
+     "dmgShoot": 0,
      "dmgMelee": 0,
+     "dmgAdvShoot": 50,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -9348,9 +9491,10 @@
      "meleePct": 0,
      "crouchPct": 0,
      "limitUp": 0,
-     "dmgAny": 10,
+     "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
+     "dmgAdvAny": 10,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -10389,8 +10533,9 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
-     "dmgShoot": 50,
+     "dmgShoot": 0,
      "dmgMelee": 0,
+     "dmgAdvShoot": 50,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -10540,8 +10685,9 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
-     "dmgShoot": 50,
+     "dmgShoot": 0,
      "dmgMelee": 0,
+     "dmgAdvShoot": 50,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -10712,8 +10858,9 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
-     "dmgShoot": 50,
+     "dmgShoot": 0,
      "dmgMelee": 0,
+     "dmgAdvShoot": 50,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -11069,8 +11216,9 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
-     "dmgShoot": 50,
+     "dmgShoot": 0,
      "dmgMelee": 0,
+     "dmgAdvShoot": 50,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -13583,8 +13731,9 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
-     "dmgShoot": 50,
+     "dmgShoot": 0,
      "dmgMelee": 0,
+     "dmgAdvShoot": 50,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -14069,8 +14218,9 @@
      "crouchPct": 0,
      "limitUp": 0,
      "dmgAny": 0,
-     "dmgShoot": 50,
+     "dmgShoot": 0,
      "dmgMelee": 0,
+     "dmgAdvShoot": 50,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -14438,180 +14588,6 @@
    ]
   }
  ],
- "ジュアッグ": [
-  {
-   "name": "高精度砲撃",
-   "nameKo": "고정밀 포격",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 5,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "アレックス": [
-  {
-   "name": "追撃阻止攻勢プログラム",
-   "nameKo": "추격 저지 공세 프로그램",
-   "forever": false,
-   "secs": 10,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 30,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ケンプファー": [
-  {
-   "name": "EXブースト",
-   "nameKo": "EX 부스트",
-   "forever": false,
-   "secs": 6,
-   "hp": null,
-   "manual": true,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 10,
-     "thruster": 0,
-     "turn": 15,
-     "hpUp": 0
-    },
-    {
-     "from": 2,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 0,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 15,
-     "thruster": 0,
-     "turn": 18,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
- "ガルバルディβ高機動型［T仕様］": [
-  {
-   "name": "追撃射撃補助プログラム",
-   "nameKo": "추격 사격 보조 프로그램",
-   "forever": false,
-   "secs": null,
-   "hp": null,
-   "manual": false,
-   "levels": [
-    {
-     "from": 1,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 15,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    },
-    {
-     "from": 2,
-     "to": null,
-     "shoot": 0,
-     "melee": 0,
-     "shootPct": 0,
-     "meleePct": 0,
-     "crouchPct": 0,
-     "limitUp": 0,
-     "dmgAny": 0,
-     "dmgShoot": 15,
-     "dmgMelee": 0,
-     "armorRange": 0,
-     "armorBeam": 0,
-     "armorMelee": 0,
-     "speed": 0,
-     "hispeed": 0,
-     "thruster": 0,
-     "turn": 0,
-     "hpUp": 0
-    }
-   ]
-  }
- ],
  "カプル": [
   {
    "name": "突撃体勢改",
@@ -14730,6 +14706,7 @@
      "dmgAny": 0,
      "dmgShoot": 0,
      "dmgMelee": 0,
+     "catAdv": 20,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -14936,10 +14913,10 @@
    ]
   }
  ],
- "ギラ・ドーガ改": [
+ "ジュアッグ": [
   {
-   "name": "追撃格闘補助プログラム",
-   "nameKo": "추격 격투 보조 프로그램",
+   "name": "高精度砲撃",
+   "nameKo": "고정밀 포격",
    "forever": false,
    "secs": null,
    "hp": null,
@@ -14952,11 +14929,11 @@
      "melee": 0,
      "shootPct": 0,
      "meleePct": 0,
-     "crouchPct": 0,
+     "crouchPct": 5,
      "limitUp": 0,
      "dmgAny": 0,
      "dmgShoot": 0,
-     "dmgMelee": 15,
+     "dmgMelee": 0,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
@@ -14964,6 +14941,72 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "アレックス": [
+  {
+   "name": "追撃阻止攻勢プログラム",
+   "nameKo": "추격 저지 공세 프로그램",
+   "forever": false,
+   "secs": 10,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 30,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ケンプファー": [
+  {
+   "name": "EXブースト",
+   "nameKo": "EX 부스트",
+   "forever": false,
+   "secs": 6,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 15,
      "hpUp": 0
     },
     {
@@ -14977,14 +15020,14 @@
      "limitUp": 0,
      "dmgAny": 0,
      "dmgShoot": 0,
-     "dmgMelee": 20,
+     "dmgMelee": 0,
      "armorRange": 0,
      "armorBeam": 0,
      "armorMelee": 0,
      "speed": 0,
-     "hispeed": 0,
+     "hispeed": 15,
      "thruster": 0,
-     "turn": 0,
+     "turn": 18,
      "hpUp": 0
     }
    ]

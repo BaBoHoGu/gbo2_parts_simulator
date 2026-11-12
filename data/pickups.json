@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-11-06",
+ "pickupsUpdated": "2026-11-12",
  "pickups": [
   {
    "name": "【지원】 ★★★★ 이상 희소도 MS",
@@ -218,7 +218,7 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=196631"
   }
  ],
- "steamUpdated": "2026-11-06",
+ "steamUpdated": "2026-11-12",
  "steamNews": [
   {
    "name": "더블오라이저 LV1 & LV2",
@@ -282,13 +282,6 @@
    "end": "2026-10-22",
    "tokens": 120,
    "url": "https://store.steampowered.com/news/app/1367080/view/704408284537290772?l=koreana"
-  },
-  {
-   "name": "고트라탄",
-   "start": "2026-10-08",
-   "end": "2026-10-15",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/698778060405605256?l=koreana"
   }
  ]
 }
