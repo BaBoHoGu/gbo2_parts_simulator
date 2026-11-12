@@ -2,9 +2,9 @@
 
 [gbo2.jp](https://gbo2.jp/) 의 커스텀 파츠 시뮬레이터를 인터넷 연결 없이 쓸 수 있게
 재구성한 것. 화면은 전부 한글이고, 원본에는 없는 **자동 파츠 구성**·**무장 피해 계산**·
-**피탄 시뮬**·**공유 갤러리** 가 붙어 있다.
+**대결**·**공유 갤러리** 가 붙어 있다.
 
-- 기체 1,715종 · 커스텀 파츠 163종 · 무장 3,800종 (gbo2.jp·위키 업데이트분 자동 반영)
+- 기체 1,733종(LV 포함) · 커스텀 파츠 165종 · 무장 3,855종 — 2026-11 기준 (gbo2.jp·위키 업데이트분 자동 반영)
 - 계산 규칙은 원본 번들에서 그대로 이식 (슬롯·상한·강화리스트·확장 스킬·장착 제한)
 - 서버도 설치도 필요 없음 — **HTML 파일 하나**가 전부다 (이미지까지 안에 들어 있다)
 
@@ -72,7 +72,8 @@
 
 - **무장 피해 계산** — 사격·격투 보정·자세·스코프·파츠·스킬 반영, 격투 방향/연격,
   조사·산탄·동시발사는 전탄 명중 총 피해(×N) 표기. 적 내성 감소·실드 무시·집속 필수도 본다
-- **피탄 시뮬** — 지금 구성이 적 무장에 몇 발 버티는지, 몇 발에 다운되는지
+- **대결** — 두 기체를 맞세워 서로의 무장으로 몇 발에 다운·격파되는지 (옛 「피탄 시뮬」 을 합쳤다).
+  상대 병과에 따라 갈리는 스킬(병과 상성 · 「강습 상대 피해 −50%」 같은 경감)은 상대를 아는 여기서만 센다
 - **스킬 도감** — 기체가 가진 스킬을 한곳에서. 「계산 안 함」 보기로 **앱이 알고는 있지만
   숫자에 안 넣은 것 112종**을 고칠 수 있는가(29 / 65 / 18)로 갈라 보여 준다
 - **공유 갤러리** — 만든 구성을 올리고 남의 구성을 받아 온다
@@ -100,7 +101,7 @@
 raw/          gbo2.jp 원본(번들 JS·msData.json) · wiki/ 위키 캐시(~170MB, 커밋 안 함)
 tools/
   update.js        데이터 자동 업데이트 (감지→수신→추출→번역→재빌드)
-  gates.js         검사를 **전부** 돌린다 (동시 4개 · --fast 는 Chrome 없이 14초)
+  gates.js         검사를 **전부** 돌린다 (동시 6개 · --fast 는 Chrome 없이 14초)
   build.js         src/ + data/ + assets/ → dist/  (--web 은 사이트판)
   build_release.js 자기 업데이트 가능한 배포 패키지(+node.exe) 생성
   fetch_wiki.js    기체별 위키 페이지 내려받기 (--pages=ID,ID)
@@ -115,7 +116,8 @@ data/         msData.json, parts.json, fullst.json, weapons.json, ms_skills.json
   i18n/       ms · parts · weapons · weapon_note · skill_text · skills · weapon_terms
 assets/images/  ms/ · parts/     (assets/missing.txt = 배포처에 이미지가 없는 기체)
 assets/illust/  공식 일러스트 (사이트에만 올리고 앱은 URL 로 부른다)
-src/          core.js(계산) damage.js(피해) optimizer.js(자동 구성) ui.js share.js token.js
+src/          core.js(계산) damage.js(피해) optimizer.js(자동 구성) duel.js(대결) share.js token.js
+  ui/         화면 코드 00-base.js … 18-init.js — 모듈이 아니라 **한 IIFE 의 토막**(번호 순으로 이어 붙인다)
 dist/         gbo2-simulator.html ← **이미지까지 안에 든 단일 파일**
               web/ ← 사이트판(이미지 분리)
 ```
@@ -149,13 +151,15 @@ dist/         gbo2-simulator.html ← **이미지까지 안에 든 단일 파일
 ## 배포
 
 ```
-.\배포.bat        =  .\update.ps1 -Release -Publish
+.\update.ps1 -Site   평소 배포 — 사이트 + 폰 OTA (PC 판·APK 는 안 만든다)
+.\배포.bat           =  .\update.ps1 -Release -Publish  (PC ZIP·APK 까지, 필요할 때만)
 ```
 
-이 하나로 끝난다:
+`-Site` 하나로 끝난다:
 
-데이터 갱신 → APK 빌드 → **검사 30종**(약 4분) → 패치노트 초안 → 배포 ZIP 2종 →
-GitHub OTA·APK 업로드 → Cloudflare Pages 게시 → **데이터 커밋·푸시**.
+데이터 갱신 → **전체 검사 97종**(동시 6개, 약 10분) → 패치노트 초안 →
+Cloudflare Pages 게시 → GitHub OTA → **데이터 커밋·푸시**.
+`-Release -Publish` 는 여기에 APK 빌드 · 배포 ZIP 2종 · APK 업로드가 더해진다.
 
 - **검사가 하나라도 걸리면 배포가 멈춘다.** 걸린 검사는 혼자 한 번 더 돌려
   부하 때문에 흔들린 것과 진짜 실패를 가른다.
@@ -195,7 +199,7 @@ npm install --no-save wrangler    # 사이트 배포 도구 (package.json 에 �
 ## 검증
 
 ```
-node tools/gates.js           검사 전부 (동시 4개, 약 4분)
+node tools/gates.js           검사 전부 (동시 6개, 약 10분)
 node tools/gates.js --fast    Chrome·서버 안 쓰는 것만 (14초)
 node tools/gates.js --jobs=1  하나씩 (로그를 순서대로 보고 싶을 때)
 ```
