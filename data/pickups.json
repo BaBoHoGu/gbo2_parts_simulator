@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-11-12",
+ "pickupsUpdated": "2026-11-13",
  "pickups": [
   {
    "name": "【지원】 ★★★★ 이상 희소도 MS",
@@ -9,6 +9,15 @@
    "end": "2027-01-28",
    "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=199585"
+  },
+  {
+   "name": "베르가 바루스",
+   "consoleStart": "2026-11-12",
+   "consoleEnd": "2026-11-19",
+   "start": "2027-01-14",
+   "end": "2027-01-21",
+   "tokens": 120,
+   "url": "https://bo2.ggame.jp/kr/info/?p=201812"
   },
   {
    "name": "【범용】 ★★★★ 이상 희소도 MS",
@@ -153,73 +162,17 @@
    "end": "2026-11-26",
    "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=197168"
-  },
-  {
-   "name": "정비사 증원 티켓[★★★]",
-   "consoleStart": "2026-09-17",
-   "consoleEnd": "2026-09-24",
-   "start": "2026-11-19",
-   "end": "2026-11-26",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196644"
-  },
-  {
-   "name": "정비사 증원 티켓[★★★★]",
-   "consoleStart": "2026-09-17",
-   "consoleEnd": "2026-09-24",
-   "start": "2026-11-19",
-   "end": "2026-11-26",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196655"
-  },
-  {
-   "name": "정비사 증원 티켓[★★★★★]",
-   "consoleStart": "2026-09-17",
-   "consoleEnd": "2026-09-24",
-   "start": "2026-11-19",
-   "end": "2026-11-26",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196668"
-  },
+  }
+ ],
+ "steamUpdated": "2026-11-13",
+ "steamNews": [
   {
    "name": "골드 스모",
-   "consoleStart": "2026-09-10",
-   "consoleEnd": "2026-09-17",
    "start": "2026-11-12",
    "end": "2026-11-19",
    "tokens": 120,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196534"
+   "url": "https://store.steampowered.com/news/app/1367080/view/713417933269762337?l=koreana"
   },
-  {
-   "name": "개량 키트[★★★]",
-   "consoleStart": "2026-09-10",
-   "consoleEnd": "2026-09-17",
-   "start": "2026-11-12",
-   "end": "2026-11-19",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196607"
-  },
-  {
-   "name": "개량 키트[★★★★]",
-   "consoleStart": "2026-09-10",
-   "consoleEnd": "2026-09-17",
-   "start": "2026-11-12",
-   "end": "2026-11-19",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196618"
-  },
-  {
-   "name": "개량 키트[★★★★★]",
-   "consoleStart": "2026-09-10",
-   "consoleEnd": "2026-09-17",
-   "start": "2026-11-12",
-   "end": "2026-11-19",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196631"
-  }
- ],
- "steamUpdated": "2026-11-12",
- "steamNews": [
   {
    "name": "더블오라이저 LV1 & LV2",
    "start": "2026-11-05",

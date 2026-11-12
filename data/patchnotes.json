@@ -3,6 +3,21 @@
  "출처": "공식 한국어 공지 bo2.ggame.jp/kr (유닛 관련 조정) + 위키 아카이브 업데이트 이력",
  "patches": [
   {
+   "date": "2026-11-12",
+   "ver": "",
+   "articles": [],
+   "adjusted": [],
+   "added": [
+    {
+     "ms": "ベルガ・バルス",
+     "why": "new",
+     "at": "2026-11-12",
+     "날짜출처": "위키"
+    }
+   ],
+   "kind": "add"
+  },
+  {
    "date": "2026-11-05",
    "ver": "",
    "articles": [],
@@ -6306,6 +6321,18 @@
           "・비틀거림 축적치 상승",
           "【집속 사격】",
           "・위력 상승"
+         ],
+         "fill": [
+          null,
+          {
+           "from": "25%",
+           "to": "35%"
+          },
+          null,
+          {
+           "from": "1300",
+           "to": "1700"
+          }
          ]
         },
         {
@@ -6313,6 +6340,12 @@
          "weapon": "RF 겔구그용 빔 세이버",
          "changes": [
           "・하격투 보정 상승"
+         ],
+         "fill": [
+          {
+           "from": "150%(75%x2)",
+           "to": "160%(80%x2)"
+          }
          ]
         },
         {
@@ -6336,6 +6369,12 @@
          "weapon": "RF 겔구그용 빔 세이버[양날]",
          "changes": [
           "・연격 보정 상승"
+         ],
+         "fill": [
+          {
+           "from": "50%",
+           "to": "70%"
+          }
          ]
         }
        ]
@@ -6384,7 +6423,224 @@
        }
       ]
      },
-     "wiki": null,
+     "wiki": [
+      {
+       "depth": 0,
+       "text": "スピード上昇",
+       "buff": true,
+       "ko": "스피드 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：130 → 135",
+       "buff": true,
+       "ko": "Lv1：130 → 135"
+      },
+      {
+       "depth": 0,
+       "text": "近距離パーツスロット増加",
+       "buff": true,
+       "ko": "근거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：13 → 14",
+       "buff": true,
+       "ko": "Lv1：13 → 14"
+      },
+      {
+       "depth": 0,
+       "text": "中距離パーツスロット増加",
+       "buff": true,
+       "ko": "중거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：18 → 19",
+       "buff": true,
+       "ko": "Lv1：18 → 19"
+      },
+      {
+       "depth": 0,
+       "text": "遠距離パーツスロット増加",
+       "buff": true,
+       "ko": "원거리 파츠 슬롯 증가",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "Lv1：17 → 18",
+       "buff": true,
+       "ko": "Lv1：17 → 18"
+      },
+      {
+       "depth": 0,
+       "text": "機体スキル「強制噴射装置」LV上昇",
+       "buff": true,
+       "ko": "기체 스킬「강제 분사 장치」LV 상승",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "LV1機体：LV2 → LV3",
+       "buff": true,
+       "ko": "LV1기체：LV2 → LV3",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "RFゲルググ用ビーム・ライフル",
+       "buff": null,
+       "ko": "RF 겔구그용 빔 라이플",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "集束 ※非集束時は調整無し",
+       "buff": null,
+       "ko": "집속 ※통상시는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 3,
+       "text": "Lv1：1300 → 1700",
+       "buff": true,
+       "ko": "Lv1：1300 → 1700"
+      },
+      {
+       "depth": 1,
+       "text": "よろけ値上昇",
+       "buff": true,
+       "ko": "비틀거림 축적치 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "非集束：25% → 35% ※集束時は調整無し",
+       "buff": true,
+       "ko": "통상：25% → 35% ※집속시는 조정 없음",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "RFゲルググ用B・セイバー",
+       "buff": null,
+       "ko": "RF 겔구그용 B 세이버",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "下格闘補正上昇",
+       "buff": true,
+       "ko": "하격투 보정 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "150%(75%x2) → 160%(80%x2)",
+       "buff": true,
+       "ko": "150%(75%x2) → 160%(80%x2)"
+      },
+      {
+       "depth": 0,
+       "text": "RFゲルググ用アーム・ミサイル",
+       "buff": null,
+       "ko": "RF 겔구그용 암 미사일",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：1100 → 1250",
+       "buff": true,
+       "ko": "Lv1：1100 → 1250"
+      },
+      {
+       "depth": 1,
+       "text": "リロード時間短縮",
+       "buff": true,
+       "ko": "재장전 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "8秒 → 7秒",
+       "buff": true,
+       "ko": "8초 → 7초",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "RFゲルググ用ビーム・ランチャー",
+       "buff": null,
+       "ko": "RF 겔구그용 빔 런처",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "威力上昇",
+       "buff": true,
+       "ko": "위력 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "Lv1：3200 → 3500",
+       "buff": true,
+       "ko": "Lv1：3200 → 3500"
+      },
+      {
+       "depth": 1,
+       "text": "集束時間短縮",
+       "buff": true,
+       "ko": "집속 시간 단축",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "4.5秒 → 4秒",
+       "buff": true,
+       "ko": "4.5초 → 4초",
+       "left": false
+      },
+      {
+       "depth": 0,
+       "text": "RFゲルググ用B・S［両刃］",
+       "buff": null,
+       "ko": "RF 겔구그용 B·S[양날]",
+       "left": false
+      },
+      {
+       "depth": 1,
+       "text": "連撃補正上昇",
+       "buff": true,
+       "ko": "연격 보정 상승",
+       "left": false
+      },
+      {
+       "depth": 2,
+       "text": "2撃目：50% → 70%",
+       "buff": true,
+       "ko": "2연격：50% → 70%",
+       "left": false
+      }
+     ],
      "ja": {
       "name": "ＲＦゲルググ",
       "sections": [

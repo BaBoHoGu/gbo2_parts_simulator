@@ -15032,5 +15032,38 @@
     }
    ]
   }
+ ],
+ "ベルガ・バルス": [
+  {
+   "name": "新型S・ノズル制御機構",
+   "nameKo": "신형 S·노즐제어기구",
+   "forever": false,
+   "secs": 40,
+   "hp": null,
+   "manual": true,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 15,
+     "dmgMelee": 10,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 0,
+     "hispeed": 0,
+     "thruster": 0,
+     "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
  ]
 }

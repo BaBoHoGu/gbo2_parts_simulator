@@ -53,7 +53,16 @@
   "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/8007.html"
  },
  "ブルッケング_LV1": {
-  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/8044.html",
-  "旋回_地上_通常時": 84
+  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/8044.html"
+ },
+ "ベルガ・バルス_LV1": {
+  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/8046.html",
+  "旋回_宇宙_通常時": 93
+ },
+ "RFゲルググ_LV1": {
+  "スピード": 135,
+  "近スロット": 14,
+  "中スロット": 19,
+  "遠スロット": 18
  }
 }
