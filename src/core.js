@@ -203,6 +203,43 @@ function partDamageCuts(equipped, msLv) {
   return cuts;
 }
 
+/**
+ * 한 방의 크기로 경감률이 갈리는 파츠 — 衝撃分散装甲[耐実弾] (2026-10-30 신규):
+ *   「実弾属性の兵装による攻撃を受けた際、一度の攻撃で受けるダメージが最大HPの3％以上の場合、
+ *    そのダメージを10％軽減し、3％未満の場合は20％軽減する。なお、同時に複数のダメージを与える兵装の場合は、
+ *    各ダメージに対して判定を行う。」
+ * 고정 경감이 아니라 partDamageCuts 에 못 넣는다(그쪽 정규식에도 안 걸린다 — 「受けるダメージが最大HP」).
+ * **한 방과 상대 최대 HP 를 둘 다 아는 셈(대결)만** 쓴다. 내구 지표·자동 구성은 한 방을 모른다.
+ * 판정 대상 「受けるダメージ」 는 내성·다른 경감이 다 걸린 뒤 실제로 HP 에 들어가는 한 방으로 읽는다
+ * (위키 파츠 페이지 8055 에 검증값 없음 — 2026-11-13 확인).
+ * @returns {Array<{scope:string, thr:number, big:number, small:number}>}  thr 이상이면 big%, 미만이면 small% 경감
+ */
+function partHitCuts(equipped) {
+  const out = [];
+  const ATTR = { '実弾': 'solid', 'ビーム': 'beam', '格闘': 'melee' };
+  for (const p of equipped || []) {
+    const d = String((p && p.description) || '');
+    const m = d.match(/(実弾|ビーム|格闘)属性の兵装による攻撃を受けた際[、,]?\s*一度の攻撃で受けるダメージが最大HPの\s*(\d+)\s*[%％]\s*以上の場合[、,]?\s*そのダメージを\s*(\d+)\s*[%％]\s*軽減し[、,]?\s*\d+\s*[%％]\s*未満の場合は\s*(\d+)\s*[%％]\s*軽減/);
+    if (m) out.push({ scope: ATTR[m[1]], thr: Number(m[2]), big: Number(m[3]), small: Number(m[4]) });
+  }
+  return out;
+}
+
+/** 한 방(hit, 실효 HP 와 같은 자) 에 partHitCuts 를 건다. eff 는 맞는 쪽 실효 HP —
+ *  「HP 로 들어가는 한 방 ÷ 최대 HP」 는 「hit ÷ eff」 와 같다(둘 다 같은 (1 − 내성) 을 곱한 값).
+ *  @returns {{hit:number, used:Array<{thr,pct,big:boolean}>}} */
+function applyHitCuts(hit, eff, hcs, attr) {
+  let h = hit; const used = [];
+  for (const c of hcs || []) {
+    if (c.scope !== attr || !(eff > 0)) continue;
+    const big = h / eff * 100 >= c.thr;
+    const pct = big ? c.big : c.small;
+    h = Math.floor(h * (1 - pct / 100));
+    used.push({ thr: c.thr, pct, big });
+  }
+  return { hit: h, used };
+}
+
 /* ---------- 슬러스터(부스트) ----------
  * 화면과 자동 구성이 같은 자를 쓰게 여기 둔다. 위키 83(전투 시스템) 실측표.
  * 초기소비·소비속도는 % 가 아니라 '스라값 그 자체'(절대값)다.
@@ -935,7 +972,7 @@ const GBO2Core = {
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
-  durabilityOf, ARMOR_KEY_OF, partDamageCuts, staggerDmgFactor, cutApplies,
+  durabilityOf, ARMOR_KEY_OF, partDamageCuts, partHitCuts, applyHitCuts, staggerDmgFactor, cutApplies,
   THRUSTER_TBL, THR_RECOVER, isTankMs, thrusterCol, thrusterPartFx, boostSecOf, boostSecFrom,
   expansionShieldHp,
   effectConflict, partBase, MS_RENAMED, msRenamed

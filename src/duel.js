@@ -398,10 +398,9 @@
     const tAtt = D.floorTo(atk * (1 + etcA), 2);
     const pr = attrBonus;
     const cutHits = c => C.cutApplies(c, wp.attr, foeCat);   // 계산식에 적는 목록도 셈과 같은 자로 거른다
-    const hit = Math.floor(boosted * factor);
+    const hitPre = Math.floor(boosted * factor);          // 한 방 경감(충격 분산 장갑) 전 — 실드는 이 값으로 맞는다
     const n = HOOK.hitsPerTrigger(wp, charged, skillOn) || 1;
     const fixed = HOOK.fixedDamage(A, wp) || 0;           // 보정을 안 받는 고정 피해 — 경감도 안 건다
-    const per = hit * n + fixed;
     /* 상대 내성을 깎는 몫 — **무장과 스킬 둘 다**. 「対象の耐ビーム補正を30%減でダメージ計算」
        은 보정값의 70% 상태라는 뜻이라, 빼지 않고 곱한다. 여럿이면 남는 비율을 곱한다.
        판정은 앱이 한다(간이판은 무장 것만 읽어 스킬 몫이 빠진다). */
@@ -411,6 +410,13 @@
     const keep = fa ? fa.keep : (1 - foeCut / 100);
     const tB = foeCut ? { ...sB, [ARMOR[wp.attr]]: (sB[ARMOR[wp.attr]] || 0) * keep } : sB;
     const eff = C.durabilityOf(tB, ARMOR[wp.attr]);           // 실효 HP = HP ÷ (1 − 내성)
+    /* 한 방 크기로 갈리는 경감(衝撃分散装甲) — 히트마다 「HP 로 들어가는 한 방 ÷ 최대 HP」 로 판정한다.
+       실효 HP 와 같은 자라 hit ÷ eff 로 잰다. 동시 발사는 발마다(원문 「各ダメージに対して判定」). 판정은 core 한 곳. */
+    const hcs = C.partHitCuts(C.partsAt(B.parts, late)).filter(c => c.scope === wp.attr);
+    const perHit = hcs.length ? (x => C.applyHitCuts(x, eff, hcs, wp.attr).hit) : null;
+    const hc = hcs.length ? C.applyHitCuts(hitPre, eff, hcs, wp.attr) : null;
+    const hit = hc ? hc.hit : hitPre;
+    const per = hit * n + fixed;
     const hp = Math.round(sB.hp || 0);
     const toHp = v => Math.round(v * (eff > 0 ? hp / eff : 1));
     const perHp = toHp(per);
@@ -419,7 +425,7 @@
     const hpB = D.hpBonusOf(wp.note || '');
     const bands = (hpB && !hpB.unknown) ? hpB.bands : null;
     const bandWhy = (hpB && hpB.unknown) ? hpB.why : null;
-    const step = D.hpBandSteps({ eff, oneHit: hit, mult: n, fixed, bands });
+    const step = D.hpBandSteps({ eff, oneHit: hitPre, mult: n, fixed, bands, perHit });
     const shots = bands ? step.n : (per > 0 ? Math.ceil(eff / per) : null);
 
     /* 실드로 막음 — 같은 무장이라도 실드 보정이 5배까지 갈린다. 판정은 앱이 한다. */
@@ -427,7 +433,7 @@
     if (B.shieldOn) {
       const sh = HOOK.shield(B);
       if (sh) {
-        const r = HOOK.shieldHit(wp, hit, charged, A.parts, A);
+        const r = HOOK.shieldHit(wp, hitPre, charged, A.parts, A);   // 실드가 받는 것은 기체 HP 피해가 아니다 — 한 방 경감 전 값
         shield = r && r.hit != null
           ? { ...sh, hits: Math.ceil(sh.hp / (r.hit * n)), per: r.hit * n, note: '' }
           : { ...sh, hits: null, per: 0, note: (r && r.why) || '표기 없음' };
@@ -438,7 +444,7 @@
     const stg = HOOK.stagger(B, wp);
 
     return { wp, mode, charged, power, corr, att, etcA, etcTxt, dirTxt, partPct, skPcts, factor, cuts,
-      hit, n, fixed, per, perHp, eff, hp, shots, air, shield, stg, bands, bandWhy, step, toHp, fa,
+      hit, hitPre, hc, perHit, n, fixed, per, perHp, eff, hp, shots, air, shield, stg, bands, bandWhy, step, toHp, fa,
       manual, autoCorr,
       foeCut, armor: tB[ARMOR[wp.attr]] || 0,
       // 계산식(formulaBox)이 쓰는 중간값 — 같은 셈에서 나온 것
@@ -1126,6 +1132,7 @@
     if (r.foeCut) chip('상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '%'
       + (r.fa && r.fa.sCut ? (r.fa.wCut ? ' (무장+스킬)' : ' (스킬 효과)') : ' (무장 효과)'), 'up');
     if (r.factor < 1) chip('상대 경감 ×' + (+r.factor.toFixed(3)), 'down');
+    if (r.hc && r.hc.used.length) chip('충격 분산 −' + r.hc.used.map(u => u.pct).join('·') + '%', 'down');
     c.append(chips);
     c.append(formulaBox(r, dir));
 
@@ -1136,8 +1143,8 @@
       /* N 발 버티는 데 드는 실효 HP. 구간 무장은 **쌓아서** 센다 —
          dmg × N 으로 어림하면 레일건 같은 무장에서 목표가 작게 잡힌다. */
       const needOf = n => r.bands
-        ? D.hpBandSteps({ eff: r.eff, oneHit: r.hit, mult: r.n, fixed: r.fixed,
-            bands: r.bands, targetHits: n }).total
+        ? D.hpBandSteps({ eff: r.eff, oneHit: r.hitPre, mult: r.n, fixed: r.fixed,
+            bands: r.bands, targetHits: n, perHit: r.perHit }).total
         : r.per * n;
       /* note·psycommu·type·mods 까지 넘긴다 — 자동 구성이 조건부 파츠 경감(관통·폭풍)을
          다시 잴 때 그것들을 본다. 이름만 넘기면 목표가 사용자가 본 값과 갈린다. */
@@ -1203,7 +1210,15 @@
       : '없음';
     row('상대 경감', live.length
       ? fmt(r.boosted) + ' × ' + live.map(c => '(1 − ' + c.pct + '%)').join(' × ') + ' → 버림'
-      : fmt(r.boosted) + ' (경감 없음)', fmt(r.hit), r.cutList.length ? cutTxt : null);
+      : fmt(r.boosted) + ' (경감 없음)', fmt(r.hitPre), r.cutList.length ? cutTxt : null);
+    // ④-2 한 방 크기로 갈리는 경감(충격 분산 장갑) — 위에서 쓴 판정(r.hc)을 그대로 적는다
+    if (r.hc && r.hc.used.length) {
+      const share = r.eff > 0 ? r.hitPre / r.eff * 100 : 0;
+      const u = r.hc.used[0];
+      row('한 방 경감', fmt(r.hitPre) + ' → HP ' + fmt(r.toHp(r.hitPre)) + ' (최대 HP 의 ' + f2(share) + '%) '
+        + (u.big ? '≥ ' : '< ') + u.thr + '% → × (1 − ' + u.pct + '%) → 버림', fmt(r.hit),
+        '충격 분산 장갑 — 내성·다른 경감 뒤 실제로 받는 한 방으로 히트마다 판정');
+    }
     // ⑤ 한 발
     if (r.n > 1 || r.fixed) {
       row('한 발', fmt(r.hit) + (r.n > 1 ? ' × ' + r.n + '히트' : '')

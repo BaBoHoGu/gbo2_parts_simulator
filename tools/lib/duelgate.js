@@ -128,6 +128,8 @@ async function measure(pg, o) {
       위력: r.power, 보정: r.corr, 구성보정: r.autoCorr, 직접입력: r.manual,
       상성: r.att, 한발: r.per, HP눈금: r.perHp,
       히트: r.n, 고정: r.fixed, 발수: r.shots, 내구: r.eff, HP: r.hp,
+      // 한 방 크기로 갈리는 경감(충격 분산 장갑) — 전 · 후 · 판정
+      한방전: r.hitPre, 한방: r.hit, 한방경감: r.hc ? r.hc.used : null,
       경감배수: r.factor, 파츠피해: r.partPct, 스킬피해: r.skPcts,
       적내성깎기: r.foeCut, 무장깎기: r.fa ? r.fa.wCut : null, 스킬깎기: r.fa ? r.fa.sCut : null,
       내성: r.armor, 방향: r.dirTxt, 구간: !!r.bands, 집속: !!r.charged, 모드: r.mode,

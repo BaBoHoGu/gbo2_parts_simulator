@@ -497,17 +497,20 @@ function hpBandAt(bands, ratioPct) {
  * @param {number} fixed      보정을 안 받는 고정 피해 (소이 등)
  * @param {?Array} bands      hpBonusOf(...).bands · 없으면 구간 없음
  * @param {?number} targetHits  N 발까지만 쌓고 싶을 때 (목표 계산). null 이면 격파까지.
+ * @param {?function} perHit  히트 하나에 거는 마지막 셈(한 방 크기로 갈리는 경감 — core.applyHitCuts).
+ *                            구간 추가분까지 붙은 **그 히트**로 판정해야 하므로 여기서 건다. 없으면 그대로.
  * @returns {{n:?number, total:number, dmgAt:function}}  n = 방아쇠 수(못 깎으면 null)
  */
-function hpBandSteps({ eff, oneHit, mult, fixed, bands, targetHits }) {
+function hpBandSteps({ eff, oneHit, mult, fixed, bands, targetHits, perHit }) {
   const m = mult || 1, fx = fixed || 0;
-  const flat = oneHit * m + fx;
+  const ph = typeof perHit === 'function' ? perHit : (x => x);
+  const flat = ph(oneHit) * m + fx;
   /** 남은 실효 HP 가 left 일 때의 방아쇠 한 번 피해. */
   const dmgAt = left => {
     if (!bands || !bands.length || !(eff > 0)) return flat;
     const b = hpBandAt(bands, left / eff * 100);
     if (!b) return flat;
-    return Math.floor(oneHit * (1 + (b.pct || 0) / 100) + (b.flat || 0)) * m + fx;
+    return ph(Math.floor(oneHit * (1 + (b.pct || 0) / 100) + (b.flat || 0))) * m + fx;
   };
   let left = eff, n = 0, total = 0;
   while (n < 200 && (targetHits != null ? n < targetHits : left > 0)) {
