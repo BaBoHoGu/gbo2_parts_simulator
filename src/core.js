@@ -240,6 +240,87 @@ function applyHitCuts(hit, eff, hcs, attr) {
   return { hit: h, used };
 }
 
+/* ---------- 방어 판넬 배리어 ----------
+ * 핀 판넬［防御］ · 사이코 플레이트［防御］ · A·아머 DE［防御］ · 실드 판넬 x3［防御］ — 전수 12종(2026-11-16).
+ * 위키 해설이 12종 모두 같은 말을 한다:
+ *   · 「バリアは本体の装甲補正の影響を受けている」 — 배리어도 본체와 같은 내성·상성으로 맞는다.
+ *     그래서 배리어 HP 는 본체 HP 와 같은 자(실효 HP)로 바꿔 잰다.
+ *   · 「バリアのHPを超過する攻撃を受けてもその分のダメージは無視」 — 넘친 몫은 본체로 안 간다.
+ *     단 연속 히트(照射)는 깨진 뒤 히트가 본체에 든다 → 히트 단위로 센다. 동시 발사는 한 공격째로 막는다.
+ * 꼴은 둘 — HP 형(누적 HP 소진) · 문턱형(한 방이 N 이상일 때만 탄 1발 소모, 미만은 몇 번이고 무효).
+ * 「사격만 막는가」 는 備考에 없어 data/barrier.override.json(위키 근거)이 w.barrier 로 붙인다.
+ * 맞는 쪽 피해 경감 스킬·파츠가 배리어에도 걸리는지는 원문에 없어 **걸지 않는다**(내성·상성·배리어 −N% 만). */
+const BARRIER_HP_RE = /バリアのHP[：:]\s*(\d+)/;
+const BARRIER_THR_RE = /(\d+)\s*以上のダメージを受けた時、弾数1発消費/;
+function barrierOf(w) {
+  if (!w) return null;
+  const info = w.info || {};
+  const note = String(info['備考'] || '');
+  const hpM = BARRIER_HP_RE.exec(note), thM = BARRIER_THR_RE.exec(note);
+  // 「バリアのHP：?000」 — 위키가 값을 못 잰 배리어(V2 어설트 버스터). 배리어이긴 하니 판정은 하되 발수는 안 센다
+  const hpQ = /バリアのHP[：:]\s*[?？]/.test(note);
+  if (!hpM && !thM && !hpQ) return null;
+  const ov = w.barrier || null;
+  if (ov && ov.none) return null;                   // 꼴만 닮았다 — 부위 실드 등(덧입력 표에 근거)
+  const durM = note.match(/最長\s*([\d.]+)\s*秒持続/);
+  const cutM = note.match(/展開中の被ダメージ\s*[－\-−]\s*(\d+)\s*[%％]/);
+  const ammoM = String(info['OHまでの弾数'] || '').match(/(\d+)\s*発/);
+  const modeM = note.match(/^\s*[＜<]([^＞>]+)[＞>]/);
+  return {
+    unknown: !ov,                                   // 덧입력 표에 없다 — 막는 범위를 모른다(셈하지 않는다)
+    kind: hpM ? 'hp' : 'thr',
+    hp: hpM ? Number(hpM[1]) : null,
+    hpUnknown: !hpM && !thM,                        // 원문 「?000」 — 몇 발에 깨지는지 셀 수 없다
+    front: !!(ov && ov.front),                      // 정면에만 펼친다 — 뒤·옆에서 맞으면 안 막는다
+    thr: thM ? Number(thM[1]) : null,
+    ammo: thM ? (ammoM ? Number(ammoM[1]) : 1) : null,
+    blocks: ov ? ov.blocks : null,                  // 'shoot' | 'all'
+    cut: cutM ? Number(cutM[1]) : ((ov && ov.cut) || 0),
+    cutFrom: cutM ? 'note' : ((ov && ov.cut) ? 'wiki' : null),
+    tackleBreaks: /タックルを受けたとき、弾数全弾消費/.test(note),
+    dur: durM ? Number(durM[1]) : null,
+    shrink: /被ダメージ時持続時間短縮/.test(note),
+    form: modeM ? (/通常/.test(modeM[1]) ? 'normal' : 'transform') : null
+  };
+}
+/** 이 공격을 배리어가 막는가. melee = 격투 무장, attr = 무장 속성(격투 속성 사격은 'melee'). */
+function barrierBlocks(b, { melee, attr, tackle }) {
+  if (!b || b.unknown) return false;
+  if (tackle && (b.tackleBreaks || b.blocks === 'shoot')) return false;
+  if (b.blocks === 'all') return true;
+  return !melee && attr !== 'melee';
+}
+/**
+ * 배리어를 깨고 본체를 격파하기까지의 방아쇠 수.
+ *   bh    배리어가 받는 1히트(실효 HP 자 — 본체 hit 과 같은 단위, 맞는 쪽 경감 스킬 전 · 배리어 −N% 후)
+ *   scale 실효 HP ÷ HP (문턱은 HP 로 들어가는 값으로 잰다)
+ *   n 방아쇠당 히트 · hit 본체 1히트 · per 본체 방아쇠당(고정 피해 포함) · eff 본체 실효 HP
+ *   volley true 면 동시 발사 — 한 방아쇠를 한 공격으로 통째로 막는다
+ * @returns {{blocked, inf?, bhHp, absorbed, triggers, leftover, body, total}}
+ */
+function barrierShots(b, { blocked, bh, scale, n, hit, per, eff, volley }) {
+  const bhHp = scale > 0 ? Math.round(bh / scale) : bh;
+  const bodyOf = left => {
+    const rem = eff - left * hit;
+    return rem <= 0 ? 0 : (per > 0 ? Math.ceil(rem / per) : null);
+  };
+  if (!blocked) { const body = bodyOf(0); return { blocked: false, bhHp, absorbed: 0, triggers: 0, leftover: 0, body, total: body }; }
+  if (b.hpUnknown) return { blocked: true, hpUnknown: true, bhHp, absorbed: 0, triggers: null, leftover: 0, body: null, total: null };
+  if (!(bh > 0) || !(n > 0)) return { blocked: true, bhHp, absorbed: 0, triggers: null, leftover: 0, body: null, total: null };
+  let hits;
+  if (b.kind === 'thr') {
+    if (bhHp < b.thr) return { blocked: true, inf: true, bhHp, absorbed: 0, triggers: null, leftover: 0, body: null, total: null };
+    hits = b.ammo || 1;
+  } else {
+    const bEff = b.hp * scale;
+    hits = volley ? Math.ceil(bEff / (bh * n)) * n : Math.ceil(bEff / bh);
+  }
+  const triggers = Math.ceil(hits / n);
+  const leftover = volley ? 0 : triggers * n - hits;
+  const body = bodyOf(leftover);
+  return { blocked: true, bhHp, absorbed: hits, triggers, leftover, body, total: body == null ? null : triggers + body };
+}
+
 /* ---------- 슬러스터(부스트) ----------
  * 화면과 자동 구성이 같은 자를 쓰게 여기 둔다. 위키 83(전투 시스템) 실측표.
  * 초기소비·소비속도는 % 가 아니라 '스라값 그 자체'(절대값)다.
@@ -972,7 +1053,7 @@ const GBO2Core = {
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
-  durabilityOf, ARMOR_KEY_OF, partDamageCuts, partHitCuts, applyHitCuts, staggerDmgFactor, cutApplies,
+  durabilityOf, ARMOR_KEY_OF, partDamageCuts, partHitCuts, applyHitCuts, barrierOf, barrierBlocks, barrierShots, staggerDmgFactor, cutApplies,
   THRUSTER_TBL, THR_RECOVER, isTankMs, thrusterCol, thrusterPartFx, boostSecOf, boostSecFrom,
   expansionShieldHp,
   effectConflict, partBase, MS_RENAMED, msRenamed

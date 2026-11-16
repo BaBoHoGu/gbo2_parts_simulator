@@ -329,6 +329,19 @@
       onShield: on => { showShieldMult = !!on; renderWeapons(); },
       /* 🛡 그 쪽이 든 실드와 HP. shieldOf 는 피탄 시뮬이 쓰던 그 함수다. */
       shield: side => shieldOf(side.ms, msLevel(side.ms), side.parts, side.exp, side.expLv),
+      /* 🌀 그 쪽이 든 방어 판넬 배리어 — 판정은 core.barrierOf 한 곳. 페넥스처럼 통상/변신에 따로 있으면
+         그 쪽이 고른 모드의 것을 준다. 덧입력 표에 없는 새 배리어는 unknown 으로 와서 단추가 안 나온다. */
+      barrier: side => {
+        const id = pageIdOf(side.ms), page = id && weaponData[id];
+        if (!page) return null;
+        const form = side.form === 'transform' ? 'transform' : 'normal';
+        for (const w of page.weapons || []) {
+          const b = C.barrierOf(w);
+          if (!b || (b.form && b.form !== form)) continue;
+          return { ...b, name: T.weaponName(w.name), ja: w.name };
+        }
+        return null;
+      },
       /* 무장 하나가 실드에 주는 한 히트 피해. 「실드 무시」는 발수를 세는 뜻이 없어 why 로 답한다.
          같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다. */
       shieldHit: (wp, dmg, charged, atkParts, atk) => {

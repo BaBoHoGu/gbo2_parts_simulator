@@ -1221,6 +1221,14 @@
         ammoCell.append(document.createTextNode(heat));
         if (ohShots) ammoCell.append(el('span', 'w-sub', jaUnits(ohShots)));
       } else ammoCell.textContent = '—';
+      /* 🌀 방어 판넬 배리어 — 「무엇을 막고 언제 깨지는가」 는 備考만 봐서는 안 보인다(사격만인지가 위키 해설에만 있다).
+         판정은 core.barrierOf 한 곳(대결 단추와 같은 답). */
+      const bar = C.barrierOf(w);
+      if (bar) ammoCell.append(el('span', 'w-sub w-barrier',
+        (bar.hpUnknown ? '배리어 HP 미상' : bar.kind === 'hp' ? '배리어 HP ' + bar.hp.toLocaleString() : bar.thr.toLocaleString() + ' 이상만 탄 소모')
+        + (bar.blocks === 'shoot' ? ' · 사격만(격투에 해제)' : bar.blocks === 'all' ? ' · 사격·격투' : '')
+        + (bar.front ? ' · 정면' : '')
+        + (bar.cut ? ' · 배리어 피해 −' + bar.cut + '%' : '')));
       row.append(ammoCell);
 
       // ⑥ 누적치 (よろけ値)

@@ -85,6 +85,7 @@
     wKey: null, mode: 'nc', posture: 'stand', scope: false, variant: 0, dir: 0,
     air: false,            // 공중 격투 제어로 하는 공중 격투인가 (위력 상승)
     shieldOn: false,       // 이 쪽이 실드로 막는가 (맞는 쪽에 걸린다)
+    barrierOn: false,      // 이 쪽이 방어 판넬 배리어를 켰는가 (맞는 쪽에 걸린다)
     /* 공격보정 직접 입력 — null 이면 구성에서 나온 값을 쓴다(자동).
        상대 파츠를 모를 때 보정만 어림해 넣으려고 둔다. 기체를 바꾸면 풀린다(setMs). */
     corr: { shoot: null, melee: null },
@@ -299,6 +300,7 @@
        안 걸렸으면 그 칸이 안 나올 뿐이고, 나온 수는 늘 앱의 수다. */
     durability: () => null,
     shield: () => null,
+    barrier: () => null,
     onShield: () => {},
     shieldHit: () => null,
     bandWhy: () => '',
@@ -440,11 +442,27 @@
       }
     }
 
+    /* 🌀 방어 판넬 배리어 — 배리어를 먼저 깨야 본체에 든다. 넘친 몫은 버려지니 「배리어 발수 + 본체 발수」.
+       배리어는 본체와 같은 내성·상성으로 맞고(위키 「本体の装甲補正の影響」), 맞는 쪽 경감 스킬·파츠는
+       원문에 없어 걸지 않는다 — boosted(경감 전)에 배리어 −N% 만 곱한다. 셈은 core.barrierShots 한 곳. */
+    let barrier = null;
+    if (B.barrierOn) {
+      const b = HOOK.barrier(B);
+      if (b && !b.unknown) {
+        const blocked = C.barrierBlocks(b, { melee: !!wp.melee, attr: wp.attr });
+        const bh = Math.floor(boosted * (1 - (b.cut || 0) / 100));
+        const volley = /同時発射/.test(wp.note || '');
+        const res = C.barrierShots(b, { blocked, bh, scale: hp > 0 ? eff / hp : 1, n, hit, per, eff, volley });
+        barrier = { ...b, ...res, bh, volley, banded: !!bands };
+        if (bands && res.blocked) barrier.total = null;   // HP 구간 무장 — 본체 쪽 발수를 다시 셀 자가 없다
+      }
+    }
+
     /* 경직까지 몇 발 — 누적치 임계 ÷ 히트당 누적치. 감소 스킬 적용은 앱이 한다. */
     const stg = HOOK.stagger(B, wp);
 
     return { wp, mode, charged, power, corr, att, etcA, etcTxt, dirTxt, partPct, skPcts, factor, cuts,
-      hit, hitPre, hc, perHit, n, fixed, per, perHp, eff, hp, shots, air, shield, stg, bands, bandWhy, step, toHp, fa,
+      hit, hitPre, hc, perHit, n, fixed, per, perHp, eff, hp, shots, air, shield, barrier, stg, bands, bandWhy, step, toHp, fa,
       manual, autoCorr,
       foeCut, armor: tB[ARMOR[wp.attr]] || 0,
       // 계산식(formulaBox)이 쓰는 중간값 — 같은 셈에서 나온 것
@@ -746,6 +764,23 @@
       shRow.append(sw);
       b.append(shRow);
     } else if (side.shieldOn) { side.shieldOn = false; }
+
+    /* 🌀 배리어로 막음 — 방어 판넬(핀 판넬［防御］ 등)을 켠 상태로 맞는 계산. 잠깐 켜는 장비라
+       내구 지표·자동 구성에는 안 넣고, 여기서 켰을 때만 「배리어 N발 + 본체 M발」 로 센다.
+       배리어가 없는(또는 막는 범위를 모르는) 기체에서는 단추가 안 나온다. */
+    const bar = HOOK.barrier(side);
+    if (bar && !bar.unknown) {
+      const bRow = el('div', 'ds-row');
+      bRow.append(el('span', 'lb', '배리어'));
+      const bw = el('div');
+      bw.append(btn('d-btn' + (side.barrierOn ? ' on' : ''),
+        (side.barrierOn ? '🌀 배리어로 막음 켬' : '🌀 배리어로 막음') + ' — ' + bar.name + ' '
+        + (bar.hpUnknown ? 'HP 미상' : bar.kind === 'hp' ? 'HP ' + fmt(bar.hp) : fmt(bar.thr) + ' 이상만 탄 소모')
+        + (bar.blocks === 'shoot' ? ' · 사격만' : ' · 사격·격투') + (bar.front ? ' · 정면' : ''),
+        () => { side.barrierOn = !side.barrierOn; changed(side); }));
+      bRow.append(bw);
+      b.append(bRow);
+    } else if (side.barrierOn) { side.barrierOn = false; }
 
     /* 저장 구성 — 기체를 고른 뒤에도 불러올 수 있어야 한다. 예전에는 이 줄이
        「기체 고르기」 화면에만 있어서, 이미 기체가 앉은 쪽(특히 왼쪽)에서는
@@ -1080,6 +1115,46 @@
         sr.append(el('small', null, r.shield.note));
       }
       c.append(sr);
+    }
+
+    /* 🌀 배리어로 막으면 — 「배리어 N발 → 합계 M발」. 막지 못하는 공격·문턱 미만은 그렇게 적는다.
+       셈 밖(지속 시간과 그 단축 · 맞는 쪽 경감 스킬)은 숫자를 지어내지 않고 글로 밝힌다. */
+    if (r.barrier) {
+      const x = r.barrier;
+      const br = el('div', 'dc-shield dc-barrier');
+      br.append(el('span', 'lb', '🌀 ' + x.name));
+      const lines = [];
+      if (!x.blocked) {
+        br.append(el('b', null, '0발'));
+        lines.push(x.blocks === 'shoot'
+          ? '격투에는 효과 없음 — 첫 격투가 배리어를 깨고 피해는 본체로 들어갑니다'
+          : '이 공격은 배리어가 막지 못합니다');
+      } else if (x.hpUnknown) {
+        br.append(el('b', null, '—'));
+        lines.push('배리어 HP 가 원문에 「?000」 — 몇 발에 깨지는지 셀 수 없습니다');
+      } else if (x.inf) {
+        br.append(el('b', null, '무효'));
+        lines.push('한 히트 ' + fmt(x.bhHp) + ' HP < 문턱 ' + fmt(x.thr)
+          + ' — 탄이 안 줄어 지속 시간 동안 몇 번이고 막습니다');
+      } else if (x.triggers == null) {
+        br.append(el('b', null, '—'));
+        lines.push('한 히트 피해가 0 이라 셀 수 없습니다');
+      } else {
+        br.append(el('b', null, x.triggers + '발' + (x.total != null ? ' → 합계 ' + x.total + '발' : '')));
+        lines.push(x.kind === 'hp'
+          ? '배리어 HP ' + fmt(x.hp) + ' ÷ 한 히트 ' + fmt(x.bhHp) + ' HP' + (x.volley ? ' (동시 발사는 한 공격째로 막음)' : '')
+          : '한 히트 ' + fmt(x.bhHp) + ' HP ≥ 문턱 ' + fmt(x.thr) + ' — 히트마다 탄 1발, 탄 ' + x.ammo + '발');
+        if (x.cut) lines.push('배리어 피해 −' + x.cut + '%' + (x.cutFrom === 'wiki' ? ' (공식 「방어 보정 상승」, 수치는 위키)' : ''));
+        if (x.leftover) lines.push('깨진 뒤 남은 ' + x.leftover + '히트는 본체로 들어갑니다');
+        if (x.total == null && x.banded) lines.push('대상 HP 구간 무장이라 합계는 셈 밖입니다');
+      }
+      const foot = ['넘친 피해는 본체로 가지 않습니다', '막는 동안 피격 반응 없음'];
+      if (x.front) foot.unshift('정면에서 맞을 때만 막습니다');
+      if (x.dur) foot.push('최대 ' + x.dur + '초' + (x.shrink ? ' · 맞으면 줄어듦(얼마나인지 원문에 없어 셈 밖)' : ''));
+      foot.push('맞는 쪽 경감 스킬·파츠는 배리어에 안 겁니다(원문에 없음)');
+      br.append(el('small', null, lines.join(' · ')));
+      br.append(el('small', 'dc-barrier-foot', foot.join(' · ')));
+      c.append(br);
     }
 
     /* 경직까지 몇 발 — 누적치 임계 ÷ 히트당 누적치. */

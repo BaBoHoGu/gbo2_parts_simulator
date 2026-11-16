@@ -142,6 +142,26 @@ const skills = readJson('data', 'skills.json');
   }
 }
 
+// 방어 판넬 배리어 — 「사격만/전부 막는가」 와 備考에 없는 「배리어 피해 −N%」 는 위키 해설에만 있다.
+// 무장에 w.barrier 로 붙이고, 읽기(HP·문턱·탄 소모)는 core.barrierOf 한 곳이 備考에서 한다.
+{
+  const ovPath = path.join(ROOT, 'data', 'barrier.override.json');
+  if (fs.existsSync(ovPath)) {
+    const ov = JSON.parse(fs.readFileSync(ovPath, 'utf8'));
+    let n = 0; const miss = [];
+    for (const [key, v] of Object.entries(ov)) {
+      if (key.startsWith('_')) continue;
+      const i = key.indexOf('|');
+      const page = weapons[key.slice(0, i)];
+      const w = page && (page.weapons || []).find(x => x.name === key.slice(i + 1));
+      if (!w) { miss.push(key); continue; }
+      w.barrier = v.none ? { none: true } : { blocks: v.blocks, cut: v.cut || 0, front: !!v.front };
+      n++;
+    }
+    console.log(`배리어 규칙: ${n}종` + (miss.length ? ` · 대상 없음 ${miss.join(', ')}` : ''));
+  }
+}
+
 const misc = readJson('data', 'i18n', 'misc.json');
 // 신규 기체·파츠 자동 번역(*.auto.json)을 밑에 깔고, 수작업 사전이 덮어쓴다(수작업 우선).
 const autoJson = f => fs.existsSync(path.join(ROOT, 'data', 'i18n', f)) ? readJson('data', 'i18n', f) : {};
