@@ -125,6 +125,19 @@ for (const p of data.pickups) {
     added++;
   }
 }
+/* 스팀에 **실제로 나온 것**도 쌓는다. 갱신기의 스팀 목록은 최근 31일치뿐이라, 예보보다 **훨씬 먼저** 스팀에 나온 기체는
+   예보 날짜가 지날 즈음 목록에서 이미 빠져 있다 — 그러면 토큰 화면이 「지났는데 안 나왔다」 로 잘못 잡는다.
+   실제로 건담 DX 가 그랬다: 스팀은 콘솔과 같은 2026-08-27, 예보는 10-29(2026-11-16 사용자 지적).
+   한 번 본 출시는 지우지 않는다(이름 → 가장 이른 시작일). 2026-07-30 이후 몫은 git 이력에서 되살려 넣었다. */
+if (!hist.steam) hist.steam = {};
+let steamAdded = 0;
+for (const s of data.steamNews) {
+  const key = String(s.name || '').trim();
+  if (!key || !s.start) continue;
+  if (!hist.steam[key]) { hist.steam[key] = { start: s.start, end: s.end || '' }; steamAdded++; }
+  else if (s.start < hist.steam[key].start) hist.steam[key].start = s.start;
+}
+if (steamAdded) console.log('  스팀 출시 기록 ' + Object.keys(hist.steam).length + '건 (새로 ' + steamAdded + '건)');
 hist.updated = data.pickupsUpdated;
 fs.writeFileSync(HIST, JSON.stringify(hist, null, 1), 'utf8');
 console.log('  이력 ' + Object.keys(hist.seen).length + '건' + (added ? ' (새로 ' + added + '건)' : ''));

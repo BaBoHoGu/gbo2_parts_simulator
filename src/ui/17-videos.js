@@ -432,6 +432,7 @@
     renderIncompleteNotice();
     renderDetail(state.detailPart);
     renderWeapons();
+    renderHistory();            // 기체(위키 페이지)가 같으면 다시 안 그린다 — 파츠를 낄 때마다 불린다
     if (!document.getElementById('mskillInline').hidden) renderMskill();
   }
 

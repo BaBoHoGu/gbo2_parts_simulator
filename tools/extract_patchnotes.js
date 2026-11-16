@@ -96,21 +96,43 @@ const JNM = (() => {
 /** 공지 목록에서 「유닛 관련 조정」 글. 한 패치가 타입별로 여러 글일 수 있다(실측: 2026-05-28).
  *  일본어판은 같은 틀에 제목만 다르다(실측: /jp/ 목록이 /kr/ 과 같은 HTML). */
 const TITLE = { kr: /유닛\s*(관련\s*)?조정/, jp: /ユニット\s*(関連の)?調整/ };
+
+/* ── 기체별 참조 데이터(data/ms_refs.json) — 파츠 화면 「업데이트 이력」 의 조정 항목 아래 표 ──
+   패치노트 화면은 SINCE 부터지만, 참조 데이터는 **공식에 남아 있는 공지 전부**에서 모은다(2026-11-16 사용자 지시).
+   공식 목록은 `info/?cat=0&m=YYYYMM` 으로 월을 바꾸면 옛 공지가 보인다(실측: 2025-12 까지, 그 전 달은 비어 있다).
+   공식이 공지를 내리면 다시 못 받으므로 **한 번 받은 것은 지우지 않는다.**
+   최근 MONTHS 달은 매번 보고, 그보다 옛 달은 한 번 훑으면 `listed` 에 적어 다시 안 본다 — 배포 시간을 아낀다. */
+const REFS = path.join(ROOT, 'data', 'ms_refs.json');
+/* 서비스 시작(2018-07)까지 거슬러 본다. **빈 달에서 멈추지 않는다** — 한국어 목록은 2025-06 ~ 11 이 비어 있는데
+   그 너머 2019-04 까지 공지가 있다(2026-11-16 실측. 처음엔 빈 달 넷에서 멈춰 그 전부를 놓쳤다). */
+const REF_FROM = '201807';
+const refsPrev = (() => { try { return JSON.parse(fs.readFileSync(REFS, 'utf8')); } catch { return { listed: [], notices: {}, byPage: {} }; } })();
+const listedOld = new Set(refsPrev.listed || []);
+
 async function findNotices(lang) {
   const base = lang === 'jp' ? JP_BASE : BASE;
   const now = new Date();
   const seen = new Map();
-  for (let i = 0; i < MONTHS; i++) {
+  for (let i = 0; ; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const ym = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0');
+    if (ym < REF_FROM) break;
+    const old = i >= MONTHS;
+    if (old && listedOld.has(lang + ym)) continue;           // 옛 달은 한 번만 본다
     const h = await fetchWikiUrl(base + 'info/?cat=0&m=' + ym);
     if (!h) { console.log('  ' + ym + ' 목록을 받지 못했습니다.'); continue; }
-    for (const m of h.matchAll(/\?p=(\d+)[\s\S]{0,400}?class="date">([\d.]+)<[\s\S]{0,400}?class="titArticle">([\s\S]*?)<\/span>/g)) {
+    const items = [...h.matchAll(/\?p=(\d+)[\s\S]{0,400}?class="date">([\d.]+)<[\s\S]{0,400}?class="titArticle">([\s\S]*?)<\/span>/g)];
+    if (old) listedOld.add(lang + ym);
+    for (const m of items) {
       const title = m[3].replace(/<[^>]+>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
       if (!TITLE[lang || 'kr'].test(title)) continue;
-      if (m[2].replace(/\./g, '-') < SINCE) continue;
       if (!seen.has(m[1])) seen.set(m[1], { id: m[1], date: m[2].replace(/\./g, '-'), title });
     }
+  }
+  /* 한 번 보고 지나간 옛 달의 공지도 잊지 않는다 — 참조 데이터를 다시 받을지 판단하려면 목록이 있어야 한다 */
+  for (const [key, a] of Object.entries(refsPrev.notices || {})) {
+    const [lg, id] = key.split(':');
+    if (lg === (lang || 'kr') && id && !seen.has(id)) seen.set(id, { id, date: a.date, title: a.title });
   }
   return [...seen.values()].sort((a, b) => b.date.localeCompare(a.date));
 }
@@ -168,8 +190,10 @@ function realAddDate(ms, ourDate) {
 
 (async () => {
   console.log('■ 공식 한국어 패치노트를 확인합니다… (최근 ' + MONTHS + '개월)');
-  const notices = await findNotices('kr');
-  if (!notices.length) { console.log('  유닛 조정 공지를 찾지 못해 건너뜁니다.'); return; }
+  const allKr = await findNotices('kr');
+  /* 패치노트 화면(날짜 레일)은 SINCE 부터만 — 사용자가 정한 값이다. 그 전 공지는 참조 데이터에만 쓴다. */
+  const notices = allKr.filter(a => a.date >= SINCE);
+  if (!allKr.length) { console.log('  유닛 조정 공지를 찾지 못해 건너뜁니다.'); return; }
 
   /* ── 같은 공지의 **일본어판**을 함께 받는다 ──────────────────────────
      위키 이력은 일본어다. 한국어 공지와 맞대려면 무장 이름을 사전으로 옮겨야 하는데
@@ -185,7 +209,7 @@ function realAddDate(ms, ourDate) {
     jpByDate.get(a.date).push(a);
   }
   const krByDate = new Map();
-  for (const a of notices) {
+  for (const a of allKr) {
     if (!krByDate.has(a.date)) krByDate.set(a.date, []);
     krByDate.get(a.date).push(a);
   }
@@ -204,7 +228,8 @@ function realAddDate(ms, ourDate) {
     if (!jid) return null;
     if (!jpCache.has(jid)) {
       const h = await fetchWikiUrl(JP_BASE + 'info/?p=' + jid);
-      jpCache.set(jid, h && P.looksLikePatchnote(h) ? P.parseNotice(h) : null);
+      /* 옛 틀(기체 구분 주석 없음)도 parseNotice 가 읽는다 — 이름 맞추기에 일본어 이름을 쓰려고 */
+      jpCache.set(jid, h ? P.parseNotice(h) : null);
     }
     const arr = jpCache.get(jid);
     return arr && arr[idx] ? arr[idx] : null;
@@ -222,8 +247,10 @@ function realAddDate(ms, ourDate) {
   let fillOk = 0, fillTry = 0;
   let jpUsed = 0; const jpSkip = [];
   let jaMirrored = 0; const jaOff = [];
+  const krHtml = new Map();            // 받은 한국어 공지 — 참조 데이터 단계가 다시 받지 않게
   for (const a of notices) {
     const html = await fetchWikiUrl(BASE + 'info/?p=' + a.id);
+    if (html) krHtml.set(a.id, html);
     if (!html) { console.log('  ⚠ p=' + a.id + ' 를 받지 못했습니다.'); continue; }
     if (!P.looksLikePatchnote(html)) { console.log('  ⚠ p=' + a.id + ' 에 기체 마커가 없습니다 — 건너뜁니다.'); continue; }
     const e = ent(a.date);
@@ -269,6 +296,98 @@ function realAddDate(ms, ourDate) {
       if (jaSide) jaMirrored++; else if (jpUnit) jaOff.push(a.date + ' ' + u.name);
       e.adjusted.push({ ko: u.name, ms: ja, sections: f.sections, intent: u.intent, ref: u.ref, wiki, ...(jaSide ? { ja: jaSide } : {}) });
     }
+  }
+
+  /* ── 기체별 참조 데이터 → data/ms_refs.json ─────────────────────────
+     패치노트 화면과 같은 자(파서 · 기체 이름 맞추기 · 일본어판 짝)로 읽는다. 위키 페이지 번호로 묶는다 —
+     「업데이트 이력」 칸이 그 번호로 기체를 찾는다. 「조정 후」 줄은 다음 패치 때 덧붙으므로
+     그 줄이 다 들어온 옛 공지(complete)만 다시 안 받는다. 붙이는 규칙은 tools/lib/history_refs.js. */
+  const refNotices = { ...(refsPrev.notices || {}) };
+  const byPage = JSON.parse(JSON.stringify(refsPrev.byPage || {}));
+  const hasAfter = r => ((r && r.rows) || []).some(x => /조정\s*후/.test(x.label));
+  let refGot = 0, refSkip = 0;
+  const refUnmatched = [];
+  for (const a of allKr) {
+    const key = 'kr:' + a.id;
+    if (a.date < SINCE && refNotices[key] && refNotices[key].complete) { refSkip++; continue; }
+    const html = krHtml.get(a.id) || await fetchWikiUrl(BASE + 'info/?p=' + a.id);
+    if (!html) continue;
+    const units = P.parseNotice(html);           // 옛 틀(2021 ~ 2025-05)은 parseLegacy 로 읽는다
+    /* 참조 데이터 표가 하나도 없는 공지(2018 ~ 2020)는 다시 볼 일이 없다 */
+    if (!units.some(u => u.ref)) { refNotices[key] = { date: a.date, title: a.title, complete: true, noRef: true }; continue; }
+    let complete = units.length > 0;
+    /* 일본어판은 **같은 수로 갈렸을 때만** 자리로 짝짓는다 — 옛 틀은 주석 번호가 없어 한쪽만 더 갈리면 짝이 밀려
+       엉뚱한 기체에 표가 붙는다. 어긋나면 한국어 이름으로만 찾는다. */
+    await jpSectionsOf(a.id, 0);
+    const jpArr = jpOf.has(a.id) ? jpCache.get(jpOf.get(a.id)) : null;
+    const jpOk = !!jpArr && jpArr.length === units.length;
+    /* 「문 건담(바르길용 빔 라이플[GN] 장비 시)」 — 무장 조정 절의 기체 이름. 찾을 때만 장비 꼬리를 뗀다(화면엔 그대로) */
+    /* 옛 공식 한국어 표기 → 지금 사전 표기. 공식이 몇 년 사이 표기를 바꿨다 — 본 것만 적는다(2026-11-16 실측) */
+    const OLD_KO = [[/^아쿠트 자쿠/, '액트 자쿠']];
+    const bare = s => OLD_KO.reduce((x, [re, to]) => x.replace(re, to),
+      String(s || '').replace(/\s*[（(][^（）()]*(장비\s*시|装備時)[)）]\s*$/, ''));
+    for (let ui = 0; ui < units.length; ui++) {
+      const u = units[ui];
+      if (!u.ref) { complete = false; continue; }
+      const jpUnit = jpOk ? jpArr[ui] : null;
+      const ja = (jpUnit ? JNM(jpUnit.name) || JNM(bare(jpUnit.name)) : null) || NM(u.name) || NM(bare(u.name));
+      const pid = ja ? pageOf.get(ja) : null;
+      if (!pid) { refUnmatched.push(a.date + ' ' + u.name); complete = false; continue; }
+      /* 일본어 모드는 일본어판 표를 보인다 — 줄 수가 같을 때만(자리가 어긋나면 한국어 표) */
+      const refJa = jpUnit && jpUnit.ref && (jpUnit.ref.rows || []).length === (u.ref.rows || []).length ? jpUnit.ref : null;
+      const rec = { d: a.date, ms: ja, ko: u.name, ref: u.ref, ...(refJa ? { refJa } : {}) };
+      const list = byPage[pid] || (byPage[pid] = []);
+      const k = list.findIndex(x => x.d === a.date && x.ko === u.name);
+      /* 더 많이 아는 쪽을 남긴다 — 반쯤 실패한 실행이 「조정 후」 줄을 깎지 않게 */
+      if (k < 0) list.push(rec);
+      else if ((rec.ref.rows || []).length >= (list[k].ref.rows || []).length) list[k] = rec;
+      refGot++;
+      if (!hasAfter(u.ref)) complete = false;
+    }
+    /* 반년 지난 공지는 더 덧붙지 않는다 — 「조정 후」 가 끝내 없는 기체가 있어도 다시 받지 않는다(배포마다 수십 개를 다시 받게 된다) */
+    const settled = a.date < new Date(Date.now() - 183 * 86400e3).toISOString().slice(0, 10);
+    refNotices[key] = { date: a.date, title: a.title, complete: complete || settled };
+  }
+  /* 한국어판이 **없는** 날짜의 일본어 공지 — 2025-11-20 조정(글 3개)은 한국어 목록에 아예 없다(2025-06 ~ 11 이 비어 있다).
+     일본어 표만으로 담고(ref 없음 · refJa · jpOnly), 화면은 「일본어판 공지」 라고 밝혀 보인다. 번역해 지어내지 않는다. */
+  const krDates = new Set(allKr.map(a => a.date));
+  for (const a of jpNotices) {
+    const key = 'jp:' + a.id;
+    if (krDates.has(a.date)) { if (!refNotices[key]) refNotices[key] = { date: a.date, title: a.title }; continue; }
+    if (a.date < SINCE && refNotices[key] && refNotices[key].complete) { refSkip++; continue; }
+    const h = await fetchWikiUrl(JP_BASE + 'info/?p=' + a.id);
+    if (!h) continue;
+    const units = P.parseNotice(h);
+    if (!units.some(u => u.ref)) { refNotices[key] = { date: a.date, title: a.title, complete: true, noRef: true }; continue; }
+    let complete = true;
+    for (const u of units) {
+      if (!u.ref) continue;
+      const ja = JNM(u.name) || JNM(String(u.name).replace(/\s*[（(][^（）()]*装備時[)）]\s*$/, ''));
+      const pid = ja ? pageOf.get(ja) : null;
+      if (!pid) { refUnmatched.push(a.date + ' (JP) ' + u.name); continue; }
+      const rec = { d: a.date, ms: ja, ko: u.name, ref: null, refJa: u.ref, jpOnly: true };
+      const list = byPage[pid] || (byPage[pid] = []);
+      const k = list.findIndex(x => x.d === a.date && x.ko === u.name);
+      if (k < 0) list.push(rec); else list[k] = rec;
+      refGot++;
+      if (!(u.ref.rows || []).some(x => /調整後/.test(x.label))) complete = false;
+    }
+    const settled = a.date < new Date(Date.now() - 183 * 86400e3).toISOString().slice(0, 10);
+    refNotices[key] = { date: a.date, title: a.title, complete: complete || settled };
+  }
+  for (const list of Object.values(byPage)) list.sort((x, y) => y.d.localeCompare(x.d));
+  {
+    const recs = Object.values(byPage).flat();
+    console.log('\n■ 기체별 참조 데이터 — 공지 ' + Object.keys(refNotices).filter(k => k.startsWith('kr:')).length + '개 · 기체 ' + Object.keys(byPage).length
+      + '개 페이지 · 표 ' + recs.length + '개(그중 「조정 후」 ' + recs.filter(r => hasAfter(r.ref)).length + ')'
+      + ' · 이번에 읽음 ' + refGot + ' · 다 들어와 건너뜀 공지 ' + refSkip
+      + ' · 가장 오래된 ' + (recs.map(r => r.d).sort()[0] || '-'));
+    if (refUnmatched.length) console.log('  ⚠ 위키 페이지를 못 찾은 기체 ' + refUnmatched.length + ': ' + refUnmatched.slice(0, 8).join(' | '));
+  }
+  if (!PRINT) {
+    const ids = Object.keys(byPage).sort((x, y) => Number(x) - Number(y));
+    fs.writeFileSync(REFS, '{\n "listed": ' + JSON.stringify([...listedOld].sort()) + ',\n "notices": ' + JSON.stringify(refNotices)
+      + ',\n "byPage": {\n' + ids.map(id => '  ' + JSON.stringify(id) + ': ' + JSON.stringify(byPage[id])).join(',\n') + '\n }\n}\n');
   }
 
   /* ── 추가 기체를 **제 날짜 칸**에 담는다 (주간 단위) ──────────────── */

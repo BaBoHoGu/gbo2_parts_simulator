@@ -59,6 +59,13 @@ ui · token.js · duel.js**. 빌드는 JS·CSS 의 주석·공백을 esbuild 로
 병합 규칙은 `tools/lib/dataset.js` 한 곳이다. 손으로 박는 값은 `was`(박을 당시 원본값)를 같이 적는다(`manualpin_check`).
 위키(atwiki)는 Cloudflare 가 막아 `tools/lib/wiki_fetch.js`(헤드리스 Chrome)로만 받는다. `raw/wiki/` 캐시는 커밋하지 않는다.
 
+**업데이트 이력 칸(파츠 화면 무장 아래).** `tools/extract_ms_history.js` 가 위키 캐시의 「アップデート履歴」 전체를 `data/ms_history.json`(줄마다 원문+한국어)으로 뽑는다.
+옮기는 규칙은 `tools/lib/history_tr.js` 한 곳(틀 → `wiki_tr` → 기계 번역 캐시 `data/i18n/history.auto.json`, 숫자가 다르거나 용어가 빠진 번역은 버리고 원문). 배포가 `--mt` 로 새 줄만 번역한다.
+해석을 미룬다 — 오프라인판은 문자열(`GBO2_HISTORY_RAW`), 사이트판은 `history.<지문>.json`(`GBO2_HISTORY_URL`)을 칸을 펼칠 때 읽는다. 검사 `history_check`.
+조정 항목 아래 **공식 참조 데이터**는 `extract_patchnotes.js` 가 공식에 남은 공지 전부(월 목록 `info/?cat=0&m=YYYYMM` 을 2018-07 까지 — **빈 달에서 멈추지 않는다**, 2025-06~11 이 비어 있다)에서 `data/ms_refs.json` 에 쌓고(지우지 않음),
+옛 틀(기체 구분 주석 없음 · 2020-07~2025-05)은 `patchnote_parse.parseLegacy`, 한국어판이 없는 날짜(2025-11-20)는 일본어판 표만(`jpOnly`).
+빌드가 `tools/lib/history_refs.js` 로 같은 날 ±3일 조정 항목에 붙인다. 패치노트 화면의 범위(`SINCE`)와는 별개다.
+
 **이름 정규화.** 원본에 NFD 결합 문자가 섞여 온다 — 사전 조회·그림 경로는 `normalize('NFC')`, 이름 비교 키는 NFKC+공백 제거(전각 `Ｒ`).
 
 **번역 사전 `data/i18n/*.json` 은 생성물이다.** 손으로 고치지 말고 규칙을 고친다: 무장명은 `weapon_terms.json` + `node tools/build_weapon_i18n.js`,

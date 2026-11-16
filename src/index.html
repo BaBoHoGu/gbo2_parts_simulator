@@ -617,6 +617,16 @@
       </div>
       <div class="weapon-list" id="weaponList"></div>
     </section>
+    <!-- 업데이트 이력 — 위키 「アップデート履歴」 전체(2018~). 처음엔 접혀 있고, 펼칠 때 자료를 읽는다(사이트판은 그때 받는다). -->
+    <section class="panel hist-panel folded" id="histPanel">
+      <h2><button type="button" class="panel-fold on" id="histFold" title="업데이트 이력을 펼칩니다"><i>▾</i> 업데이트 이력</button> <span id="histCount"></span>
+        <span class="right h-tools">
+          <span class="seg" id="histFilter" title="어떤 항목을 볼지"></span>
+          <a class="note" id="histWiki" target="_blank" rel="noopener noreferrer" hidden>위키 원문</a>
+        </span>
+      </h2>
+      <div class="hist-body" id="histBody"></div>
+    </section>
   </div>
   </div><!-- /.build-bottom -->
 
@@ -858,6 +868,7 @@
 <script>/*__I18N_DATA__*/
 /*__PICKUPS__*/
 /*__PATCHNOTES__*/</script>
+<script>/*__HISTORY__*/</script>
 <script>/*__ICONS__*/</script>
 <script>/*__CORE__*/</script>
 <script>/*__I18N__*/</script>

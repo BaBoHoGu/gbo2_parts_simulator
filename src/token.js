@@ -460,9 +460,12 @@
     if (!H || !H.seen) return [];
     const today = pd(todayStr());
     const live = new Set(PICKUPS.map(p => looseKey(p.name)));
-    // 스팀 목록이 덮는 가장 이른 날 — 이보다 전은 나왔는지 알 길이 없다
-    const steamFrom = STEAM_NEWS.length
-      ? STEAM_NEWS.map(s => s.start).filter(Boolean).sort()[0] : null;
+    /* 스팀에 나온 것 — 지금 목록(최근 31일)에 **쌓아 둔 기록**(H.steam)을 더한다. 지금 목록만 보면 예보보다
+       훨씬 먼저 나온 기체(건담 DX: 스팀 08-27 · 예보 10-29)가 창 밖으로 빠져 「안 나왔다」 로 잡혔다(2026-11-16). */
+    const STEAM_ALL = STEAM_NEWS.concat(Object.keys(H.steam || {}).map(n => ({ name: n, start: H.steam[n].start })));
+    // 스팀 기록이 덮는 가장 이른 날 — 이보다 전은 나왔는지 알 길이 없다
+    const steamFrom = STEAM_ALL.length
+      ? STEAM_ALL.map(s => s.start).filter(Boolean).sort()[0] : null;
     if (!steamFrom) return [];
     const out = [];
     for (const name of Object.keys(H.seen)) {
@@ -474,7 +477,7 @@
       const when = pd(h.start);
       if (when >= today) continue;                 // 아직 안 지났다
       if (h.start < steamFrom) continue;           // 스팀 목록이 안 닿는 옛날 — 모른다
-      if (STEAM_NEWS.some(s => {
+      if (STEAM_ALL.some(s => {
         const sk = looseKey(s.name);
         return sk && (sk === k || sk.includes(k) || k.includes(sk));
       })) continue;                                // 이름이 달라도 실제로 나왔다

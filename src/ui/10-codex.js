@@ -704,11 +704,14 @@
       for (const r of ref.rows) {
         const tr = el('tr');
         if (AFTER.test(r.label)) tr.classList.add('after');
-        tr.append(el('th', '', r.label));
+        // LV 마다 COST 가 다른 표는 그 블록 첫 줄에 COST 를 붙인다(머리엔 하나로 안 적는다)
+        tr.append(el('th', '', r.label + (r.cost ? ' (COST ' + r.cost + ')' : '')));
         for (const v of r.values) tr.append(el('td', '', v));
         t.append(tr);
       }
       d.append(t);
+      /* 「■전적 관련 보충 설명」 같은 표 끝의 공식 설명 — 파서가 줄에서 떼어 note 로 담는다(공식 문구 그대로) */
+      if (ref.note) d.append(el('div', 'pn-note hist-ref-note', ref.note));
       if (!ref.rows.some(r => AFTER.test(r.label)))
         d.append(el('div', 'pn-note', '※ 「조정 후」 전적은 다음 밸런스 패치 때 공식이 덧붙입니다.'));
       box.append(d);

@@ -338,6 +338,19 @@ const ok = (label, cond, extra) => {
   ok('벗어남은 기체만 잡는다',
     offNames.every(n => !/커스텀 파츠|티켓|키트|리퀘스트/.test(n)),
     offNames.join(' / ') || '(없음)');
+  /* 스팀에 **이미 나온 것으로 쌓아 둔** 기체는 벗어남에 뜨면 안 된다 — 스팀 목록이 최근 31일뿐이라
+     예보보다 훨씬 먼저 나온 건담 DX(스팀 08-27 · 예보 10-29)가 「안 나왔다」 로 떴다(2026-11-16). */
+  const steamDup = await pg.evaluate(() => {
+    const H = ((window.GBO2_PICKUPS || {}).history || {}).steam || {};
+    const norm = s => String(s || '').replace(/<rt>[\s\S]*?<\/rt>/gi, '').replace(/<[^>]*>/g, '')
+      .replace(/【[^】]*】/g, '').replace(/^[^:：]*[:：]/, '').replace(/\[[^\]]*\]/g, '')
+      .replace(/[\s·・()（）]/g, '').toLowerCase();
+    const ks = Object.keys(H).map(norm).filter(Boolean);
+    const off = [...document.querySelectorAll('.future-off-row .fo-nm')].map(e => e.textContent);
+    return { n: ks.length, hit: off.filter(n => { const k = norm(n); return k && ks.some(s => s.includes(k) || k.includes(s)); }) };
+  });
+  ok('스팀 출시 기록이 쌓여 있다', steamDup.n > 0, JSON.stringify(steamDup));
+  ok('스팀에 이미 나온 기체는 벗어남에 안 뜬다', steamDup.hit.length === 0, steamDup.hit.join(' / '));
 
   /* 벗어난 기체 경고는 **표 보기에서도** 보여야 한다 — 경고를 보기 뒤에 숨길 것이 아니다.
      ■ 전에는 **살아 있는 자료**에 기대어 「상자가 보이는가」만 봤다. 그래서 스팀 목록이

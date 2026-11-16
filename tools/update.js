@@ -409,6 +409,9 @@ async function detectPatch(msList) {
     if (targetIds.length) run('extract_ms_wiki.js', ['--pages=' + targetIds.join(',')]);
     // 위키 하단 이력에만 적고 표는 안 고친 칸을 찾는다(무장·스킬·기체 칸이 다 갱신된 뒤에 — 그 값과 맞대므로)
     run('extract_history_reflect.js');
+    /* 파츠 화면 「업데이트 이력」 칸(data/ms_history.json) — 받은 위키 캐시 전체에서 다시 만든다.
+       새로 나온 줄만 기계 번역에 보낸다(캐시 data/i18n/history.auto.json). 번역이 막혀도 그 줄은 원문으로 남을 뿐 멈추지 않는다. */
+    run('extract_ms_history.js', ['--mt']);
 
     // M1: 받아봤는데도 무장/스킬이 여전히 빈 페이지는 시도 시각을 남겨 24h 재시도 방지.
     //     채워진 것은 기록을 지운다(다음에 또 바뀌면 즉시 재시도되도록).
@@ -532,6 +535,10 @@ async function detectPatch(msList) {
        받기가 실패해도 갱신 전체를 멈추지는 않는다(화면 하나가 비는 것뿐이다). */
     if (runSoft('extract_patchnotes.js') !== 0)
       console.log('  ⚠ 패치노트를 받지 못했습니다 — 기존 data/patchnotes.json 을 그대로 씁니다.');
+    /* 오프라인판(폰 OTA 로 나가는 파일)을 **다시** 빈다. 위의 build.js 는 패치노트 · 기체별 참조 데이터(ms_refs.json)를
+       받기 **전**이라, 그대로 두면 새 공지 · 「조정 후」 줄이 폰에는 한 배포 늦게 들어갔다(사이트판은 게시 직전에 다시 빌드해 괜찮았다).
+       patch.json 을 쓴 뒤에 받아야 하므로 수집을 앞으로 옮길 수는 없다(2026-11-16 코드 리뷰). */
+    run('build.js');
 
   }
 

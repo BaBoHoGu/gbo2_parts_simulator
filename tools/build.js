@@ -266,6 +266,30 @@ const buildMeta = {
 // robots.txt 를 빼면 된다(오프라인판에는 애초에 들어가지 않는다).
 const NOINDEX = '<meta name="robots" content="noindex, nofollow">\n';
 
+/* 기체별 위키 업데이트 이력(extract_ms_history.js · 약 2.5MB) — 파츠 화면 「업데이트 이력」 칸.
+   첫 화면에는 안 쓰므로 **해석을 미룬다**: 오프라인판은 JSON 글자 그대로(문자열) 싣고 칸을 처음 펼칠 때 JSON.parse,
+   사이트판은 따로 history.<지문>.json 으로 내고 그때 받는다(첫 접속에 안 실린다 · 2026-11-16 사용자 결정).
+   이름에 지문을 넣어 내용이 바뀌면 주소도 바뀐다 — 그래서 오래 캐시해도 낡은 것을 안 본다. 없으면 칸만 빈다. */
+const HISTORY_SRC = path.join(ROOT, 'data', 'ms_history.json');
+/* 공식 참조 데이터(extract_patchnotes → data/ms_refs.json)를 그 조정 항목 아래에 붙여 싣는다 — 규칙은 lib/history_refs.js 한 곳 */
+const historyJson = (() => {
+  if (!fs.existsSync(HISTORY_SRC)) return null;
+  let h = JSON.parse(read('data', 'ms_history.json'));
+  if (fs.existsSync(path.join(ROOT, 'data', 'ms_refs.json'))) {
+    h = require('./lib/history_refs.js').attachRefs(h, (JSON.parse(read('data', 'ms_refs.json')).byPage) || {}).history;
+  }
+  return JSON.stringify(h);
+})();
+const historyFile = historyJson && WEB
+  ? 'history.' + require('crypto').createHash('sha1').update(historyJson).digest('hex').slice(0, 10) + '.json' : null;
+const historyInline = () => {
+  if (!historyJson) return 'window.GBO2_HISTORY_RAW=null;';
+  if (historyFile) return 'window.GBO2_HISTORY_URL=' + JSON.stringify(historyFile) + ';';
+  const lit = "'" + historyJson.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(new RegExp(String.fromCharCode(0x2028), 'g'), '\\u2028').replace(new RegExp(String.fromCharCode(0x2029), 'g'), '\\u2029') + "'";
+  return 'window.GBO2_HISTORY_RAW=' + lit.replace(/<\/script/gi, '<\\/script') + ';';
+};
+
 const html = read('src', 'index.html')
   .replace('<title>', () => (WEB ? NOINDEX : '') + '<title>')
   // 탭 아이콘은 파일로 두면 사이트에서 404 가 나고 오프라인판에는 실을 곳이 없다 — data URI 로 심는다
@@ -293,6 +317,7 @@ const html = read('src', 'index.html')
   .replace('/*__PATCHNOTES__*/', () => inline('GBO2_PATCHNOTES',
     fs.existsSync(path.join(ROOT, 'data', 'patchnotes.json'))
       ? JSON.parse(read('data', 'patchnotes.json')) : null))
+  .replace('/*__HISTORY__*/', historyInline)
   // 아이콘 한 벌 — 화면 스크립트보다 먼저 실려야 한다(GBO2Icons).
   .replace('/*__ICONS__*/', () => srcJs('icons.js'))
   .replace('/*__CORE__*/', () => srcJs('core.js'))
@@ -317,7 +342,7 @@ if (/<script[\s>]/i.test(read('src', 'token.body.html').replace(/<!--[\s\S]*?-->
 }
 
 for (const marker of ['__CSS__', '__BUILD__', '__DATA__', '__IMAGES__', '__WEAPONS__', '__SKILLS__', '__I18N_DATA__', '__ICONS__', '__CORE__', '__I18N__', '__OPT__', '__DAMAGE__', '__SHARE__', '__UI__',
-  '__TOKEN_CSS__', '__TOKEN__', '__TOKEN_BODY__', '__PICKUPS__', '__DUEL_CSS__', '__DUEL__']) {
+  '__TOKEN_CSS__', '__TOKEN__', '__TOKEN_BODY__', '__PICKUPS__', '__DUEL_CSS__', '__DUEL__', '__HISTORY__']) {
   if (html.includes('/*' + marker + '*/')) throw new Error('unreplaced marker: ' + marker);
 }
 
@@ -358,7 +383,9 @@ if (WEB) {
     '/sw.js', '  Cache-Control: no-cache',
     '/images/*', '  Cache-Control: public, max-age=86400, stale-while-revalidate=604800',
     '/illust/*', '  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000',
+    '/history.*', '  Cache-Control: public, max-age=31536000, immutable',
     ''].join('\n'));
+  if (historyFile) fs.writeFileSync(path.join(DIST, historyFile), historyJson);
 }
 const out = path.join(DIST, WEB ? 'index.html' : 'gbo2-simulator.html');
 fs.writeFileSync(out, html);

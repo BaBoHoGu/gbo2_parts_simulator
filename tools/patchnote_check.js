@@ -129,6 +129,31 @@ const markerKo = n => mk(n, '기');
     u[0].sections.map(s => s.isSub));
 }
 
+/* ── ①-2 참조 데이터 표(parseRef) — COST · 보충 설명 (2026-11-16 코드 리뷰) ──
+   ■ LV 마다 COST 가 다른 표: 대표값 하나(처음엔 마지막 LV, 한때 첫 LV)를 머리에 적으면 나머지 LV 와 안 맞는다 →
+     머리는 비우고 LV 블록 첫 줄에 cost 를 단다. COST 가 하나면 예전처럼 머리에만.
+   ■ 「■전적 관련 보충 설명」 줄은 note 로 옮기는데, 패치노트 화면이 note 를 안 그려 **설명이 사라졌다** —
+     화면 코드가 note 를 그리는지 원문에서 본다(사본을 만들지 않는다). */
+{
+  const td = (v, rs) => '<td' + (rs ? ' rowspan="' + rs + '"' : '') + '>' + v + '</td>';
+  const head = '<tr>' + td('참조<br>데이터', 9) + td('COST') + td('기체 LV') + td('승률') + td('MS 손실 수') + td('–') + '</tr>';
+  const block = (cost, lv) => '<tr>' + td(cost, 2) + td('범용 평균') + td('50.0') + td('3.3') + td('–') + '</tr>'
+    + '<tr>' + td(lv) + td('47.0') + td('3.4') + td('–') + '</tr>';
+  const two = P.parseRef('<table>' + head + block('350', 'LV1') + block('400', 'LV2')
+    + '<tr><td colspan="9">■조정 결과에 대한 부연 설명 ・테스트</td></tr></table>');
+  ok('LV 마다 COST 가 다르면 머리에 하나로 적지 않는다', !!two && two.cost === '', two && two.cost);
+  ok('LV 블록 첫 줄에 그 블록의 COST 를 단다',
+    !!two && two.rows[0].cost === '350' && two.rows[2].cost === '400' && !two.rows[1].cost, two && two.rows);
+  ok('「■…설명」 줄은 표 줄이 아니라 note 다',
+    !!two && /^■조정 결과/.test(two.note || '') && two.rows.every(r => !/^■/.test(r.label)), two);
+  const one = P.parseRef('<table>' + head + block('550', 'LV1') + '</table>');
+  ok('COST 가 하나면 머리에만 적는다(예전과 같다)', !!one && one.cost === '550' && one.rows.every(r => !r.cost), one);
+  const ui = require(path.join(ROOT, 'tools', 'lib', 'uisrc.js')).readUi();
+  const codex = fs.readFileSync(path.join(ROOT, 'src', 'ui', '10-codex.js'), 'utf8');
+  ok('패치노트 화면이 참조 데이터의 note(보충 설명)를 그린다', /ref\.note/.test(codex), '10-codex.js 에 ref.note 가 없다');
+  ok('두 화면 모두 LV 블록 COST(r.cost)를 그린다', (ui.match(/r\.cost \?/g) || []).length >= 2);
+}
+
 /* ── ② 쌓인 자료가 멀쩡한가 ──────────────────────────────────────── */
 const DATA = path.join(ROOT, 'data', 'patchnotes.json');
 let settledBal = null;   // 위키가 다 따라온(21일 지난) 가장 최근 조정 패치 날짜 — 아래 화면 검사가 그 날짜를 고른다

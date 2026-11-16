@@ -18,7 +18,8 @@
 // 「アップデート履歴」에 있다 — 여기서는 공식 문구를 **있는 그대로** 담고, 지어내지 않는다.
 'use strict';
 
-const UNIT_MARKER = /<!--+\s*▼+\s*(\d+)\s*[機机기]目\s*▼+\s*-+-->/;
+/* 2026-01 이전 공지는 번호가 **전각**이다(「▼▼▼▼▼１機目▼▼▼▼▼」) — `\d` 는 반각만 잡아 기체를 하나도 못 읽었다(2026-11-16). */
+const UNIT_MARKER = /<!--+\s*▼+\s*([\d０-９]+)\s*[機机기]目\s*▼+\s*-+-->/;
 const TABLE_RE = /<table\b[\s\S]*?<\/table>/gi;
 const THEAD_TH_RE = /<thead[\s\S]*?<th[^>]*>([\s\S]*?)<\/th>/i;
 /** 닫는 </td> 가 없어도 다음 셀·행·표 경계까지 하나의 셀로 본다 (②) */
@@ -49,7 +50,7 @@ const linesOf = h => unesc(String(h)
 function splitUnits(raw) {
   const parts = String(raw).split(new RegExp(UNIT_MARKER.source, 'g'));
   const out = [];
-  for (let i = 1; i < parts.length - 1; i += 2) out.push([Number(parts[i]), parts[i + 1]]);
+  for (let i = 1; i < parts.length - 1; i += 2) out.push([Number(String(parts[i]).normalize('NFKC')), parts[i + 1]]);
   return out;
 }
 
@@ -125,20 +126,30 @@ function parseRef(tableHtml) {
   /* 첫 행은 머리글. 맨 앞의 「참조 데이터」(rowspan) 와 「COST」·「기체 LV」를 뗀 나머지가 칸 이름이다. */
   const head = rows[0].filter(c => !/^(참조\s*데이터|参照データ)$/.test(c.v)).filter(c => !drop(c)).map(c => c.v);
   const cols = head.filter(c => c !== 'COST' && !/^(기체 LV|機体\s*LV)$/.test(c));
-  let cost = '';
   const out = [];
+  const notes = [];
+  const costs = [];
   for (const r of rows.slice(1)) {
     const cells = r.filter(c => !drop(c));
     if (!cells.length) continue;
-    let i = 0;
-    /* COST 칸은 rowspan 으로 첫 행에만 있다 — 숫자만 오는 그 칸을 떼어 둔다. */
-    if (cells[0].span > 1 && /^\d+$/.test(cells[0].v)) { cost = cells[0].v; i = 1; }
+    let i = 0, blockCost = '';
+    /* COST 칸은 rowspan 으로 LV 블록의 첫 행에만 있다 — 숫자만 오는 그 칸을 떼어 둔다. */
+    if (cells[0].span > 1 && /^\d+$/.test(cells[0].v)) { blockCost = cells[0].v; costs.push(blockCost); i = 1; }
     const label = cells[i] ? cells[i].v : '';
     const values = cells.slice(i + 1).map(c => c.v);
     if (!label && !values.length) continue;
-    out.push({ label, values });
+    /* 「■조정 결과에 대한 부연 설명 …」 — 표 끝에 한 칸으로 붙는 공식 설명(2023~). 값 없는 줄이 아니라 설명이다 */
+    if (!values.length && /^■/.test(label)) { notes.push(label); continue; }
+    out.push({ label, values, ...(blockCost ? { cost: blockCost } : {}) });
   }
-  return out.length ? { cost, cols, rows: out } : null;
+  if (!out.length) return null;
+  /* COST 가 하나면 표 머리에 하나로(예전과 같다). LV 마다 다르면 머리에 하나로 적지 않는다 —
+     한때 「마지막 LV」 · 「첫 LV」 값 하나를 대표로 적었는데 어느 쪽이든 나머지 LV 와 맞지 않았다.
+     그때는 LV 블록 첫 줄(평균 줄)의 cost 로 그 블록의 COST 를 보인다. */
+  const uniq = [...new Set(costs)];
+  const cost = uniq.length === 1 ? uniq[0] : '';
+  if (uniq.length <= 1) for (const r of out) delete r.cost;
+  return { cost, cols, rows: out, ...(notes.length ? { note: notes.join(' ') } : {}) };
 }
 
 /**
@@ -185,8 +196,64 @@ function parseBlock(block) {
   return { sections, intent, ref };
 }
 
-/** 공지 HTML → [{ index, name, sections, intent }] */
+/**
+ * 옛 틀(2021 ~ 2025-05 · 기체 구분 주석이 없다) — 기체마다 표 셋이 이어진다:
+ *   ① 변경 표 — 첫 칸이 기체 이름(「데스파다」 · 「갸프랑<변형 시>」), 그 뒤 「기체 성능」 · 무장 줄
+ *   ② 「조정 의도」 표   ③ 「참조 데이터」 표
+ * 「조정 의도」 · 「참조 데이터」 가 아닌 변경 표가 나오면 새 기체다. 「<변형 시>」 처럼 꺾쇠 꼬리가 붙은 표는
+ * 앞 기체의 덧붙은 표다. 참조 데이터만 쓰므로 변경 줄은 읽지 않는다(sections 는 빈 채) — 지어내지 않는다.
+ * 2018 ~ 2020 공지는 참조 데이터 표가 없다(2026-11-16 실측) — 여기서도 빈 결과가 나온다.
+ */
+function parseLegacy(raw) {
+  const out = [];
+  let cur = null;
+  /* 2024-11 무렵 꼴 — 이름만 든 **머리 표**(<thead><th>겔구그</th>)가 따로 오고, 변경 표는 「기체 성능」 부터 시작한다.
+     그 이름을 들고 있다가 다음 변경 표의 이름으로 쓴다. */
+  let held = null;
+  for (const t of String(raw).match(TABLE_RE) || []) {
+    const whole = text(t);
+    if (whole && whole.length <= 40 && !/[・→]/.test(whole) && !isIntentTable(t) && !isRefTable(t)) {
+      if (/[<＜][^>＞]{1,12}[>＞]$/.test(whole) && cur) { held = '\u0000sub'; continue; }   // 「<변형 시>」 머리 — 앞 기체의 덧붙은 표
+      held = whole; continue;
+    }
+    if (isIntentTable(t)) {
+      if (!cur) continue;
+      for (const chunk of t.split(/<\/tr>/i)) for (const m of [...chunk.matchAll(TD_RE)])
+        for (const ln of linesOf(m[2])) if (ln && !INTENT_PREFIXES.some(p => ln === p || ln.startsWith(p))) cur.intent.push(ln);
+      continue;
+    }
+    if (isRefTable(t)) {
+      /* 「■무장 관련 조정」 절 — 무장 표 뒤에 그 무장을 쓰는 **기체마다** 이름 머리 표(「마라사이(페다인 라이플[선행형] 장비 시)」)와
+         참조 표가 온다. 이름을 들고 있으면 그 기체로 세운다(안 그러면 표가 무장에 붙는다 · 2022-02 실측). */
+      if (held && held !== '\u0000sub') {
+        cur = { index: out.length + 1, name: held, sections: [], intent: [], ref: null, legacy: true };
+        out.push(cur);
+        held = null;
+      }
+      if (cur) cur.ref = parseRef(t) || cur.ref;
+      continue;
+    }
+    /* 기체 이름은 표의 **첫 칸** — 옛 틀은 <th> 다(<td> 만 보면 「기체 성능」 을 이름으로 잡는다) */
+    const first = t.match(/<t[dh]\b[^>]*>([\s\S]*?)(?=<\/t[dh]>|<t[dh]\b|<\/tr>)/i);
+    let name = first ? text(first[1]) : '';
+    /* 변경 표인가 — 글머리(・)나 「→」 가 든 내용 칸이 있다 */
+    if (!(/[・→]/.test(whole))) continue;
+    if (held === '\u0000sub') { held = null; continue; }
+    if (held) { name = held; held = null; }
+    /* 첫 칸이 일반 제목(「조정 내용」 · 「기체 성능」 …)인 변경 표는 앞 기체의 이어지는 표다 —
+       나이팅게일(2024-10)은 이름 표 다음 표가 「조정 내용」 으로 시작해 그것이 새 기체로 갈렸고 참조 표를 가져갔다 */
+    else if (cur && /^(조정\s*내용|기체\s*성능|기본\s*성능|무장\s*성능|성능|사격\s*주무장|격투\s*주무장|부무장|調整内容|機体性能|基本性能|兵装性能|性能|射撃メイン|格闘メイン|サブ)$/.test(name)) continue;
+    if (!name || name.length > 40) continue;
+    if (/[<＜][^>＞]{1,12}[>＞]$/.test(name) && cur) continue;      // 「<변형 시>」 — 앞 기체에 딸린 표
+    cur = { index: out.length + 1, name, sections: [], intent: [], ref: null, legacy: true };
+    out.push(cur);
+  }
+  return out;
+}
+
+/** 공지 HTML → [{ index, name, sections, intent }] — 기체 구분 주석이 없으면 옛 틀로 읽는다 */
 function parseNotice(raw) {
+  if (!looksLikePatchnote(raw)) return parseLegacy(raw);
   const out = [];
   for (const [index, block] of splitUnits(raw)) {
     const { sections, intent, ref } = parseBlock(block);
@@ -198,7 +265,7 @@ function parseNotice(raw) {
 
 module.exports = {
   parseRef,
-  splitUnits, parseBlock, parseNotice, parseRows,
+  splitUnits, parseBlock, parseNotice, parseLegacy, parseRows,
   looksLikePatchnote, isContentCell, isRefTable, isIntentTable,
   text, linesOf, UNIT_MARKER
 };
