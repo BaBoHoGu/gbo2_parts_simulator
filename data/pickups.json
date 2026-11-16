@@ -1,5 +1,5 @@
 {
- "pickupsUpdated": "2026-11-13",
+ "pickupsUpdated": "2026-11-16",
  "pickups": [
   {
    "name": "【지원】 ★★★★ 이상 희소도 MS",
@@ -164,7 +164,7 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=197168"
   }
  ],
- "steamUpdated": "2026-11-13",
+ "steamUpdated": "2026-11-16",
  "steamNews": [
   {
    "name": "골드 스모",
@@ -228,13 +228,6 @@
    "end": "2026-10-29",
    "tokens": 180,
    "url": "https://store.steampowered.com/news/app/1367080/view/713416027239616575?l=koreana"
-  },
-  {
-   "name": "양산형 사이코 건담",
-   "start": "2026-10-15",
-   "end": "2026-10-22",
-   "tokens": 120,
-   "url": "https://store.steampowered.com/news/app/1367080/view/704408284537290772?l=koreana"
   }
  ]
 }
