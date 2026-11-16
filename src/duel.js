@@ -86,6 +86,7 @@
     air: false,            // 공중 격투 제어로 하는 공중 격투인가 (위력 상승)
     shieldOn: false,       // 이 쪽이 실드로 막는가 (맞는 쪽에 걸린다)
     barrierOn: false,      // 이 쪽이 방어 판넬 배리어를 켰는가 (맞는 쪽에 걸린다)
+    barrierKey: null,      // 둘 이상이면 고른 배리어의 원문 이름 (V2 어설트 버스터 ［防御］/［広域防御］)
     /* 공격보정 직접 입력 — null 이면 구성에서 나온 값을 쓴다(자동).
        상대 파츠를 모를 때 보정만 어림해 넣으려고 둔다. 기체를 바꾸면 풀린다(setMs). */
     corr: { shoot: null, melee: null },
@@ -301,6 +302,7 @@
     durability: () => null,
     shield: () => null,
     barrier: () => null,
+    barriers: () => [],
     onShield: () => {},
     shieldHit: () => null,
     bandWhy: () => '',
@@ -451,9 +453,18 @@
       if (b && !b.unknown) {
         const blocked = C.barrierBlocks(b, { melee: !!wp.melee, attr: wp.attr });
         const bh = Math.floor(boosted * (1 - (b.cut || 0) / 100));
-        const volley = /同時発射/.test(wp.note || '');
-        const res = C.barrierShots(b, { blocked, bh, scale: hp > 0 ? eff / hp : 1, n, hit, per, eff, volley });
-        barrier = { ...b, ...res, bh, volley, banded: !!bands };
+        /* 한 공격으로 묶이는 히트 수 — 동시 발사만 묶는다. 「6発同時発射 x 3回攻撃」 은 6발 묶음 셋이라
+           배리어가 두 번째 묶음에서 깨지면 세 번째 묶음은 본체로 간다(예전엔 18히트를 통째로 막았다). */
+        const note = wp.note || '';
+        const volley = /同時発射/.test(note);
+        let unit = 1;
+        if (volley) {
+          const rep = note.match(/[x×ｘ]\s*(\d+)\s*回攻撃|(\d+)\s*発連続発射/);
+          const k = rep ? Number(rep[1] || rep[2]) : 1;
+          unit = (k > 1 && n % k === 0) ? n / k : n;
+        }
+        const res = C.barrierShots(b, { blocked, bh, scale: hp > 0 ? eff / hp : 1, n, hit, per, eff, unit });
+        barrier = { ...b, ...res, bh, volley, unit, n, banded: !!bands };
         if (bands && res.blocked) barrier.total = null;   // HP 구간 무장 — 본체 쪽 발수를 다시 셀 자가 없다
       }
     }
@@ -768,16 +779,25 @@
     /* 🌀 배리어로 막음 — 방어 판넬(핀 판넬［防御］ 등)을 켠 상태로 맞는 계산. 잠깐 켜는 장비라
        내구 지표·자동 구성에는 안 넣고, 여기서 켰을 때만 「배리어 N발 + 본체 M발」 로 센다.
        배리어가 없는(또는 막는 범위를 모르는) 기체에서는 단추가 안 나온다. */
-    const bar = HOOK.barrier(side);
-    if (bar && !bar.unknown) {
+    /* 배리어가 둘이면(V2 어설트 버스터 ［防御］·［広域防御］) 단추도 둘 — 하나만 켜진다. */
+    const bars = (HOOK.barriers(side) || []).filter(x => !x.unknown);
+    const cur = HOOK.barrier(side);
+    if (bars.length) {
       const bRow = el('div', 'ds-row');
       bRow.append(el('span', 'lb', '배리어'));
       const bw = el('div');
-      bw.append(btn('d-btn' + (side.barrierOn ? ' on' : ''),
-        (side.barrierOn ? '🌀 배리어로 막음 켬' : '🌀 배리어로 막음') + ' — ' + bar.name + ' '
-        + (bar.hpUnknown ? 'HP 미상' : bar.kind === 'hp' ? 'HP ' + fmt(bar.hp) : fmt(bar.thr) + ' 이상만 탄 소모')
-        + (bar.blocks === 'shoot' ? ' · 사격만' : ' · 사격·격투') + (bar.front ? ' · 정면' : ''),
-        () => { side.barrierOn = !side.barrierOn; changed(side); }));
+      for (const bar of bars) {
+        const on = side.barrierOn && !!cur && cur.ja === bar.ja;
+        bw.append(btn('d-btn' + (on ? ' on' : ''),
+          (on ? '🌀 배리어로 막음 켬' : '🌀 배리어로 막음') + ' — ' + bar.name + ' '
+          + (bar.hpUnknown ? 'HP 미상' : bar.kind === 'hp' ? 'HP ' + fmt(bar.hp) : fmt(bar.thr) + ' 이상만 탄 소모')
+          + (bar.blocks === 'shoot' ? ' · 사격만' : ' · 사격·격투') + (bar.front ? ' · 정면' : ''),
+          () => {
+            if (on) side.barrierOn = false;
+            else { side.barrierOn = true; side.barrierKey = bar.ja; }
+            changed(side);
+          }));
+      }
       bRow.append(bw);
       b.append(bRow);
     } else if (side.barrierOn) { side.barrierOn = false; }
@@ -1016,11 +1036,23 @@
     vs.append(x, el('div', 'who R', S.R.ms ? koMs(S.R.ms) : '상대 기체'));
     // 판정 — 서로 필요한 발수만 견준다 (연사 속도·리로드는 보지 않는다)
     const a = attack(S.L, S.R), d = attack(S.R, S.L);
+    /* 🌀 배리어를 켠 쪽은 「배리어 + 본체」 합계로 견준다 — 카드 아래 합계와 결론이 갈리지 않게.
+       배리어 때문에 셀 수 없으면(문턱 미만 무효 · HP 미상 · HP 구간 무장) 승패를 내지 않고 그렇게 적는다.
+       실드는 넘친 피해가 본체로 가는지 원문 근거가 없어 여기에 넣지 않는다(카드에 따로 적는다). */
+    const killOf = r => (r && r.barrier && r.barrier.blocked) ? r.barrier.total : (r ? r.shots : null);
+    const barred = r => !!(r && r.barrier && r.barrier.blocked);
     if (a && d && a.shots && d.shots) {
       const v = el('div', 'dc-verdict');
-      const cls = a.shots < d.shots ? 'win' : a.shots > d.shots ? 'lose' : 'even';
-      const txt = cls === 'win' ? '내가 먼저 격파' : cls === 'lose' ? '상대가 먼저 격파' : '같은 발수';
-      v.append('나 ', el('b', null, a.shots + '발'), ' · 상대 ', el('b', null, d.shots + '발'), ' → ', el('b', cls, txt));
+      const ka = killOf(a), kd = killOf(d);
+      const lb = (k, r) => k != null ? k + '발' + (barred(r) ? '(배리어 포함)' : '') : '— (배리어)';
+      if (ka == null || kd == null) {
+        v.append('나 ', el('b', null, lb(ka, a)), ' · 상대 ', el('b', null, lb(kd, d)), ' → ',
+          el('b', 'even', '배리어 때문에 발수로 견줄 수 없음'));
+      } else {
+        const cls = ka < kd ? 'win' : ka > kd ? 'lose' : 'even';
+        const txt = cls === 'win' ? '내가 먼저 격파' : cls === 'lose' ? '상대가 먼저 격파' : '같은 발수';
+        v.append('나 ', el('b', null, lb(ka, a)), ' · 상대 ', el('b', null, lb(kd, d)), ' → ', el('b', cls, txt));
+      }
       v.title = '고른 무장끼리 서로 필요한 발수만 견줍니다 — 발사 간격·리로드·명중률은 보지 않습니다';
       vs.append(v);
     }
@@ -1126,9 +1158,11 @@
       const lines = [];
       if (!x.blocked) {
         br.append(el('b', null, '0발'));
-        lines.push(x.blocks === 'shoot'
-          ? '격투에는 효과 없음 — 첫 격투가 배리어를 깨고 피해는 본체로 들어갑니다'
-          : '이 공격은 배리어가 막지 못합니다');
+        // 격투 속성 **사격**(바타플라이 엣지 등)은 HWS 위키가 「バリアをすり抜ける」 — 깬다고 적으면 틀린다.
+        // 대결은 이것을 격투(wp.melee)로 다루므로 원문 무장 종류(type 'shooting')로 가린다.
+        lines.push(x.blocks !== 'shoot' ? '이 공격은 배리어가 막지 못합니다'
+          : (r.wp.melee && r.wp.w.type !== 'shooting') ? '격투에는 효과 없음 — 첫 격투가 배리어를 깨고 피해는 본체로 들어갑니다'
+          : '격투 속성 공격은 막지 못합니다 — 피해는 본체로 들어갑니다');
       } else if (x.hpUnknown) {
         br.append(el('b', null, '—'));
         lines.push('배리어 HP 가 원문에 「?000」 — 몇 발에 깨지는지 셀 수 없습니다');
@@ -1142,12 +1176,16 @@
       } else {
         br.append(el('b', null, x.triggers + '발' + (x.total != null ? ' → 합계 ' + x.total + '발' : '')));
         lines.push(x.kind === 'hp'
-          ? '배리어 HP ' + fmt(x.hp) + ' ÷ 한 히트 ' + fmt(x.bhHp) + ' HP' + (x.volley ? ' (동시 발사는 한 공격째로 막음)' : '')
+          ? '배리어 HP ' + fmt(x.hp) + ' ÷ 한 히트 ' + fmt(x.bhHp) + ' HP' + (x.volley && x.unit > 1 ? ' (동시 발사 ' + x.unit + '히트를 한 공격으로 막음)' : '')
           : '한 히트 ' + fmt(x.bhHp) + ' HP ≥ 문턱 ' + fmt(x.thr) + ' — 히트마다 탄 1발, 탄 ' + x.ammo + '발');
         if (x.cut) lines.push('배리어 피해 −' + x.cut + '%' + (x.cutFrom === 'wiki' ? ' (공식 「방어 보정 상승」, 수치는 위키)' : ''));
         if (x.leftover) lines.push('깨진 뒤 남은 ' + x.leftover + '히트는 본체로 들어갑니다');
         if (x.total == null && x.banded) lines.push('대상 HP 구간 무장이라 합계는 셈 밖입니다');
       }
+      /* 문턱형에 동시 발사 — 위키는 「동시에 맞은 공격은 합산해 탄을 깎는다」 고 여러 기체 경우로 적었다.
+         한 무장의 산탄도 그런지는 원문에 없어 히트마다 재고, 합산일 수 있다고 밝힌다. */
+      if (x.blocked && x.kind === 'thr' && x.volley && x.unit > 1)
+        lines.push('동시에 맞은 히트는 합산해 문턱을 잴 수도 있습니다(위키는 여러 기체가 동시에 맞힐 때만 적음) — 여기서는 히트마다 잽니다');
       const foot = ['넘친 피해는 본체로 가지 않습니다', '막는 동안 피격 반응 없음'];
       if (x.front) foot.unshift('정면에서 맞을 때만 막습니다');
       if (x.dur) foot.push('최대 ' + x.dur + '초' + (x.shrink ? ' · 맞으면 줄어듦(얼마나인지 원문에 없어 셈 밖)' : ''));

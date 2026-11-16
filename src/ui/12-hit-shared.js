@@ -274,6 +274,19 @@
       if (dBtn) dBtn.classList.add('in-more');
       fitTopbar();
     }, { once: true });
+    /* 🌀 그 쪽 기체가 고른 모드에서 쓸 수 있는 배리어 전부 — 판정은 core.barrierOf 한 곳.
+       페넥스처럼 통상/변신에 따로 있으면 그 모드의 것만, V2 어설트 버스터처럼 둘이면 둘 다. */
+    const barriersOf = side => {
+      const id = pageIdOf(side.ms), page = id && weaponData[id];
+      if (!page) return [];
+      const form = side.form === 'transform' ? 'transform' : 'normal';
+      const out = [];
+      for (const w of page.weapons || []) {
+        const b = C.barrierOf(w);
+        if (b && (!b.form || b.form === form)) out.push({ ...b, name: T.weaponName(w.name), ja: w.name });
+      }
+      return out;
+    };
     window.GBO2Duel.use({
       /* 변형 · 변신 · 시스템 발동(트랜잠) — 그 기체에 통상 말고 다른 모드가 있는가, 이름은 무엇인가.
          무장이 어느 모드에서 쓰이는가(＜変身時＞使用可 등). 판정은 앱의 altModeOf · weaponModeOf 한 곳
@@ -331,17 +344,9 @@
       shield: side => shieldOf(side.ms, msLevel(side.ms), side.parts, side.exp, side.expLv),
       /* 🌀 그 쪽이 든 방어 판넬 배리어 — 판정은 core.barrierOf 한 곳. 페넥스처럼 통상/변신에 따로 있으면
          그 쪽이 고른 모드의 것을 준다. 덧입력 표에 없는 새 배리어는 unknown 으로 와서 단추가 안 나온다. */
-      barrier: side => {
-        const id = pageIdOf(side.ms), page = id && weaponData[id];
-        if (!page) return null;
-        const form = side.form === 'transform' ? 'transform' : 'normal';
-        for (const w of page.weapons || []) {
-          const b = C.barrierOf(w);
-          if (!b || (b.form && b.form !== form)) continue;
-          return { ...b, name: T.weaponName(w.name), ja: w.name };
-        }
-        return null;
-      },
+      barriers: side => barriersOf(side),
+      /* 그 쪽이 고른 배리어(side.barrierKey) — 없거나 이 기체에 없는 이름이면 첫 것 */
+      barrier: side => { const l = barriersOf(side); return l.find(b => b.ja === side.barrierKey) || l[0] || null; },
       /* 무장 하나가 실드에 주는 한 히트 피해. 「실드 무시」는 발수를 세는 뜻이 없어 why 로 답한다.
          같은 이름 무장이라도 기체마다 표기가 있고 없고가 갈린다 — 남의 값을 빌려오지 않는다. */
       shieldHit: (wp, dmg, charged, atkParts, atk) => {

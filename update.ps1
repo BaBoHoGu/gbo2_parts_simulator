@@ -189,6 +189,12 @@ function Publish-Commit([string]$Root = $PSScriptRoot, [switch]$DryRun) {
     else {
       & git -C $Root add -- $gen 2>$null | Out-Null
       $files = @(& git -C $Root diff --cached --name-only 2>$null)
+      # status 는 「바뀜」 인데 add 뒤에 넣을 게 없다 = 줄바꿈(LF/CRLF)만 달랐다. 커밋을 시도하면
+      # 실패로 끝나 진짜 실패와 같은 경고가 떴다(2026-11-16). 바뀐 것 없음으로 알린다.
+      # (return 으로 빠지면 아래 푸시까지 건너뛴다 — 가지로만 나눈다)
+      if (-not $files.Count) {
+        Write-Host '데이터에 바뀐 것이 없어 커밋할 것이 없습니다 (줄바꿈만 달랐음).' -ForegroundColor DarkGray
+      } else {
       $stamp = if ($script:VerStamp) { $script:VerStamp } else { Get-Date -Format 'yyyy-MM-dd-HHmm' }
       $body = "데이터 갱신 $stamp — 파일 $($files.Count)개`n`n" + (($files | Select-Object -First 30) -join "`n")
       if ($DryRun) {
@@ -198,6 +204,7 @@ function Publish-Commit([string]$Root = $PSScriptRoot, [switch]$DryRun) {
         & git -C $Root commit -q -m $body 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) { Write-Host "데이터 커밋 완료 — 파일 $($files.Count)개" -ForegroundColor Green }
         else { Write-Host '데이터 커밋에 실패했습니다 (위 로그 확인).' -ForegroundColor Yellow }
+      }
       }
     }
 

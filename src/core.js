@@ -295,10 +295,13 @@ function barrierBlocks(b, { melee, attr, tackle }) {
  *   bh    배리어가 받는 1히트(실효 HP 자 — 본체 hit 과 같은 단위, 맞는 쪽 경감 스킬 전 · 배리어 −N% 후)
  *   scale 실효 HP ÷ HP (문턱은 HP 로 들어가는 값으로 잰다)
  *   n 방아쇠당 히트 · hit 본체 1히트 · per 본체 방아쇠당(고정 피해 포함) · eff 본체 실효 HP
- *   volley true 면 동시 발사 — 한 방아쇠를 한 공격으로 통째로 막는다
+ *   unit  한 공격으로 묶이는 히트 수 — 1 은 히트마다(연속 발사·연속 히트), 동시 발사는 그 묶음 크기.
+ *         「6発同時発射 x 3回攻撃」 은 6 이다: 6발 묶음이 세 번 — 배리어가 깨진 뒤 묶음은 본체로 간다.
+ *         (예전 인자 volley:true 는 unit = n 과 같다 — 방아쇠 전체가 한 묶음)
  * @returns {{blocked, inf?, bhHp, absorbed, triggers, leftover, body, total}}
  */
-function barrierShots(b, { blocked, bh, scale, n, hit, per, eff, volley }) {
+function barrierShots(b, { blocked, bh, scale, n, hit, per, eff, volley, unit }) {
+  const u = Math.max(1, Math.min(n || 1, unit || (volley ? n : 1)));
   const bhHp = scale > 0 ? Math.round(bh / scale) : bh;
   const bodyOf = left => {
     const rem = eff - left * hit;
@@ -310,13 +313,14 @@ function barrierShots(b, { blocked, bh, scale, n, hit, per, eff, volley }) {
   let hits;
   if (b.kind === 'thr') {
     if (bhHp < b.thr) return { blocked: true, inf: true, bhHp, absorbed: 0, triggers: null, leftover: 0, body: null, total: null };
-    hits = b.ammo || 1;
+    // 문턱을 넘는 히트마다 탄 1발. 탄이 떨어진 히트가 속한 묶음까지는 막는다(동시 발사는 통째로 무효)
+    hits = Math.ceil((b.ammo || 1) / u) * u;
   } else {
     const bEff = b.hp * scale;
-    hits = volley ? Math.ceil(bEff / (bh * n)) * n : Math.ceil(bEff / bh);
+    hits = Math.ceil(bEff / (bh * u)) * u;     // 깨뜨린 묶음까지 막고 넘친 몫은 버린다
   }
   const triggers = Math.ceil(hits / n);
-  const leftover = volley ? 0 : triggers * n - hits;
+  const leftover = triggers * n - hits;        // 깨진 뒤 그 방아쇠의 남은 히트 — 본체로 간다
   const body = bodyOf(leftover);
   return { blocked: true, bhHp, absorbed: hits, triggers, leftover, body, total: body == null ? null : triggers + body };
 }
