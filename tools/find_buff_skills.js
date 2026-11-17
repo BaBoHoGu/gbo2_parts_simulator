@@ -128,6 +128,17 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       /* 「有利カテゴリ補正 ＋20%」(ウェポンパージ) · 「有利カテゴリー補正＋15%」(能力UP「覚醒」) — 상성 배율 130% 에 더한다
          (위키 7000 카테고리 특공: 「カテゴリ補正の130%に＋10%され、140%」). 다른 수치가 없는 각성은 이게 없어 스킬째 빠졌다. */
       const catAdv = flat(0, /有利カテゴリー?補正\s*[＋+]\s*(\d+)\s*[%％]/);
+      /* 자기 불이익 — 좋은 쪽만 읽고 나쁜 쪽을 버리면 대결에서 그 스킬이 실제보다 세게 나온다(2026-11-17 버그 탐색).
+           「有利カテゴリー与ダメージ －10%」(サイコ・ジャマー制御装置) — 위 DMG_RE 는 ＋ 만 받아 빠졌다 → 음수로 담는다.
+           「被ダメージ＋35%」(サイコミュシステム暴走) — 받는 피해가 는다 → dmgTaken.
+           「高速移動中被ダメージ＋30%」(土星エンジン最大出力) — 고속 이동 중일 때만 → dmgTakenBoost(대결은 조건을 몰라 밝히기만 한다).
+         「射撃属性被ダメージ＋」 처럼 속성이 붙은 꼴은 아직 없다 — 앞 글자를 요구해 그런 꼴이 dmgTaken 으로 새지 않게 한다. */
+      const advNeg = line.match(/有利カテゴリー?(?:への)?与ダメージ\s*[－-]\s*(\d+)\s*[%％]/);
+      if (advNeg && !dmgAdvAny) dmgAdvAny = -Number(advNeg[1]);
+      const dmgTakenBoost = flat(0, /高速移動中被ダメージ\s*[＋+]\s*(\d+)\s*[%％]/);
+      const tk = line.replace(/高速移動中被ダメージ\s*[＋+]\s*\d+\s*[%％]/g, '')
+        .match(/(?:^|[\s・/])被ダメージ\s*[＋+]\s*(\d+)\s*[%％]/);
+      const dmgTaken = tk ? Number(tk[1]) : 0;
       // 「攻撃力が N% 上昇」 — 대부분 「タックル発生時の攻撃力」이라 태클 전용이다.
       // 태클이 앞에 없는 것(고정밀 스나이프의 스나이프 모드 등)만 사격·격투 공통 피해로 받는다.
       const atk = line.match(/攻撃力(?:が|を)\s*(\d+)\s*[%％]\s*(?:上昇|増加)/);
@@ -184,6 +195,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
           .replace(/\?+$/, '').trim(),
         shoot, melee, shootPct, meleePct, crouchPct, limitUp, dmgPct, dmgShoot, dmgMelee, dmgAny, powerPct,
         dmgAdvAny, dmgAdvShoot, dmgAdvMelee, catAdv,
+        dmgTaken, dmgTakenBoost,
         foeArmor,
         armorRange, armorBeam, armorMelee, speed, hispeed, thruster, turn, hpUp,
         forever: /効果時間は?[、,\s]*(無し|なし|ナシ)/.test(line),
@@ -248,6 +260,7 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
       dmgShoot: src.dmgShoot || 0, dmgMelee: src.dmgMelee || 0, dmgAny: src.dmgAny || 0, powerPct: 0,
       // 부여받은 대공 사격 보조(F91［BC装備］ · G・ドアーズ)도 「유리 병과 한정」 을 그대로 물려받는다
       dmgAdvAny: src.dmgAdvAny || 0, dmgAdvShoot: src.dmgAdvShoot || 0, dmgAdvMelee: src.dmgAdvMelee || 0, catAdv: src.catAdv || 0,
+      dmgTaken: src.dmgTaken || 0, dmgTakenBoost: src.dmgTakenBoost || 0,
       armorRange: src.armorRange || 0, armorBeam: src.armorBeam || 0, armorMelee: src.armorMelee || 0,
       speed: src.speed || 0, hispeed: src.hispeed || 0, thruster: src.thruster || 0,
       turn: src.turn || 0, hpUp: src.hpUp || 0,
@@ -327,6 +340,8 @@ if (process.argv.includes('--ui')) {
           // 유리한 병과를 칠 때만 — 대결만 센다(상대가 없는 표는 병과를 모른다). 0 이면 싣지 않아 표가 안 불어난다
           ...(r.dmgAdvAny ? { dmgAdvAny: r.dmgAdvAny } : {}), ...(r.dmgAdvShoot ? { dmgAdvShoot: r.dmgAdvShoot } : {}),
           ...(r.dmgAdvMelee ? { dmgAdvMelee: r.dmgAdvMelee } : {}), ...(r.catAdv ? { catAdv: r.catAdv } : {}),
+          // 자기 불이익 — 받는 피해 +N%(늘) · 고속 이동 중에만 +N%. 0 이면 싣지 않는다
+          ...(r.dmgTaken ? { dmgTaken: r.dmgTaken } : {}), ...(r.dmgTakenBoost ? { dmgTakenBoost: r.dmgTakenBoost } : {}),
           // 방어·기동·HP 발동 버프 — 성능표 스탯에 반영
           armorRange: r.armorRange, armorBeam: r.armorBeam, armorMelee: r.armorMelee,
           speed: r.speed, hispeed: r.hispeed, thruster: r.thruster, turn: r.turn, hpUp: r.hpUp

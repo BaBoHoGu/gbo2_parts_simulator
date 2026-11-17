@@ -121,12 +121,17 @@
       if (e.dmgShoot) tags.push('사격피해+' + e.dmgShoot + '%');
       if (e.dmgMelee) tags.push('격투피해+' + e.dmgMelee + '%');
       // 유리한 병과를 칠 때만 걸리는 몫(グリモア（青） · 対空射撃補助 · ウェポンパージ · 覚醒) — 셈은 skillDmgPcts · advCatBonus 가 상성을 보고 한다
-      if (e.dmgAdvAny) tags.push('유리 상대 피해+' + e.dmgAdvAny + '%');
+      // 사이코 재머는 **깎는** 쪽(−10%)이다 — 부호를 그대로 적는다(「+-10%」 이 되지 않게)
+      if (e.dmgAdvAny) tags.push('유리 상대 피해' + (e.dmgAdvAny > 0 ? '+' : '−') + Math.abs(e.dmgAdvAny) + '%');
       if (e.dmgAdvShoot) tags.push('유리 상대 사격피해+' + e.dmgAdvShoot + '%');
       if (e.dmgAdvMelee) tags.push('유리 상대 격투피해+' + e.dmgAdvMelee + '%');
       if (e.catAdv) tags.push('유리 상성+' + e.catAdv + '%');
       if (e.armorRange || e.armorBeam || e.armorMelee) tags.push('내성+');
       if (e.hpUp) tags.push('HP+' + e.hpUp);
+      /* 자기 불이익 — 켜면 이 쪽이 **맞을 때** 받는 피해가 는다(사이코뮤 시스템 폭주 +35%).
+         고속 이동 중에만 붙는 것(토성 엔진 최대 출력)은 대결이 이동 상태를 몰라 셈에 안 넣고 결과 카드에 밝힌다. */
+      if (e.dmgTaken) tags.push('받는 피해+' + e.dmgTaken + '%');
+      if (e.dmgTakenBoost) tags.push('고속 이동 중 받는 피해+' + e.dmgTakenBoost + '%');
       if (!tags.length) continue;
       out.push({ name: sk.name, ko: sk.nameKo || sk.name, e, tags: tags.join(' · ') });
     }
@@ -384,7 +389,11 @@
       ...C.partDamageCuts(C.partsAt(B.parts, late), msLv(B.ms)).map(c => ({ ...c, label: '파츠 경감' })),
       ...HOOK.defSkills(B).filter(s => s.always || B.defs.has(s.name))
         .map(s => ({ scope: s.scope, pct: s.pct, foeCat: s.foeCat, label: s.ko || s.name, ignored: biOn && isBuffer(s.name) })),
-      ...(HOOK.extraCuts(A, B, wp) || []).map(c => ({ ...c, label: c.label || '조건부 경감' }))];
+      ...(HOOK.extraCuts(A, B, wp) || []).map(c => ({ ...c, label: c.label || '조건부 경감' })),
+      /* 맞는 쪽이 켠 버프 스킬의 불이익 — 「被ダメージ＋35%」 는 경감의 반대라 음수 경감으로 넣는다(×1.35).
+         예전엔 좋은 쪽(보정 +35)만 걸려 그 스킬을 켜면 실제보다 단단하게 나왔다(2026-11-17). */
+      ...buffSkills(B).filter(s => B.buffs.has(s.name) && s.e.dmgTaken)
+        .map(s => ({ scope: 'all', pct: -s.e.dmgTaken, label: (s.ko || s.name) + ' 받는 피해 +' + s.e.dmgTaken + '%' }))];
     const cuts = allCuts.filter(c => !c.ignored);
     // 때린 쪽 병과 — 「強襲カテゴリからの被ダメージ」 처럼 병과가 붙은 경감은 그 병과일 때만 걸린다
     const foeCat = A.ms && A.ms['属性'];
@@ -468,6 +477,8 @@
       hit, hitPre, hc, perHit, n, fixed, per, perHp, eff, hp, shots, air, shield, barrier, stg, bands, bandWhy, step, toHp, fa,
       manual, autoCorr,
       foeCut, armor: tB[ARMOR[wp.attr]] || 0, catPart,
+      takenBoost: buffSkills(B).filter(s => B.buffs.has(s.name) && s.e.dmgTakenBoost)
+        .map(s => ({ ko: s.ko || s.name, pct: s.e.dmgTakenBoost })),
       // 계산식(formulaBox)이 쓰는 중간값 — 같은 셈에서 나온 것
       raw, boosted, atk, tAtt, pr, ccd, kind, armor0: sB[ARMOR[wp.attr]] || 0,
       cutList: allCuts.filter(cutHits), bi, biOn, skillOn };
@@ -1241,6 +1252,7 @@
     if (r.foeCut) chip('상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '%'
       + (r.fa && r.fa.sCut ? (r.fa.wCut ? ' (무장+스킬)' : ' (스킬 효과)') : ' (무장 효과)'), 'up');
     if (r.factor < 1) chip('상대 경감 ×' + (+r.factor.toFixed(3)), 'down');
+    else if (r.factor > 1) chip('상대 받는 피해 ×' + (+r.factor.toFixed(3)), 'up');   // 자기 불이익 스킬(사이코뮤 시스템 폭주 등)
     if (r.hc && r.hc.used.length) chip('충격 분산 −' + r.hc.used.map(u => u.pct).join('·') + '%', 'down');
     c.append(chips);
     c.append(formulaBox(r, dir));
@@ -1355,6 +1367,10 @@
       conds.push(['상대 ' + (r.bi.special ? '특수' : '') + '완충재 스킬 무시 (' + why + ')', on, r.bi.text, r.biOn ? 'on' : 'off']);
     }
     if (r.foeCut) conds.push(['상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '%', '반영 — ⑥ 실효 HP 에', '', 'on']);
+    /* 맞는 쪽이 켠 스킬의 「高速移動中被ダメージ＋N%」(토성 엔진 최대 출력) — 고속 이동 중인지 대결이 몰라 셈에 안 넣는다.
+       말없이 빠지면 그 스킬을 켠 쪽이 실제보다 단단해 보이니 빠졌다고 적는다. */
+    for (const s of r.takenBoost || []) conds.push(['상대 「' + s.ko + '」 고속 이동 중 받는 피해 +' + s.pct + '%',
+      '고속 이동 중인지 몰라 셈에 안 넣음', '', 'off']);
     /* 무장의 내성 감소가 조건(집속 시 · 스킬 발동 중) 때문에 빠졌으면 빠졌다고 적는다 — 말없이 빠지면
        「무장 설명엔 있는데 왜 안 들어가지」 가 된다. */
     const wf = r.fa && r.fa.wf;

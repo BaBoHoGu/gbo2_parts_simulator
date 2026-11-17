@@ -334,7 +334,8 @@
          방어 스킬은 그 쪽이 켠 것(side.defs)을 그대로 본다 — 화면의 체크와 같은 자. */
       /* st 는 대결이 센 그 쪽 스탯(스킬 버프까지 반영) — 스탯을 두 번 세지 않는다. */
       durability: (side, st) => DURA_ATTRS.map(([attr, , lb]) => {
-        const cuts = damageCutsOf(side.parts, { lv: msLevel(side.ms), skillMs: side.ms, skills: side.defs, form: side.form || 'normal' });
+        const cuts = damageCutsOf(side.parts, { lv: msLevel(side.ms), skillMs: side.ms, skills: side.defs, form: side.form || 'normal',
+          buffEffects: buffEffectsOf(side.ms, side.buffs) });   // 켠 버프의 불이익(받는 피해 +N%)도 — 격파 셈과 같은 자
         return { attr, ko: lb, value: enduranceOf(st, attr, cuts), cut: cutPctOf(cuts, attr) };
       }),
       /* 대결에서 「실드로 막음」을 켜면 무장 표의 🛡 보정 칩도 같이 켠다.

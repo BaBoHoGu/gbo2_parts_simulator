@@ -445,6 +445,12 @@
         const m = d.match(/爆風ダメージを\s*(\d+)\s*[%％]\s*軽減/);
         if (m) out.push({ scope: 'all', pct: Number(m[1]), label: '폭풍 경감' });
       }
+      /* 사이코 패키지 — 「サイコミュ兵装から受けるダメージを10%短縮」(원문이 軽減 대신 短縮). 상대 무장이 사이코뮤일 때만.
+         예전엔 어디서도 안 읽혀 HP +1200 만 걸렸다(2026-11-17 버그 탐색 — 문장 단위 대조로 찾음). */
+      if (w.psycommu) {
+        const m = d.match(/サイコミュ兵装から受けるダメージを\s*(\d+)\s*[%％]\s*(?:軽減|短縮)/);
+        if (m) out.push({ scope: 'all', pct: Number(m[1]), label: '사이코뮤 경감' });
+      }
     }
     return out;
   }
@@ -666,7 +672,23 @@
     /* opt.form — 대결은 쪽마다 모드가 다르다. 안 넘기면 앱 화면의 state.form 을 따라가 버렸다(2026-10-15) */
     if (opt.skillMs) cuts.push(...boostBufferCuts(activeStaggerMods(opt.skillMs, lv, opt.skills, opt.form).cuts, equipped));
     if (opt.weapon) cuts.push(...conditionalPartCuts(equipped, opt.weapon));
+    /* 켠 버프 스킬의 불이익 「被ダメージ＋N%」(사이코뮤 시스템 폭주) — 음수 경감으로 접는다(내구 지표가 그만큼 준다).
+       opt.buffEffects 가 없으면 앱 화면의 스킬 체크(지금 기체일 때만)를 쓴다. 대결은 쪽마다 켠 것을 넘긴다.
+       「高速移動中」 에만 붙는 것은 조건이라 넣지 않는다(모르는 조건은 상시가 아니다). */
+    const effs = opt.buffEffects
+      || (opt.skillMs && opt.skillMs === state.ms ? activeSkills().map(skillLevel) : []);
+    for (const e of effs) if (e && e.dmgTaken) cuts.push({ scope: 'all', pct: -e.dmgTaken, from: '버프 스킬 불이익' });
     return cuts;
+  }
+
+  /** 기체·LV 에서 이름으로 고른 버프 스킬들의 효과값(LV 구간 중 맞는 것) — 대결 쪽 패널이 쓴다. 규칙은 skillLevel 과 같다. */
+  function buffEffectsOf(ms, names) {
+    if (!ms || !names || !names.size) return [];
+    const lv = msLevel(ms);
+    return (skillData[baseName(ms.MS名)] || []).filter(sk => names.has(sk.name)).map(sk => {
+      const fit = (sk.levels || []).filter(l => lv >= l.from && (l.to == null || lv <= l.to));
+      return fit.length ? fit[fit.length - 1] : null;
+    });
   }
 
   /**
