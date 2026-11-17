@@ -499,6 +499,42 @@ function msLevel(name) {
 }
 
 /**
+ * 발동한 버프 스킬들(GBO2_SKILLS 의 LV 구간 값 목록) → calcStats 에 넘길 스탯 가산분. 없으면 null.
+ * 앱(파츠 화면)과 대결이 **이 한 함수**를 쓴다 — 예전엔 두 벌이라 상한 상승을 앱은 더하고 대결은
+ * 큰 것 하나만 썼다(2026-11-17 코드 정리 점검). 규칙은 앱의 것을 따른다:
+ *   · 값은 스킬끼리 더한다(상한 상승 limitUp 도).
+ *   · 사격/격투 보정 %(ZERO 시스템 등)는 % 를 다 더한 뒤 스킬을 뺀 총보정(bare)에 곱해 한 번 반올림한다.
+ * bare 는 객체이거나 그것을 돌려주는 함수(% 스킬이 있을 때만 부른다 — 스탯 계산을 아끼려고).
+ */
+function skillStatBonusOf(effects, bare) {
+  const list = (effects || []).filter(Boolean);
+  if (!list.length) return null;
+  const s = k => list.reduce((a, e) => a + (Number(e[k]) || 0), 0);
+  let shoot = s('shoot'), melee = s('melee');
+  const shootPct = s('shootPct'), meleePct = s('meleePct');
+  if (shootPct || meleePct) {
+    const b = (typeof bare === 'function' ? bare() : bare) || {};
+    shoot += Math.round((b.shoot || 0) * shootPct / 100);
+    melee += Math.round((b.meleeCorrection || 0) * meleePct / 100);
+  }
+  const out = {};
+  if (shoot) out.shoot = shoot;
+  if (melee) out.meleeCorrection = melee;
+  for (const [from, to] of [['armorRange', 'armorRange'], ['armorBeam', 'armorBeam'], ['armorMelee', 'armorMelee'],
+    ['speed', 'speed'], ['hispeed', 'highSpeedMovement'], ['thruster', 'thruster'], ['hpUp', 'hp']]) {
+    const v = s(from);
+    if (v) out[to] = v;
+  }
+  const turn = s('turn');
+  if (turn) { out.turnPerformanceGround = turn; out.turnPerformanceSpace = turn; }
+  if (!Object.keys(out).length) return null;
+  // ZERO 시스템 등은 발동 중 사격·격투 **상한**도 올린다(파츠로 상한 근처까지 올린 구성에서 차이가 난다)
+  const limitUp = s('limitUp');
+  if (limitUp) out.limit = { shoot: limitUp, meleeCorrection: limitUp };
+  return out;
+}
+
+/**
  * 변형/변신 시에만 쓰는 소체 값. 절대값이라 통상치를 대체한다.
  * 원본 시뮬레이터는 이 필드를 읽지 않아 대조할 기준이 없다 — 위키 수치표를 근거로 한다.
  * 파츠·강화·확장 보정은 통상시와 똑같이 이 값 위에 얹힌다.
@@ -1055,7 +1091,7 @@ const GBO2Core = {
   STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL, MODE_PARTS, applyPartMode, partsAt, HIGHSPEED_EXCLUSIVE, SPEED_TURN_EXCLUSIVE, raisesHighSpeed,
   EXPANSION_SKILLS, EXPANSION_LABEL, EXPANSION_LEVELS, MAX_EXPANSION_LEVEL, MAX_PARTS,
   CATEGORY_ALL, EXPANSION_NONE,
-  zeroStats, msLevel, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
+  zeroStats, msLevel, skillStatBonusOf, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
   durabilityOf, ARMOR_KEY_OF, partDamageCuts, partHitCuts, applyHitCuts, barrierOf, barrierBlocks, barrierShots, staggerDmgFactor, cutApplies,
   THRUSTER_TBL, THR_RECOVER, isTankMs, thrusterCol, thrusterPartFx, boostSecOf, boostSecFrom,

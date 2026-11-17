@@ -1210,30 +1210,8 @@
    * (ZERO 는 상한도 올리지만 그 폭이 위키에 없어, 여기서는 통상 상한을 그대로 둔다)
    */
   function skillStatBonus() {
-    const e = skillEffect();
-    if (!e) return null;
-    let shoot = e.shoot, melee = e.melee;
-    if (e.shootPct || e.meleePct) {
-      const bare = stats(null).total;
-      shoot += Math.round(bare.shoot * e.shootPct / 100);
-      melee += Math.round(bare.meleeCorrection * e.meleePct / 100);
-    }
-    // 방어·기동·HP 발동 버프 (바이오센서 등) — 해당 스탯에 그대로 더한다(상한은 calcStats 가 적용).
-    const out = {};
-    if (shoot) out.shoot = shoot;
-    if (melee) out.meleeCorrection = melee;
-    if (e.armorRange) out.armorRange = e.armorRange;
-    if (e.armorBeam) out.armorBeam = e.armorBeam;
-    if (e.armorMelee) out.armorMelee = e.armorMelee;
-    if (e.speed) out.speed = e.speed;
-    if (e.hispeed) out.highSpeedMovement = e.hispeed;
-    if (e.thruster) out.thruster = e.thruster;
-    if (e.turn) { out.turnPerformanceGround = e.turn; out.turnPerformanceSpace = e.turn; }
-    if (e.hpUp) out.hp = e.hpUp;
-    if (!Object.keys(out).length) return null;
-    // ZERO 시스템은 발동 중 사격·격투 상한도 올린다 (파츠로 상한 근처까지 올린 구성에서 차이가 난다)
-    if (e.limitUp) out.limit = { shoot: e.limitUp, meleeCorrection: e.limitUp };
-    return out;
+    // 셈은 core.skillStatBonusOf 한 곳 — 대결도 같은 함수를 쓴다. 방어·기동·HP 버프(바이오센서 등)도 거기서 더한다.
+    return C.skillStatBonusOf(activeSkills().map(skillLevel), () => stats(null).total);
   }
 
   /** 스킬 몫을 칠할 클래스 — 하나면 보라, 겹쳐 발동하면 청록. */

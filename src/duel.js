@@ -141,20 +141,10 @@
     return out;
   }
   /** 켠 버프 → calcStats 의 skill 인자 (앱의 skillStatBonus 와 같은 모양). */
+  /* 켠 버프 스킬 → 스탯 가산분. 셈은 core.skillStatBonusOf 한 곳(앱 파츠 화면과 같은 자).
+     예전엔 여기 따로 있어 상한 상승을 큰 것 하나만 썼다 — 앱은 더한다(2026-11-17 정리). */
   function skillStatBonus(side, bare) {
-    let any = false; const o = {}; let limitUp = 0;
-    const add = (k, v) => { if (v) { o[k] = (o[k] || 0) + v; any = true; } };
-    for (const s of buffSkills(side)) {
-      if (!side.buffs.has(s.name)) continue;
-      const e = s.e;
-      add('shoot', (e.shoot || 0) + Math.round((bare.shoot || 0) * (e.shootPct || 0) / 100));
-      add('meleeCorrection', (e.melee || 0) + Math.round((bare.meleeCorrection || 0) * (e.meleePct || 0) / 100));
-      add('armorRange', e.armorRange); add('armorBeam', e.armorBeam); add('armorMelee', e.armorMelee);
-      add('hp', e.hpUp);
-      limitUp = Math.max(limitUp, e.limitUp || 0);
-    }
-    if (limitUp) o.limit = { shoot: limitUp, meleeCorrection: limitUp };
-    return any ? o : null;
+    return C.skillStatBonusOf(buffSkills(side).filter(s => side.buffs.has(s.name)).map(s => s.e), bare);
   }
   /** att 는 상성('advantage' 등) — 「有利カテゴリー…与ダメージ」 몫은 유리할 때만 더한다. */
   function skillDmgPcts(side, kind, att) {
