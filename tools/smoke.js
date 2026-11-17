@@ -78,7 +78,11 @@ setTimeout(async () => {
   $('#effort').value = '4';
   const t0 = Date.now();
   $('#runAuto').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-  await new Promise(r => setTimeout(r, 9000));
+  /* 9초를 그냥 기다렸었다 — 전체 검사가 6개를 동시에 돌리면 자동 구성이 10.4초쯤 걸려, **끝나기 전**
+     결과(파츠 1개)를 읽고 실패했다(2026-11-16~17 전체 검사마다 · 혼자 돌리면 통과라 묻혔다).
+     끝났다는 신호(실행 단추가 다시 켜짐)를 기다린다. 아주 느려져도 60초에서 끊고 그때 값으로 판정한다. */
+  await new Promise(r => setTimeout(r, 300));   // 단추가 꺼질 틈
+  for (const end = Date.now() + 60000; $('#runAuto').disabled && Date.now() < end;) await new Promise(r => setTimeout(r, 200));
 
   const equipped = $$('#equipped .eq:not(.empty)');
   const slotPairs = $$('#slotBars .slot-bar .v')
