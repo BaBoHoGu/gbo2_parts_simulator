@@ -24,6 +24,18 @@ const CAP_A = 100;
 /** 속성 간 보정 — 유리 +0.3 / 동일 0 / 불리 -0.2 */
 const ATTR_BONUS = { advantage: 0.3, same: 0, disadvantage: -0.2 };
 
+/**
+ * 카테고리 특공 프로그램(파츠) — 「有利カテゴリの敵機に与えるダメージを増加」.
+ * 위키 7000: 「数値はカテゴリ補正の130%に＋10%され、140%になる」 — 유리할 때 상성 배율에 +0.1.
+ * 불리·같은 상성엔 없다. 한 파츠의 효과라 여럿 달아도 겹치지 않는다(같은 이름 다른 LV 를 같이 달 수는 있다).
+ * 예전엔 앱 03-weapons 의 attrBonusOf 가 이 셈을 들고 있었는데 **아무도 안 불러** 대결에서 빠져 있었다
+ * (2026-11-17 코드 정리 점검에서 찾음). equipped 는 4분 경과까지 반영한 파츠 목록(partsAt)을 넘긴다.
+ */
+const PART_CAT_ADV_RE = /有利カテゴリの敵機に与えるダメージを増加/;
+function partCatAdvOf(equipped) {
+  return (equipped || []).some(p => PART_CAT_ADV_RE.test(String((p && p.description) || ''))) ? 0.1 : 0;
+}
+
 /** 자세·스코프 등 기타 공격 보정 (ETCa 에 더해지는 값) */
 const ETC_ATTACK = {
   crouch: 0.05,   // 지상 앉기 / 우주 정지
@@ -538,7 +550,7 @@ function bufferIgnoreOf(note) {
 
 const GBO2Damage = {
   hpBonusOf, hpBandAt, hpBandSteps, bufferIgnoreOf,
-  CAP_A, ATTR_BONUS, ETC_ATTACK,
+  CAP_A, ATTR_BONUS, ETC_ATTACK, partCatAdvOf,
   floorTo, attackPower, shootingDamage, meleeDamage, chargedPower,
   weaponModsOf, timeCutFor, damagePctFor, isBeamWeapon, isHeatWeapon, isEpackMag,
   shortenTime, shortenTimeText, applyDamagePct, shieldMultOf, shieldDmgPctOf

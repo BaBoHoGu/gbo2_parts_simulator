@@ -358,9 +358,11 @@
           + (air ? '공중 ' : '') + dirLabel(d.label) + ' ' + d.raw;
       }
     }
-    // 상성 배율 — 기본(유리 +0.3) 에 「有利カテゴリ補正」 스킬 몫을 더한다. 계산식 표시(pr)도 같은 값을 쓴다
+    // 상성 배율 — 기본(유리 +0.3) 에 「有利カテゴリ補正」 스킬 몫과 카테고리 특공 프로그램(파츠) 몫을 더한다.
+    // 계산식 표시(pr)도 같은 값을 쓴다. 파츠 몫은 2026-11-17 까지 빠져 있었다(죽은 attrBonusOf 에만 있었다).
     // 0.3 + 0.15 = 0.44999… 라 그대로 곱하면 내림에서 1 이 빠진다 — 소수 셋째 자리로 맞춘다
-    const attrBonus = Math.round(((D.ATTR_BONUS[att] ?? 0) + advCatBonus(A, att)) * 1000) / 1000;
+    const catPart = att === 'advantage' && D.partCatAdvOf ? D.partCatAdvOf(C.partsAt(A.parts, lateOn())) : 0;
+    const attrBonus = Math.round(((D.ATTR_BONUS[att] ?? 0) + advCatBonus(A, att) + catPart) * 1000) / 1000;
     const raw = kind === 'melee'
       ? D.meleeDamage(power, corr, { attr: att, attrBonus, ccd })
       : D.shootingDamage(power, corr, { attr: att, attrBonus, etcA });
@@ -465,7 +467,7 @@
     return { wp, mode, charged, power, corr, att, etcA, etcTxt, dirTxt, partPct, skPcts, factor, cuts,
       hit, hitPre, hc, perHit, n, fixed, per, perHp, eff, hp, shots, air, shield, barrier, stg, bands, bandWhy, step, toHp, fa,
       manual, autoCorr,
-      foeCut, armor: tB[ARMOR[wp.attr]] || 0,
+      foeCut, armor: tB[ARMOR[wp.attr]] || 0, catPart,
       // 계산식(formulaBox)이 쓰는 중간값 — 같은 셈에서 나온 것
       raw, boosted, atk, tAtt, pr, ccd, kind, armor0: sB[ARMOR[wp.attr]] || 0,
       cutList: allCuts.filter(cutHits), bi, biOn, skillOn };
@@ -1229,7 +1231,11 @@
     if (r.dirTxt) chip(r.dirTxt);
     if (r.air) chip('공중 격투 제어 위력 +' + r.air.pct + '%', 'up');
     if (r.fixed) chip('고정 피해 +' + fmt(r.fixed), 'up');
-    chip('상성 ' + MATCH_TXT[r.att], r.att === 'advantage' ? 'up' : r.att === 'disadvantage' ? 'down' : '');
+    /* 유리 배율은 스킬(有利カテゴリ補正)·파츠(카테고리 특공 프로그램)로 오른다 — 고정 문구(×1.3) 대신 실제로 쓴 배율을 적는다 */
+    const prBase = D.ATTR_BONUS[r.att] ?? 0;
+    chip(Math.abs(r.pr - prBase) < 1e-9 ? '상성 ' + MATCH_TXT[r.att]
+      : '상성 유리 ×' + (+(1 + r.pr).toFixed(3)) + (r.catPart ? ' (카테고리 특공 +' + Math.round(r.catPart * 100) + '%)' : ''),
+      r.att === 'advantage' ? 'up' : r.att === 'disadvantage' ? 'down' : '');
     if (r.partPct) chip('파츠 피해 +' + r.partPct + '%', 'up');
     for (const p of r.skPcts) chip('스킬 피해 +' + p + '%', 'up');
     if (r.foeCut) chip('상대 내' + ATTR_KO[r.wp.attr] + ' −' + r.foeCut + '%'
