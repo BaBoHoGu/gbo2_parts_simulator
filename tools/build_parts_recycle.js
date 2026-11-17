@@ -75,6 +75,15 @@ function main() {
       const n = String(r.recycle).replace(/,/g, '');
       map[nm] = /^\d+$/.test(n) ? Number(n) : (r.recycle === '-' ? 0 : null);
     }
+    /* 배포가 부른다(2026-11-17) — 받은 페이지가 깨졌으면(Cloudflare 확인 화면 등) 표가 0행이라
+       **모든 파츠가 「과금」 으로 덮인다.** 반도 못 맞히면 쓰지 않고 기존 것을 지킨다.
+       위키에서 못 찾은 파츠는 예전 값을 남긴다(지우지 않는다). */
+    if (Object.keys(map).length < ours.length * 0.5) {
+      console.log(`  ⚠ 위키 표에서 ${Object.keys(map).length}/${ours.length} 만 찾음 — 기존 ${path.relative(ROOT, OUT)} 을 그대로 둡니다`);
+      return;
+    }
+    const prev = fs.existsSync(OUT) ? (JSON.parse(fs.readFileSync(OUT, 'utf8')).ticket || {}) : {};
+    for (const nm of miss) if (nm in prev) map[nm] = prev[nm];
     const free = Object.values(map).filter(v => v !== null).length;
     const paid = Object.values(map).filter(v => v === null).length;
 

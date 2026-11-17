@@ -183,7 +183,9 @@ function Publish-Commit([string]$Root = $PSScriptRoot, [switch]$DryRun) {
     & git -C $Root rev-parse --is-inside-work-tree 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) { return }
 
-    $gen = @('data')
+    # assets/illust — 배포가 공식 일러스트를 새로 받으면(fetch_illust) 그것도 생성물이다(2026-11-17).
+    # 없는 경로를 git add 에 넘기면 전체가 실패하므로 있는 것만 넘긴다.
+    $gen = @('data', 'assets/illust') | Where-Object { Test-Path (Join-Path $Root $_) }
     $dirty = @(& git -C $Root status --porcelain -- $gen 2>$null)
     if (-not $dirty.Count) { Write-Host '데이터에 바뀐 것이 없어 커밋할 것이 없습니다.' -ForegroundColor DarkGray }
     else {
