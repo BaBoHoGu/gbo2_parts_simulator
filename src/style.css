@@ -1045,7 +1045,6 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 
 /* 무장 자세·스코프 토글 */
 .w-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.posture-seg .seg-btn { padding: 2px 9px; font-size: var(--fs-xs); }
 .tool-btn {
   padding: 2px 10px; font-size: var(--fs-xs); color: var(--muted);
   border-radius: 7px; white-space: nowrap;
@@ -1154,8 +1153,6 @@ body.plan-dragging .plan-drop { border-color: var(--dim); }
 }
 
 .panel > h2 .right { margin-left: auto; font-weight: 400; display: flex; gap: 6px; align-items: center; }
-.panel-body { padding: 10px 12px; }
-.panel-body.tight { padding: 8px; }
 
 /* ============ 기체 선택 ============ */
 

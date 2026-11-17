@@ -92,7 +92,6 @@
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(s);
     }
-    const fromOf = s => { const m = String(s.msLv || '').match(/LV\s*(\d+)/i); return m ? Number(m[1]) : 1; };
     const picked = new Map();
     for (const [key, cands] of groups) {
       // 구간 선택·폴백 규칙은 방어 스킬과 같은 것을 쓴다(pickByMsLv).

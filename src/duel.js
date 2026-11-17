@@ -1267,7 +1267,6 @@
      위 숫자가 갈라지지 않는다. 무장 원문의 조건(완충재 무시 · 관통 · 구간 피해 …)은
      「셈에 넣었는가」 를 같이 적는다 — 넣지 못한 것을 넣은 것처럼 보이면 안 된다. */
   const fxOpen = { LR: false, RL: false };     // 다시 그려도 펼친 채로 둔다(발수 막대를 움직일 때마다 다시 그린다)
-  const pctTxt = p => (p > 0 ? '+' : '') + p + '%';
   function formulaBox(r, dir) {
     const box = el('details', 'dc-formula');
     box.open = !!fxOpen[dir];

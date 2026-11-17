@@ -12,12 +12,6 @@
   let tierShow = 'voted';      // 'voted' 표 있는 것만 | 'all' 전체
   const TIER_MIN_VOTES = 5;    // 추천률 정렬에서 「믿을 만하다」고 볼 최소 표 수
 
-  /** 기체 base 이름 → 그 기체를 대표할 최고 LV 자료. 화면에 그림·코스트·등급을 적으려고 쓴다. */
-  const tierRepOf = base => {
-    const arr = msByBase.get(base) || [];
-    return arr[arr.length - 1] || null;
-  };
-
   function tierRows() {
     const st = voteState.ms;
     const tq = state.msQuery.trim().toLowerCase();
