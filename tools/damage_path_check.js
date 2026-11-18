@@ -346,7 +346,10 @@ const check = (label, cond, extra) => {
       const o = {};
       for (const jp of await DG.weaponsOf(pg, { me: ME, foe: FOE })) {
         const r = await DG.measure(pg, { me: ME, foe: FOE, weaponExact: jp, buffs });
-        if (!r.오류) o[r.무장ko] = r.발수;
+        /* 발수가 아니라 **실효 HP(내구)** 로 잰다 — 명경지수는 상대 내격투를 깎아 실효 HP 를 줄인다.
+           2026-11-18 부터 시험 상대(프로토타입 사이코 건담)의 폭주가 HP 50% 아래에서 저절로 켜져(hpgate_check),
+           석파천경권은 끄든 켜든 7발로 올림이 같아졌다 — 효과는 걸려 있는데(46,000 → 43,125) 발수로는 안 보인다. */
+        if (!r.오류) o[r.무장ko] = r.내구;
       }
       return o;
     };
@@ -362,7 +365,7 @@ const check = (label, cond, extra) => {
     check('명경지수가 스킬 칸에 뜬다 (고를 수 있다)',
       god && !god.err && god.nm === '명경지수', JSON.stringify(god && (god.err || god.nm)));
     const melee = ['석파천경권', '갓 슬래시', '갓 건담용 타격'];
-    check('켜면 격투 무장의 격파 발수가 준다',
+    check('켜면 격투 무장에 대한 상대 실효 HP 가 준다 (내격투를 깎는다)',
       god && god.on && melee.every(k => god.on[k] < god.off[k]), JSON.stringify(god));
     // 범위를 안 지키면 실탄 무장도 같이 준다 — 여기가 진짜 검사다
     /* 이 줄도 이름을 박아 두었다가 **없는 이름으로 undefined === undefined** 가 되어

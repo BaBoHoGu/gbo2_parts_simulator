@@ -126,7 +126,7 @@ if (has) {
     await setup('Ξガンダム', 'ガンダム', 50, 100);
     // 방어 칩(.def) 을 본다 — 같은 이름의 버프 칩(피해 +20%)도 있다(그쪽은 HP 문턱이 없어 원래 손으로 켠다)
     const raise = await pg.evaluate(() => [...document.querySelectorAll('.duel-side[data-side="R"] .ds-chip.def')].map(c => ({ t: c.textContent, auto: c.classList.contains('auto'), on: c.classList.contains('on') })).find(x => /레이즈|レイズ/.test(x.t)));
-    ok('레이즈 카운터(카운터 성립 조건)는 HP 50% 에서도 저절로 안 켜진다', !!raise && !raise.auto && !raise.on && /다른 동작/.test(raise.t), raise);
+    ok('레이즈 카운터(카운터 성립 조건)는 HP 50% 에서도 저절로 안 켜진다', !!raise && !raise.auto && !raise.on && /다른 동작 조건/.test(raise.t), raise);
 
     /* ⑥ 때리는 쪽 — 자기 HP 에서 켜진 공격 버프 (ν건담 사이코 프레임 공진(A) · HP 50% 이하) */
     await setup('ガンダム', 'νガンダム', 100, 100);

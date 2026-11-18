@@ -86,8 +86,13 @@ async function measure(pg, o) {
     if (q.form) A.form = q.form;            // 공격 측 모드 'transform'
     if (q.foeForm) B.form = q.foeForm;      // 맞는 쪽 모드
     if (q.corr) for (const k of ['shoot', 'melee']) if (k in q.corr) A.corr[k] = q.corr[k];
-    for (const n of (q.defs || [])) B.defs.add(n);
-    for (const n of (q.buffs || [])) A.buffs.add(n);
+    /* 스킬은 칩을 누른 것과 같은 규칙으로 켠다(GBO2Duel.skillOn) — 2026-11-18 부터 HP 조건 스킬은 그 쪽 HP 로 켜지므로,
+       Set 에 이름만 넣으면 HP 100% 에서 안 켜졌다(catcut · skilladv 가 그렇게 깨졌다). HP 는 매번 100 에서 시작한다. */
+    S.L.hp = 100; S.R.hp = 100;
+    if (q.hp != null) B.hp = q.hp;
+    const on = (side, n, set) => (Duel.skillOn ? Duel.skillOn(side, n) : set.add(n));
+    for (const n of (q.defs || [])) on(B, n, B.defs);
+    for (const n of (q.buffs || [])) on(A, n, A.buffs);
     Duel.use({});                      // 다시 그린다 (renderAll 은 밖으로 안 나와 있다)
     await w(500);
 

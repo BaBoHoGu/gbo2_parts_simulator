@@ -1069,7 +1069,7 @@
         if (s.hpGate && s.hpGate.abs != null) tag += ' · HP ' + fmt(s.hpGate.abs) + ' 조건 — 직접 켬';
         else if (s.hpGate && s.hpGate.hitCond) tag += ' · HP ' + s.hpGate.pct + '% ' + ({ le: '이하', lt: '미만', ge: '이상', gt: '초과' }[s.hpGate.op])
           + ' + 한 방 ' + s.hpGate.hitCond + ' 조건 — 직접 켬';
-        else if (s.hpGate && s.hpGate.andCond) tag += ' · HP 조건 + 다른 동작(카운터 · 고속 이동 등)이 필요해 직접 켬';
+        else if (s.hpGate && s.hpGate.andCond) tag += ' · HP + 다른 동작 조건 — 직접 켬';
         click = () => {
           if (s.always) return;
           side.defs.has(s.name) ? side.defs.delete(s.name) : side.defs.add(s.name); changed(side);
@@ -1698,7 +1698,16 @@
     for (const [k, f] of Object.entries(over || {})) if (k in HOOK && typeof f === 'function') HOOK[k] = f;
     if (root && !root.hidden) renderAll();
   }
-  window.GBO2Duel = { open: () => open(true), close: () => open(false), use, state: S, attack, weaponsOf };
+  /** 스킬을 이름으로 「켠다」 — 칩을 누른 것과 같은 규칙(HP 조건 스킬이면 그 쪽 HP 를 문턱으로 옮기고, 직접 발동이면 켠다).
+   *  검사 도구(duelgate)가 Set 에 이름을 넣던 것을 이걸로 바꿨다 — HP 조건 스킬은 이름만 넣으면 HP 100% 에서 안 켜진다. */
+  function skillOn(side, name) {
+    const g = gatedSkills(side).find(x => x.name === name)
+      || buffSkills(side).filter(s => s.hpGate).map(s => ({ name: s.name, gate: s.hpGate })).find(x => x.name === name);
+    if (g && !C.hpGateOn(g.gate, hpOf(side))) side.hp = C.hpGateTarget(g.gate);
+    if (buffSkills(side).some(s => s.name === name)) side.buffs.add(name);
+    else side.defs.add(name);
+  }
+  window.GBO2Duel = { open: () => open(true), close: () => open(false), use, state: S, attack, weaponsOf, skillOn };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountButton);
   else mountButton();
 })();

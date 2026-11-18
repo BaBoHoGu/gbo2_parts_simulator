@@ -142,6 +142,9 @@
   background: var(--panel-2); color: var(--muted); font-size: var(--fs-sm); cursor: pointer;
 }
 .ds-chip .t { font-size: var(--fs-foot); color: var(--dim); }
+/* 꼬리표가 길어지면(HP 조건 · 「직접 켬」 까닭) 좁은 화면에서 칩이 화면 밖으로 나갔다(ui_check) — 칩 안에서 줄을 바꾼다 */
+.ds-chip { max-width: 100%; flex-wrap: wrap; text-align: left; white-space: normal; }
+.ds-chip .t { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
 .ds-chip.on { color: var(--text); border-color: #b38bff; background: rgba(179, 139, 255, .12); }
 .ds-chip.on .t { color: #c9afff; }
 .ds-chip.def.on { border-color: var(--good); background: rgba(107, 217, 138, .10); }
@@ -263,7 +266,8 @@
 }
 .dc-wait { color: var(--dim); font-size: var(--fs-md); padding: 18px 4px; text-align: center; }
 .dc-verdict {
-  grid-column: 1 / -1; display: flex; justify-content: center; gap: 6px; align-items: baseline;
+  /* 기준 HP(「나 HP 50% · 상대 HP 100%」)가 붙으면 길어진다 — 좁은 화면에서 줄을 바꾼다 */
+  grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 6px; align-items: baseline;
   font-size: var(--fs-sm); color: var(--muted); border-top: 1px solid var(--line-soft); padding-top: 8px; margin-top: 2px;
 }
 .dc-verdict b { font-size: var(--fs-md); }
