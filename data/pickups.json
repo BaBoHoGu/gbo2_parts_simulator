@@ -162,63 +162,9 @@
    "end": "2026-11-26",
    "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=197168"
-  },
-  {
-   "name": "정비사 증원 티켓[★★★]",
-   "consoleStart": "2026-09-17",
-   "consoleEnd": "2026-09-24",
-   "start": "2026-11-19",
-   "end": "2026-11-26",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196644"
-  },
-  {
-   "name": "정비사 증원 티켓[★★★★]",
-   "consoleStart": "2026-09-17",
-   "consoleEnd": "2026-09-24",
-   "start": "2026-11-19",
-   "end": "2026-11-26",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196655"
-  },
-  {
-   "name": "정비사 증원 티켓[★★★★★]",
-   "consoleStart": "2026-09-17",
-   "consoleEnd": "2026-09-24",
-   "start": "2026-11-19",
-   "end": "2026-11-26",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196668"
-  },
-  {
-   "name": "골드 스모",
-   "consoleStart": "2026-09-10",
-   "consoleEnd": "2026-09-17",
-   "start": "2026-11-12",
-   "end": "2026-11-19",
-   "tokens": 120,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196534"
-  },
-  {
-   "name": "개량 키트[★★★]",
-   "consoleStart": "2026-09-10",
-   "consoleEnd": "2026-09-17",
-   "start": "2026-11-12",
-   "end": "2026-11-19",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196607"
-  },
-  {
-   "name": "개량 키트[★★★★]",
-   "consoleStart": "2026-09-10",
-   "consoleEnd": "2026-09-17",
-   "start": "2026-11-12",
-   "end": "2026-11-19",
-   "tokens": 90,
-   "url": "https://bo2.ggame.jp/kr/info/?p=196618"
   }
  ],
- "steamUpdated": "2026-11-16",
+ "steamUpdated": "2026-11-18",
  "steamNews": [
   {
    "name": "골드 스모",
