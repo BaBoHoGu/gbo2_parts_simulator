@@ -6,6 +6,7 @@
 // 처럼 제각각 적어 두어 표기 변형을 모두 받는다.
 const fs = require('fs'), path = require('path');
 const { parseTable: parseGrid } = require('./lib/table.js');
+const { HP_AND_RE } = require('../src/core.js');
 
 const ROOT = path.join(__dirname, '..');
 const WIKI = path.join(ROOT, 'raw', 'wiki');
@@ -202,7 +203,10 @@ for (const f of fs.readdirSync(WIKI).filter(x => x.endsWith('.html'))) {
         // 「は」를 필수로 — 「効果時間5秒消費」(행동 시 감소 페널티)를 실제 지속시간으로 오인하지 않게.
         secs: Number((line.match(/効果時間は[、,\s]*(\d+)\s*秒/) || [])[1]) || null,
         hp: Number((line.match(/機体HPが?\s*(\d+)\s*[%％]以下/) || [])[1]) || null,
-        manual: /タッチパッドを押す/.test(line)
+        manual: /タッチパッドを押す/.test(line),
+        // HP 문턱 뒤에 다른 조건(かつ · カウンターが成立した場合 …)이 이어지면 대결이 HP 로 켜지 않는다(core.HP_AND_RE 한 곳)
+        // (HP 문턱 hp 가 있는 스킬에만 뜻이 있다 — 없는 스킬에 붙이면 표만 불어난다)
+        hpAnd: /機体HPが?\s*\d+\s*[%％]以下/.test(line) && HP_AND_RE.test(line)
       });
     }
   }
@@ -356,7 +360,7 @@ if (process.argv.includes('--ui')) {
       const top = mine.reduce((a, b) => (weight(b) > weight(a) ? b : a));
       skills.push({
         name, nameKo: koSkill(name),
-        forever: top.forever, secs: top.secs, hp: top.hp, manual: top.manual,
+        forever: top.forever, secs: top.secs, hp: top.hp, manual: top.manual, ...(top.hpAnd ? { hpAnd: true } : {}),
         levels
       });
     }

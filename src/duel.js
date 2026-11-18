@@ -86,6 +86,7 @@
     air: false,            // 공중 격투 제어로 하는 공중 격투인가 (위력 상승)
     shieldOn: false,       // 이 쪽이 실드로 막는가 (맞는 쪽에 걸린다)
     barrierOn: false,      // 이 쪽이 방어 판넬 배리어를 켰는가 (맞는 쪽에 걸린다)
+    hp: 100,               // 현재 HP(%) — HP 조건 스킬이 이걸 보고 켜진다. 맞는 쪽은 여기서부터 격파까지 센다
     barrierKey: null,      // 둘 이상이면 고른 배리어의 원문 이름 (V2 어설트 버스터 ［防御］/［広域防御］)
     /* 공격보정 직접 입력 — null 이면 구성에서 나온 값을 쓴다(자동).
        상대 파츠를 모를 때 보정만 어림해 넣으려고 둔다. 기체를 바꾸면 풀린다(setMs). */
@@ -133,7 +134,10 @@
       if (e.dmgTaken) tags.push('받는 피해+' + e.dmgTaken + '%');
       if (e.dmgTakenBoost) tags.push('고속 이동 중 받는 피해+' + e.dmgTakenBoost + '%');
       if (!tags.length) continue;
-      out.push({ name: sk.name, ko: sk.nameKo || sk.name, e, tags: tags.join(' · ') });
+      out.push({ name: sk.name, ko: sk.nameKo || sk.name, e, tags: tags.join(' · '),
+        // 「機体HPが N%以下」 로 발동 — 추출기가 문턱을 hp 로 싣는다(以下 꼴만). 직접 발동(タッチパッド)이면 manual
+        // 「HP 50%以下でカウンターが成立した場合」 처럼 HP 말고 다른 동작이 같이 필요하면(hpAnd) HP 로 켜지 않고 손으로 켠다
+        hpGate: sk.hp && !sk.hpAnd ? { op: 'le', pct: sk.hp } : null, manual: !!sk.manual });
     }
     /* 상대 내성만 깎는 스킬(명경지수 · TYPE C.A-Ⅲ · 롱 레인지 어댑터) — 스탯 축이 없어 위에서 빠진다.
        빠지면 켤 단추가 없어 셈이 준비돼 있어도 **영영 안 걸렸다**(사용자 지적 2026-10-16 갓 건담).
@@ -323,7 +327,90 @@
   };
 
   /* ---------- 한 방향의 계산 (공격 측 A → 대상 B) ---------- */
+  /* ---------- HP 조건 스킬 — 「HP 가 근원, 스킬은 HP 를 따른다」 (2026-11-18) ----------
+     쪽마다 현재 HP(%) 를 하나 둔다(기본 100). HP 조건 스킬은 손으로 켜고 끄지 않고 그 HP 를 보고 저절로 켜진다
+     — 「HP 100% 인데 50% 이하 스킬이 켜진」 있을 수 없는 상태가 안 생긴다. 칩을 누르면 HP 를 그 문턱으로 옮긴다.
+       · 때리는 쪽: 자기 HP 에서 켜진 공격 버프로 한 번 센다(반격으로 같이 깎이는 시간 흐름은 안 센다).
+       · 맞는 쪽: 자기 HP 에서 0 까지 내려가며 그때 켜진 스킬로 방아쇠마다 깎는다(core.hpPhaseSteps).
+     셈 자체는 손대지 않는다 — 「그 HP 에서 켜진 스킬만 든 쪽」(sideAt)을 만들어 예전 attackCore 에 넘긴다.
+     그래서 계산식 · 배리어 · 경직 표시가 모두 같은 셈을 그대로 쓴다. */
+  const hpOf = side => (side.hp == null ? 100 : side.hp);
+  /** 그 HP(%) 에서 켜진 버프 스킬 이름들. 자동 HP 스킬은 HP 로만, 직접 발동 + HP 조건은 「켰고 조건 안」 일 때. */
+  function buffsAt(side, pct) {
+    const on = new Set();
+    for (const s of buffSkills(side)) {
+      if (s.hpGate && !s.manual) { if (C.hpGateOn(s.hpGate, pct)) on.add(s.name); }
+      else if (side.buffs.has(s.name) && (!s.hpGate || C.hpGateOn(s.hpGate, pct))) on.add(s.name);
+    }
+    return on;
+  }
+  /** 그 HP(%) 에서 켜진 방어 스킬 이름들. % 문턱이 있는 HP 조건 스킬은 HP 로만, 나머지는 손으로 켠 것. */
+  // 한 방 크기 조건이 같이 붙은 것(hitCond — 나노라미네이트 등)은 HP 만으로 켜지 않는다 → 손으로 켠다
+  const pctGate = s => (s.hpGate && s.hpGate.pct != null && !s.hpGate.hitCond && !s.hpGate.andCond ? s.hpGate : null);
+  function defsAt(side, pct) {
+    const on = new Set();
+    for (const s of HOOK.defSkills(side)) {
+      const g = pctGate(s);
+      if (g) { if (C.hpGateOn(g, pct)) on.add(s.name); }
+      else if (side.defs.has(s.name)) on.add(s.name);
+    }
+    return on;
+  }
+  const sideAt = (side, pct) => ({ ...side, buffs: buffsAt(side, pct), defs: defsAt(side, pct), hpNow: pct });
+  /** 이 쪽의 HP 문턱을 가진 스킬들 — [{ko, gate, kind:'buff'|'def'}]. 구간 이름 · 게이지 눈금 · HP 단추에 쓴다. */
+  function gatedSkills(side) {
+    const out = [];
+    for (const s of buffSkills(side)) if (s.hpGate && (!s.manual || side.buffs.has(s.name)))
+      out.push({ name: s.name, ko: s.ko, gate: s.hpGate, kind: 'buff' });
+    const seen = new Set();
+    for (const s of HOOK.defSkills(side)) {
+      const g = pctGate(s);
+      if (!g || seen.has(s.ko)) continue;
+      seen.add(s.ko);
+      out.push({ name: s.name, ko: s.ko, gate: g, kind: 'def' });
+    }
+    return out;
+  }
+
   function attack(A, B) {
+    const b0 = hpOf(B);
+    const Av = sideAt(A, hpOf(A));
+    const r = attackCore(Av, sideAt(B, b0));
+    if (!r) return r;
+    r.hpA = hpOf(A); r.hpStart = b0;
+    const gated = gatedSkills(B);
+    if (b0 >= 100 && !gated.length) return r;          // HP 조건도 없고 만피 — 예전 셈 그대로
+    /* 맞는 쪽 HP 를 따라간다 — 구간(켜진 HP 스킬 조합)마다 attackCore 를 한 번만 돌려 둔다 */
+    const keyAt = f => gated.filter(g => C.hpGateOn(g.gate, f * 100)).map(g => g.ko).join(' · ');
+    const cache = new Map();
+    const at = f => {
+      const k = keyAt(f);
+      if (!cache.has(k)) cache.set(k, attackCore(Av, sideAt(B, f * 100)));
+      return cache.get(k);
+    };
+    // 남은 비율 f 에서 방아쇠 한 번이 깎는 비율 — 무장의 대상 HP 구간 피해(레일건 등)도 그 구간의 dmgAt 이 센다
+    const dmgFracAt = f => {
+      const x = at(f);
+      if (!x || !(x.eff > 0)) return 0;
+      const d = x.step && x.step.dmgAt ? x.step.dmgAt(f * x.eff) : x.per;
+      return d / x.eff;
+    };
+    const st = C.hpPhaseSteps({ startFrac: b0 / 100, dmgFracAt, keyAt });
+    r.shots = st.n;
+    r.trail = st.trail;
+    r.gateMarks = [...new Set(gated.map(g => g.gate.pct))].filter(p => p > 0 && p < 100);
+    r.phases = st.segs.map(s => ({ fromPct: Math.round(s.fromFrac * 1000) / 10, n: s.n, on: s.key }));
+    /* 배리어 — 배리어를 깬 뒤 본체 발수도 시작 HP 에서(넘친 히트가 있으면 그만큼 깎인 데서) 센다 */
+    const bar = r.barrier;
+    if (bar && bar.blocked && bar.triggers != null && !bar.banded) {
+      const left = (bar.leftover || 0) * (r.hit / r.eff);
+      const s2 = C.hpPhaseSteps({ startFrac: b0 / 100 - left, dmgFracAt, keyAt });
+      bar.body = s2.n; bar.total = s2.n == null ? null : bar.triggers + s2.n;
+    } else if (bar && !bar.blocked) { bar.body = st.n; bar.total = st.n; }
+    return r;
+  }
+
+  function attackCore(A, B) {
     const wp = pickedWeapon(A);
     if (!wp || !B.ms) return null;
     const sA = statsOf(A), sB = statsOf(B);
@@ -632,7 +719,8 @@
     const meta = el('div', 'ds-meta');
     meta.append(el('span', null, MS_ATTR_KO[ms.属性] || ms.属性));
     const cost = el('span'); cost.append('코스트 ', el('b', null, String(ms.コスト))); meta.append(cost);
-    const st = statsOf(side);
+    const sv = sideAt(side, hpOf(side));   // 지금 HP 에서 켜진 HP 조건 스킬까지 — 스탯·내구 칸도 같은 상태로
+    const st = statsOf(sv);
     meta.append(el('span', null, 'HP ' + fmt(st.hp)));
     meta.append(el('span', null, '사격 ' + Math.round(st.shoot) + ' · 격투 ' + Math.round(st.meleeCorrection)));
     info.append(meta);
@@ -647,7 +735,7 @@
        실효 HP(내구 지표)는 게임에 없는 눈금이라 글로 적으면 낯설다. 다만 자동 구성 목표와 격파 발수가
        그 눈금을 쓰므로 **툴팁에 남긴다**(data-eff 도 — consistency_check 가 성능표와 맞대는 자리). */
     const ARMOR_OF = { solid: 'armorRange', beam: 'armorBeam', melee: 'armorMelee' };
-    const rows = HOOK.durability(side, st);
+    const rows = HOOK.durability(sv, st);
     if (rows && rows.length) {
       const dura = el('div', 'ds-dura');
       dura.append(el('span', 'lb', '내성'));
@@ -915,23 +1003,81 @@
   function skillsBlock(side) {
     const b = el('div', 'ds-block');
     b.append(el('div', 'ds-title', '스킬'));
-    const wrap = el('div', 'ds-skills');
     const buffs = buffSkills(side), defs = HOOK.defSkills(side);
+    const hp = hpOf(side);
+    const setHp = v => { side.hp = Math.max(1, Math.min(100, Math.round(Number(v) || 100))); changed(side); };
+    /* 현재 HP — HP 조건 스킬은 이 값을 보고 저절로 켜진다. 맞는 쪽이면 여기서부터 격파까지 센다.
+       단추는 100 과 **이 기체 스킬의 문턱만** 낸다(아무 수나 늘어놓지 않는다). */
+    const gated = gatedSkills(side);
+    const hpRow = el('div', 'ds-row ds-hp');
+    hpRow.append(el('span', 'lb', '현재 HP'));
+    const hw = el('div');
+    const inp = el('input', 'ds-hp-in');
+    inp.type = 'number'; inp.min = '1'; inp.max = '100'; inp.step = '1'; inp.value = String(hp);
+    inp.setAttribute('aria-label', '현재 HP 퍼센트');
+    inp.onchange = () => setHp(inp.value);
+    hw.append(inp, el('span', 'ds-hp-unit', '%'));
+    const marks = [100, ...new Set(gated.map(g => C.hpGateTarget(g.gate)).filter(v => v != null && v < 100))].sort((a, b) => b - a);
+    for (const v of marks) {
+      const who = gated.filter(g => C.hpGateTarget(g.gate) === v).map(g => g.ko);
+      const bt = btn('d-btn ds-hp-b' + (hp === v ? ' on' : ''), v + '%', () => setHp(v));
+      if (who.length) bt.title = who.join(' · ') + ' 의 조건';
+      hw.append(bt);
+    }
+    hpRow.append(hw);
+    b.append(hpRow);
+    const wrap = el('div', 'ds-skills');
+    /* HP 조건 칩 — 켜고 끄지 않는다(게임에서도 조건이 맞으면 저절로 켜진다). 누르면 HP 를 그 문턱으로 옮긴다. */
+    const gateTag = g => 'HP ' + g.pct + '% ' + ({ le: '이하', lt: '미만', ge: '이상', gt: '초과' }[g.op]) + '에서 자동';
     for (const s of buffs) {
-      const c = btn('ds-chip' + (side.buffs.has(s.name) ? ' on' : ''), null, () => {
-        side.buffs.has(s.name) ? side.buffs.delete(s.name) : side.buffs.add(s.name); changed(side);
-      });
-      c.append(s.ko, el('span', 't', s.tags));
-      c.title = '발동 중으로 계산 — ' + s.tags;
+      let on, click, tag = s.tags, title;
+      if (s.hpGate && !s.manual) {
+        on = C.hpGateOn(s.hpGate, hp);
+        tag += ' · ' + gateTag(s.hpGate);
+        click = () => { if (!on) setHp(C.hpGateTarget(s.hpGate)); };
+        title = on ? '지금 HP(' + hp + '%)에서 켜져 있습니다 — HP 를 올리면 꺼집니다' : '누르면 HP 를 ' + C.hpGateTarget(s.hpGate) + '% 로 옮깁니다';
+      } else if (s.hpGate) {
+        // 직접 발동인데 HP 조건이 붙은 것 — 조건 안일 때만 켤 수 있다
+        const can = C.hpGateOn(s.hpGate, hp);
+        on = can && side.buffs.has(s.name);
+        tag += ' · HP ' + s.hpGate.pct + '% 이하에서 직접 발동';
+        click = () => {
+          if (!can) { side.buffs.add(s.name); setHp(C.hpGateTarget(s.hpGate)); return; }
+          side.buffs.has(s.name) ? side.buffs.delete(s.name) : side.buffs.add(s.name); changed(side);
+        };
+        title = can ? '발동 중으로 계산 — ' + s.tags : '누르면 HP 를 ' + C.hpGateTarget(s.hpGate) + '% 로 옮기고 켭니다';
+      } else {
+        on = side.buffs.has(s.name);
+        click = () => { side.buffs.has(s.name) ? side.buffs.delete(s.name) : side.buffs.add(s.name); changed(side); };
+        title = '발동 중으로 계산 — ' + s.tags;
+      }
+      const c = btn('ds-chip' + (on ? ' on' : '') + (s.hpGate && !s.manual ? ' auto' : ''), null, click);
+      c.append(s.ko, el('span', 't', tag));
+      c.title = title;
       wrap.append(c);
     }
     for (const s of defs) {
-      const on = s.always || side.defs.has(s.name);
-      const c = btn('ds-chip def' + (on ? ' on' : ''), null, () => {
-        if (s.always) return;
-        side.defs.has(s.name) ? side.defs.delete(s.name) : side.defs.add(s.name); changed(side);
-      });
-      c.append(s.ko, el('span', 't', s.tag + (s.always ? ' · 상시' : '')));
+      const g = pctGate(s);
+      let on, click, tag = s.tag + (s.always ? ' · 상시' : '');
+      if (g) {
+        on = C.hpGateOn(g, hp);
+        tag += ' · ' + gateTag(g);
+        click = () => { if (!on) setHp(C.hpGateTarget(g)); };
+      } else {
+        on = s.always || side.defs.has(s.name);
+        // 절대값 문턱(보조 동력 「HP 1000 以上」)은 % 로 못 옮겨 예전처럼 손으로 켠다
+        if (s.hpGate && s.hpGate.abs != null) tag += ' · HP ' + fmt(s.hpGate.abs) + ' 조건 — 직접 켬';
+        else if (s.hpGate && s.hpGate.hitCond) tag += ' · HP ' + s.hpGate.pct + '% ' + ({ le: '이하', lt: '미만', ge: '이상', gt: '초과' }[s.hpGate.op])
+          + ' + 한 방 ' + s.hpGate.hitCond + ' 조건 — 직접 켬';
+        else if (s.hpGate && s.hpGate.andCond) tag += ' · HP 조건 + 다른 동작(카운터 · 고속 이동 등)이 필요해 직접 켬';
+        click = () => {
+          if (s.always) return;
+          side.defs.has(s.name) ? side.defs.delete(s.name) : side.defs.add(s.name); changed(side);
+        };
+      }
+      const c = btn('ds-chip def' + (on ? ' on' : '') + (g ? ' auto' : ''), null, click);
+      c.append(s.ko, el('span', 't', tag));
+      if (g) c.title = on ? '지금 HP(' + hp + '%)에서 켜져 있습니다' : '누르면 HP 를 ' + C.hpGateTarget(g) + '% 로 옮깁니다';
       wrap.append(c);
     }
     if (!buffs.length && !defs.length) wrap.append(el('span', 'ds-empty', '계산에 반영되는 스킬이 없습니다'));
@@ -1056,6 +1202,8 @@
         const txt = cls === 'win' ? '내가 먼저 격파' : cls === 'lose' ? '상대가 먼저 격파' : '같은 발수';
         v.append('나 ', el('b', null, lb(ka, a)), ' · 상대 ', el('b', null, lb(kd, d)), ' → ', el('b', cls, txt));
       }
+      // HP 를 옮겨 둔 쪽이 있으면 어느 HP 에서 견준 것인지 적는다 — 만피끼리의 결론으로 읽히지 않게
+      if (hpOf(S.L) < 100 || hpOf(S.R) < 100) v.append(el('small', 'dc-verdict-hp', ' (나 HP ' + hpOf(S.L) + '% · 상대 HP ' + hpOf(S.R) + '%)'));
       v.title = '고른 무장끼리 서로 필요한 발수만 견줍니다 — 발사 간격·리로드·명중률은 보지 않습니다';
       vs.append(v);
     }
@@ -1136,6 +1284,26 @@
     main.append(kill, sub);
     c.append(main);
 
+    /* HP 조건 — 시작 HP 와 구간. 「격파까지 N발 = 50%까지 a발 + 그 뒤 b발(폭주)」 처럼 셈을 그대로 보인다. */
+    if (r.hpStart != null && (r.hpStart < 100 || (r.phases && r.phases.some(p => p.on)))) {
+      const ph = el('div', 'dc-phase');
+      ph.append(el('span', 'lb', '상대 HP ' + r.hpStart + '% 부터'));
+      const segs = (r.phases || []).map((p, i, a) => {
+        const to = i + 1 < a.length ? a[i + 1].fromPct : 0;
+        return Math.round(p.fromPct) + '→' + Math.round(to) + '% ' + p.n + '발' + (p.on ? ' (' + p.on + ')' : '');
+      });
+      ph.append(el('small', null, segs.join(' · ')));
+      c.append(ph);
+    }
+    if (r.hpA != null && r.hpA < 100) {
+      c.append(el('div', 'dc-phase-a', '내 HP ' + r.hpA + '% — 그 HP 에서 켜지는 스킬로 셈'));
+    }
+    /* 보조 동력 — 「HP 1000 以上の時に撃破されるダメージを受けると」 한 번 버틴다. 이번엔 셈 밖(2026-11-18 결정). */
+    const bSk = (G.msSkills[baseName(B.ms.MS名)] || []).flatMap(g => g.skills || []);
+    if (bSk.some(s => /補助動力/.test(s.name))) {
+      c.append(el('div', 'dc-phase-a', '상대 「보조 동력」 — HP 1,000 이상에서 격파될 피해를 받으면 한 번 버팁니다(셈에 안 넣음)'));
+    }
+
     /* 🛡 실드로 막으면 — 실드부터 깨야 하는 경우. 「실드 무시」 무장은 그렇게 적는다. */
     if (r.shield) {
       const sr = el('div', 'dc-shield');
@@ -1209,7 +1377,8 @@
     }
 
     const k = Math.max(0, Math.min(A.step, r.shots || 0));
-    c.append(gauge(r.hp, r.perHp, k, r.shots || 0));
+    const tr = r.trail ? { start: (r.hpStart || 100) / 100, trail: r.trail, marks: r.gateMarks } : null;
+    c.append(gauge(r.hp, r.perHp, k, r.shots || 0, tr));
     const lg = el('div', 'dc-legend');
     lg.append(el('i', 'sw fill'), '남은 HP', el('i', 'sw next'), '다음 한 발', el('i', 'sw tk'), '발마다 눈금');
     c.append(lg);
@@ -1218,11 +1387,15 @@
       const rg = el('input'); rg.type = 'range'; rg.min = '0'; rg.max = String(r.shots); rg.value = String(k);
       rg.setAttribute('aria-label', '맞힌 발수');
       const out = el('output');
-      const left = () => Math.max(0, r.hp - r.perHp * Number(rg.value));
+      const left = () => {
+        const i = Number(rg.value);
+        if (tr) return Math.max(0, Math.round((i === 0 ? tr.start : tr.trail[Math.min(i, tr.trail.length) - 1]) * r.hp));
+        return Math.max(0, r.hp - r.perHp * i);
+      };
       out.textContent = rg.value + '발 → ' + fmt(left());
       rg.oninput = () => {
         A.step = Number(rg.value);
-        const g = c.querySelector('.dc-hp'); g.replaceWith(gauge(r.hp, r.perHp, A.step, r.shots));
+        const g = c.querySelector('.dc-hp'); g.replaceWith(gauge(r.hp, r.perHp, A.step, r.shots, tr));
         out.textContent = rg.value + '발 → ' + fmt(left());
       };
       st.append(el('span', null, '맞힌 발수'), rg, out);
@@ -1403,21 +1576,29 @@
   }
 
   /** 체력 게이지 — k 발 맞은 뒤 남은 HP, 다음 한 발(빗금), 발마다 눈금. */
-  function gauge(hp, per, k, shots) {
+  /* tr — HP 조건 구간 셈의 실제 경로 { start(0~1), trail:[방아쇠마다 남은 비율], marks:[문턱 %] }.
+     있으면 「한 발 = 같은 폭」 대신 그 경로를 그린다(구간마다 한 발 크기가 다르다). */
+  function gauge(hp, per, k, shots, tr) {
     const g = el('div', 'dc-hp');
-    const left = Math.max(0, hp - per * k);
+    const trail = tr && tr.trail && tr.trail.length ? tr.trail : null;
+    const leftAt = i => trail ? (i === 0 ? tr.start : trail[Math.min(i, trail.length) - 1]) * hp : Math.max(0, hp - per * i);
+    const left = Math.max(0, leftAt(k));
     const fill = el('div', 'fill'); fill.style.width = (hp ? left / hp * 100 : 100) + '%';
     g.append(fill);
-    if (per > 0 && left > 0) {
+    const nextLeft = trail ? (k < trail.length ? trail[k] * hp : 0) : left - per;
+    if ((per > 0 || trail) && left > 0) {
       const nx = el('div', 'next');
-      const w = Math.min(per, left) / hp * 100;
+      const w = Math.min(left - Math.max(0, nextLeft), left) / hp * 100;
       nx.style.left = (left / hp * 100 - w) + '%'; nx.style.width = w + '%';
       g.append(nx);
     }
-    if (per > 0 && shots && shots <= 60) {
+    if ((per > 0 || trail) && shots && shots <= 60) {
       for (let i = 1; i < shots; i++) {
-        const t = el('i', 'tick'); t.style.left = (100 - per * i / hp * 100) + '%'; g.append(t);
+        const t = el('i', 'tick'); t.style.left = (leftAt(i) / hp * 100) + '%'; g.append(t);
       }
+    }
+    for (const m of (tr && tr.marks) || []) {   // HP 조건 스킬 문턱 — 여기서 켜지거나 꺼진다
+      const mk = el('i', 'mark'); mk.style.left = m + '%'; mk.title = 'HP ' + m + '% — 스킬 문턱'; g.append(mk);
     }
     const tx = el('div', 'txt');
     tx.append(el('span', null, fmt(left) + ' / ' + fmt(hp)), el('span', null, hp ? Math.round(left / hp * 100) + '%' : ''));
@@ -1436,6 +1617,7 @@
     side.parts = keepParts ? keepEquippable(ms, side.parts, side.stage) : [];
     side.buffs.clear(); side.defs.clear();
     side.wKey = null; side.step = 1; side.pickParts = false; side.air = false;
+    side.hp = 100;   // 기체가 바뀌면 만피에서 — 앞 기체의 HP 조건 문턱이 새 기체에 남지 않게
     side.corr = { shoot: null, melee: null };   // 기체가 바뀌면 손으로 넣은 보정은 풀린다
     if (!keepParts || !HOOK.altMode(ms)) side.form = 'normal';
     // 주무장을 기본으로 골라 둔다 — 고르기 전 빈 화면을 줄인다

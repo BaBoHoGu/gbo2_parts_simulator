@@ -307,6 +307,7 @@
         .flatMap(sk => (sk.cuts || []).map((c, i) => ({
           name: sk.name + (i ? '#' + i : ''), ko: sk.ko || sk.name,
           scope: c.scope, pct: c.pct, foeCat: c.foeCat, always: sk.cond === '상시',
+          hpGate: sk.hpGate || null,   // HP 조건 — 대결이 그 쪽 HP 로 저절로 켜고 끈다(% 문턱만)
           tag: '피해 −' + c.pct + '%' + (c.scope === 'all' ? ''
             : ' (' + ({ solid: '실탄', beam: '빔', melee: '격투', shoot: '사격' }[c.scope] || c.scope) + ')')
             + (c.foeCat ? ' · ' + c.foeCat.map(a => T.attrName(a)).join('·') + ' 상대' : '')

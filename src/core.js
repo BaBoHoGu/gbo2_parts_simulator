@@ -240,6 +240,62 @@ function applyHitCuts(hit, eff, hcs, attr) {
   return { hit: h, used };
 }
 
+/* ---------- HP 조건 스킬 (대결) ----------
+ * 「機体HPが 50%以下 になった際、自動で発動」 처럼 **HP 를 보고 켜지는** 스킬이 원문 113건(以下) · 以上 9 · 未満 8 · 절대값 6.
+ * 예전 대결은 HP 100% 에서 시작하며 이런 스킬을 손으로 켜게 해, 「HP 100% 인데 50% 이하 스킬이 켜진」
+ * 있을 수 없는 상태를 셌다(2026-11-18 사용자 제안 → 「HP 가 근원, 스킬은 HP 를 따른다」 로 정리).
+ *   hpGateOf  원문에서 첫 HP 문턱을 읽는다 — {op:'le'|'lt'|'ge'|'gt', pct} 또는 {op, abs}(절대값 — 판정 불가)
+ *   hpGateOn  그 HP(%) 에서 켜졌는가 — 절대값·모름은 null
+ *   hpPhaseSteps  맞는 쪽 HP 를 시작점에서 0 까지 따라가며 방아쇠마다 그때의 피해로 깎는다(구간이 갈리는 셈) */
+const HP_GATE_RE = /(?:機体)?HPが?\s*([\d,]+)\s*([%％])?\s*(以下|未満|以上|を下回|を超え)/;
+function hpGateOf(text) {
+  const t = String(text || '');
+  const m = HP_GATE_RE.exec(t);
+  if (!m) return null;
+  const v = Number(m[1].replace(/,/g, ''));
+  let op = { '以下': 'le', '未満': 'lt', 'を下回': 'lt', '以上': 'ge', 'を超え': 'gt' }[m[3]];
+  /* 「機体HPが80%未満になると…効果が無効となる」(チョバム・アーマー · 耐ビーム・コーティング) — 문턱 아래에서 **꺼지는** 꼴이다.
+     첫 문턱만 읽으면 「80% 미만에서 켜짐」 으로 뒤집혀 읽혔다. 뒤에 「無効」 가 오면 켜지는 쪽(以上)으로 뒤집는다. */
+  if ((op === 'lt' || op === 'le') && /^[^。/]{0,8}(?:になると|になった(?:際|場合|時))[^。]{0,40}無効/.test(t.slice(m.index + m[0].length))) op = op === 'lt' ? 'ge' : 'gt';
+  return m[2] ? { op, pct: v } : { op, abs: v };
+}
+/* HP 문턱 바로 뒤에 **다른 조건**이 이어지는 꼴 — 「HP50%以下かつ高速移動を約1秒使用後」(램 어택) ·
+   「HPが 50%以下 でカウンターが成立した場合」(레이즈 카운터 · 고성능 카운터 프로그램). HP 만으로 켜면 거짓이라 손으로 켠다.
+   앱(방어 스킬)과 버프 추출기(find_buff_skills)가 이 한 줄을 같이 쓴다. */
+const HP_AND_RE = /HP[^。/]{0,14}(?:以下|以上|未満)[^。/]{0,4}(?:かつ|で[^。/]{0,24}(?:成立|した場合|使用後|した際))/;
+function hpGateOn(gate, pct) {
+  if (!gate || gate.pct == null) return null;
+  const v = gate.pct;
+  return gate.op === 'le' ? pct <= v : gate.op === 'lt' ? pct < v : gate.op === 'ge' ? pct >= v : pct > v;
+}
+/** 문턱을 만족시키는 가장 가까운 HP(%) — 「칩을 누르면 HP 를 그리로 옮긴다」 에 쓴다. 정수 %. */
+function hpGateTarget(gate) {
+  if (!gate || gate.pct == null) return null;
+  return gate.op === 'le' ? gate.pct : gate.op === 'lt' ? gate.pct - 1 : 100;
+}
+/**
+ * 맞는 쪽 HP 를 startFrac(0~1) 에서 0 까지 따라가며 방아쇠 수를 센다.
+ *   dmgFracAt(f) 남은 HP 비율이 f 일 때 방아쇠 한 번이 깎는 비율(최대 HP 대비). 구간마다 다른 스킬·무장 구간 피해가 여기 담긴다.
+ *   keyAt(f)     구간 이름(같으면 한 구간으로 묶어 보인다)
+ * @returns {{n:number|null, trail:number[], segs:Array<{key, fromFrac, n}>}}  trail = 방아쇠마다 남은 비율
+ */
+function hpPhaseSteps({ startFrac, dmgFracAt, keyAt, maxN = 500 }) {
+  let f = Math.min(1, Math.max(0, startFrac));
+  const trail = [], segs = [];
+  let n = 0;
+  while (f > 1e-9 && n < maxN) {
+    const d = dmgFracAt(f);
+    if (!(d > 0)) return { n: null, trail, segs };
+    const key = keyAt ? keyAt(f) : '';
+    if (!segs.length || segs[segs.length - 1].key !== key) segs.push({ key, fromFrac: f, n: 0 });
+    segs[segs.length - 1].n++;
+    // 1 − 0.1×5 가 0.5000000000000001 이 되어 「50% 이하」 문턱을 한 발 늦게 넘었다 — 소수 끝을 맞춘다
+    f = Math.round((f - d) * 1e9) / 1e9; n++;
+    trail.push(Math.max(0, f));
+  }
+  return { n: f > 1e-9 ? null : n, trail, segs };
+}
+
 /* ---------- 방어 판넬 배리어 ----------
  * 핀 판넬［防御］ · 사이코 플레이트［防御］ · A·아머 DE［防御］ · 실드 판넬 x3［防御］ — 전수 12종(2026-11-16).
  * 위키 해설이 12종 모두 같은 말을 한다:
@@ -1093,7 +1149,7 @@ const GBO2Core = {
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, skillStatBonusOf, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,
   calcSlots, calcStats, checkEquip, conflictsWithMovement, categoryRestricted, categoryOfPart,
-  durabilityOf, ARMOR_KEY_OF, partDamageCuts, partHitCuts, applyHitCuts, barrierOf, barrierBlocks, barrierShots, staggerDmgFactor, cutApplies,
+  durabilityOf, ARMOR_KEY_OF, partDamageCuts, partHitCuts, applyHitCuts, hpGateOf, hpGateOn, HP_AND_RE, hpGateTarget, hpPhaseSteps, barrierOf, barrierBlocks, barrierShots, staggerDmgFactor, cutApplies,
   THRUSTER_TBL, THR_RECOVER, isTankMs, thrusterCol, thrusterPartFx, boostSecOf, boostSecFrom,
   expansionShieldHp,
   effectConflict, partBase, MS_RENAMED, msRenamed

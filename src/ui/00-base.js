@@ -309,7 +309,19 @@
     // (「リアクションを軽減」만 있는 기본 마뉴버아머처럼 수치 없는 것은 제외.)
     if (!mults.length && !tm && !cuts.length) return null;
     const mult = mults.length ? Math.max(...mults) / 100 : 1;
-    return { mult, threshold: tm ? Number(tm[1]) : null, cuts, cond: staggerCond(blob), extra };
+    const cond = staggerCond(blob);
+    /* HP 조건 스킬은 문턱까지 들고 간다 — 대결이 맞는 쪽 HP 를 따라가며 저절로 켜고 끈다(2026-11-18).
+       절대값(보조 동력 「HP 1000 以上」)·못 읽은 것은 gate 가 없거나 abs 라 예전처럼 손으로 켠다. */
+    let hpGate = cond === 'HP조건' ? C.hpGateOf(blob) : null;
+    /* HP 말고 **한 방 크기** 조건이 같이 붙은 것 — 나노라미네이트 「被ダメージが 2000以下」 · 희소 금속 특수 장갑재
+       「受けたダメージが2500以上」. HP 만 보고 저절로 켜면 큰 한 방(작은 한 방)에도 걸려 거짓이 된다.
+       대결이 저절로 켜지 않고 예전처럼 손으로 켜게 둔다(hitCond — 칩에 까닭을 적는다). */
+    const hitM = blob.match(/(?:被ダメージ|受けたダメージ)が\s*([\d,]+)\s*(以下|以上|未満)/);
+    if (hpGate && hitM) hpGate = { ...hpGate, hitCond: hitM[1].replace(/,/g, '') + (hitM[2] === '以上' ? ' 이상' : ' 이하') };
+    /* HP 와 **다른 조건이 함께** 붙은 것 — 램 어택 「HP50%以下かつ高速移動を約1秒使用後」 · 레이즈 카운터
+       「HPが 50% 以下でカウンターが成立した場合」. HP 만 보고 켜면 그 동작 없이도 걸린 것이 된다 → 손으로 켠다. */
+    if (hpGate && C.HP_AND_RE.test(blob)) hpGate = { ...hpGate, andCond: true };
+    return { mult, threshold: tm ? Number(tm[1]) : null, cuts, cond, extra, hpGate };
   }
 
   const isAltSkillMode = mo => !!(mo && mo.mode && mo.mode !== '通常時');
@@ -393,13 +405,13 @@
       if (p.cond === '지원포격') continue;
       const from = msLvFrom(sk.msLv);
       const prev = byName.get(sk.name);
-      if (!prev || from > prev.from) byName.set(sk.name, { name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts, cond: p.cond, from });
+      if (!prev || from > prev.from) byName.set(sk.name, { name: sk.name, ko: skTr(sk.name), mult: p.mult, threshold: p.threshold, cuts: p.cuts, cond: p.cond, hpGate: p.hpGate, from });
       // 조건부 추가 경감(예: A·아머 DE — NT-D/각성 중 빔 −30%)은 기본 경감과 발동 조건이 달라
       // 별도 항목으로 넣는다. 사용자가 상황에 맞는 것만 체크한다.
       if (p.extra) {
         const xn = sk.name + '(추가)';
         const xp = byName.get(xn);
-        if (!xp || from > xp.from) byName.set(xn, { name: xn, ko: skTr(sk.name) + ' (추가)', mult: 1, threshold: null, cuts: p.extra.cuts, cond: p.extra.cond, from });
+        if (!xp || from > xp.from) byName.set(xn, { name: xn, ko: skTr(sk.name) + ' (추가)', mult: 1, threshold: null, cuts: p.extra.cuts, cond: p.extra.cond, hpGate: p.extra.cond === 'HP조건' ? p.hpGate : null, from });
       }
     }
     // 부여 스킬 — 하이퍼모드 등이 「ハイ・マニューバーアーマー LVn」을 付与하는데 직접 항목이 없어 놓친다.

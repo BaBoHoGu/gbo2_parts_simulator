@@ -42,7 +42,7 @@ ok('사이코 재머 — dmgAdvAny −10 (음수)', lv('ローゼン・ズール
       const G = window.GBO2_DATA, S = window.GBO2Duel.state, D = window.GBO2Duel;
       const by = n => G.msData.filter(m => m.MS名.replace(/_LV\d+$/, '') === n).pop();
       const parts = Object.values(G.parts).flat();
-      const reset = () => { for (const s of [S.L, S.R]) { s.parts = []; s.buffs.clear(); s.defs.clear(); s.form = 'normal'; s.wKey = null; s.barrierOn = false; s.shieldOn = false; } };
+      const reset = () => { for (const s of [S.L, S.R]) { s.parts = []; s.buffs.clear(); s.defs.clear(); s.form = 'normal'; s.wKey = null; s.barrierOn = false; s.shieldOn = false; s.hp = 100; } };
       const pick = (side, test) => { const w = D.weaponsOf(side).find(test); if (w) side.wKey = w.key; return w; };
       D.open();
       const out = {};
@@ -60,7 +60,8 @@ ok('사이코 재머 — dmgAdvAny −10 (음수)', lv('ローゼン・ズール
       S.L.ms = by('ガンダム'); S.R.ms = by('プロトタイプ・サイコ・ガンダム');
       pick(S.L, w => !w.melee && w.power > 0);
       const b0 = D.attack(S.L, S.R);
-      S.R.buffs.add('サイコミュシステム暴走');
+      // 폭주는 「HP 50% 以下」 자동 발동이다 — 2026-11-18 부터 대결은 HP 를 보고 켠다(hpgate_check). HP 를 50 에 둔다
+      S.R.hp = 50;
       const b1 = D.attack(S.L, S.R);
       D.use({});
       const chipTxt = [...document.querySelectorAll('.dc-chips span')].map(e => e.textContent).join(' | ');
@@ -70,7 +71,8 @@ ok('사이코 재머 — dmgAdvAny −10 (음수)', lv('ローゼン・ズール
       S.L.ms = by('ガンダム'); S.R.ms = by('ヅダ');
       pick(S.L, w => !w.melee && w.power > 0);
       const c0 = D.attack(S.L, S.R);
-      S.R.buffs.add('土星エンジン最大出力');
+      // 토성 엔진은 직접 발동 + 「HP 30% 以下」 조건 — HP 를 30 에 두고 켠다
+      S.R.hp = 30; S.R.buffs.add('土星エンジン最大出力');
       const c1 = D.attack(S.L, S.R);
       D.use({});
       out.dosei = { f0: c0.factor, f1: c1.factor, boost: c1.takenBoost,

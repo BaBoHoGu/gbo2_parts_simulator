@@ -10195,6 +10195,7 @@
    "secs": null,
    "hp": 50,
    "manual": false,
+   "hpAnd": true,
    "levels": [
     {
      "from": 1,

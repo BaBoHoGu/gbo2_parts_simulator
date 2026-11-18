@@ -366,6 +366,20 @@ body.vm-wide .duel { inset: 0; border-radius: 0; border: none; }
 .dc-shield .lb, .dc-stag .lb { font-size: var(--fs-sm); color: var(--muted); }
 .dc-shield b, .dc-stag b { font-size: var(--fs-xl); font-variant-numeric: tabular-nums; }
 .dc-shield small, .dc-stag small { font-size: var(--fs-xs); color: var(--muted); flex: 1 1 100%; }
+/* 현재 HP — HP 조건 스킬의 기준. 숫자 칸 + 이 기체 문턱 단추 */
+.ds-hp > div { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.ds-hp-in { width: 58px; text-align: right; padding: 4px 6px; font-size: var(--fs-sm); font-variant-numeric: tabular-nums;
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
+.ds-hp-unit { color: var(--muted); font-size: var(--fs-sm); margin-right: 4px; }
+/* HP 로 저절로 켜지는 칩 — 손으로 켜는 칩과 모양을 가른다(점선 테두리) */
+.ds-chip.auto { border-style: dashed; }
+/* 구간 셈 — 「100→50% a발 · 50→0% b발(폭주)」 */
+.dc-phase { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 6px; }
+.dc-phase .lb { font-size: var(--fs-sm); color: var(--muted); }
+.dc-phase small, .dc-phase-a { font-size: var(--fs-xs); color: var(--muted); }
+.dc-phase-a { margin-top: 2px; }
+.dc-hp .mark { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--caution); opacity: .85; }
+.dc-verdict-hp { color: var(--muted); font-weight: 400; }
 /* 🌀 배리어 — 셈 밖 조건(지속 시간 · 경감 스킬)은 한 단 더 옅게 */
 .dc-barrier .dc-barrier-foot { opacity: .8; }
 .ds-dcell em { font-style: normal; color: var(--good, #4caf50); font-size: 10px; }

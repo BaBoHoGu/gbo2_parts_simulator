@@ -100,6 +100,8 @@ MT 앞단 용어 보호는 `tools/lib/glossary.js`. 수동 사전(`ms.json`·`pa
   상대를 모르는 셈(내구 지표·자동 구성·무장 표)에는 안 건다 — 「모르는 조건은 상시가 아니다」.
 - **방어 판넬 배리어**(핀 판넬［防御］ 등 14종)는 대결의 「🌀 배리어로 막음」 에서만 센다 — `core.barrierOf/barrierBlocks/barrierShots` 한 곳.
   HP·문턱·탄 소모는 備考에서, 「사격만/전부」·정면·備考에 없는 −10% 는 `data/barrier.override.json`(위키 근거). 새 배리어가 표에 없으면 `barrier_check` 가 실패한다.
+- **대결의 HP 조건 스킬은 「HP 가 근원」** — 쪽마다 `side.hp`(%), HP 조건 스킬은 손으로 켜지 않고 그 HP 로 켜진다(`sideAt` 가 그 HP 의 상태를 만들어 `attackCore` 에 넘긴다).
+  맞는 쪽은 `core.hpPhaseSteps` 로 시작 HP → 0 을 따라간다. 문턱은 `core.hpGateOf`(「未満になると…無効」 은 뒤집힘), 한 방 크기·다른 동작 조건(`HP_AND_RE`)이 붙으면 손으로 켠다. 검사 `hpgate_check`.
 - 무장 히트 수(`fireMult`)는 「N発同時発射」 뒤의 基·腕·丁·射·回攻撃 를 곱한다. 「N発連続発射」 는 같은 조각에 回攻撃 이 있을 때만, 「発動中/時」 조각은 스킬을 켰을 때만.
   전각 숫자·ｘ·오타 ニ発 는 `extract_weapons.js` 의 `halfDigits` 가 수집 입구에서 맞춘다.
 - 「〜付与」 로 주어지는 스킬은 자동 추출이 안 된다 → 피해에 닿는 것만 `data/skills.override.json` 에.
