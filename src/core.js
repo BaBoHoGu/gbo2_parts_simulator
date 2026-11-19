@@ -482,6 +482,14 @@ const SPEED_TURN_EXCLUSIVE = ['運動性能強化機構', 'コンポジットモ
    다시 뽑아 대조하므로, 새 파츠가 생기면 그때 운다. */
 const HIGHSPEED_EXCLUSIVE = ['CP内蔵特殊構造材'];
 
+/* 「スピードが上昇するパーツとの同時装備は行えない」 — **스피드** 쪽 금지가 원문에 적힌 파츠(운동성능 강화 기구 ·
+   컴포지트 모터는 「스피드 또는 선회」 라 위 SPEED_TURN_EXCLUSIVE 가 맡는다).
+   예전엔 원본 번들대로 「스피드가 오르는 파츠끼리는 모두 금지」 였는데, 수수께끼의 전자 회로(스피드 +3)와
+   고성능 주행 제어 기구(스피드 +5)는 **둘 다 금지 문구가 없고 인게임에서 같이 달린다**(2026-11-19 사용자 확인).
+   그래서 「둘 중 하나라도 금지가 적혀 있을 때만」 막는다 — 고속이동 금지(HIGHSPEED_EXCLUSIVE)와 같은 꼴.
+   이름으로 적고, movecap_check 가 설명에서 다시 뽑아 대조한다(새 파츠가 생기면 그때 운다). */
+const SPEED_EXCLUSIVE = ['ハロ（V）', 'コネクティングシステム[汎用Ⅰ型]'];
+
 /** `カテゴリ特攻プログラム_<속성>` — 이름의 속성과 기체 속성이 같아야 장착 가능. */
 const CATEGORY_PROGRAM = /^カテゴリ特攻プログラム_(.+)$/;
 
@@ -1058,6 +1066,13 @@ const raisesHighSpeed = p =>
 const isHighSpeedExclusive = p =>
   !!(p && p.name && HIGHSPEED_EXCLUSIVE.some(n => p.name.includes(n)));
 
+/** 「스피드가 오르는 파츠와는 같이 못 단다」고 적힌 파츠인가 (이름의 Ⅰ/I 표기 차이를 맞춘다) */
+const isSpeedExclusive = p => {
+  if (!p || !p.name) return false;
+  const n = p.name.replace(/Ⅰ/g, 'I').replace(/Ⅱ/g, 'II');
+  return SPEED_EXCLUSIVE.some(x => n.includes(x.replace(/Ⅰ/g, 'I').replace(/Ⅱ/g, 'II')));
+};
+
 const raisesSpeed = p => {
   if (CONNECT_RAISES_SPEED.includes(connectingKind(p.name))) return true;
   return typeof p.speed === 'number' && p.speed > 0;
@@ -1077,6 +1092,10 @@ function conflictsWithMovement(part, equipped) {
   const selfTurn = raisesTurn(part);
   const hasExclusive = equipped.some(isExclusiveMover);
   const hasSpeed = equipped.some(e => raisesSpeed(e) && !isExclusiveMover(e));
+  /* 스피드끼리 금지는 **둘 중 하나라도 금지가 적혀 있을 때만** — 적힌 쪽이 먼저 달렸든 나중에 달든 같게(양방향) */
+  const selfSpeedEx = isSpeedExclusive(part);
+  const hasSpeedClash = equipped.some(e => e.name !== part.name && raisesSpeed(e) && !isExclusiveMover(e)
+    && (selfSpeedEx || isSpeedExclusive(e)));
   const hasTurn = equipped.some(e => raisesTurn(e) && !isExclusiveMover(e));
   const hasOtherExclusive = equipped.some(e => isExclusiveMover(e) && e.name !== part.name);
   const sameKind = part.kind && equipped.some(e => e.kind === part.kind && e.name !== part.name);
@@ -1090,7 +1109,7 @@ function conflictsWithMovement(part, equipped) {
   return !!(
     (selfHsEx && hasHs) ||
     (selfHs && hasHsEx) ||
-    (selfSpeed && hasSpeed) ||
+    (selfSpeed && hasSpeedClash) ||
     ((selfSpeed || selfTurn) && hasExclusive && !selfExclusive) ||
     (selfExclusive && (hasSpeed || hasTurn)) ||
     (selfExclusive && hasOtherExclusive) ||
@@ -1144,7 +1163,7 @@ const MS_RENAMED = { 'クロスボーン・ガンダムＸ-０_LV1': 'クロス�
 const msRenamed = name => MS_RENAMED[name] || name;
 
 const GBO2Core = {
-  STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL, MODE_PARTS, applyPartMode, partsAt, HIGHSPEED_EXCLUSIVE, SPEED_TURN_EXCLUSIVE, raisesHighSpeed,
+  STAT_KEYS, STAT_LABEL, DEFAULT_LIMITS, ATTRIBUTES, CATEGORIES, CATEGORY_LABEL, MODE_PARTS, applyPartMode, partsAt, HIGHSPEED_EXCLUSIVE, SPEED_TURN_EXCLUSIVE, SPEED_EXCLUSIVE, raisesHighSpeed,
   EXPANSION_SKILLS, EXPANSION_LABEL, EXPANSION_LEVELS, MAX_EXPANSION_LEVEL, MAX_PARTS,
   CATEGORY_ALL, EXPANSION_NONE,
   zeroStats, msLevel, skillStatBonusOf, getBaseStats, initializeLimits, hasTransform, TRANSFORM_FIELD,

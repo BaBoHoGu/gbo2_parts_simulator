@@ -70,6 +70,34 @@ if (halo && cp) {
   ok('목록이 비어 있지 않다', (C.HIGHSPEED_EXCLUSIVE || []).length > 0);
 }
 
+/* ── ①-2 스피드 금지는 「적힌 파츠」 가 끼었을 때만 ──────────────
+   사용자 확인(2026-11-19): 수수께끼의 전자 회로(스피드 +3)와 고성능 주행 제어 기구(스피드 +5)는
+   **인게임에서 같이 달린다.** 둘 다 금지 문구가 없다. 예전 규칙(원본 번들)은 「스피드가 오르는 파츠끼리 모두 금지」 였다. */
+{
+  const nazo = find('謎の電子回路_LV1'), kou = find('高性能走行制御機構_LV1');
+  const han = every.find(p => /コネクティングシステム\[汎用Ⅰ型\]/.test(p.name));
+  ok('수수께끼의 전자 회로 · 고성능 주행 제어 기구가 자료에 있다', !!nazo && !!kou);
+  if (nazo && kou) {
+    ok('수수께끼의 전자 회로를 단 뒤 고성능 주행 제어 기구가 달린다  (was 막힘)', C.conflictsWithMovement(kou, [nazo]) === false);
+    ok('반대 순서로도 달린다', C.conflictsWithMovement(nazo, [kou]) === false);
+  }
+  if (halo && kou) {
+    ok('하로(V)(「스피드가 오르는 파츠와 같이 못 단다」)는 고성능 주행 제어 기구와 안 달린다 — 양방향',
+      C.conflictsWithMovement(kou, [halo]) === true && C.conflictsWithMovement(halo, [kou]) === true);
+  }
+  if (han && nazo) {
+    ok('커넥팅 시스템[범용Ⅰ형](금지 적힘)은 수수께끼의 전자 회로와 안 달린다 — 양방향',
+      C.conflictsWithMovement(nazo, [han]) === true && C.conflictsWithMovement(han, [nazo]) === true);
+  }
+  // 목록이 설명과 어긋나지 않는가 — 「스피드 또는 선회」 는 SPEED_TURN_EXCLUSIVE 쪽이라 뺀다
+  const want = every.filter(p => /スピードが(?:上昇|増加)する(?:カスタム)?パーツ[^。]*?同時装備/.test(String(p.description || ''))
+    && !/スピードまたは旋回/.test(String(p.description || ''))).map(p => p.name);
+  const norm = s => s.replace(/Ⅰ/g, 'I').replace(/Ⅱ/g, 'II');
+  const got = want.filter(n => (C.SPEED_EXCLUSIVE || []).some(x => norm(n).includes(norm(x))));
+  ok('설명에 스피드 금지가 적힌 파츠를 빠짐없이 SPEED_EXCLUSIVE 에 적었다', want.length > 0 && got.length === want.length,
+    { 설명: want, 빠진것: want.filter(n => !got.includes(n)) });
+}
+
 /* ── ② 고속이동 상한 ────────────────────────────────────────── */
 ok('기본 상한이 250 이다 (전에는 Infinity)', C.DEFAULT_LIMITS.highSpeedMovement === 250,
   { 상한: C.DEFAULT_LIMITS.highSpeedMovement });
