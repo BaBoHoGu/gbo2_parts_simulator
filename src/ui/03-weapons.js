@@ -405,7 +405,7 @@
       if (!/スラスター/.test(blob)) continue;
       const wiki = (THR_SKILL_WIKI[sk.name] || {})[sk.lv];
       if (wiki) {
-        out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '',
+        out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '', msLv: sk.msLv || '',
           key: wiki.key, v: wiki.v, cond: wiki.cond, env: wiki.env, seg: blob, burst: null });
         continue;                       // 원문에는 값이 없다 — 더 읽을 것이 없다
       }
@@ -419,7 +419,7 @@
           const sig = r.key + ':' + r.v + ':' + (c || '') + ':' + (env || '');
           if (seen.has(sig)) continue;
           seen.add(sig);
-          out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '',
+          out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '', msLv: sk.msLv || '',
             key: r.key, v: r.v, cond: c, env, seg, burst: r.burst || null });
         }
       }
@@ -494,7 +494,7 @@
         : /回復速度|復帰速度/.test(blob) ? '회복·복귀가 빨라진다고만 적혀 있고 값이 없습니다'
         : /軽減|減少/.test(blob) ? '소비가 줄어든다고만 적혀 있고 값이 없습니다'
         : '수치가 적혀 있지 않습니다';
-      out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '', why, seg: blob.slice(0, 160),
+      out.push({ name: sk.name, ko: skTr(sk.name), lv: sk.lv || '', msLv: sk.msLv || '', why, seg: blob.slice(0, 160),
         // 번역은 **문장 전체**가 열쇠라, 잘라 낸 조각으로는 사전을 못 찾는다 — 원문을 통째로 들고 온다
         src: { desc: sk.desc || '', eff: sk.eff || '' } });
     }

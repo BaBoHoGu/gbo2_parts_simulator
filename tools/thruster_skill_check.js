@@ -61,7 +61,7 @@ const LIST = process.argv.includes('--list');
     for (const form of ['normal', 'transform'])
       for (const m of U.msData())
         for (const s of U.thrusterSkillsOf(m, U.msLevel(m), form))
-          out.push({ form, ms: m.MS名, name: s.name, ko: s.ko, lv: s.lv, key: s.key, v: s.v,
+          out.push({ form, ms: m.MS名, name: s.name, ko: s.ko, lv: s.lv, msLv: s.msLv, key: s.key, v: s.v,
             cond: s.cond, env: s.env, seg: s.seg });
     return out;
   });
@@ -339,7 +339,7 @@ const LIST = process.argv.includes('--list');
   // 이름+LV+효과 단위로 접는다
   const uniq = new Map();
   for (const r of rows) {
-    const k = [r.form, r.name, r.lv || '', r.key, r.v, r.cond || '', r.env || ''].join('|');
+    const k = [r.form, r.name, r.lv || '', r.msLv || '', r.key, r.v, r.cond || '', r.env || ''].join('|');
     if (!uniq.has(k)) uniq.set(k, { ...r, n: 0 });
     uniq.get(k).n++;
   }
@@ -392,7 +392,9 @@ const LIST = process.argv.includes('--list');
   for (const x of all.filter(y => y.cond)) {
     // LV 을 열쇠에 넣는다 — 같은 이름·조건이라도 LV 이 다르면 **다른 항목**이다.
     // 안 넣으면 LV1 25% + LV2 50% + LV3 75% 를 한 덩어리로 세어 150% 라고 말한다.
-    const k = x.form + '|' + x.name + '|' + x.lv + '|' + x.cond + '|' + x.key;
+    // 기체 LV 구간(msLv)도 — 위키가 새 기체 LV 줄의 스킬 LV 를 앞 줄과 같게 적는다(아마쿠사 바이오 뇌 「LV1 · LV1」 / 「LV1 · LV2～」).
+    // 그 둘은 기체 LV 가 달라 **한 기체에 동시에 걸리지 않는다**(앱은 pickByMsLv 로 하나만 고른다). 안 넣으면 50%+60% 를 110% 라고 운다.
+    const k = x.form + '|' + x.name + '|' + x.lv + '|' + (x.msLv || '') + '|' + x.cond + '|' + x.key;
     bySit[k] = (bySit[k] || 0) + x.v;
   }
   const overOne = Object.entries(bySit).filter(function (e) {
