@@ -153,5 +153,18 @@ ok('％가 붙은 값은 자릿수를 줄여서라도 읽지 않는다', bad.len
     wp ? JSON.stringify({ shoot: wp.levels[0].shoot, melee: wp.levels[0].melee, hp: wp.hp }) : '(없음)');
 }
 
+/* 위키가 새 기체 LV 줄의 스킬 LV 를 앞 줄과 같게 적어도(「LV1 · LV1」 · 「LV1 · LV2～」) 두 줄 다 남는다.
+   스킬 추출기가 「분류|이름|스킬 LV」 로만 중복을 지워 뒤 줄을 버렸다(2026-11-20 — 아마쿠사 LV2 값 15/25 를 잃어 이 검사가 울었다).
+   같은 탓으로 가버라 테트라 마뉴버 아머 LV4～(누적치 60%) 도 빠져 LV1～3 의 70% 로 셌다. */
+{
+  const rowsOf = (ms, n) => (msSkills[ms] || []).flatMap(g => g.skills || []).filter(s => s.name === n);
+  const ama = rowsOf('アマクサ', 'バイオ脳制御機構');
+  ok('아마쿠사 바이오 뇌 제어 기구 — 기체 LV2～ 줄이 남는다(스킬 LV 가 같게 적혀도)',
+    ama.some(s => /LV2/.test(s.msLv) && /射撃補正\s*＋\s*15/.test(s.desc || '')), ama.map(s => s.lv + '/' + s.msLv));
+  const gt = rowsOf('ガーベラ・テトラ', 'マニューバーアーマー');
+  ok('가버라 테트라 마뉴버 아머 — LV4～ 줄(누적치 60%)이 남는다',
+    gt.some(s => /LV4/.test(s.msLv) && /60%/.test(s.desc || '')), gt.map(s => s.lv + '/' + s.msLv));
+}
+
 console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

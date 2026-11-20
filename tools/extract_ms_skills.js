@@ -58,9 +58,12 @@ function parseSkills(seg) {
       });
     }
   }
-  // 표 밖(같은 열)에서 같은 스킬이 여러 번 잡히면 중복 제거
+  // 표 밖(같은 열)에서 같은 스킬이 여러 번 잡히면 중복 제거.
+  // 열쇠에 **기체 LV(msLv)** 도 넣는다 — 위키가 새 기체 LV 줄의 스킬 LV 를 앞 줄과 같게 적는 일이 있다
+  // (아마쿠사 バイオ脳制御機構: 「LV1 · LV1」 과 「LV1 · LV2～」, 값은 사격 +10/+15). 스킬 LV 만 보면 LV2 줄이 버려져
+  // 스킬 칸 · 원문 대조(skill_value_check)가 LV2 값을 잃었다(2026-11-20).
   const seen = new Set();
-  return skills.filter(s => { const k = s.cat + '|' + s.name + '|' + s.lv; if (seen.has(k)) return false; seen.add(k); return true; });
+  return skills.filter(s => { const k = s.cat + '|' + s.name + '|' + s.lv + '|' + s.msLv; if (seen.has(k)) return false; seen.add(k); return true; });
 }
 
 // page id → 기체 base 이름들
