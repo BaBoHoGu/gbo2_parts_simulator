@@ -1,6 +1,15 @@
 {
- "pickupsUpdated": "2026-11-19",
+ "pickupsUpdated": "2026-11-20",
  "pickups": [
+  {
+   "name": "어설트 버스터 건스매셔",
+   "consoleStart": "2026-11-19",
+   "consoleEnd": "2026-11-26",
+   "start": "2027-01-21",
+   "end": "2027-01-28",
+   "tokens": 120,
+   "url": "https://bo2.ggame.jp/kr/info/?p=202221"
+  },
   {
    "name": "【지원】 ★★★★ 이상 희소도 MS",
    "consoleStart": "2026-11-19",
@@ -153,19 +162,17 @@
    "end": "2026-12-03",
    "tokens": null,
    "url": "https://bo2.ggame.jp/kr/info/?p=197567"
-  },
+  }
+ ],
+ "steamUpdated": "2026-11-20",
+ "steamNews": [
   {
    "name": "카풀(CN) & 카풀",
-   "consoleStart": "2026-09-17",
-   "consoleEnd": "2026-09-24",
    "start": "2026-11-19",
    "end": "2026-11-26",
    "tokens": null,
-   "url": "https://bo2.ggame.jp/kr/info/?p=197168"
-  }
- ],
- "steamUpdated": "2026-11-19",
- "steamNews": [
+   "url": "https://store.steampowered.com/news/app/1367080/view/714544468141801859?l=koreana"
+  },
   {
    "name": "골드 스모",
    "start": "2026-11-12",

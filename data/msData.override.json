@@ -56,13 +56,10 @@
   "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/8044.html"
  },
  "ベルガ・バルス_LV1": {
-  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/8046.html",
-  "旋回_宇宙_通常時": 93
+  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/8046.html"
  },
- "RFゲルググ_LV1": {
-  "スピード": 135,
-  "近スロット": 14,
-  "中スロット": 19,
-  "遠スロット": 18
+ "アサルトバスターガンスマッシャー_LV1": {
+  "wiki_url": "https://w.atwiki.jp/battle-operation2/pages/8048.html",
+  "旋回_宇宙_通常時": 78
  }
 }
