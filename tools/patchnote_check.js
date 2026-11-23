@@ -167,6 +167,31 @@ if (!fs.existsSync(DATA)) {
     ps.every((p, i) => i === 0 || ps[i - 1].date >= p.date), ps.map(p => p.date));
   ok('날짜 꼴이 YYYY-MM-DD 다', ps.every(p => /^\d{4}-\d{2}-\d{2}$/.test(p.date)),
     ps.map(p => p.date).filter(x => !/^\d{4}-\d{2}-\d{2}$/.test(x)));
+  /* 공식 조정 표(이미지)에서 손으로 옮긴 값(data/patchnote_fill.override.json)이 **모두 제 줄에 붙었는가.**
+     공지 문구가 바뀌면 줄을 못 찾고 조용히 빠진다 — 여기서 운다(2026-11-24, 10-29 조정 10줄을 넣으며). */
+  {
+    const OVF = path.join(ROOT, 'data', 'patchnote_fill.override.json');
+    const fills = fs.existsSync(OVF) ? (JSON.parse(fs.readFileSync(OVF, 'utf8')).fills || []) : [];
+    const landed = o => {
+      const p = ps.find(x => x.date === o.date);
+      const a = p && (p.adjusted || []).find(x => x.ms === o.ms);
+      if (!a) return false;
+      for (const s of a.sections || []) for (const r of s.rows || []) {
+        if ((r.weapon || '') !== o.weapon) continue;
+        let head = '';
+        for (let i = 0; i < (r.changes || []).length; i++) {
+          const ln = r.changes[i];
+          if (/^【/.test(ln)) { head = ln.trim(); continue; }
+          const f = (r.fill || [])[i];
+          if (head === o.head && ln.trim() === o.line && f && f.src === 'official' && f.from === o.from && f.to === o.to) return true;
+        }
+      }
+      return false;
+    };
+    const miss = fills.filter(o => !landed(o));
+    ok('공식 조정 표에서 옮긴 값이 모두 제 줄에 붙었다 (' + fills.length + '줄)', !miss.length,
+      miss.map(o => o.date + ' ' + o.ms + ' / ' + o.weapon + ' ' + o.head + ' ' + o.line));
+  }
 
   const ads = ps.flatMap(p => p.adjusted || []);
   /* 일본어판 이름이 있는 항목은 **그 이름의 기체**로 이어져야 한다. 한국어 이름이 겹치는 기체(카풀 = カプル · カプール)는
@@ -333,7 +358,10 @@ if (!fs.existsSync(DATA)) {
         tried++;
         if (f && f.from) {
           filled++;
-          if (!/\d/.test(f.from) || !/\d/.test(f.to)) bad.push('숫자가 아닌 값: ' + line + ' [' + f.from + '→' + f.to + ']');
+          /* 공식 조정 표가 조정 전 값을 「?」 로 적은 것(갸프랑(I0) 연사 속도 「?발/분」→「255발/분」)은 그대로 옮긴 값이다 —
+             src 'official' 이고 앞 값이 「?」 로 시작할 때만 숫자 없음을 받는다. 바뀐 뒤 값은 늘 숫자여야 한다. */
+          const qOk = f.src === 'official' && /^[?？]/.test(String(f.from));
+          if ((!/\d/.test(f.from) && !qOk) || !/\d/.test(f.to)) bad.push('숫자가 아닌 값: ' + line + ' [' + f.from + '→' + f.to + ']');
         }
       });
     }

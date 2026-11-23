@@ -656,7 +656,9 @@
             tag.append(el('span', 'pn-nv', f.from));
             tag.append(el('span', 'pn-na', '→'));
             tag.append(el('span', 'pn-nv', f.to));
-            tag.title = '공식 공지에는 수치가 없어 위키 기록에서 가져왔습니다';
+            // src 'official' — 공식 글에는 없고 공식 조정 표(이미지)에만 있던 값(data/patchnote_fill.override.json)
+            tag.title = f.src === 'official' ? '공식 공지 글에는 수치가 없어 공식 조정 표에서 가져왔습니다'
+              : '공식 공지에는 수치가 없어 위키 기록에서 가져왔습니다';
             ln.append(tag);
           }
           ch.append(ln);

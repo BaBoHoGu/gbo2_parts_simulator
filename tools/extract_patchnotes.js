@@ -102,6 +102,30 @@ const TITLE = { kr: /유닛\s*(관련\s*)?조정/, jp: /ユニット\s*(関連�
    공식 목록은 `info/?cat=0&m=YYYYMM` 으로 월을 바꾸면 옛 공지가 보인다(실측: 2025-12 까지, 그 전 달은 비어 있다).
    공식이 공지를 내리면 다시 못 받으므로 **한 번 받은 것은 지우지 않는다.**
    최근 MONTHS 달은 매번 보고, 그보다 옛 달은 한 번 훑으면 `listed` 에 적어 다시 안 본다 — 배포 시간을 아낀다. */
+/* 공식 조정 표(이미지)에서 사람이 옮긴 값 — 공식 글에는 수치가 없는 줄에 단다. 쓴 항목을 세어 두었다가
+   하나도 안 쓰인 항목은 끝에 알린다(공지 문구가 바뀌어 줄을 못 찾으면 조용히 빠지지 않게). */
+const FILL_OV = (rd('data', 'patchnote_fill.override.json') || {}).fills || [];
+const fillOvUsed = new Set();
+function applyFillOverride(date, ms, sections) {
+  let newly = 0;
+  const mine = FILL_OV.filter(o => o.date === date && o.ms === ms);
+  if (!mine.length) return { newly };
+  for (const s of sections || []) for (const r of s.rows || []) {
+    let head = '';
+    (r.changes || []).forEach((ln, i) => {
+      if (/^【/.test(ln)) { head = ln.trim(); return; }
+      const o = mine.find(x => x.weapon === (r.weapon || '') && x.head === head && x.line === ln.trim());
+      if (!o) return;
+      r.fill = r.fill || [];
+      while (r.fill.length < r.changes.length) r.fill.push(null);
+      if (!r.fill[i]) newly++;
+      r.fill[i] = { from: o.from, to: o.to, src: 'official' };
+      fillOvUsed.add(FILL_OV.indexOf(o));
+    });
+  }
+  return { newly };
+}
+
 const REFS = path.join(ROOT, 'data', 'ms_refs.json');
 /* 서비스 시작(2018-07)까지 거슬러 본다. **빈 달에서 멈추지 않는다** — 한국어 목록은 2025-06 ~ 11 이 비어 있는데
    그 너머 2019-04 까지 공지가 있다(2026-11-16 실측. 처음엔 빈 달 넷에서 멈춰 그 전부를 놓쳤다). */
@@ -289,7 +313,10 @@ function realAddDate(ms, ourDate) {
         else { f = r; jpUsed++; }
       }
       if (!f) f = FILL.fillSections(u.sections, wiki, jaToKo);
-      fillOk += f.filled; fillTry += f.tried;
+      /* 공식 조정 표(이미지)에만 있는 값 — 공식 글에는 수치가 없어 위키를 기다리던 줄(2026-11-24, 10-29 조정 10줄).
+         근거 순서대로 위키 값보다 앞선다. 맞는 줄에만 단다(data/patchnote_fill.override.json). */
+      const ovHit = applyFillOverride(a.date, ja, f.sections);
+      fillOk += f.filled + ovHit.newly; fillTry += f.tried;
       /* 일본어 모드(?lang=ja)가 보일 **공식 일본어 원문**을 같이 담는다 — 번역하지 않는다.
          같은 자리(섹션·행·줄)로 짝지으므로 줄 수와 숫자 나열이 다 맞을 때만 담는다. 어긋나면 없다(화면은 한국어). */
       const jaSide = jpUnit ? mirrorJa(u, jpUnit) : null;
@@ -447,7 +474,11 @@ function realAddDate(ms, ourDate) {
     if (left) console.log('    남은 일본어 ' + left + '줄 — data/i18n/wiki_terms.json 에 용어를 더하세요');
   }
   console.log('  공식이 생략한 수치를 위키에서 채운 줄 ' + fillOk + '/' + fillTry
-    + '  (' + (fillTry ? (fillOk / fillTry * 100).toFixed(1) : 0) + '%)');
+    + '  (' + (fillTry ? (fillOk / fillTry * 100).toFixed(1) : 0) + '%)'
+    + (fillOvUsed.size ? ' — 그중 공식 조정 표(손으로 옮김) ' + fillOvUsed.size + '줄' : ''));
+  const ovMiss = FILL_OV.filter((o, i) => !fillOvUsed.has(i));
+  if (ovMiss.length) console.log('  ⚠ 공식 조정 표 값 중 줄을 못 찾은 것 ' + ovMiss.length + '개 (data/patchnote_fill.override.json):\n'
+    + ovMiss.map(o => '     ' + o.date + ' ' + o.ms + ' / ' + o.weapon + ' ' + o.head + ' ' + o.line).join('\n'));
   console.log('  그 가운데 일본어판을 거친 기체 ' + jpUsed + '기'
     + (jpSkip.length ? ' · 자리가 어긋나 한국어로 물러선 기체 ' + jpSkip.length + '기: ' + jpSkip.join(', ') : ''));
   console.log('  일본어 원문을 같이 담은 기체 ' + jaMirrored + '기'
