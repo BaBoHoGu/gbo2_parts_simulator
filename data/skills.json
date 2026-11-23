@@ -290,7 +290,8 @@
      "hispeed": 30,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     },
     {
      "from": 3,
@@ -312,7 +313,8 @@
      "hispeed": 35,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     },
     {
      "from": 4,
@@ -334,7 +336,8 @@
      "hispeed": 40,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   }
@@ -1381,7 +1384,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -1760,7 +1764,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 3,
@@ -1781,7 +1786,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -1911,7 +1917,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     },
     {
      "from": 3,
@@ -1932,7 +1939,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -2266,7 +2274,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 3,
@@ -2287,7 +2296,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -2535,7 +2545,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -2601,7 +2612,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 3,
@@ -2622,7 +2634,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -2839,7 +2852,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -3002,7 +3016,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 25
     }
    ]
   }
@@ -3134,7 +3149,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -3155,7 +3171,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -3221,7 +3238,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 25
     }
    ]
   },
@@ -3285,7 +3303,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -3306,7 +3325,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -3339,7 +3359,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     },
     {
      "from": 2,
@@ -3360,7 +3381,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -3490,7 +3512,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 25
     }
    ]
   }
@@ -4009,7 +4032,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -4030,7 +4054,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -4386,7 +4411,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -4820,7 +4846,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -4938,7 +4965,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -5252,7 +5280,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 10,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -5351,7 +5380,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -5820,7 +5850,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -6184,7 +6215,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -6312,7 +6344,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -6662,7 +6695,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -6695,7 +6729,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -6858,7 +6893,8 @@
      "hispeed": 35,
      "thruster": 0,
      "turn": 24,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -7021,7 +7057,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 40
     }
    ]
   },
@@ -7407,7 +7444,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 5,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     },
     {
      "from": 2,
@@ -7428,7 +7466,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 5,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     }
    ]
   }
@@ -8046,7 +8085,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   },
@@ -8143,7 +8183,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   }
@@ -8209,7 +8250,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -8381,7 +8423,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -8497,7 +8540,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   }
@@ -8530,7 +8574,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   }
@@ -8724,7 +8769,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   }
@@ -8757,7 +8803,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   },
@@ -8821,7 +8868,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     }
    ]
   },
@@ -9271,7 +9319,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   }
@@ -9304,7 +9353,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -9325,7 +9375,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -9506,7 +9557,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -9603,7 +9655,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -9872,7 +9925,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 10,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -10216,7 +10270,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -10483,7 +10538,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -10700,7 +10756,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -10731,7 +10788,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -10764,7 +10822,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -10785,7 +10844,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -10806,7 +10866,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -10968,7 +11029,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -11001,7 +11063,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -11034,7 +11097,8 @@
      "hispeed": 5,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     }
    ]
   }
@@ -11391,7 +11455,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -11424,7 +11489,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     },
     {
      "from": 2,
@@ -11445,7 +11511,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     }
    ]
   }
@@ -11544,7 +11611,8 @@
      "hispeed": 20,
      "thruster": 0,
      "turn": 15,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -12490,7 +12558,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -12620,7 +12689,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     },
     {
      "from": 2,
@@ -12641,7 +12711,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     }
    ]
   },
@@ -12899,7 +12970,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 10,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -12920,7 +12992,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 10,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     }
    ]
   }
@@ -13544,7 +13617,8 @@
      "hispeed": 20,
      "thruster": 0,
      "turn": 30,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 80
     }
    ]
   },
@@ -14049,7 +14123,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 18,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -14070,7 +14145,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 18,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -14134,7 +14210,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     },
     {
      "from": 2,
@@ -14155,7 +14232,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -14480,7 +14558,8 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -14676,7 +14755,8 @@
      "hispeed": 15,
      "thruster": 0,
      "turn": 25,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   },
@@ -14741,7 +14821,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 20,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 60
     }
    ]
   }
@@ -14838,7 +14919,8 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 30
     }
    ]
   }

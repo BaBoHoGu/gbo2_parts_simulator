@@ -137,7 +137,8 @@
       out.push({ name: sk.name, ko: sk.nameKo || sk.name, e, tags: tags.join(' · '),
         // 「機体HPが N%以下」 로 발동 — 추출기가 문턱을 hp 로 싣는다(以下 꼴만). 직접 발동(タッチパッド)이면 manual
         // 「HP 50%以下でカウンターが成立した場合」 처럼 HP 말고 다른 동작이 같이 필요하면(hpAnd) HP 로 켜지 않고 손으로 켠다
-        hpGate: sk.hp && !sk.hpAnd ? { op: 'le', pct: sk.hp } : null, manual: !!sk.manual });
+        hpGate: (sk.hp || e.hp) && !sk.hpAnd ? (srcHpGate(side, sk.name) || { op: 'le', pct: e.hp || sk.hp }) : null,
+        manual: !!sk.manual });
     }
     /* 상대 내성만 깎는 스킬(명경지수 · TYPE C.A-Ⅲ · 롱 레인지 어댑터) — 스탯 축이 없어 위에서 빠진다.
        빠지면 켤 단추가 없어 셈이 준비돼 있어도 **영영 안 걸렸다**(사용자 지적 2026-10-16 갓 건담).
@@ -182,6 +183,28 @@
     const from = +m[1], to = m[3] ? +m[3] : (m[2] ? 99 : from);
     return lv >= from && lv <= to;
   };
+  /** 버프 스킬의 HP 문턱 — **그 기체 LV 의 원문 줄**에서 읽는다(core.hpGateOf).
+   *  원문이 LV 마다 문턱을 바꾼다: 데스티니 최대 가동(S) LV1 50% · LV2～ 80%, 큐베레이 공진(H) LV1～2 30% · LV3～ 50%,
+   *  유니콘 PF NT-D:공명 LV1 50% · LV2～ 80%(LV2 줄은 효과 값이 「?」 라 버프 표엔 줄째 없다). 버프 표의 한 값만 쓰면
+   *  틀린 HP 에서 켰다(2026-11-24 버그 탐색). 못 읽으면 null — 부르는 쪽이 표 값으로 물러선다.
+   *  LV 구간은 「LV1～2」 의 끝(2)까지 읽는다(위 lvFits 는 「LV1～2」 를 LV1 이상으로 읽는다). */
+  function srcHpGate(side, name) {
+    if (!side.ms) return null;
+    const lv = msLv(side.ms);
+    const fits = t => {
+      const m = String(t || '').match(/LV\s*(\d+)\s*([～~])?\s*(?:LV\s*)?(\d+)?/i);
+      if (!m) return true;
+      const from = +m[1], to = m[3] ? +m[3] : (m[2] ? 99 : from);
+      return lv >= from && lv <= to;
+    };
+    const rows = (G.msSkills[baseName(side.ms.MS名)] || []).flatMap(g => g.skills || [])
+      .filter(s => s.name === name && fits(s.msLv));
+    for (const r of rows.reverse()) {
+      const g = C.hpGateOf((r.eff || '') + ' / ' + (r.desc || ''));
+      if (g && g.pct != null && (g.op === 'le' || g.op === 'lt')) return g;
+    }
+    return null;
+  }
   const CUT_RE = /(実弾|ビーム|格闘|射撃)?(?:属性)?(?:の)?(?:攻撃)?(?:から|による|で)?(?:受ける|被)ダメージ(?:を|が)?\s*(\d+)\s*[%％]\s*(?:軽減|減少|カット)/;
   function defSkillsDefault(side) {
     if (!side.ms) return [];

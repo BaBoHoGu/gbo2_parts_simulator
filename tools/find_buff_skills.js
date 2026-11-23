@@ -348,7 +348,11 @@ if (process.argv.includes('--ui')) {
           ...(r.dmgTaken ? { dmgTaken: r.dmgTaken } : {}), ...(r.dmgTakenBoost ? { dmgTakenBoost: r.dmgTakenBoost } : {}),
           // 방어·기동·HP 발동 버프 — 성능표 스탯에 반영
           armorRange: r.armorRange, armorBeam: r.armorBeam, armorMelee: r.armorMelee,
-          speed: r.speed, hispeed: r.hispeed, thruster: r.thruster, turn: r.turn, hpUp: r.hpUp
+          speed: r.speed, hispeed: r.hispeed, thruster: r.thruster, turn: r.turn, hpUp: r.hpUp,
+          /* HP 문턱도 LV 구간마다 — 원문이 기체 LV 에 따라 문턱을 바꾼다(데스티니 최대 가동(S) LV1 50% · LV2～ 80%,
+             큐베레이 공진(H) · 사자비 공진 · 유니콘 PF NT-D:공명). 스킬 하나에 한 값(top.hp)만 두면 대결이 틀린 HP 에서
+             켰다(2026-11-24 버그 탐색). 대결은 이 값을 먼저 보고, 없으면 스킬의 hp 를 쓴다. */
+          ...(r.hp ? { hp: r.hp } : {})
         }))
         // 같은 구간·같은 수치가 표에 두 번 적힌 경우가 있어 하나만 남긴다
         .filter(l => { const k = JSON.stringify(l); if (seen.has(k)) return false; seen.add(k); return true; });

@@ -135,6 +135,25 @@ if (has) {
     const n50 = await atk();
     ok('때리는 쪽 HP 50% 면 자기 공격 버프가 켜져 보정이 오른다(100% 에선 안 켜짐)', !!n100 && !!n50 && n50.corr > n100.corr, { n100: n100 && n100.corr, n50: n50 && n50.corr });
 
+    /* ⑥-2 버프 스킬 문턱은 **기체 LV 마다** — 원문이 LV 로 문턱을 바꾼다(2026-11-24 버그 탐색: 버프 표가 스킬당 한 값만 들고 있었다).
+       유니콘 PF LV2 는 효과 값이 「?」 라 버프 표에 줄이 없는데도 원문 줄의 80% 를 읽어야 한다. */
+    const LVCASES = [
+      ['デスティニーガンダム_LV1', '最大稼働', 50], ['デスティニーガンダム_LV2', '最大稼働', 80],
+      ['キュベレイ_LV2', '共振', 30], ['キュベレイ_LV3', '共振', 50],
+      // 사자비 LV1 은 그 스킬에 셈에 닿는 값이 없어(사격 피해 −20% 는 LV2～) 칩이 안 나온다 — LV2 만 본다
+      ['サザビー_LV2', '共振', 50],
+      ['ユニコーンガンダムPF_LV1', '共鳴', 50], ['ユニコーンガンダムPF_LV2', '共鳴', 80],
+    ];
+    for (const [ms, sk, want] of LVCASES) {
+      await setup('ガンダム', ms, 100, 100);   // 왼쪽(때리는 쪽)에 앉혀 그 쪽 칩을 읽는다
+      const chip = await pg.evaluate(re => {
+        const c = [...document.querySelectorAll('.duel-side[data-side="L"] .ds-chip.auto')].find(x => new RegExp(re).test(x.textContent)
+          || [...x.childNodes].some(n => n.nodeType === 3 && new RegExp(re).test(n.textContent)));
+        return c ? c.textContent : null;
+      }, sk === '最大稼働' ? '최대 가동|最大稼働' : sk === '共鳴' ? '공명|共鳴' : '공진|共振');
+      ok(ms + ' — 버프 「' + sk + '」 은 HP ' + want + '% 이하에서 자동', !!chip && chip.includes('HP ' + want + '% 이하에서 자동'), chip);
+    }
+
     /* ⑦ 전 기체 — 양쪽 HP 50% 로 셈이 깨지지 않는다 */
     const sweep = await pg.evaluate(() => {
       const G = window.GBO2_DATA, S = window.GBO2Duel.state, D = window.GBO2Duel;
