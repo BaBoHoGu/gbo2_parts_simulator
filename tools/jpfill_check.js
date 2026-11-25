@@ -353,6 +353,85 @@ ok('그냥 「兵装の切り替え時間」은 짚는다',
   ok('「~できるように変更」도 값 줄이 아니다', JPF.NOT_VALUE.test('・リロードボタンで解除可能に変更'));
 }
 
+/* ── ⑪ 표기 변형 (2026-10-29 조정 — 「위키가 늦다」 로 잘못 짚었던 10줄의 뿌리) ──────────
+   위키엔 값이 다 있었다. 짝짓기가 아래 꼴을 못 알아봤다. 하나씩 못 박는다. */
+{
+  /* Ⅰ. 그리스 Ζ ↔ 전각 라틴 Ｚ */
+  {
+    const wiki = wl([0, '強化型ΖΖG用H・B・S'], [1, '下格闘補正上昇'], [2, '150% → 170%']);
+    const kr = sec([row('강화형 ZZ건담용 하이퍼 빔 사벨', '【통상 격투】', '・하격투 보정 상승')]);
+    const jp = sec([row('強化型ＺＺＧ用Ｈ・Ｂ・Ｓ', '【通常格闘】', '・下格闘補正を上昇')]);
+    const f = pick(JPF.fillByJp(kr, jp, wiki), 0, /하격투/);
+    ok('그리스 Ζ 를 라틴 Z 로 본다 (강화형 ZZ 하격 150%→170%)', !!(f && f.from === '150%' && f.to === '170%'), f);
+  }
+  /* Ⅱ. 개수만 다른 두 무장 — 개수가 같은 쪽 · 연격 보정은 타수를 다 담는다 */
+  {
+    const wiki = wl([0, '強化型ΖΖG用H・B・S'], [1, '威力上昇'], [2, 'Lv1：2900 → 3200'],
+      [0, '強化型ΖΖG用H・B・Sx2'], [1, '連撃補正上昇'], [2, '2撃目：50% → 80% 3撃目：35% → 64%']);
+    const kr = sec([row('강화형 ZZ건담용 하이퍼 빔 사벨×2', '・연격 보정 상승')]);
+    const jp = sec([row('強化型ＺＺＧ用Ｈ・Ｂ・Ｓ×２', '・連撃補正を上昇')]);
+    const f = pick(JPF.fillByJp(kr, jp, wiki), 0, /연격/);
+    ok('개수가 같은 머리줄을 먼저 · 연격 보정은 타수마다 (공식 표 꼴)',
+      !!(f && f.from === '2연격 50% · 3연격 35%' && f.to === '2연격 80% · 3연격 64%'), f);
+  }
+  /* Ⅲ. 약칭 — 하나로 정해질 때만 */
+  {
+    const wiki = wl([0, '背部M・ランチャーx2'], [1, 'よろけ値上昇'], [2, '15% → 25%']);
+    const kr = sec([row('등 미사일 런처×2', '・비틀거림 축적치 상승')]);
+    const jp = sec([row('背部ミサイル・ランチャー×２', '・よろけの蓄積値を上昇')]);
+    const f = pick(JPF.fillByJp(kr, jp, wiki), 0, /비틀거림/);
+    ok('약칭 「M・ランチャー」 ↔ 「ミサイル・ランチャー」', !!(f && f.from === '15%' && f.to === '25%'), f);
+    const wiki2 = wl([0, 'ミサイル・ランチャー'], [1, 'よろけ値上昇'], [2, '10% → 20%'],
+      [0, 'マイクロ・ランチャー'], [1, 'よろけ値上昇'], [2, '30% → 40%']);
+    const r2 = JPF.fillByJp(sec([row('M 런처', '・비틀거림 축적치 상승')]), sec([row('Ｍ・ランチャー', '・よろけの蓄積値を上昇')]), wiki2);
+    ok('약칭이 둘로 풀리면 거절한다 (ミサイル/マイクロ)', pick(r2, 0, /비틀거림/) === null, pick(r2, 0, /비틀거림/));
+    ok('「M」 이 엉뚱한 소리에 붙지 않는다', !JPF.abbrevEq('M・ランチャー', 'ビーム・ランチャー'));
+  }
+  /* Ⅳ. 둥근 괄호 꼬리 — 겹친 꼬리 「［斉射］（リミッター解除）」 를 모드 머리가 가리킨다 */
+  {
+    const wiki = wl([0, 'カプル用ハンドガンx2［斉射］'], [1, '威力上昇'], [2, 'Lv1：90 → 100'],
+      [0, 'カプル用ハンドガンx2［斉射］（リミッター解除）'], [1, '威力上昇'], [2, 'Lv1：80 → 95'],
+      [1, 'リロード時間短縮'], [2, '20秒 → 18秒']);
+    const kr = sec([row('카풀용 핸드건×2[일제 사격]', '【통상 사격】', '・위력 「90」→「100」으로 상승', '【리미터 해제】', '・위력 상승', '・재장전 시간 단축')]);
+    const jp = sec([row('カプル用ハンドガン×２[斉射]', '【通常射撃】', '・威力「90」→「100」に上昇', '【リミッター解除】', '・威力を上昇', '・リロード時間を短縮')]);
+    const res = JPF.fillByJp(kr, jp, wiki);
+    const a = pick(res, 0, /위력 상승$/, '【리미터 해제】'), b = pick(res, 0, /재장전/, '【리미터 해제】');
+    ok('겹친 꼬리의 리미터 해제 쪽 값 (통상 90→100 이 아니다)', !!(a && a.from === '80' && a.to === '95'), a);
+    ok('겹친 꼬리의 리미터 해제 쪽 재장전', !!(b && b.from === '20.0' && b.to === '18.0'), b);
+    ok('각괄호 안의 둥근 괄호는 꼬리의 일부 — ［最大出力（Z）］', JPF.tagOf('バスターランチャー［最大出力（Z）］') === '最大出力(Z)',
+      JPF.tagOf('バスターランチャー［最大出力（Z）］'));
+  }
+  /* Ⅴ. 기체 이름 약칭 「Ｇ（Ｉ０）用」 + 둥근 꼬리 「（変形）」 + クールタイム ↔ 発射間隔 */
+  {
+    const wiki = wl([0, 'ギャプラン（I0）用B・Rx2'], [1, '発射間隔短縮'], [2, '0.8秒 → 0.6秒'],
+      [0, 'ギャプラン（I0）用B・Rx2（変形）'], [1, '発射間隔短縮'], [2, '0.8秒 → 0.5秒'], [1, '連射性能上昇'], [2, '?発/分 → 277発/分']);
+    const kr = sec([row('갸프랑(I0)용 빔 라이플×2(변형)', '・쿨타임 단축', '・연사 속도 상승')]);
+    const jp = sec([row('Ｇ（Ｉ０）用Ｂ・Ｒ×２（変形）', '・クールタイムを短縮', '・連射速度を上昇')]);
+    const res = JPF.fillByJp(kr, jp, wiki);
+    const f = pick(res, 0, /쿨타임/);
+    ok('「Ｇ（Ｉ０）用」 ↔ 「ギャプラン（I0）用」 · （変形） 쪽 · クールタイム=発射間隔', !!(f && f.from === '0.8' && f.to === '0.5'), f);
+    ok('「?発/分 → 277」 은 위키 값 미정(wikiq) — 짝짓기 실패가 아니다',
+      (res.misses || []).some(m => m.why === 'wikiq'), res.misses);
+  }
+  /* Ⅵ. 위키가 한 항목 아래를 모드로 나눴다 — 집속 줄에 통상 값이 붙으면 안 된다 */
+  {
+    const wiki = wl([0, 'ギャプラン（I0）用B・Rx2'], [1, '威力上昇'], [2, '非集束'], [3, 'Lv1：600 → 700 Lv2：700 → 800'],
+      [2, '集束'], [3, 'Lv1：1400 → 1500 Lv2：1500 → 1700']);
+    const kr = sec([row('갸프랑(I0)용 빔 라이플×2', '【통상 사격】', '・위력 「600」→「700」으로 상승(더불어 상위 LV도 상승)', '【집속 사격】', '・위력 상승')]);
+    const jp = sec([row('ギャプラン（Ｉ０）用Ｂ・Ｒ×２', '【通常射撃】', '・威力「600」→「700」に上昇（併せて上位LVも上昇）', '【集束射撃】', '・威力を上昇')]);
+    const res = JPF.fillByJp(kr, jp, wiki);
+    const fo = pick(res, 0, /위력 상승$/, '【집속 사격】'), lv = pick(res, 0, /위력 「600」/);
+    ok('모드로 나뉜 항목 — 집속 줄은 집속 값 1400→1500 (통상 600→700 이 아니다)', !!(fo && fo.from === '1400' && fo.to === '1500'), fo);
+    ok('그 LV 별 값은 통상 구간에서만', !!(lv && lv.lv && lv.lv.length === 2 && lv.lv[1].from === '700'), lv);
+    /* 동작어 없는 머리 「威力」 + 「非集束時/集束時」 (FA Mk-Ⅲ) */
+    const wiki2 = wl([0, '装甲部ビーム・キャノンx2'], [1, '威力'], [2, '非集束時'], [3, 'Lv1：400 → 450'], [2, '集束時'], [3, 'Lv1：650 → 700']);
+    const kr2 = sec([row('장갑 빔 캐논×2', '【통상 사격】', '・위력 「400」→「450」으로 상승', '【집속 사격】', '・위력 상승')]);
+    const jp2 = sec([row('装甲部ビーム・キャノン×２', '【通常射撃】', '・威力「400」→「450」に上昇', '【集束射撃】', '・威力を上昇')]);
+    const f2 = pick(JPF.fillByJp(kr2, jp2, wiki2), 0, /위력 상승$/, '【집속 사격】');
+    ok('동작어 없는 「威力」 머리 + 非集束時/集束時 → 집속 650→700', !!(f2 && f2.from === '650' && f2.to === '700'), f2);
+  }
+}
+
 /* ── ⑩ 실제 자료 — 고쳐진 세 자리를 **글자로 못 박는다** ───────────
    한국어 경로가 조용히 틀리게 채운 자리다. 되돌아가면 여기서 운다. */
 const DATA = path.join(ROOT, 'data', 'patchnotes.json');
@@ -458,39 +537,39 @@ if (!fs.existsSync(DATA)) {
   const fa = at('2026-08-27', '풀 아머 유니콘 건담', '빔 개틀링 건×4', /비틀거림 축적치 상승$/);
   ok('묶인 행의 첫 비틀거림은 **통상** 값', !!(fa && fa.from === '5%' && fa.to === '9%'), fa);
 
-  /* 덮는 비율 — 내려가면 운다. 실측 112/115 (97.4%). */
-  let tried = 0, filled = 0, pendTried = 0, pendFilled = 0;
-  const NV = /(?:할 수 있게|할 수 있도록|가능하게|대응)\s*변경$|(?:추가|삭제|통합|변경)$/;
-  /* 공지 뒤 21일이 지난 패치만 센다(공식 대조 · patchnote_check 와 같은 유예). 패치 다음 날엔 위키가 아직 수치를
-     안 적어 비율이 69% 로 떨어져 배포가 섰다(2026-10-30, 조정 61기). 유예 중인 패치는 NOTICE 로 따로 알린다. */
-  const cut = (() => { const d = new Date(); d.setDate(d.getDate() - 21);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
-  for (const p of pn.patches || []) if (p.date > cut) for (const a of p.adjusted || [])
-    for (const s of a.sections || []) for (const r of s.rows || [])
-      (r.changes || []).forEach((ln, i) => {
-        if (FILL.HAS_NUM.test(ln) || /^【/.test(ln) || NV.test(ln.trim()) || !FILL.keyOf(ln)) return;
-        pendTried++; if ((r.fill || [])[i]) pendFilled++;
-      });
-  if (pendTried) console.log('NOTICE 위키 채움 · 유예 중(21일)인 최근 패치 — ' + pendFilled + '/' + pendTried + '줄 채움(위키가 따라오는 중)');
-  for (const p of pn.patches || []) if (p.date <= cut) for (const a of p.adjusted || [])
-    for (const s of a.sections || []) for (const r of s.rows || [])
-      (r.changes || []).forEach((ln, i) => {
-        if (FILL.HAS_NUM.test(ln) || /^【/.test(ln) || NV.test(ln.trim())) return;
-        if (!FILL.keyOf(ln)) return;
-        tried++;
-        if ((r.fill || [])[i]) filled++;
-      });
-  /* 실측 112/115 (97.4%). 남은 3줄(2026-10-12 사용자 판정):
-       · X1 개량형용 빔 잔바 【최대 출력(K)】 쿨타임 — 위키가 「2.5秒 → ?秒」라 적었다
-       · 기간틱 암 유닛 【헤비 어택】 위력 — 스킬 상승으로 오른 것이라 빈칸이 맞다
-       · 키하르Ⅱ 부스티드 H·B 【헤비 어택】 위력 — 위키 이력에 그 수치가 없다.
-         페이지 표는 **현재값** 650%(150%x5) 만 적고 전값을 적은 자료가 없다
-         (그 페이지의 130% 는 下格 표준배율로 다른 칸이다). **빈칸으로 둔다**(사용자 판정).
-     이 자의 셈은 **한국어 쪽 자(FILL.keyOf)** 로 센 것이라 추출기 로그(일본어 자)와
-     한두 줄 다를 수 있다. 일부러 다른 자로 재는 것이다 — 추출기가 제 말을 되풀이하면
-     아무것도 검사하지 못한다. */
-  ok('덮는 비율이 94% 이상 (실측 115/120 = 95.8%)', tried > 0 && filled / tried >= 0.94,
-    { 채움: filled, 짚음: tried, 비율: tried ? (100 * filled / tried).toFixed(1) + '%' : '-' });
+  /* ■ 못 채운 줄을 **까닭으로** 가른다 (2026-11-25).
+     예전엔 「덮는 비율 ≥94% · 공지 뒤 21일 유예」 였다. 10-29 조정의 빈 10줄을 「위키가 느리다」 로 읽고
+     두 번 검사를 건너뛰어 배포했는데, 위키엔 이미 다 있었다 — 짝짓기가 못 찾은 것이었다.
+     비율 · 날짜로는 둘이 안 갈린다. 그래서 추출기가 줄마다 까닭(adjusted[].miss)을 남기고 여기서:
+       · wait(위키에 그 날짜 항목 없음) · wikiq(위키가 「→ ?」) → NOTICE 만 (위키를 기다린다)
+       · 그 밖(weapon · item · key · pair · kr) → FAIL (코드가 고칠 것). 사용자가 빈칸으로 판정한 자리만 뺀다.
+     줄 고르는 자는 **한국어 쪽 자(FILL.keyOf)** 로 따로 센다 — 수치 없는 빈 줄이 까닭 없이 남으면 그것도 운다
+     (추출기가 제 말을 되풀이하기만 하면 아무것도 검사하지 못한다). */
+  const NV = FILL.NOT_VALUE;
+  const ruledEmpty = [   // 사용자 판정 — 빈칸이 맞다(아래 empties 와 같은 자리)
+    ['2026-09-24', '헤이즐 아우슬라[GAU 장비]', /위력 상승$/],   // 기간틱 암 【헤비 어택】 — 스킬 상승으로 오른 것
+    ['2026-08-27', '키하르Ⅱ', /위력 상승$/]                       // 부스티드 H·B 【헤비 어택】 — 전값을 적은 자료가 없다
+  ];
+  const isRuled = (d, ko, ln) => ruledEmpty.some(([rd, rk, re]) => rd === d && rk === ko && re.test(ln));
+  let blank = 0, noWhy = [], unmatched = [], waiting = 0, wikiq = 0;
+  for (const p of pn.patches || []) for (const a of p.adjusted || []) {
+    const why = new Map((a.miss || []).map(m => [m.s + '/' + m.r + '/' + m.l, m.why]));
+    (a.sections || []).forEach((s, si) => (s.rows || []).forEach((r, ri) => (r.changes || []).forEach((ln, li) => {
+      if (FILL.HAS_NUM.test(ln) || /^【/.test(ln) || NV.test(ln.trim()) || !FILL.keyOf(ln)) return;
+      if ((r.fill || [])[li]) return;
+      blank++;
+      const w = why.get(si + '/' + ri + '/' + li);
+      const tag = p.date + ' ' + a.ko + ' / ' + (r.weapon || '-') + ' ' + ln.trim();
+      if (!w) noWhy.push(tag);
+      else if (w === 'wait') waiting++;
+      else if (w === 'wikiq') wikiq++;
+      else if (!isRuled(p.date, a.ko, ln)) unmatched.push('[' + w + '] ' + tag);
+    })));
+  }
+  if (waiting || wikiq) console.log('NOTICE 위키를 기다리는 빈 줄 — 그 날짜 항목 없음 ' + waiting + ' · 「→ ?」 ' + wikiq);
+  ok('수치 없는 빈 줄은 모두 까닭이 적혀 있다 (adjusted[].miss)', noWhy.length === 0, noWhy.slice(0, 8));
+  ok('짝짓기 실패로 빈 줄이 없다 (위키에 있는데 못 찾음 — 고칠 것)', unmatched.length === 0, unmatched.slice(0, 12));
+  console.log('  (빈 줄 ' + blank + ' = 대기 ' + waiting + ' · 「?」 ' + wikiq + ' · 판정 ' + (blank - waiting - wikiq - unmatched.length - noWhy.length) + ' · 실패 ' + unmatched.length + ')');
 
   /* ■ **비어 있어야 하는** 자리 — 위키가 그 모드의 수치를 적지 않았다.
      여기에 값이 생기면 통상 쪽 값을 끌어온 것이다(F89 거짓의 재발). */
@@ -512,6 +591,67 @@ if (!fs.existsSync(DATA)) {
     }
     ok('비어 있어야 한다 — ' + ms + ' / ' + w + ' ' + head + '  (위키에 그 모드 수치가 없다)',
       got === null, got);
+  }
+
+  /* ■ 【집속 …】 줄에 **통상 쪽 공식 수치**가 붙지 않았는가 (2026-11-25).
+     위키가 「威力上昇 / 非集束 / Lv… / 集束 / Lv…」 로 적은 것의 첫 값 줄만 집던 탓에 6곳이 그랬다
+     (갸프랑(I0) · 고기동형 겔구그(JR) · 실버 불릿 서프레서 · FAZZ · 델타 플러스 · 겔구그 캐논(JN)). 비율로는 안 보인다. */
+  {
+    const itemOf = l => l.replace(/^[・･]\s*/, '').replace(/\s*「[\s\S]*$/, '').replace(/\s*(상승|단축|경감|증가|연장|확대)$/, '').trim();
+    const leak = [];
+    for (const p of pn.patches || []) for (const a of p.adjusted || []) for (const s of a.sections || []) for (const r of s.rows || []) {
+      const ch = r.changes || [];
+      const fi = ch.findIndex(l => /^【집속/.test(l.trim()));
+      if (fi < 0) continue;
+      const ni = ch.findIndex(l => /^【통상/.test(l.trim()));
+      if (ni < 0) continue;
+      const nEnd = ch.findIndex((l, k) => k > ni && /^【/.test(l.trim()));
+      const normal = new Map();
+      for (let k = ni + 1; k < (nEnd < 0 ? ch.length : nEnd); k++) {
+        const m = ch[k].match(/「([^」]*)」\s*→\s*「([^」]*)」/);
+        if (m) normal.set(itemOf(ch[k]), [m[1], m[2]]);
+      }
+      for (let k = fi + 1; k < ch.length && !/^【/.test(ch[k].trim()); k++) {
+        const f = (r.fill || [])[k], n = normal.get(itemOf(ch[k]));
+        /* 위키가 **집속 구간에** 같은 값을 적었으면 맞다 — 키하르Ⅱ 부스티드 라이플: 「非集束 Lv1：1800 → 2000 / 集束 Lv1：1800 → 2000」 */
+        const wikiSaysFocus = (a.wiki || []).some((w, wi) => /^集束/.test(w.text) && !w.text.includes('→')
+          && ((a.wiki[wi + 1] || {}).text || '').includes(f && f.from + ' → ' + f.to));
+        if (f && n && f.from === n[0] && f.to === n[1] && !wikiSaysFocus) leak.push(p.date + ' ' + a.ko + ' / ' + r.weapon + ' ' + ch[k].trim() + ' = ' + f.from + '→' + f.to);
+      }
+    }
+    ok('【집속】 줄에 통상 쪽 공식 수치가 붙지 않았다', leak.length === 0, leak.slice(0, 6));
+  }
+
+  /* ■ **공식 조정 표(이미지)** 를 정답지로 — 공식 표 값을 빼고 위키 길만으로 다시 채워 같은지 본다 (2026-11-25).
+     data/patchnote_fill.override.json 은 화면에선 위키보다 앞서지만, 여기선 **짝짓기를 재는 자**로 쓴다:
+     위키 길이 같은 값을 내야 하고, 못 내면 그 까닭이 위키 쪽(「?」)이어야 한다. 실측 2026-10-29: 9/10 같음 · 1 「?」(갸프랑 연사). */
+  {
+    const OV = path.join(ROOT, 'data', 'patchnote_fill.override.json');
+    const fills = fs.existsSync(OV) ? (JSON.parse(fs.readFileSync(OV, 'utf8')).fills || []) : [];
+    const strip = secs => (secs || []).map(s => ({ ...s, rows: (s.rows || []).map(r => { const { fill, ...rest } = r; return rest; }) }));
+    let same = 0, q = 0; const diff = [];
+    for (const o of fills) {
+      const p = (pn.patches || []).find(x => x.date === o.date);
+      const a = p && (p.adjusted || []).find(x => x.ms === o.ms);
+      if (!a || !a.ja || !a.wiki || !a.wiki.length) { diff.push(o.date + ' ' + o.ms + ' — 기체·일본어·위키 없음'); continue; }
+      const res = JPF.fillByJp(strip(a.sections), a.ja.sections, a.wiki);
+      let got = '줄-없음', where = null;
+      res.sections.forEach((s, si) => (s.rows || []).forEach((r, ri) => {
+        if ((r.weapon || '') !== o.weapon) return;
+        const ch = r.changes || [];
+        const hi = o.head ? ch.findIndex(l => l.trim() === o.head) : -1;
+        if (o.head && hi < 0) return;
+        const li = ch.findIndex((l, k) => k > hi && l.trim() === o.line.trim() && !ch.slice(hi + 1, k).some(x => /^【/.test(x.trim())));
+        if (li < 0) return;
+        got = (r.fill || [])[li] || null; where = { s: si, r: ri, l: li };
+      }));
+      const why = where && (res.misses || []).find(m => m.s === where.s && m.r === where.r && m.l === where.l);
+      if (got && got.from === o.from && got.to === o.to) same++;
+      else if (!got && why && why.why === 'wikiq') q++;
+      else diff.push(o.date + ' ' + o.ms + ' / ' + o.weapon + ' ' + o.head + o.line + ' 공식 ' + o.from + '→' + o.to + ' · 위키 길 ' + JSON.stringify(got) + (why ? ' (' + why.why + ')' : ''));
+    }
+    console.log('  (공식 조정 표 대조 — 같음 ' + same + ' · 위키 「?」 ' + q + ' · 다름 ' + diff.length + ' / ' + fills.length + ')');
+    ok('위키 길만으로 공식 조정 표와 같은 값을 낸다 (다르면 짝짓기를 의심)', diff.length === 0, diff.slice(0, 6));
   }
 
   /* 채운 값에 **숫자가 있어야** 한다 — 빈 값이나 글자만 든 값은 지어낸 것이다 */

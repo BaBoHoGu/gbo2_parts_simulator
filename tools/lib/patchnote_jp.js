@@ -23,17 +23,53 @@ const FILL = require('./patchnote_fill.js');
 
 /* ── 표기 통일 ──────────────────────────────────────────────────── */
 /** 전각→반각(NFKC) · 괄호꼴 통일 · 중점/공백 제거 · 「×２」→「x2」 */
-const nz = s => String(s).normalize('NFKC')
+/* 그리스 문자 Ζ(제타) — 위키는 「強化型ΖΖG」, 공식은 전각 라틴 「強化型ＺＺＧ」 로 적는다(2026-10-29 실측). NFKC 로는 안 합쳐진다. */
+const greek = s => String(s).normalize('NFKC').replace(/[Ζζ]/g, 'Z');
+const nz = s => greek(s)
   .replace(/[［【]/g, '[').replace(/[］】]/g, ']')
   .replace(/[×xX]\s*(\d+)/g, 'x$1')
   .replace(/[\s・･,]/g, '');
 
 /** 개수 표기를 뺀 꼴 — 위키는 「シールド・ファンネル［感知］」, 공식은 「×２[感知]」 */
 const noCnt = s => nz(s).replace(/x\d+/g, '');
-/** 「[…]」 꼬리 */
-const tagOf = s => (nz(s).match(/\[([^\]]*)\]$/) || [])[1] || '';
+/** 끝에 붙은 꼬리들 — 「［斉射］」 만이 아니라 둥근 괄호 「（変形）」 「（リミッター解除）」 도 꼬리다.
+ *  위키는 둘을 겹쳐 「ハンドガンx2［斉射］（リミッター解除）」 로도 적는다(2026-10-29 카풀 실측). */
+const TAILS = /(?:\[[^\]]*\]|\([^)]*\))+$/;
+/** 꼬리 — 여럿이면 「斉射/リミッター解除」 */
+const tagOf = s => {
+  const m = nz(s).match(TAILS);
+  /* 각괄호 안의 둥근 괄호는 꼬리의 일부다 — 「［最大出力（Z）］」 의 꼬리는 「最大出力(Z)」 (「Z」 만 집으면 안 된다) */
+  return m ? [...m[0].matchAll(/\[([^\]]*)\]|\(([^)]*)\)/g)].map(x => x[1] != null ? x[1] : x[2]).join('/') : '';
+};
 /** 꼬리를 뗀 몸통 */
-const bodyOf = s => noCnt(s).replace(/\[[^\]]*\]$/, '');
+const bodyOf = s => noCnt(s).replace(TAILS, '');
+
+/* ── 약칭 ───────────────────────────────────────────────────────── */
+/** 라틴 머리글자 → 그 소리로 시작하는 가타카나. 위키·공식이 낱말을 머리글자로 줄인다:
+ *  위키 「背部M・ランチャー」 ↔ 공식 「背部ミサイル・ランチャー」, 공식 「Ｇ（Ｉ０）用」 ↔ 위키 「ギャプラン（I0）用」. */
+const KANA_INIT = { A: 'ア', B: 'バビブベボヴ', C: 'カキクケコシチ', D: 'ダヂヅデド', E: 'エ', F: 'フ', G: 'ガギグゲゴ', H: 'ハヒフヘホ',
+  I: 'イ', J: 'ジ', K: 'カキクケコ', L: 'ラリルレロ', M: 'マミムメモ', N: 'ナニヌネノ', O: 'オ', P: 'パピプペポ', R: 'ラリルレロ',
+  S: 'サシスセソ', T: 'タチツテト', U: 'ウ', V: 'ヴ', W: 'ワウ', Z: 'ザジズゼゾ' };
+/** 「・」 로 나눈 몸통 낱말들(개수·꼬리 뺌) */
+const tokensOf = s => greek(s).replace(/[［【]/g, '[').replace(/[］】]/g, ']')
+  .replace(/[×xX]\s*\d+/g, '').replace(/\s/g, '').replace(TAILS, '').split(/[・･,]/).filter(Boolean);
+/** 낱말 둘이 같거나, 앞뒤 공통부를 뗀 나머지가 「라틴 한 글자 ↔ 그 소리로 시작하는 가타카나 낱말」 인가 */
+function tokEq(x, y) {
+  if (x === y) return 0;
+  let p = 0; while (p < x.length && p < y.length && x[p] === y[p]) p++;
+  let q = 0; while (q < x.length - p && q < y.length - p && x[x.length - 1 - q] === y[y.length - 1 - q]) q++;
+  const rx = x.slice(p, x.length - q), ry = y.slice(p, y.length - q);
+  const ab = (l, w) => /^[A-Z]$/.test(l) && /^[ァ-ヶー]{2,}$/.test(w) && (KANA_INIT[l] || '').includes(w[0]);
+  return ab(rx, ry) || ab(ry, rx) ? 1 : -1;
+}
+/** 약칭을 풀면 같은 이름인가 — 낱말 수가 같고, 낱말마다 같거나 약칭이며, **약칭이 하나 이상** 있을 때 */
+function abbrevEq(a, b) {
+  const ta = tokensOf(a), tb = tokensOf(b);
+  if (!ta.length || ta.length !== tb.length) return false;
+  let ab = 0;
+  for (let i = 0; i < ta.length; i++) { const r = tokEq(ta[i], tb[i]); if (r < 0) return false; ab += r; }
+  return ab > 0;
+}
 
 /**
  * 위키 머리줄을 무장 이름으로 — 「機体スキル「最大出力（K）」」 → 「最大出力(K)」.
@@ -72,7 +108,8 @@ const JP_KEY = [
   ['爆発ヒット回数', ['爆発のヒット回数', 'ヒット回数']],
   ['連射速度', ['連射速度', '連射性能']],
   ['リロード', ['リロード時間', 'リロード']],
-  ['クールタイム', ['クールタイム']],
+  /* 위키가 같은 것을 「発射間隔」 으로 적는다 — 갸프랑(I0) B·Rx2(변형) 공식 「クールタイム「0.8」→「0.5」」 ↔ 위키 「発射間隔短縮 0.8秒 → 0.5秒」(2026-10-29) */
+  ['クールタイム', ['クールタイム', '発射間隔']],
   ['連撃補正', ['連撃補正']],
   ['効果時間', ['効果時間']],
   ['ヒート率', ['ヒート率']],
@@ -157,13 +194,24 @@ function headsFor(name, weapons) {
   if (!hit.length && b.length >= 4)
     hit = weapons.filter(w => bodyOf(w.key).length >= 4
       && (bodyOf(w.key).includes(b) || b.includes(bodyOf(w.key))));
+  /* 그래도 없으면 **약칭**을 풀어 본다(「背部M・ランチャー」 ↔ 「背部ミサイル・ランチャー」). 몸통이 **하나로** 정해질 때만 —
+     둘 이상이면 어느 쪽인지 모르는 것이다. */
+  if (!hit.length) {
+    const ab = weapons.filter(w => abbrevEq(name, w.key));
+    if (new Set(ab.map(w => bodyOf(w.key))).size === 1) hit = ab;
+  }
   if (!hit.length) return null;
   /* ■ 공식 이름에 꼬리가 있으면 **그 꼬리가 먼저다.**
      꼬리 없는 것을 먼저 찾았더니 헤이즐 아우슬라[GAU]에서 틀렸다 —
      공식에 「５連装ビーム砲」와 「５連装ビーム砲[斉射]」 두 행이 있고 위키도 둘로 나뉘는데,
      [斉射] 행에 통상 값(10% x5 → 15% x5)이 붙었다. 제 값은 4% x10 → 10% x10 이다. */
-  const base = (myTag && hit.find(w => tagOf(w.key) === myTag))
-    || hit.find(w => !tagOf(w.key))
+  /* 몸통은 개수를 떼고 보지만, 위키가 **개수만 다른 두 무장**을 적었으면(「強化型ΖΖG用H・B・S」 · 「…H・B・Sx2」, 2026-10-29)
+     개수가 같은 쪽이 먼저다. 개수가 같은 것이 없으면 예전처럼 첫 번째(위키가 「×２」 를 빼고 적는 일이 많다). */
+  const cnt = s => (nz(s).match(/x(\d+)/) || [])[1] || '';
+  const myCnt = cnt(name);
+  const pick = arr => arr.find(w => cnt(w.key) === myCnt) || arr[0];
+  const base = (myTag && pick(hit.filter(w => tagOf(w.key) === myTag)))
+    || pick(hit.filter(w => !tagOf(w.key)))
     || (myTag ? null : hit[0]);
   /* ■ 꼬리가 있는데 맞는 꼬리도, 꼬리 없는 것도 없으면 **거절한다.**
      예전엔 남은 첫 번째를 집었다 — 자가 잡았다: 공식 [射撃]·[感知] 둘, 위키 ［射出］·［探知］ 둘일 때
@@ -172,7 +220,7 @@ function headsFor(name, weapons) {
   if (!base) return null;
   const byTag = new Map();
   for (const w of hit) { const t = tagOf(w.key); if (t) byTag.set(t, w); }
-  return { base, byTag, all: hit };
+  return { base, byTag, all: hit, myTag };
 }
 
 /**
@@ -243,6 +291,11 @@ function fillByJp(krSections, jpSections, wikiLines) {
   const mechHead = { base: { key: '', items: index.filter(e => !e.weapon) }, byTag: new Map(), all: [] };
 
   let filled = 0, tried = 0;
+  /* 못 채운 줄마다 **어디서 멈췄는지** 남긴다(2026-11-25). 「못 채움」 만 세던 탓에 10-29 조정 10줄을 「위키가 늦다」 로
+     잘못 짚었다 — 실제로는 위키에 값이 다 있었고 짝짓기가 표기 변형((リミッター解除) 둥근 괄호 · 【通常格闘】 등)을 못 알아봤다.
+       weapon — 위키에서 그 무장을 못 찾음 · key — 그 줄의 항목어를 모름 · item — 무장은 찾았는데 맞는 항목이 없음
+       pair   — 항목은 찾았는데 전후 값을 못 고름(위키 값이 「?」 거나 집속/통상이 안 갈림) */
+  const misses = [];
   const sections = ks.map((sec, si) => ({
     ...sec,
     rows: (sec.rows || []).map((row, ri) => {
@@ -269,7 +322,10 @@ function fillByJp(krSections, jpSections, wikiLines) {
                  위키  「バスターランチャー［最大出力（Z）］」 라는 **별도 머리줄**
              꼬리를 떼고 봐야 이 넷(위력·히트 수·비틀거림·오버 히트)이 제 자리를 찾는다. */
           const tKey = t.replace(/発動中$|中$/, '');
-          sub = heads && (heads.byTag.get(t) || heads.byTag.get(tKey)) || null;
+          /* 공식 행에 꼬리가 있으면 위키는 그 꼬리 뒤에 모드를 겹쳐 적는다 — 「［斉射］（リミッター解除）」 */
+          const own = heads && heads.myTag ? heads.myTag + '/' : '';
+          sub = heads && (heads.byTag.get(t) || heads.byTag.get(tKey)
+            || (own && (heads.byTag.get(own + t) || heads.byTag.get(own + tKey)))) || null;
           modeLabel = sub || focus ? null : t;
           /* ■ 「…発動中」은 **같은 무장의 상태**다 — 통상 값이 그대로 그 상태에도 적용된다.
              위키가 모드별로 안 나눠 적었으면 그 하나뿐인 값을 쓴다(사용자 확인 2026-10-12:
@@ -279,23 +335,28 @@ function fillByJp(krSections, jpSections, wikiLines) {
           modeState = !sub && !focus && /発動中$|中$/.test(t);
           return null;
         }
-        if (!heads) return null;
         const cands = keyOfJa(jaLine);
+        const hasNum = HAS_NUM.test(jaLine);
+        const miss = why => { if (!hasNum) misses.push({ s: si, r: ri, l: li, why, weapon: jname }); return null; };
+        if (!heads) return cands && !NOT_VALUE.test(String(jaLine).trim()) && !hasNum ? (tried++, miss('weapon')) : null;
         if (!cands) return null;
         if (NOT_VALUE.test(lineCore(jaLine) ? String(jaLine).trim() : '')) return null;
-        const hasNum = HAS_NUM.test(jaLine);
         /* 「(併せて上位LVも上昇)」 — 공식은 대표 LV 하나만 적는다. 위키는 다 적는다. */
         const wantsLv = /上位\s*LV/.test(nz(jaLine));
         if (hasNum && !wantsLv) return null;
         if (!hasNum) tried++;
 
         const w = sub || heads.base;
+        if (!w || !(w.items || []).length) return miss('weapon');
         const val = pickValue(w.items, cands, modeLabel, modeState);
-        if (!val) return null;
-        const lv = wantsLv ? FILL.lvBreakdown(val) : null;
+        if (!val) return miss('item');
+        /* LV 별 값도 **그 모드 구간**에서만 — 위키가 「非集束時 Lv1… 集束時 Lv1…」 로 한 항목에 둘을 적는다(FA Mk-Ⅲ) */
+        const lvSrc = focus && /集束|通常/.test(val) ? FILL.modeSegment(val, focus) : val;
+        const lv = wantsLv && lvSrc ? FILL.lvBreakdown(lvSrc) : null;
         if (hasNum) return lv ? { lv } : null;
-        const pair = FILL.pickPair(val, focus);
-        if (!pair) return lv ? { lv } : null;
+        const pair = comboPair(val) || FILL.pickPair(val, focus);
+        /* 위키가 「2.5秒 → ?秒」 · 「?発/分 → 277発/分」 처럼 한쪽 값을 모른다고 적었다 — 짝짓기 탓이 아니다(wikiq) */
+        if (!pair) { miss(/→\s*[－-]?\s*[?？]|[?？][^→]*→/.test(String(val)) ? 'wikiq' : 'pair'); return lv ? { lv } : null; }
         filled++;
         const out = { from: FILL.koValue(pair[0]), to: FILL.koValue(pair[1]) };
         if (lv) out.lv = lv;
@@ -304,7 +365,17 @@ function fillByJp(krSections, jpSections, wikiLines) {
       return fill.some(Boolean) ? { ...row, fill } : row;
     })
   }));
-  return { sections, filled, tried, skipped: false };
+  return { sections, filled, tried, skipped: false, misses };
+}
+
+/** 연격 보정은 타수마다 값이 있다 — 「2撃目：50% → 80% 3撃目：35% → 64%」. 첫 쌍만 집으면 3타째가 사라진다.
+ *  공식 조정 표의 꼴(「2연격 50% · 3연격 35%」)로 묶는다. 둘 이상일 때만. */
+function comboPair(val) {
+  const re = /(\d+)撃目\s*[：:]\s*([^→\s]+)\s*→\s*([^\s]+)/g;
+  const seg = [...String(val || '').replace(/　/g, ' ').matchAll(re)]
+    .filter(m => /\d/.test(m[2]) && /\d/.test(m[3]));
+  if (seg.length < 2) return null;
+  return [seg.map(m => m[1] + '연격 ' + m[2]).join(' · '), seg.map(m => m[1] + '연격 ' + m[3]).join(' · ')];
 }
 
 /**
@@ -354,4 +425,4 @@ function pickValue(items, cands, modeLabel, modeState) {
   return plain[0].value;
 }
 
-module.exports = { nz, noCnt, tagOf, bodyOf, headKey, lineCore, keyOfJa, headsFor, fillByJp, pickValue, JP_KEY, HAS_NUM, NOT_VALUE, NO_KEY, digits };
+module.exports = { nz, noCnt, tagOf, bodyOf, abbrevEq, comboPair, headKey, lineCore, keyOfJa, headsFor, fillByJp, pickValue, JP_KEY, HAS_NUM, NOT_VALUE, NO_KEY, digits };

@@ -126,6 +126,22 @@ function applyFillOverride(date, ms, sections) {
   return { newly };
 }
 
+/** 못 채운 줄과 그 까닭 — [{s, r, l, why}]. 이미 채워진 줄(위키 · 공식 표)은 빼고, 수치가 없고 항목어가 있는 줄만 센다
+ *  (jpfill_check 가 세는 줄과 같은 자). why: wait(위키에 그 날짜 항목 없음) · wikiq(위키가 「→ ?」) · weapon · key · item · pair(일본어 경로) · kr(한국어 경로).
+ *  wait · wikiq 는 위키를 기다리는 것, 나머지는 짝짓기 실패(코드가 고칠 것). */
+function missesOf(f, wiki, jpPath) {
+  const byPos = new Map();
+  for (const m of (jpPath && f.misses) || []) byPos.set(m.s + '/' + m.r + '/' + m.l, m.why);
+  const out = [];
+  (f.sections || []).forEach((s, si) => (s.rows || []).forEach((r, ri) => (r.changes || []).forEach((ln, li) => {
+    if (FILL.HAS_NUM.test(ln) || /^【/.test(ln) || FILL.NOT_VALUE.test(ln.trim()) || !FILL.keyOf(ln)) return;
+    if ((r.fill || [])[li]) return;
+    const why = !(wiki && wiki.length) ? 'wait' : jpPath ? (byPos.get(si + '/' + ri + '/' + li) || 'key') : 'kr';
+    out.push({ s: si, r: ri, l: li, why });
+  })));
+  return out;
+}
+
 const REFS = path.join(ROOT, 'data', 'ms_refs.json');
 /* 서비스 시작(2018-07)까지 거슬러 본다. **빈 달에서 멈추지 않는다** — 한국어 목록은 2025-06 ~ 11 이 비어 있는데
    그 너머 2019-04 까지 공지가 있다(2026-11-16 실측. 처음엔 빈 달 넷에서 멈춰 그 전부를 놓쳤다). */
@@ -268,7 +284,7 @@ function realAddDate(ms, ourDate) {
   const unmatched = [];
   const nameSplit = [];   // 한국어 이름과 일본어 이름이 다른 기체를 가리킨 것
   let wikiHit = 0, wikiMiss = [];
-  let fillOk = 0, fillTry = 0;
+  let fillOk = 0, fillTry = 0; const missAll = [];
   let jpUsed = 0; const jpSkip = [];
   let jaMirrored = 0; const jaOff = [];
   const krHtml = new Map();            // 받은 한국어 공지 — 참조 데이터 단계가 다시 받지 않게
@@ -317,11 +333,16 @@ function realAddDate(ms, ourDate) {
          근거 순서대로 위키 값보다 앞선다. 맞는 줄에만 단다(data/patchnote_fill.override.json). */
       const ovHit = applyFillOverride(a.date, ja, f.sections);
       fillOk += f.filled + ovHit.newly; fillTry += f.tried;
+      /* 못 채운 줄의 까닭(2026-11-25) — 「위키 대기」 와 「짝짓기 실패」 를 가른다. 배포 검사(jpfill_check)가 짝짓기 실패만 막는다.
+         위키에 그 날짜 항목이 아예 없으면 wait, 일본어 경로가 멈춘 자리는 그 까닭, 한국어 경로로 물러선 날은 kr. */
+      const miss = missesOf(f, wiki, !!(jpUnit && wiki && wiki.length && f.misses));
+      for (const m of miss) missAll.push({ date: a.date, ko: u.name, why: m.why, line: ((((f.sections[m.s] || {}).rows || [])[m.r] || {}).changes || [])[m.l] });
       /* 일본어 모드(?lang=ja)가 보일 **공식 일본어 원문**을 같이 담는다 — 번역하지 않는다.
          같은 자리(섹션·행·줄)로 짝지으므로 줄 수와 숫자 나열이 다 맞을 때만 담는다. 어긋나면 없다(화면은 한국어). */
       const jaSide = jpUnit ? mirrorJa(u, jpUnit) : null;
       if (jaSide) jaMirrored++; else if (jpUnit) jaOff.push(a.date + ' ' + u.name);
-      e.adjusted.push({ ko: u.name, ms: ja, sections: f.sections, intent: u.intent, ref: u.ref, wiki, ...(jaSide ? { ja: jaSide } : {}) });
+      e.adjusted.push({ ko: u.name, ms: ja, sections: f.sections, intent: u.intent, ref: u.ref, wiki, ...(jaSide ? { ja: jaSide } : {}),
+        ...(miss.length ? { miss } : {}) });
     }
   }
 
@@ -476,6 +497,12 @@ function realAddDate(ms, ourDate) {
   console.log('  공식이 생략한 수치를 위키에서 채운 줄 ' + fillOk + '/' + fillTry
     + '  (' + (fillTry ? (fillOk / fillTry * 100).toFixed(1) : 0) + '%)'
     + (fillOvUsed.size ? ' — 그중 공식 조정 표(손으로 옮김) ' + fillOvUsed.size + '줄' : ''));
+  if (missAll.length) {
+    const WHY = { wait: '위키 대기', weapon: '무장 못 찾음', item: '항목 못 찾음', pair: '값 쌍 못 고름', wikiq: '위키 값 미정(?)', key: '항목어 못 읽음', kr: '한국어 경로' };
+    const cnt = {}; for (const m of missAll) cnt[m.why] = (cnt[m.why] || 0) + 1;
+    console.log('  못 채운 줄 ' + missAll.length + ' — ' + Object.keys(cnt).map(k => (WHY[k] || k) + ' ' + cnt[k]).join(' · '));
+    for (const m of missAll.filter(x => x.why !== 'wait' && x.why !== 'wikiq')) console.log('     [' + (WHY[m.why] || m.why) + '] ' + m.date + ' ' + m.ko + ' ' + m.line);
+  }
   const ovMiss = FILL_OV.filter((o, i) => !fillOvUsed.has(i));
   if (ovMiss.length) console.log('  ⚠ 공식 조정 표 값 중 줄을 못 찾은 것 ' + ovMiss.length + '개 (data/patchnote_fill.override.json):\n'
     + ovMiss.map(o => '     ' + o.date + ' ' + o.ms + ' / ' + o.weapon + ' ' + o.head + ' ' + o.line).join('\n'));

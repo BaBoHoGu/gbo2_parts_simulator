@@ -118,6 +118,16 @@ function buildIndex(lines) {
   /** i 아래에서 첫 번째 값(→ 가 든 줄) */
   const firstValue = i => {
     const d = lines[i].depth;
+    /* 아래가 「非集束 / Lv… / 集束 / Lv…」 처럼 **모드로 나뉘었으면** 다 이어 붙인다 — 첫 값 줄만 집으면 집속 구간이 사라져
+       【集束射撃】 줄에 통상 값이 붙는다(2026-10-29 갸프랑(I0) B·Rx2: 집속 위력에 600→700). 구간은 pickPair 가 가른다. */
+    {
+      let k = i + 1, all = [], modes = 0;
+      for (; k < lines.length && lines[k].depth > d; k++) {
+        all.push(lines[k].text);
+        if (/^(非集束|集束|通常)/.test(lines[k].text) && !lines[k].text.includes('→')) modes++;
+      }
+      if (modes >= 2 && all.some(t => t.includes('→'))) return all.join(' ');
+    }
     for (let k = i + 1; k < lines.length && lines[k].depth > d; k++)
       if (lines[k].text.includes('→')) return lines[k].text;
     /* 위키가 들여쓰기를 한 단 빼먹어 값이 **형제 자리**에 놓인 곳이 있다. 실측
@@ -139,6 +149,14 @@ function buildIndex(lines) {
     const weapon = stack.filter(Boolean).pop() || '';
     if (isGrouping(text)) continue;
     if (isMetric(text)) { out.push({ weapon: nrm(weapon), weaponRaw: weapon, label: text, value: firstValue(i) }); continue; }
+    /* 동작어 없이 항목 이름만 적고 그 아래를 모드로 나눈 꼴 — 2026-10-29 FA Mk-Ⅲ 「装甲部ビーム・キャノンx2」:
+           威力 / 非集束時 / Lv1：400 → 450 …  /  集束時 / Lv1：650 → 700 …
+       무장 머리줄이 아니라 **항목**이다(바로 아래가 문맥층). 값은 아래를 다 이어 붙인다 — 모드 구간은 pickPair 가 가른다. */
+    if (depth > 0 && !isContext(text) && hasChild(i) && isContext(lines[i + 1].text) && !lines[i + 1].text.includes('→')) {
+      let v = '';
+      for (let k = i + 1; k < lines.length && lines[k].depth > depth; k++) v += (v ? ' ' : '') + lines[k].text;
+      if (v.includes('→')) { out.push({ weapon: nrm(weapon), weaponRaw: weapon, label: text, value: v }); continue; }
+    }
     if (isContext(text)) continue;
     if (hasChild(i)) stack[depth] = text;
   }
@@ -408,6 +426,6 @@ function fillSections(sections, wikiLines, jaToKo) {
 
 module.exports = {
   ATWIKI_KEY, buildIndex, firstPair, modeSegment, pickPair, koValue,
-  lookup, keyOf, fillSections, pairWeapons, lvBreakdown, HAS_NUM, isMetric, isContext, nrm, tailKey,
+  lookup, keyOf, fillSections, pairWeapons, lvBreakdown, HAS_NUM, NOT_VALUE, isMetric, isContext, nrm, tailKey,
   dupModeSegment
 };
