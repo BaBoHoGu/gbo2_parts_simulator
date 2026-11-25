@@ -254,6 +254,9 @@ function lvBreakdown(value) {
     if (!/\d/.test(m[3]) || !/\d/.test(to)) continue;
     out.push({ lv: 'LV' + m[2], from: m[3].trim(), to });
   }
+  /* 같은 LV 가 두 번 나오면 값에 **모드 둘**(非集束 · 集束)이 섞인 것이다 — 어느 쪽인지 모르니 비운다(2026-11-25).
+     모드 구간을 떼어 넘기는 것은 부르는 쪽 몫이다(patchnote_jp 의 lvSrc). */
+  if (new Set(out.map(x => x.lv)).size !== out.length) return null;
   return out.length >= 2 ? out : null;
 }
 
