@@ -1,6 +1,15 @@
 {
- "pickupsUpdated": "2026-11-25",
+ "pickupsUpdated": "2026-11-27",
  "pickups": [
+  {
+   "name": "팬텀 건담",
+   "consoleStart": "2026-11-26",
+   "consoleEnd": "2026-12-03",
+   "start": "2027-01-28",
+   "end": "2027-02-04",
+   "tokens": 195,
+   "url": "https://bo2.ggame.jp/kr/info/?p=202712"
+  },
   {
    "name": "어설트 버스터 건스매셔",
    "consoleStart": "2026-11-19",
@@ -146,15 +155,6 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=198333"
   },
   {
-   "name": "ν건담[더블 핀 판넬 장비]",
-   "consoleStart": "2026-09-24",
-   "consoleEnd": "2026-10-01",
-   "start": "2026-11-26",
-   "end": "2026-12-03",
-   "tokens": 195,
-   "url": "https://bo2.ggame.jp/kr/info/?p=197504"
-  },
-  {
    "name": "【배틀 오퍼레이션 가을 축제】 MS 확정 스페셜",
    "consoleStart": "2026-09-24",
    "consoleEnd": "2026-10-01",
@@ -164,8 +164,15 @@
    "url": "https://bo2.ggame.jp/kr/info/?p=197567"
   }
  ],
- "steamUpdated": "2026-11-25",
+ "steamUpdated": "2026-11-27",
  "steamNews": [
+  {
+   "name": "ν건담[더블 핀 판넬 장비]",
+   "start": "2026-11-26",
+   "end": "2026-12-03",
+   "tokens": 195,
+   "url": "https://store.steampowered.com/news/app/1367080/view/714545101887504953?l=koreana"
+  },
   {
    "name": "카풀(CN) & 카풀",
    "start": "2026-11-19",

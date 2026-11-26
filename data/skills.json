@@ -10051,23 +10051,23 @@
  ],
  "ブルーディスティニー1号機": [
   {
-   "name": "能力UP「EXAM」",
-   "nameKo": "능력UP「EXAM」",
+   "name": "能力UP「EXAM」（Y）",
+   "nameKo": "능력 UP 「EXAM」(Y)",
    "forever": false,
    "secs": 60,
-   "hp": null,
+   "hp": 50,
    "manual": true,
    "levels": [
     {
      "from": 1,
-     "to": null,
+     "to": 2,
      "shoot": 25,
      "melee": 30,
      "shootPct": 0,
      "meleePct": 0,
      "crouchPct": 0,
      "limitUp": 0,
-     "dmgAny": 0,
+     "dmgAny": 20,
      "dmgShoot": 0,
      "dmgMelee": 0,
      "armorRange": 3,
@@ -10077,7 +10077,52 @@
      "hispeed": 10,
      "thruster": 0,
      "turn": 40,
-     "hpUp": 0
+     "hpUp": 0,
+     "hp": 50
+    },
+    {
+     "from": 3,
+     "to": null,
+     "shoot": 25,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 3,
+     "armorBeam": 3,
+     "armorMelee": 3,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 40,
+     "hpUp": 0,
+     "hp": 50
+    },
+    {
+     "from": 4,
+     "to": null,
+     "shoot": 25,
+     "melee": 30,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 20,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 3,
+     "armorBeam": 3,
+     "armorMelee": 3,
+     "speed": 10,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 40,
+     "hpUp": 0,
+     "hp": 50
     }
    ]
   }
@@ -15170,6 +15215,39 @@
      "hispeed": 0,
      "thruster": 0,
      "turn": 0,
+     "hpUp": 0
+    }
+   ]
+  }
+ ],
+ "ザクⅡ（KG）": [
+  {
+   "name": "白兵戦プログラム",
+   "nameKo": "백병전 프로그램",
+   "forever": false,
+   "secs": null,
+   "hp": null,
+   "manual": false,
+   "levels": [
+    {
+     "from": 1,
+     "to": null,
+     "shoot": 0,
+     "melee": 0,
+     "shootPct": 0,
+     "meleePct": 0,
+     "crouchPct": 0,
+     "limitUp": 0,
+     "dmgAny": 0,
+     "dmgShoot": 0,
+     "dmgMelee": 0,
+     "armorRange": 0,
+     "armorBeam": 0,
+     "armorMelee": 0,
+     "speed": 5,
+     "hispeed": 10,
+     "thruster": 0,
+     "turn": 5,
      "hpUp": 0
     }
    ]
