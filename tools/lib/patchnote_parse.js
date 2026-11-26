@@ -263,7 +263,49 @@ function parseNotice(raw) {
   return out;
 }
 
+/* ── 같은 날짜의 한국어 글 ↔ 일본어 글 ─────────────────────────────
+   2026-11-26 조정은 글이 셋(범용 · 강습 · 지원)이었다. 한국어판은 범용 → 지원 으로 글 번호가 **줄고**(202469 · 202457 · 202445)
+   일본어판은 **는다**(201847 · 201848 · 201849). 번호 순으로 짝짓던 탓에 한국어 지원 ↔ 일본어 범용이 붙어 22기가 엇갈렸다.
+   제목의 타입 꼬리표로 짝짓는다. 꼬리표가 하나도 없는 날만 번호 순(예전 방식). */
+const ARTICLE_TYPES = [['gen', /범용|汎用/], ['raid', /강습|強襲/], ['sup', /지원|支援/]];
+/** 제목 → 'gen' · 'raid' · 'sup' · null (【…타입】 꼬리표, 하나만 걸릴 때) */
+function articleType(title) {
+  const t = String(title || '').normalize('NFKC');
+  const tag = [...t.matchAll(/[【\[]([^】\]]*)[】\]]/g)].map(m => m[1]).join(' ');   // 꼬리표 안만 본다
+  const hit = ARTICLE_TYPES.filter(([, re]) => re.test(tag));
+  return hit.length === 1 ? hit[0][0] : null;
+}
+/**
+ * 같은 날짜의 글 목록 둘([{id,title}]) → { pairs: [[krId, jpId]…] } 또는 { pairs: null, why }.
+ * · 양쪽 모두 꼬리표가 있고 서로 다르면 → 꼬리표로
+ * · 양쪽 모두 꼬리표가 없으면 → 번호 순
+ * · 그 밖(한쪽만 꼬리표 · 겹침 · 짝 없는 꼬리표) → 짝짓지 않는다(일본어판을 안 쓴다)
+ */
+function pairArticles(ks, jsx) {
+  if (!ks.length || ks.length !== jsx.length) return { pairs: null, why: '글 수가 다릅니다(KR ' + ks.length + ' / JP ' + jsx.length + ')' };
+  const kt = ks.map(a => articleType(a.title)), jt = jsx.map(a => articleType(a.title));
+  const allTyped = kt.every(Boolean) && jt.every(Boolean);
+  const noneTyped = !kt.some(Boolean) && !jt.some(Boolean);
+  if (allTyped) {
+    if (new Set(kt).size !== kt.length || new Set(jt).size !== jt.length) return { pairs: null, why: '같은 타입 글이 둘 이상입니다' };
+    const pairs = [];
+    for (let i = 0; i < ks.length; i++) {
+      const j = jt.indexOf(kt[i]);
+      if (j < 0) return { pairs: null, why: '일본어판에 「' + kt[i] + '」 글이 없습니다' };
+      pairs.push([ks[i].id, jsx[j].id]);
+    }
+    return { pairs };
+  }
+  if (noneTyped) {
+    const kk = [...ks].sort((x, y) => Number(x.id) - Number(y.id));
+    const jj = [...jsx].sort((x, y) => Number(x.id) - Number(y.id));
+    return { pairs: kk.map((a, i) => [a.id, jj[i].id]) };
+  }
+  return { pairs: null, why: '타입 꼬리표가 한쪽에만 있습니다' };
+}
+
 module.exports = {
+  articleType, pairArticles,
   parseRef,
   splitUnits, parseBlock, parseNotice, parseLegacy, parseRows,
   looksLikePatchnote, isContentCell, isRefTable, isIntentTable,

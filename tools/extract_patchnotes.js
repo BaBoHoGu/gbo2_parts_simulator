@@ -257,10 +257,10 @@ function realAddDate(ms, ourDate) {
   for (const [date, ks] of krByDate) {
     const jsx = jpByDate.get(date) || [];
     if (!jsx.length) { console.log('  · ' + date + ' 일본어판이 없습니다 — 한국어만으로 채웁니다.'); continue; }
-    if (jsx.length !== ks.length) { console.log('  ⚠ ' + date + ' 글 수가 다릅니다(KR ' + ks.length + ' / JP ' + jsx.length + ') — 이 날짜는 한국어만으로 채웁니다.'); continue; }
-    const kk = [...ks].sort((x, y) => Number(x.id) - Number(y.id));
-    const jj = [...jsx].sort((x, y) => Number(x.id) - Number(y.id));
-    for (let i = 0; i < kk.length; i++) jpOf.set(kk[i].id, jj[i].id);
+    /* 글이 여럿이면 **제목의 타입 꼬리표**(범용 · 강습 · 지원)로 짝짓는다 — 번호 순서는 KR/JP 가 거꾸로일 수 있다(2026-11-26) */
+    const pr = P.pairArticles(ks, jsx);
+    if (!pr.pairs) { console.log('  ⚠ ' + date + ' ' + pr.why + ' — 이 날짜는 한국어만으로 채웁니다.'); continue; }
+    for (const [k, j] of pr.pairs) jpOf.set(k, j);
   }
   const jpCache = new Map();
   const jpSectionsOf = async (krId, idx) => {
