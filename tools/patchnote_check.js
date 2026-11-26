@@ -334,8 +334,11 @@ if (!fs.existsSync(DATA)) {
 
   /* ⑤ 공식이 생략한 수치를 위키에서 채웠는가. */
   {
-    let tried = 0, filled = 0, bad = [];
-    for (const a of ads) for (const sec of a.sections || []) for (const row of sec.rows || []) {
+    let tried = 0, filled = 0, bad = [], waiting = 0;
+    /* 위키를 **기다리는** 줄(추출기가 남긴 까닭 wait · wikiq)은 비율에서 뺀다(2026-11-27). 패치 다음 날엔 위키가 아직
+       안 적어 비율이 49% 로 떨어져 배포가 섰다 — jpfill_check 와 같은 자로 잰다(짝짓기 실패는 그쪽이 막는다). */
+    for (const a of ads) (a.sections || []).forEach((sec, si) => (sec.rows || []).forEach((row, ri) => {
+      const waitAt = new Set((a.miss || []).filter(m => m.s === si && m.r === ri && (m.why === 'wait' || m.why === 'wikiq')).map(m => m.l));
       (row.changes || []).forEach((line, i) => {
         const f = row.fill && row.fill[i];
         if (/^[【[]/.test(line)) {
@@ -355,6 +358,7 @@ if (!fs.existsSync(DATA)) {
           if (f && f.from) bad.push('수치 줄이 아닌데 붙였다: ' + line);
           return;
         }
+        if (waitAt.has(i) && !(f && f.from)) { waiting++; return; }
         tried++;
         if (f && f.from) {
           filled++;
@@ -364,7 +368,8 @@ if (!fs.existsSync(DATA)) {
           if ((!/\d/.test(f.from) && !qOk) || !/\d/.test(f.to)) bad.push('숫자가 아닌 값: ' + line + ' [' + f.from + '→' + f.to + ']');
         }
       });
-    }
+    }));
+    if (waiting) console.log('NOTICE 위키를 기다리는 줄 ' + waiting + '개는 채운 비율에서 뺐다');
     ok('공식이 생략한 수치를 위키에서 채운다', filled > 0, { 채움: filled, 시도: tried });
     ok('채운 비율이 60% 이상이다', tried > 0 && filled / tried >= 0.6,
       { 비율: (filled / tried * 100).toFixed(1) + '%', 채움: filled, 시도: tried });
