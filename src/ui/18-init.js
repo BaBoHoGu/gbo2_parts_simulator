@@ -399,24 +399,32 @@
 
     // 불러오기 결과 안내 — 제외된 파츠가 있으면 조용히 넘기지 않는다 (가져오기에서 사용)
     const loadedMsg = (r, okText) => okText + loadNote(r);
-    $('#share').onclick = () => {
+    $('#share').onclick = async () => {
       if (!state.ms) { toast('먼저 기체를 선택하세요'); return; }
-      const code = encodeShare();
+      const url = shareLink();
+      /* 폰(터치)에서는 공유 창을 띄운다 — 카카오톡·디스코드로 바로 보낸다.
+         PC 에서는 복사가 낫다(윈도 공유 창은 메신저로 잘 안 이어진다). 앱(WebView)에는
+         navigator.share 가 없어 복사로 떨어진다. 사용자가 공유 창을 닫은 것(AbortError)은 실패가 아니다. */
+      if (navigator.share && window.matchMedia && matchMedia('(pointer: coarse)').matches) {
+        try {
+          await navigator.share({ title: T.msName(state.ms.MS名) + (JA ? ' パーツ構成' : ' 파츠 구성'), url });
+          return;
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+      }
       // 실패 시(파일 열람 등 비보안 컨텍스트) 직접 복사할 수 있도록 프롬프트로 대체
-      const fallback = () => { toast('아래 코드를 복사하세요'); prompt('공유 코드 (Ctrl+C 로 복사)', code); };
+      const fallback = () => { toast('아래 링크를 복사하세요'); prompt('공유 링크 (Ctrl+C 로 복사)', url); };
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(code).then(() => toast('공유 코드를 복사했습니다'), fallback);
+          navigator.clipboard.writeText(url).then(() => toast('공유 링크를 복사했습니다'), fallback);
         } else fallback();
       } catch { fallback(); }
     };
     $('#importBtn').onclick = () => {
-      // 옛 JSON 도 decodeShare 가 그대로 받는다(하위 호환). 다만 앱이 더 이상 JSON 을
-      // 만들지 않으므로, 안내에는 지금 쓰는 것만 적는다.
-      const text = prompt('공유 코드를 붙여넣으세요');
+      // 링크 · 코드 · 옛 JSON 을 decodeShare 가 다 받는다(하위 호환).
+      const text = prompt('공유 링크나 코드를 붙여넣으세요');
       if (!text) return;
       const obj = decodeShare(text);
-      if (!obj) { toast('공유 코드 형식이 올바르지 않습니다'); return; }
+      if (!obj) { toast('공유 링크·코드 형식이 올바르지 않습니다'); return; }
       const r = deserialize(obj);
       toast(r.ok ? loadedMsg(r, '구성을 불러왔습니다') : '알 수 없는 기체입니다');
     };
@@ -1087,6 +1095,26 @@
   setView('select');
   // 첫 로딩 감시(index.html 머리)에게 「시작을 마쳤다」 — 이 줄에 못 닿으면 감시가 오류 글을 보여 준다
   if (typeof window.GBO2_bootDone === 'function') window.GBO2_bootDone(); else window.GBO2_READY = true;
+
+  /* 공유 링크로 들어왔으면(`#b=…`) 그 구성을 바로 연다. 주소에서는 지운다 — 남겨 두면 새로고침할 때마다
+     내가 고치던 구성이 링크의 구성으로 되돌아간다(처음 열 때는 07 의 BOOT_SHARE 가 이미 지웠다).
+     이미 열린 탭에 링크를 넣은 경우도 받으려고 hashchange 도 듣는다. **방금 연 코드는 다시 안 연다** —
+     뒤로가기로 해시 달린 칸에 되돌아가면 hashchange 가 또 와서, 고치던 구성을 링크 것으로 덮었다. */
+  let lastShared = null;
+  function openShared(code) {
+    lastShared = code;
+    const obj = decodeShare(code);
+    const r = obj ? deserialize(obj) : { ok: false };
+    toast(r.ok ? '공유된 구성을 불러왔습니다' + loadNote(r)
+      : (obj ? '알 수 없는 기체입니다' : '공유 링크 형식이 올바르지 않습니다'));
+  }
+  if (BOOT_SHARE) openShared(BOOT_SHARE);
+  window.addEventListener('hashchange', () => {
+    const code = codeFromLink(location.hash);
+    if (!code || code === lastShared) return;
+    try { history.replaceState(history.state, '', location.pathname + location.search); } catch { /* file:// 등 */ }
+    openShared(code);
+  });
 
   /* 점검 도구용 최소 창구. 화면을 거치지 않고는 전 기체를 훑을 수 없는데,
      파서를 도구 쪽에 베껴 두면 앱과 조용히 갈라진다(09-08 교훈의 같은 부류).

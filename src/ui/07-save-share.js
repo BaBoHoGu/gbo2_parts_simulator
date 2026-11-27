@@ -28,9 +28,35 @@
     const compact = { m: o.ms, p: o.parts, s: o.stage, e: o.expansion, l: o.expLevel };
     return SHARE_PREFIX + b64urlEncode(JSON.stringify(compact));
   }
-  /** 공유 코드 또는 예전 JSON을 구성 객체(serialize 형태)로 되돌린다. 실패 시 null. */
+  /* ---------- 공유 링크 (2026-11-27 사용자 요청) ----------
+     코드만 건네면 받는 사람이 사이트를 열고 · 기체를 고르고 · 「⋯ → 가져오기」를 찾아 붙여넣어야 했다.
+     링크는 **누르면 그 구성으로 바로 열린다.** 구성은 `#` 뒤에 실려 서버로 가지 않는다(저장소·비용 없음).
+     앱(APK·PC 완전판, file://)에서 만들어도 **사이트 주소**로 만든다 — 받는 사람이 앱이 없어도 열린다. */
+  const SHARE_SITE = 'https://gbo2-parts.pages.dev/';
+  /** 지금(또는 주어진) 구성의 공유 링크 */
+  function shareLink(obj) {
+    return SHARE_SITE + '#b=' + encodeShare(obj).slice(SHARE_PREFIX.length);
+  }
+  /** 글(링크 · 주소창 해시 · 링크가 섞인 메시지)에서 공유 코드를 꺼낸다. 없으면 null. */
+  function codeFromLink(text) {
+    const m = String(text || '').match(/[#&?]b=([A-Za-z0-9_\-%=]+)/);
+    if (!m) return null;
+    try { return decodeURIComponent(m[1]); } catch { return null; }
+  }
+  /* 처음 열 때 주소에 실린 공유 코드. 뒤로가기 덫(18-init 의 pushState)이 놓이기 **전에** 주소에서 떼어 둔다 —
+     덫은 지금 주소를 복제하므로, 해시가 남아 있으면 뒤로가기 때 해시가 되살아나 링크 구성이 다시 열린다. */
+  const BOOT_SHARE = (() => {
+    const c = codeFromLink(location.hash);
+    if (c) { try { history.replaceState(history.state, '', location.pathname + location.search); } catch { /* file:// 등 */ } }
+    return c;
+  })();
+
+  /** 공유 링크 · 공유 코드 · 예전 JSON을 구성 객체(serialize 형태)로 되돌린다. 실패 시 null. */
   function decodeShare(text) {
-    const t = (text || '').trim();
+    const raw = (text || '').trim();
+    // 링크(또는 링크가 든 메시지)를 붙여넣어도 받는다 — 단 JSON 안의 「b=」 는 건드리지 않는다
+    const fromLink = raw[0] === '{' ? null : codeFromLink(raw);
+    const t = fromLink || raw;
     if (!t) return null;
     // 예전 JSON 형식도 그대로 받는다 (하위 호환)
     // 모양을 먼저 본다 — 예전엔 그대로 넘겨 `"parts":5` 같은 것이 불러오기에서 예외를 냈다(2026-10-19)
