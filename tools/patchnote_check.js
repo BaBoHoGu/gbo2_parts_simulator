@@ -1151,6 +1151,42 @@ if (!fs.existsSync(DATA)) {
     ok('정보 칸이 열려 있으면 Esc 는 그것부터 닫는다 (화면엔 남는다)',
       esc.정보닫힘.view === 'view-patch' && esc.정보닫힘.infoOpen === false, esc.정보닫힘);
 
+    /* ── 조정 카드의 ⓘ 로 그 자리에서 기체 정보를 여는가 (2026-11-27 사용자 요청) ──
+       조정 기체의 영상을 보려면 기체 선택 화면까지 돌아가야 했다. 카드 본체는 내역을
+       펼치므로 ⓘ 를 따로 단다 — 진짜 마우스로 눌러 ⓘ 가 **닿는지**, 내역은 안 펼치는지 본다. */
+    const ibPos = await pg.evaluate(async () => {
+      const w = x => new Promise(r => setTimeout(r, x));
+      if (document.body.classList.contains('info-open'))
+        { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await w(500); }
+      if (!document.body.classList.contains('view-patch')) { document.querySelector('#patchBtn').click(); await w(900); }
+      const cards = [...document.querySelectorAll('#pnAdjusted .pn-card')];
+      const withIb = cards.filter(c => c.querySelector('.pn-ib')).length;
+      const b = cards.map(c => c.querySelector('.pn-ib')).find(Boolean);
+      if (!b) return { cards: cards.length, withIb };
+      b.scrollIntoView({ block: 'center' }); await w(300);
+      const r = b.getBoundingClientRect();
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return { cards: cards.length, withIb, x, y, hit: !!(hit && hit.closest('.pn-ib')), 내역전: !document.querySelector('#pnDetail').hidden };
+    });
+    let ibRes = null;
+    if (ibPos.x != null) {
+      await pg.mouse.click(ibPos.x, ibPos.y);
+      await new Promise(r => setTimeout(r, 800));
+      ibRes = await pg.evaluate(() => ({
+        view: (document.body.className.match(/view-[a-z]+/) || [])[0],
+        infoOpen: document.body.classList.contains('info-open'),
+        부모: document.querySelector('#selInfo').parentNode.id,
+        폭: Math.round(document.querySelector('#selInfo').getBoundingClientRect().width),
+        내역: !document.querySelector('#pnDetail').hidden }));
+      await pg.keyboard.press('Escape'); await new Promise(r => setTimeout(r, 500));
+    }
+    ok('조정 카드 거의 전부에 ⓘ 가 있다', ibPos.cards > 0 && ibPos.withIb >= ibPos.cards * 0.9, ibPos);
+    ok('조정 카드 ⓘ 가 손가락에 닿는다 (elementFromPoint)', ibPos.hit === true, ibPos);
+    ok('조정 카드 ⓘ 를 누르면 패치노트 안에서 기체 정보가 뜬다',
+      !!ibRes && ibRes.view === 'view-patch' && ibRes.infoOpen && ibRes.부모 === 'screenPatch' && ibRes.폭 > 0, ibRes);
+    ok('ⓘ 는 카드의 변경 내역을 펼치지 않는다', !!ibRes && ibRes.내역 === ibPos.내역전, { 전: ibPos.내역전, 후: ibRes && ibRes.내역 });
+
     await br.close();
   }
   console.log('\n' + pass + ' PASS / ' + fail + ' FAIL');

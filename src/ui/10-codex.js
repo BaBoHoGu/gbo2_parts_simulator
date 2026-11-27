@@ -591,6 +591,17 @@
       c.classList.add('pick');
       if (pnPick === a.ko) c.classList.add('on');
       c.onclick = () => { pnPick = (pnPick === a.ko ? null : a.ko); renderPnBody(); };
+      /* ⓘ — 조정 내역을 보다가 **그 자리에서** 기체 정보(영상 포함)를 연다(사용자 요청).
+         카드 본체는 내역을 펼치는 데 쓰므로 따로 단다. 기체 선택 화면으로 돌아가지 않아도 된다. */
+      const m = pnFindMs(a.ms);
+      if (m) {
+        const ib = el('button', 'pn-ib', 'ⓘ');
+        ib.type = 'button';
+        ib.title = T.msName(m.MS名) + ' 정보 보기';
+        ib.setAttribute('aria-label', '기체 정보');
+        ib.onclick = ev => { ev.stopPropagation(); pnOpenInfo(m); };
+        c.append(ib);
+      }
       adj.append(c);
     }
     renderPnDetail(p, ads);

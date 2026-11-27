@@ -445,6 +445,20 @@ body.pn-info .sel-info {
 .pn-card.pick.on { border-color: var(--accent); background: var(--panel-3); }
 .pn-card img { width: 82px; height: 82px; object-fit: contain; flex: 0 0 auto; }
 .pn-ci { min-width: 0; }
+/* 조정 카드의 ⓘ — 오른쪽 끝에 붙인다. 흐름 안에 두어(absolute 아님) 눌림 축소에도 자리가 안 흔들린다. */
+.pn-ib {
+  margin-left: auto; flex: 0 0 auto; position: relative;
+  width: 32px; height: 32px; padding: 0; line-height: 1;
+  border: none; background: transparent; color: var(--dim);
+  font-size: var(--fs-lg); cursor: pointer; border-radius: 8px;
+}
+@media (hover: hover) { .pn-ib:hover { color: var(--accent); background: var(--acc-a12); } }
+@media (pointer: coarse) {
+  .pn-ib::before {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%); width: 48px; height: 48px;
+  }
+}
 .pn-nm {
   font-size: var(--fs-lg); font-weight: 700; line-height: 1.35;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
